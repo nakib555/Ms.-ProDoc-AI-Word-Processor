@@ -1,7 +1,7 @@
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 
 export class LiveService {
-  private client: GoogleGenAI;
+  private client: GoogleGenAI | null = null;
   private session: any = null;
   private audioContext: AudioContext | null = null;
   private processor: ScriptProcessorNode | null = null;
@@ -10,7 +10,18 @@ export class LiveService {
   private isConnected: boolean = false;
 
   constructor() {
-    this.client = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Client initialized lazily in connect()
+  }
+
+  private getClient(): GoogleGenAI {
+    if (!this.client) {
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error("API Key is missing. Please check your environment configuration.");
+      }
+      this.client = new GoogleGenAI({ apiKey });
+    }
+    return this.client;
   }
 
   async connect(
@@ -21,6 +32,8 @@ export class LiveService {
     if (this.isConnected) return;
 
     try {
+      const client = this.getClient();
+
       // Initialize Audio Context
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 16000,
@@ -35,7 +48,7 @@ export class LiveService {
       });
 
       // Initialize Session
-      this.session = await this.client.live.connect({
+      this.session = await client.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         config: {
           responseModalities: [Modality.AUDIO], // Audio response is required by API, but we will ignore it
@@ -88,6 +101,7 @@ export class LiveService {
       const inputData = e.inputBuffer.getChannelData(0);
       const pcmBlob = this.createBlob(inputData);
       
+      // Ensure session is ready before sending
       this.session.sendRealtimeInput({ media: pcmBlob });
     };
 
