@@ -12,18 +12,19 @@ export const Ruler: React.FC = React.memo(() => {
   const width = pageDimensions.width;
   const scale = zoom / 100;
   
-  // Calculate margins in pixels
+  // Calculate margins in pixels based on explicit config
   const margins = useMemo(() => {
-    let left = 96;
-    let right = 96;
+    const m = pageConfig.margins;
+    let left = m.left * 96;
+    let right = m.right * 96;
     
-    if (pageConfig.margins === 'narrow') {
-      left = 48;
-      right = 48;
-    } else if (pageConfig.margins === 'wide') {
-      left = 192;
-      right = 192;
-    }
+    // Add gutter to left for simplified global ruler view
+    // (For detailed per-page mirrored ruler, we'd need active page context)
+    left += m.gutter * 96;
+
+    // If mirrored, just show standard odd page layout (Inside Left, Outside Right) on the main ruler
+    // for simplicity as the ruler is global.
+    
     return { left, right };
   }, [pageConfig.margins]);
 

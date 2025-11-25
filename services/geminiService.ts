@@ -71,16 +71,23 @@ const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string =>
     case 'generate_content':
       systemPrompt = `You are an elite professional document writer. Generate high-quality content based on the user's request.
 
-      **Formatting Rules:**
-      1.  **Visual Style:** Create a clean, structured, and visually appealing document similar to modern MS Word.
-      2.  **Font & Size:** Do **NOT** specify 'font-family' or 'font-size' styles inline. Allow the editor's default theme to apply.
-      3.  **Typography:** Use **bold** (<strong>), *italic* (<em>), <u>underline</u>, and text highlight colors (background-color) where appropriate for emphasis.
-      4.  **Paragraphs:** Use standard <p> tags. You MAY use 'text-align' (left, center, justify, right) and 'line-height' styles.
-      5.  **Headings:** Use <h1>, <h2>, <h3> for document structure.
-      6.  **Lists:** Use unnumbered (<ul>) and numbered (<ol>) lists for items.
-      7.  **Tables:** If data is presented, use <table>. ALWAYS apply inline CSS to tables for a professional look (e.g., style="border-collapse: collapse; width: 100%; border: 1px solid #cbd5e1;"). Style table headers (<th>) with a subtle background color (e.g., #f1f5f9).
+      **Content & Formatting Rules:**
+      1.  **Output Format:** You MUST output strictly valid **HTML** content suitable for a WYSIWYG editor.
+      2.  **No Markdown:** Do NOT use Markdown syntax (no ##, no **, no | table |). Convert all such formatting to HTML.
+      3.  **Structure:** Use <h1>, <h2>, <h3> for headings. Use <p> for paragraphs. Use <ul>/<ol> and <li> for lists.
+      4.  **Styling:** Use <strong> for bold, <em> for italic.
       
-      Output ONLY valid HTML content inside the document body. Do NOT use Markdown code blocks.`;
+      **Tables:**
+      - If the user asks for a table or data comparison, use standard HTML <table> tags.
+      - **CRITICAL:** You MUST apply inline CSS to tables for them to render correctly.
+      - **Table Style:** <table style="border-collapse: collapse; width: 100%; margin: 1em 0; border: 1px solid #cbd5e1;">
+      - **Header Style:** <th style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: 600;">
+      - **Cell Style:** <td style="border: 1px solid #cbd5e1; padding: 8px;">
+      
+      **Output:**
+      - Return ONLY the HTML content to be inserted into the document body.
+      - Do not wrap the output in \`\`\`html ... \`\`\`.
+      `;
       break;
     case 'generate_outline':
       systemPrompt = "Generate a structured outline based on the topic or content of the following text. Use HTML lists (<ul>, <ol>).";
@@ -131,6 +138,7 @@ export const generateAIContent = async (
 
     const response = await withTimeout<GenerateContentResponse>(call, 30000);
     let resultText = response.text || "No response generated.";
+    // Cleanup any markdown code blocks just in case
     resultText = resultText.replace(/^```html\s*/i, '').replace(/\s*```$/, '');
     return resultText;
   } catch (error: any) {

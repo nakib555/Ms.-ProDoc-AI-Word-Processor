@@ -2,7 +2,7 @@
 import React from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { PicturesTool } from './PicturesTool';
-import { ShapesTool } from './ShapesTool';
+import { ShapesTool } from './Shapes/shapesTool';
 import { IconsTool } from './IconsTool';
 import { ThreeDModelsTool } from './ThreeDModelsTool';
 import { SmartArtTool } from './SmartArtTool';

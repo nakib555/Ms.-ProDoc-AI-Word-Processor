@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 
 export class LiveService {
@@ -15,9 +16,12 @@ export class LiveService {
 
   private getClient(): GoogleGenAI {
     if (!this.client) {
-      const apiKey = process.env.API_KEY;
+      // Prioritize localStorage key if user set it in settings, else env var
+      const localKey = localStorage.getItem('gemini_api_key');
+      const apiKey = localKey || process.env.API_KEY;
+      
       if (!apiKey) {
-        throw new Error("API Key is missing. Please check your environment configuration.");
+        throw new Error("API Key is missing. Please check your environment configuration or settings.");
       }
       this.client = new GoogleGenAI({ apiKey });
     }

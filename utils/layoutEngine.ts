@@ -1,5 +1,5 @@
 import { PageConfig, PaginatorResult } from '../types';
-import { PAGE_SIZES, PAGE_MARGIN_PADDING } from '../constants';
+import { PAGE_SIZES } from '../constants';
 
 // Helper to create a hidden sandbox for measurement
 const createSandbox = (width: number) => {
@@ -20,18 +20,25 @@ const getPageDimensions = (config: PageConfig) => {
   const width = config.orientation === 'portrait' ? base.width : base.height;
   const height = config.orientation === 'portrait' ? base.height : base.width;
   
-  let verticalPadding = 96 * 2; // Default Normal (96px = 1in)
-  let horizontalPadding = 96 * 2;
+  // 96px = 1 inch
+  // Using the actual margins from config
+  const margins = config.margins;
+  
+  // Basic calculation: Top + Bottom
+  const verticalPadding = (margins.top + margins.bottom) * 96;
+  
+  // Basic calculation: Left + Right + Gutter
+  let horizontalPadding = (margins.left + margins.right + margins.gutter) * 96;
 
-  if (config.margins === 'narrow') {
-    verticalPadding = 48 * 2;
-    horizontalPadding = 48 * 2;
-  } else if (config.margins === 'wide') {
-    verticalPadding = 96 * 2;
-    horizontalPadding = 192 * 2;
-  }
+  // If gutter is at top (rare but supported in types), add to vertical
+  // Note: Implementation logic here assumes standard left/right gutter usage mostly.
 
-  return { width, height, contentHeight: height - verticalPadding, contentWidth: width - horizontalPadding };
+  return { 
+    width, 
+    height, 
+    contentHeight: Math.max(100, height - verticalPadding), 
+    contentWidth: Math.max(100, width - horizontalPadding) 
+  };
 };
 
 export const paginateContent = (html: string, config: PageConfig): PaginatorResult => {

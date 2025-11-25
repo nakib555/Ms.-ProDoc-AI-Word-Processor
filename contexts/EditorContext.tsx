@@ -1,8 +1,9 @@
+
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType } from '../types';
 import { countWords } from '../utils/textUtils';
 import { useAutoSave } from '../hooks/useAutoSave';
-import { DEFAULT_CONTENT, PAGE_SIZES, PAGE_MARGIN_PADDING } from '../constants';
+import { DEFAULT_CONTENT, PAGE_SIZES, PAGE_MARGIN_PADDING, MARGIN_PRESETS } from '../constants';
 
 interface PageDimensions {
   width: number;
@@ -63,10 +64,19 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
     orientation: 'portrait',
-    margins: 'normal',
+    marginPreset: 'normal',
+    margins: MARGIN_PRESETS.normal,
     background: 'none',
     pageColor: undefined,
-    watermark: undefined
+    watermark: undefined,
+    headerDistance: 0.5,
+    footerDistance: 0.5,
+    verticalAlign: 'top',
+    sectionStart: 'newpage',
+    differentOddEven: false,
+    differentFirstPage: false,
+    gutterPosition: 'left',
+    multiplePages: 'normal'
   });
 
   const [readConfig, setReadConfig] = useState<ReadModeConfig>({
@@ -157,11 +167,21 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const pageDimensions = useMemo(() => {
-    const base = pageConfig.size === 'A4' ? PAGE_SIZES.A4 : PAGE_SIZES.Letter;
+    let width, height;
+    
+    if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
+      width = pageConfig.customWidth * 96;
+      height = pageConfig.customHeight * 96;
+    } else {
+      const base = pageConfig.size === 'A4' ? PAGE_SIZES.A4 : PAGE_SIZES.Letter;
+      width = base.width;
+      height = base.height;
+    }
+
     return pageConfig.orientation === 'portrait' 
-      ? { width: base.width, height: base.height }
-      : { width: base.height, height: base.width };
-  }, [pageConfig.size, pageConfig.orientation]);
+      ? { width, height }
+      : { width: height, height: width };
+  }, [pageConfig.size, pageConfig.orientation, pageConfig.customWidth, pageConfig.customHeight]);
 
   const calculateFitZoom = useCallback((type: 'width' | 'page') => {
     if (!containerRef.current) return;

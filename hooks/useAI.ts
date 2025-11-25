@@ -1,31 +1,54 @@
+
 import { useState } from 'react';
 import { AIOperation } from '../types';
 import { generateAIContent, streamAIContent } from '../services/geminiService';
 import { useEditor } from '../contexts/EditorContext';
 
+export interface AIOptions {
+  mode?: 'insert' | 'replace' | 'append';
+  useSelection?: boolean;
+}
+
 export const useAI = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const { executeCommand, editorRef, setContent } = useEditor();
 
-  const performAIAction = async (operation: string, customInput?: string) => {
+  const performAIAction = async (
+    operation: string, 
+    customInput?: string, 
+    options: AIOptions = { mode: 'insert' }
+  ) => {
     const selection = window.getSelection();
-    let selectedText = selection?.toString();
-    let textToProcess = selectedText;
+    const hasSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed;
+    let textToProcess = hasSelection ? selection.toString() : "";
 
-    if (operation === 'continue_writing' && !selectedText) {
+    // Context gathering
+    if (operation === 'continue_writing' && !textToProcess) {
         if (editorRef.current) {
             const allText = editorRef.current.innerText;
             textToProcess = allText.slice(-2000);
         }
     }
 
+    // For "generate_content", we rely on the prompt.
+    // If "useSelection" is true (Edit Mode), we append the selection to the prompt context.
     if (operation === 'generate_content') {
         if (!customInput) {
             alert("Please provide a prompt.");
             return;
         }
-        textToProcess = customInput;
-    } else if (!textToProcess) {
+        
+        if (options.useSelection && hasSelection) {
+             // We are editing the selection based on the prompt
+             // The textToProcess is already set to selection.toString() above
+        } else {
+             // We are generating new content (either fresh or replacing doc)
+             // We don't strictly need textToProcess unless we want to give full doc context?
+             // For now, let's just send the prompt if it's a fresh generation.
+             textToProcess = ""; 
+        }
+    } else if (!textToProcess && operation !== 'generate_content') {
+        // For refine tools etc, we need text.
         alert("Please select some text or ensure the document has content to use the AI Assistant.");
         return;
     }
@@ -36,7 +59,7 @@ export const useAI = () => {
 
     if (shouldStream) {
         try {
-            const stream = streamAIContent(operation as AIOperation, textToProcess || "", customInput);
+            const stream = streamAIContent(operation as AIOperation, textToProcess, customInput);
             let isFirstChunk = true;
             let streamSpan: HTMLElement | null = null;
             let accumulatedContent = "";
@@ -45,8 +68,8 @@ export const useAI = () => {
                 if (isFirstChunk) {
                     setIsProcessing(false); // Hide loading overlay once writing starts
                     
-                    // For Quick Generate: Clear existing content if present before starting
-                    if (operation === 'generate_content') {
+                    // Handle Replacement Mode
+                    if (operation === 'generate_content' && options.mode === 'replace') {
                         if (editorRef.current) {
                             editorRef.current.innerHTML = ''; 
                             setContent(''); // Sync state
@@ -56,7 +79,6 @@ export const useAI = () => {
 
                     const spanId = `ai-stream-${Date.now()}`;
                     // Insert a span with visual indicators that AI is writing
-                    // Using a marker span allows us to update innerHTML safely without breaking the cursor position repeatedly
                     const html = `<span id="${spanId}" class="ai-streaming" style="background-color: rgba(59, 130, 246, 0.08); transition: all 0.2s ease;">&#8203;</span>`;
                     executeCommand('insertHTML', html);
                     streamSpan = document.getElementById(spanId);
@@ -73,7 +95,6 @@ export const useAI = () => {
                     if (cleanHTML.endsWith('```')) cleanHTML = cleanHTML.substring(0, cleanHTML.length - 3);
                     
                     // Update the content of the span directly
-                    // This handles partial tags better than insertAdjacentHTML because the browser parses the full accumulated string each time
                     streamSpan.innerHTML = cleanHTML;
                     
                     // Keep visible
@@ -85,11 +106,9 @@ export const useAI = () => {
             if (streamSpan) {
                 const parent = streamSpan.parentNode;
                 if (parent) {
-                    // Move children out of the span
                     while (streamSpan.firstChild) {
                         parent.insertBefore(streamSpan.firstChild, streamSpan);
                     }
-                    // Remove the empty span
                     parent.removeChild(streamSpan);
                 }
 
@@ -107,8 +126,9 @@ export const useAI = () => {
         return;
     }
 
+    // Non-streaming operations
     try {
-      const result = await generateAIContent(operation as AIOperation, textToProcess || "");
+      const result = await generateAIContent(operation as AIOperation, textToProcess, customInput);
       
       if (result) {
          if (result.trim().startsWith('<') || operation === 'generate_outline') {

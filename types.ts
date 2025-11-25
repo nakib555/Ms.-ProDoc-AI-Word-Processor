@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export interface DocumentState {
@@ -61,18 +62,47 @@ export type ViewMode = 'print' | 'web' | 'read';
 
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
 
-export type PageSize = 'A4' | 'Letter';
+export type PageSize = 'A4' | 'Letter' | 'Legal' | 'Executive' | 'A5' | 'Custom';
 export type PageOrientation = 'portrait' | 'landscape';
-export type PageMargins = 'normal' | 'narrow' | 'wide';
 export type PageBackground = 'none' | 'ruled' | 'grid';
+export type VerticalAlignment = 'top' | 'center' | 'justify' | 'bottom';
+export type MultiplePagesType = 'normal' | 'mirrorMargins' | 'twoPagesPerSheet' | 'bookFold';
+
+export type MarginPreset = 'normal' | 'narrow' | 'moderate' | 'wide' | 'mirrored' | 'office2003' | 'custom';
+
+export interface MarginValues {
+  top: number;    // inches
+  bottom: number; // inches
+  left: number;   // inches (or Inside if mirrored)
+  right: number;  // inches (or Outside if mirrored)
+  gutter: number; // inches
+}
 
 export interface PageConfig {
   size: PageSize;
   orientation: PageOrientation;
-  margins: PageMargins;
+  margins: MarginValues;      // The explicit numeric values
+  marginPreset: MarginPreset; // The active preset name
   background: PageBackground;
   pageColor?: string;
   watermark?: string;
+  
+  // Advanced Layout - Page Setup Dialog
+  headerDistance: number; // inches from edge
+  footerDistance: number; // inches from edge
+  verticalAlign: VerticalAlignment;
+  customWidth?: number; // For custom size
+  customHeight?: number; // For custom size
+  gutterPosition?: 'left' | 'top';
+  sectionStart?: 'newpage' | 'continuous' | 'even' | 'odd';
+  differentOddEven?: boolean;
+  differentFirstPage?: boolean;
+  multiplePages?: MultiplePagesType; // MS Word style page layout
+  mirrorMargins?: boolean; // Legacy helper, derived from multiplePages usually
+  
+  // Paper Source
+  paperSourceFirstPage?: string;
+  paperSourceOtherPages?: string;
 }
 
 export interface CustomStyle {

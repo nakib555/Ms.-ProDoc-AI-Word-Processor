@@ -1,4 +1,5 @@
-import { RibbonTab } from './types';
+
+import { RibbonTab, MarginValues } from './types';
 
 export const FONTS = [
   'Arial', 'Inter', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Noto Serif'
@@ -42,4 +43,14 @@ export const PAGE_MARGIN_PADDING = 24;
 export const PAGE_SIZES = {
   Letter: { width: 816, height: 1056 },
   A4: { width: 794, height: 1123 }
+};
+
+export const MARGIN_PRESETS: Record<string, MarginValues> = {
+  normal: { top: 1, bottom: 1, left: 1, right: 1, gutter: 0 },
+  narrow: { top: 0.5, bottom: 0.5, left: 0.5, right: 0.5, gutter: 0 },
+  moderate: { top: 1, bottom: 1, left: 0.75, right: 0.75, gutter: 0 },
+  wide: { top: 1, bottom: 1, left: 2, right: 2, gutter: 0 },
+  // Mirrored: Left becomes Inside, Right becomes Outside
+  mirrored: { top: 1, bottom: 1, left: 1.25, right: 1, gutter: 0 }, 
+  office2003: { top: 1, bottom: 1, left: 1.25, right: 1.25, gutter: 0 },
 };
