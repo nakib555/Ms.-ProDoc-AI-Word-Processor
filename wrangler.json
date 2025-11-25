@@ -1,0 +1,11 @@
+{
+  "name": "prodoc-ai-word-processor",
+  "compatibility_date": "2024-11-25",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

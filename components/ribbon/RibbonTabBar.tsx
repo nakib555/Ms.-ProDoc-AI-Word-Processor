@@ -69,19 +69,23 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
     }
   }, [activeTab]);
 
-  // If table is selected and we aren't already on a table tab, switching isn't forced,
-  // but if the selection moves away from table, we should probably switch back to Home if on a table tab.
+  // Manage contextual tab visibility with debounce to prevent flickering/accidental closing
   useEffect(() => {
+      let timeoutId: ReturnType<typeof setTimeout>;
+
+      // If we are NOT on a table, check if we need to leave the table tabs
       if (activeElementType !== 'table') {
           if (activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) {
-              onTabChange(RibbonTab.HOME);
+              // Wait 200ms before switching back to Home to allow for momentary focus loss/clicks
+              timeoutId = setTimeout(() => {
+                  onTabChange(RibbonTab.HOME);
+              }, 200);
           }
       } else {
-          // Optional: Auto-switch to Table Design when table is first selected
-          // if (![RibbonTab.TABLE_DESIGN, RibbonTab.TABLE_LAYOUT].includes(activeTab as RibbonTab)) {
-          //    onTabChange(RibbonTab.TABLE_DESIGN);
-          // }
+          // Optional: Auto-switch logic (disabled by default to avoid jumping)
       }
+
+      return () => clearTimeout(timeoutId);
   }, [activeElementType, activeTab, onTabChange]);
 
   // Handle horizontal scrolling via mouse wheel & update arrows on scroll
@@ -121,6 +125,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
           <button
             key={tabId}
             onClick={() => onTabChange(tabId as RibbonTab)}
+            onMouseDown={(e) => e.preventDefault()} // Prevent focus loss from editor when clicking tab
             className={`
               px-3 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2
               ${isActive 
@@ -158,6 +163,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
        >
            <button 
               onClick={() => scroll('left')}
+              onMouseDown={(e) => e.preventDefault()}
               className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
               aria-label="Scroll left"
            >
@@ -195,6 +201,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = ({ activeTab, onTabChan
        >
            <button 
               onClick={() => scroll('right')}
+              onMouseDown={(e) => e.preventDefault()}
               className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
               aria-label="Scroll right"
            >
