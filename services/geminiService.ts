@@ -1,13 +1,14 @@
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AIOperation } from '../types';
 
-let aiClient: GoogleGenAI | null = null;
-
 const getClient = () => {
-  if (!aiClient && process.env.API_KEY) {
-    aiClient = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Always create a new instance to ensure we use the latest API key
+  // if the user has updated it via the API Key Selection dialog.
+  if (process.env.API_KEY) {
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
-  return aiClient;
+  return null;
 };
 
 // Robustness: Timeout wrapper to prevent hanging requests
@@ -110,7 +111,7 @@ export const generateAIContent = async (
 ): Promise<string> => {
   const client = getClient();
   if (!client) {
-    return "Error: API Key not configured. Please check environment variables.";
+    return "Error: API Key not configured. Please use the 'API Key' button in the AI Assistant tab to configure it.";
   }
 
   const systemPrompt = getSystemPrompt(operation, userPrompt);

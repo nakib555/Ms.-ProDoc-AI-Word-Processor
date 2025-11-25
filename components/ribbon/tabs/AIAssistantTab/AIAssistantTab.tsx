@@ -8,6 +8,7 @@ import { RefineGroup } from './refine/RefineGroup';
 import { ToneGroup } from './tone/ToneGroup';
 import { DraftGroup } from './draft/DraftGroup';
 import { TranslateGroup } from './translate/TranslateGroup';
+import { SettingsGroup } from './settings/SettingsGroup';
 
 export const AIAssistantTab: React.FC = () => {
   return (
@@ -19,6 +20,8 @@ export const AIAssistantTab: React.FC = () => {
        <ToneGroup />
        <RibbonSeparator />
        <TranslateGroup />
+       <RibbonSeparator />
+       <SettingsGroup />
     </AIAssistantTabProvider>
   );
 };
