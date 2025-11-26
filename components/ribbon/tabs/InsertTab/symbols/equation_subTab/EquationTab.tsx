@@ -108,6 +108,30 @@ const SYMBOL_CATEGORIES: Record<string, string[]> = {
   'Geometry': ['⊥', '∥', '∦', '∠', '∟', '∡', '∢', '⊾', '⊿', '⋈', '▱', '◆', '◇', '○', '◎', '●', '▰', '▱', '▲', '△', '▴', '▵', '▶', '▷', '▸', '▹', '►', '▻', '▼', '▽', '▾', '▿', '◀', '◁', '◂', '◃', '◄', '◅', '◆', '◇', '◈', '◉', '◊', '○', '◌', '◍', '◎', '●']
 };
 
+// Custom Structure Button Component
+const StructureButton: React.FC<{
+  icon: any;
+  label: string;
+  onClick: () => void;
+  className?: string;
+  hasArrow?: boolean;
+}> = ({ icon: Icon, label, onClick, className, hasArrow }) => (
+  <button
+    className={`flex flex-col items-center justify-center px-1 py-1 min-w-[56px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex-shrink-0 ${className || ''}`}
+    onClick={onClick}
+    onMouseDown={(e) => e.preventDefault()}
+    title={label}
+  >
+    <div className="p-1.5 rounded-md group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all mb-0.5 bg-transparent">
+        <Icon className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" strokeWidth={1.5} />
+    </div>
+    <div className="flex items-center justify-center w-full px-0.5">
+        <span className="text-[10px] font-medium leading-tight text-center text-slate-500 dark:text-slate-400 group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate w-full">{label}</span>
+        {hasArrow && <ChevronDown size={8} className="ml-0.5 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0" />}
+    </div>
+  </button>
+);
+
 export const EquationTab: React.FC = () => {
   const { executeCommand } = useEditor();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -135,7 +159,7 @@ export const EquationTab: React.FC = () => {
           if (triggerRef.current) {
               const rect = triggerRef.current.getBoundingClientRect();
               // Calculate position to align with the section
-              setMenuPos({ top: rect.bottom, left: Math.max(10, rect.left - 262) }); 
+              setMenuPos({ top: rect.bottom + 4, left: Math.max(10, rect.left - 272) }); 
           }
           setActiveMenu('symbol_gallery');
       }
@@ -145,7 +169,7 @@ export const EquationTab: React.FC = () => {
 
   const scrollSymbols = (dir: 'up' | 'down') => {
       if (scrollContainerRef.current) {
-          const amount = 56; // Approx 3 rows height
+          const amount = 24 * 3; // Height of 3 rows
           scrollContainerRef.current.scrollBy({ top: dir === 'up' ? -amount : amount, behavior: 'smooth' });
       }
   };
@@ -208,25 +232,25 @@ export const EquationTab: React.FC = () => {
                     className="flex items-center gap-1.5 text-[11px] cursor-pointer rounded px-1 py-0.5 group"
                     onClick={() => setConversionType('unicode')}
                  >
-                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${conversionType === 'unicode' ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-white group-hover:border-blue-400'}`}>
+                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${conversionType === 'unicode' ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-white group-hover:border-blue-400'}`}>
                         {conversionType === 'unicode' && <div className="w-1 h-1 bg-white rounded-full"></div>}
                     </div>
-                    <span className="text-slate-700">Unicode</span>
+                    <span className="text-slate-700 dark:text-slate-300">Unicode</span>
                  </button>
                  <button 
                     className="flex items-center gap-1.5 text-[11px] cursor-pointer rounded px-1 py-0.5 group"
                     onClick={() => setConversionType('latex')}
                  >
-                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${conversionType === 'latex' ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-white group-hover:border-blue-400'}`}>
+                    <div className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${conversionType === 'latex' ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-white group-hover:border-blue-400'}`}>
                         {conversionType === 'latex' && <div className="w-1 h-1 bg-white rounded-full"></div>}
                     </div>
-                    <span className="text-slate-700">LaTeX</span>
+                    <span className="text-slate-700 dark:text-slate-300">LaTeX</span>
                  </button>
              </div>
              
-             <div className="flex items-center gap-1 border-t border-slate-200 pt-1">
+             <div className="flex items-center gap-1 border-t border-slate-200 dark:border-slate-700 pt-1">
                  <SmallRibbonButton icon={Type} label="abc Text" onClick={() => {}} />
-                 <div className="h-4 w-[1px] bg-slate-300 mx-0.5"></div>
+                 <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-600 mx-0.5"></div>
                  <SmallRibbonButton icon={RefreshCw} label="Convert" onClick={() => {}} hasArrow />
              </div>
           </div>
@@ -234,51 +258,54 @@ export const EquationTab: React.FC = () => {
 
       {/* Symbols Group */}
       <RibbonSection title="Symbols">
-          <div className="flex h-full items-start gap-0 relative bg-white border border-slate-200 rounded-sm shadow-sm">
-              {/* Compact Grid */}
-              <div 
-                ref={scrollContainerRef}
-                className="grid grid-cols-8 gap-[1px] p-[1px] h-[74px] overflow-hidden w-[272px] bg-white content-start"
-              >
-                  {compactSymbols.map((sym, i) => (
+          <div className="flex h-full items-center py-1 px-1">
+              <div className="flex flex-row h-[74px] bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md overflow-hidden shadow-sm ring-1 ring-black/5">
+                  {/* Grid */}
+                  <div 
+                    ref={scrollContainerRef}
+                    className="grid grid-cols-8 w-[272px] overflow-hidden bg-white dark:bg-slate-900 content-start"
+                  >
+                     {compactSymbols.map((sym, i) => (
+                         <button
+                            key={i}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => insertSymbol(sym)}
+                            className="w-[34px] h-[24.5px] flex items-center justify-center text-lg text-slate-700 dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:text-blue-700 dark:hover:text-blue-300 hover:ring-1 hover:ring-blue-300 hover:z-10 transition-none font-serif"
+                            title={sym}
+                         >
+                            {sym}
+                         </button>
+                     ))}
+                  </div>
+
+                  {/* Controls Side Bar */}
+                  <div className="flex flex-col w-[20px] border-l border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800">
                       <button 
-                        key={i} 
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => insertSymbol(sym)}
-                        className="flex items-center justify-center hover:bg-blue-100 hover:text-blue-800 hover:ring-1 hover:ring-blue-300 hover:z-10 rounded-[1px] text-sm font-serif h-[18px] w-full transition-colors text-slate-700"
-                        title={sym}
+                         onClick={() => scrollSymbols('up')}
+                         className="flex-1 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 active:bg-blue-300 transition-colors"
+                         title="Scroll Up"
                       >
-                          {sym}
+                         <ChevronUp size={10} strokeWidth={2.5} />
                       </button>
-                  ))}
-              </div>
-              
-              {/* Controls */}
-              <div className="flex flex-col h-full border-l border-slate-200 w-[18px] bg-slate-50">
-                  <button 
-                    onClick={() => scrollSymbols('up')}
-                    className="flex-1 hover:bg-blue-200 flex items-center justify-center text-slate-500 hover:text-blue-700 border-b border-slate-200 active:bg-blue-300"
-                  >
-                      <ChevronUp size={8} strokeWidth={3} />
-                  </button>
-                  <button 
-                    onClick={() => scrollSymbols('down')}
-                    className="flex-1 hover:bg-blue-200 flex items-center justify-center text-slate-500 hover:text-blue-700 border-b border-slate-200 active:bg-blue-300"
-                  >
-                      <ChevronDown size={8} strokeWidth={3} />
-                  </button>
-                  <button 
-                    ref={triggerRef}
-                    onClick={toggleGallery}
-                    onMouseDown={(e) => e.preventDefault()}
-                    className={`flex-1 hover:bg-blue-200 flex items-center justify-center text-slate-500 hover:text-blue-700 transition-colors active:bg-blue-300 ${activeMenu ? 'bg-blue-200 text-blue-800 shadow-inner' : ''}`}
-                    title="More Symbols"
-                  >
-                      <div className="flex flex-col items-center gap-[1px]">
-                          <div className="w-2 h-[1px] bg-current rounded-full"></div>
-                          <ChevronDown size={8} strokeWidth={3} />
-                      </div>
-                  </button>
+                      <button 
+                         onClick={() => scrollSymbols('down')}
+                         className="flex-1 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 active:bg-blue-300 transition-colors border-t border-slate-200 dark:border-slate-700"
+                         title="Scroll Down"
+                      >
+                         <ChevronDown size={10} strokeWidth={2.5} />
+                      </button>
+                      <button 
+                         ref={triggerRef}
+                         onClick={toggleGallery}
+                         className={`flex-1 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 active:bg-blue-300 transition-colors border-t border-slate-200 dark:border-slate-700 group ${activeMenu ? 'bg-blue-200 dark:bg-slate-700' : ''}`}
+                         title="More Symbols"
+                      >
+                         <div className="flex flex-col items-center gap-[1px] -mt-0.5">
+                            <div className="w-2 h-[1.5px] bg-slate-500 dark:bg-slate-400 group-hover:bg-slate-700 dark:group-hover:bg-slate-200 rounded-full"></div>
+                            <ChevronDown size={8} strokeWidth={3} />
+                         </div>
+                      </button>
+                  </div>
               </div>
           </div>
           
@@ -290,14 +317,14 @@ export const EquationTab: React.FC = () => {
             closeMenu={closeMenu} 
             width={340}
           >
-              <div className="flex flex-col bg-white rounded-b-lg shadow-xl border border-slate-300 overflow-hidden h-[320px] animate-in slide-in-from-top-1 duration-100">
+              <div className="flex flex-col bg-white dark:bg-slate-800 rounded-lg shadow-2xl border border-slate-300 dark:border-slate-600 overflow-hidden h-[320px] animate-in slide-in-from-top-2 duration-150">
                   {/* Header / Category Selector */}
-                  <div className="bg-slate-50 px-2 py-2 border-b border-slate-200 flex items-center justify-between shrink-0 relative z-20">
-                      <span className="text-[11px] text-slate-500 font-bold uppercase tracking-wide ml-1">Symbol:</span>
+                  <div className="bg-slate-50 dark:bg-slate-700 px-3 py-2 border-b border-slate-200 dark:border-slate-600 flex items-center justify-between shrink-0 relative z-20">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wide">Subset:</span>
                       <div className="relative">
                           <button 
                             onClick={(e) => { e.stopPropagation(); setCategoryOpen(!categoryOpen); }}
-                            className="flex items-center gap-2 px-3 py-1 bg-white border border-slate-300 rounded shadow-sm hover:border-blue-400 text-xs font-medium text-slate-700 min-w-[160px] justify-between transition-all"
+                            className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded shadow-sm hover:border-blue-400 text-xs font-medium text-slate-700 dark:text-slate-200 min-w-[180px] justify-between transition-all"
                           >
                               <span className="truncate">{selectedCategory}</span>
                               <ChevronDown size={12} className="text-slate-400" />
@@ -305,12 +332,12 @@ export const EquationTab: React.FC = () => {
                           
                           {/* Custom Category Dropdown */}
                           {categoryOpen && (
-                              <div className="absolute top-full right-0 mt-1 w-[180px] bg-white border border-slate-200 shadow-lg rounded-md py-1 z-50 max-h-[220px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+                              <div className="absolute top-full right-0 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 shadow-lg rounded-md py-1 z-50 max-h-[220px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
                                   {Object.keys(SYMBOL_CATEGORIES).map(cat => (
                                       <button
                                         key={cat}
                                         onClick={(e) => { e.stopPropagation(); setSelectedCategory(cat); setCategoryOpen(false); }}
-                                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 flex items-center justify-between ${selectedCategory === cat ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'}`}
+                                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center justify-between ${selectedCategory === cat ? 'bg-blue-50 dark:bg-slate-700/50 text-blue-700 font-medium' : 'text-slate-700 dark:text-slate-200'}`}
                                       >
                                           {cat}
                                           {selectedCategory === cat && <Check size={12} className="text-blue-600" />}
@@ -322,13 +349,13 @@ export const EquationTab: React.FC = () => {
                   </div>
 
                   {/* Scrollable Grid */}
-                  <div className="flex-1 overflow-y-auto p-3 bg-white scrollbar-thin scrollbar-thumb-slate-300">
+                  <div className="flex-1 overflow-y-auto p-2 bg-white dark:bg-slate-800 scrollbar-thin scrollbar-thumb-slate-300">
                       <div className="grid grid-cols-10 gap-1">
                           {SYMBOL_CATEGORIES[selectedCategory].map((sym, i) => (
                               <button 
                                 key={i}
                                 onClick={() => insertSymbol(sym)}
-                                className="w-8 h-8 flex items-center justify-center hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 hover:scale-110 hover:shadow-sm rounded-md transition-all text-base text-slate-700 font-serif border border-transparent"
+                                className="w-8 h-8 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-slate-700 hover:text-blue-700 dark:hover:text-blue-300 hover:border hover:border-blue-300 rounded-sm transition-all text-lg text-slate-700 dark:text-slate-200 font-serif border border-transparent"
                                 title={sym}
                               >
                                   {sym}
@@ -338,8 +365,9 @@ export const EquationTab: React.FC = () => {
                   </div>
                   
                   {/* Footer */}
-                  <div className="bg-slate-50 px-3 py-2 border-t border-slate-200 text-[11px] text-slate-500 flex justify-start items-center gap-4 font-medium">
-                      <button onClick={() => insertSymbol(' ')} className="text-slate-600 hover:text-blue-600 hover:underline">AutoCorrect...</button>
+                  <div className="bg-slate-50 dark:bg-slate-700 px-3 py-2 border-t border-slate-200 dark:border-slate-600 text-[11px] text-slate-500 dark:text-slate-400 flex justify-start items-center gap-4 font-medium">
+                      <button onClick={() => insertSymbol(' ')} className="text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:underline">AutoCorrect...</button>
+                      <button onClick={() => insertSymbol(' ')} className="text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:underline">Shortcut Key...</button>
                   </div>
               </div>
           </MenuPortal>
@@ -348,17 +376,17 @@ export const EquationTab: React.FC = () => {
       {/* Structures Group */}
       <RibbonSection title="Structures">
           <div className="flex items-center gap-0.5 h-full px-1">
-              <RibbonButton icon={FractionIcon} label="Fraction" onClick={() => insertStructure(fractionHTML)} hasArrow />
-              <RibbonButton icon={ScriptIcon} label="Script" onClick={() => insertStructure(scriptHTML)} hasArrow />
-              <RibbonButton icon={RadicalIcon} label="Radical" onClick={() => insertStructure(radicalHTML)} hasArrow />
-              <RibbonButton icon={IntegralIcon} label="Integral" onClick={() => insertStructure(integralHTML)} hasArrow />
-              <RibbonButton icon={LargeOpIcon} label="Large Operator" onClick={() => insertStructure(largeOpHTML)} hasArrow />
-              <RibbonButton icon={BracketIcon} label="Bracket" onClick={() => insertStructure('(x)')} hasArrow />
-              <RibbonButton icon={FunctionIcon} label="Function" onClick={() => insertStructure('sin(&theta;)')} hasArrow />
-              <RibbonButton icon={AccentIcon} label="Accent" onClick={() => insertStructure(accentHTML)} hasArrow />
-              <RibbonButton icon={LimitIcon} label="Limit and Log" onClick={() => insertStructure(limitHTML)} hasArrow />
-              <RibbonButton icon={OperatorIcon} label="Operator" onClick={() => insertStructure(' &rarr; ')} hasArrow />
-              <RibbonButton icon={MatrixIcon} label="Matrix" onClick={() => insertStructure(matrixHTML)} hasArrow />
+              <StructureButton icon={FractionIcon} label="Fraction" onClick={() => insertStructure(fractionHTML)} hasArrow />
+              <StructureButton icon={ScriptIcon} label="Script" onClick={() => insertStructure(scriptHTML)} hasArrow />
+              <StructureButton icon={RadicalIcon} label="Radical" onClick={() => insertStructure(radicalHTML)} hasArrow />
+              <StructureButton icon={IntegralIcon} label="Integral" onClick={() => insertStructure(integralHTML)} hasArrow />
+              <StructureButton icon={LargeOpIcon} label="Large Operator" onClick={() => insertStructure(largeOpHTML)} hasArrow />
+              <StructureButton icon={BracketIcon} label="Bracket" onClick={() => insertStructure('(x)')} hasArrow />
+              <StructureButton icon={FunctionIcon} label="Function" onClick={() => insertStructure('sin(&theta;)')} hasArrow />
+              <StructureButton icon={AccentIcon} label="Accent" onClick={() => insertStructure(accentHTML)} hasArrow />
+              <StructureButton icon={LimitIcon} label="Limit and Log" onClick={() => insertStructure(limitHTML)} hasArrow />
+              <StructureButton icon={OperatorIcon} label="Operator" onClick={() => insertStructure(' &rarr; ')} hasArrow />
+              <StructureButton icon={MatrixIcon} label="Matrix" onClick={() => insertStructure(matrixHTML)} hasArrow />
           </div>
       </RibbonSection>
     </>

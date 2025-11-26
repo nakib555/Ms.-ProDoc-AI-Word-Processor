@@ -1,5 +1,4 @@
 
-
 import React, { useRef, useEffect, useState } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
@@ -34,6 +33,9 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
   const { activeElementType } = useEditor();
+  
+  // Track previous element type to handle transitions only when state changes
+  const prevElementTypeRef = useRef(activeElementType);
 
   const checkScroll = () => {
     if (scrollContainerRef.current) {
@@ -71,26 +73,36 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
     }
   }, [activeTab]);
 
-  // Manage contextual tab visibility with debounce to prevent flickering/accidental closing
+  // Manage contextual tab visibility
   useEffect(() => {
       let timeoutId: ReturnType<typeof setTimeout>;
+      const prevType = prevElementTypeRef.current;
 
-      if (activeElementType === 'equation') {
-          // Auto switch to equation tab if an equation is selected
-          if (activeTab !== RibbonTab.EQUATION) {
-              onTabChange(RibbonTab.EQUATION);
+      // 1. Entered Equation Context -> Auto Switch to Equation Tab
+      if (activeElementType === 'equation' && prevType !== 'equation') {
+          onTabChange(RibbonTab.EQUATION);
+      } 
+      // 2. Entered Table Context -> Auto Switch to Table Design Tab
+      else if (activeElementType === 'table' && prevType !== 'table') {
+          onTabChange(RibbonTab.TABLE_DESIGN);
+      } 
+      // 3. Handle leaving context or cleanup
+      else {
+          // If currently on Equation tab but no longer in equation context
+          if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
+              timeoutId = setTimeout(() => {
+                  onTabChange(RibbonTab.HOME);
+              }, 200);
           }
-      } else if (activeElementType === 'table') {
-          // Table logic... handled by user interaction mostly, but ensure we don't auto-close if user is navigating
-      } else {
-          // If leaving contextual element
-          if (activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT || activeTab === RibbonTab.EQUATION) {
-              // Wait 200ms before switching back to Home to allow for momentary focus loss/clicks
+          // If currently on Table tabs but no longer in table context
+          else if ((activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) && activeElementType !== 'table') {
               timeoutId = setTimeout(() => {
                   onTabChange(RibbonTab.HOME);
               }, 200);
           }
       }
+
+      prevElementTypeRef.current = activeElementType;
 
       return () => clearTimeout(timeoutId);
   }, [activeElementType, activeTab, onTabChange]);
