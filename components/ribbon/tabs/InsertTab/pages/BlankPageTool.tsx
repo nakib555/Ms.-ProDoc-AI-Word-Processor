@@ -10,7 +10,7 @@ export const BlankPageTool: React.FC = () => {
     <SmallRibbonButton 
         icon={FilePlus} 
         label="Blank Page" 
-        onClick={() => executeCommand('insertHTML', '<div style="page-break-before: always;"></div><p><br/></p>')} 
+        onClick={() => executeCommand('insertHTML', '<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div>&#8203;')} 
     />
   );
 };

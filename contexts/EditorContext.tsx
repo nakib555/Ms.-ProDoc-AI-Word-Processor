@@ -43,6 +43,10 @@ interface EditorContextType {
   applyBlockStyle: (styles: React.CSSProperties) => void;
   handlePasteSpecial: (type: 'keep-source' | 'merge' | 'text-only') => Promise<void>;
   activeElementType: ActiveElementType;
+  currentPage: number;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+  totalPages: number;
+  setTotalPages: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -54,11 +58,14 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastModified, setLastModified] = useState(() => new Date());
   
   const [wordCount, setWordCount] = useState(0);
-  const [zoom, setZoom] = useState(35);
+  const [zoom, setZoom] = useState(35); // Default zoom reduced to show full page on start
   const [viewMode, setViewMode] = useState<ViewMode>('print');
   const [showRuler, setShowRuler] = useState(false);
   const [showFormattingMarks, setShowFormattingMarks] = useState(false);
   const [activeElementType, setActiveElementType] = useState<ActiveElementType>('text');
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -76,8 +83,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     differentFirstPage: false,
     gutterPosition: 'left',
     multiplePages: 'normal',
-    applyTo: 'wholeDocument', // Default for Page Setup Dialog
-    sheetsPerBooklet: 'all' // Default for Page Setup Dialog
+    applyTo: 'wholeDocument',
+    sheetsPerBooklet: 'all'
   });
 
   const [readConfig, setReadConfig] = useState<ReadModeConfig>({
@@ -115,9 +122,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const checkSelection = () => {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
-        // Do not blindly reset to 'none' if focus is just temporarily lost (e.g. clicking ribbon)
-        // but for now, we'll allow the previous state to persist or default to text if completely lost
-        // setActiveElementType('none'); 
         return;
       }
 
@@ -130,42 +134,30 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       let current = node as HTMLElement | null;
       let depth = 0;
 
-      // Traverse up the DOM tree to find contextual elements
       while (current && depth < 50) {
-        // Ensure we are working with an element
         if (current.nodeType === Node.ELEMENT_NODE) {
-            // Stop if we reached the editor container
             if (current === editorRef.current || current.classList.contains('prodoc-editor')) {
                 break;
             }
-
-            // Check for Equation
             if (current.classList.contains('prodoc-equation')) {
                 type = 'equation';
                 break;
             }
-
-            // Check for Table
             if (['TABLE', 'TD', 'TH', 'TR', 'TBODY', 'THEAD'].includes(current.tagName)) {
                 type = 'table';
                 break;
             }
-            
-            // Check for Image
             if (current.tagName === 'IMG') {
                 type = 'image';
                 break;
             }
         }
-        
         current = current.parentElement;
         depth++;
       }
-      
       setActiveElementType(type);
     };
 
-    // Use global document listeners to ensure we catch events even in Print Layout (where editorRef is internal)
     document.addEventListener('selectionchange', checkSelection);
     document.addEventListener('mouseup', checkSelection);
     document.addEventListener('keyup', checkSelection);
@@ -185,7 +177,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const pageDimensions = useMemo(() => {
     let width, height;
-    
     if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
       width = pageConfig.customWidth * 96;
       height = pageConfig.customHeight * 96;
@@ -194,7 +185,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       width = base.width;
       height = base.height;
     }
-
     return pageConfig.orientation === 'portrait' 
       ? { width, height }
       : { width: height, height: width };
@@ -202,11 +192,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const calculateFitZoom = useCallback((type: 'width' | 'page') => {
     if (!containerRef.current) return;
-    
     const container = containerRef.current;
     const { clientWidth, clientHeight } = container;
     const { width, height } = pageDimensions;
-    
     const availableWidth = Math.max(0, clientWidth - PAGE_MARGIN_PADDING * 2);
     const availableHeight = Math.max(0, clientHeight - PAGE_MARGIN_PADDING * 2);
 
@@ -266,14 +254,10 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const addCustomStyle = useCallback((name: string) => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
-
     const anchorNode = selection.anchorNode;
     const element = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentElement : anchorNode as HTMLElement;
-    
     if (!element) return;
-
     const computed = window.getComputedStyle(element);
-    
     const styles: React.CSSProperties = {
         fontFamily: computed.fontFamily,
         fontSize: computed.fontSize,
@@ -284,33 +268,27 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         backgroundColor: computed.backgroundColor !== 'rgba(0, 0, 0, 0)' ? computed.backgroundColor : undefined,
         letterSpacing: computed.letterSpacing,
     };
-
     const newStyle: CustomStyle = {
         id: Date.now().toString(),
         name,
         styles,
         tagName: element.tagName
     };
-
     setCustomStyles(prev => [...prev, newStyle]);
   }, []);
 
   const applyCustomStyle = useCallback((style: CustomStyle) => {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
-
       const span = document.createElement('span');
       Object.assign(span.style, style.styles);
-      
       if (['H1', 'H2', 'H3', 'P', 'BLOCKQUOTE'].includes(style.tagName)) {
          document.execCommand('formatBlock', false, style.tagName);
       }
-
       const range = selection.getRangeAt(0);
       const contents = range.extractContents();
       span.appendChild(contents);
       range.insertNode(span);
-      
       if (viewMode === 'web' && editorRef.current) {
           editorRef.current.normalize();
           setHtmlContent(editorRef.current.innerHTML);
@@ -320,11 +298,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const applyAdvancedStyle = useCallback((styles: React.CSSProperties) => {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
-
       const range = selection.getRangeAt(0);
       const span = document.createElement('span');
       Object.assign(span.style, styles);
-      
       if (range.collapsed) {
          const text = document.createTextNode('\u200B');
          span.appendChild(text);
@@ -342,7 +318,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             console.error("Could not apply style", e);
          }
       }
-      
       if (viewMode === 'web' && editorRef.current) {
           setHtmlContent(editorRef.current.innerHTML);
           editorRef.current.focus();
@@ -352,17 +327,14 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const applyBlockStyle = useCallback((styles: React.CSSProperties) => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
-
     let node = selection.anchorNode;
     let depth = 0;
     while (node && depth < 50) {
         if (node.nodeType === Node.ELEMENT_NODE) {
             const tagName = (node as HTMLElement).tagName;
             if ((node as HTMLElement).classList.contains('prodoc-editor')) break;
-
             if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'LI', 'BLOCKQUOTE', 'TD', 'TH'].includes(tagName)) {
                 Object.assign((node as HTMLElement).style, styles);
-                
                 if (viewMode === 'web' && editorRef.current) {
                     setHtmlContent(editorRef.current.innerHTML);
                 }
@@ -386,7 +358,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 if (item.types.includes('text/html')) {
                     const blob = await item.getType('text/html');
                     const html = await blob.text();
-                    
                     if (type === 'merge') {
                         const doc = new DOMParser().parseFromString(html, 'text/html');
                         doc.body.querySelectorAll('*').forEach(el => {
@@ -441,7 +412,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     applyAdvancedStyle,
     applyBlockStyle,
     handlePasteSpecial,
-    activeElementType
+    activeElementType,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    setTotalPages
   }), [
     content,
     wordCount,
@@ -466,7 +441,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     applyAdvancedStyle,
     applyBlockStyle,
     handlePasteSpecial,
-    activeElementType
+    activeElementType,
+    currentPage,
+    totalPages
   ]);
 
   return (

@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Loader2 } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
@@ -8,7 +9,7 @@ import { getDocumentStats } from '../utils/textUtils';
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
-  const { wordCount, zoom, viewMode, setZoom, setViewMode, content } = useEditor();
+  const { wordCount, zoom, viewMode, setZoom, setViewMode, content, currentPage, totalPages } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
@@ -45,7 +46,7 @@ const StatusBar: React.FC = () => {
           <div className="flex items-center gap-2 sm:gap-6 font-medium">
             <div className="flex items-center gap-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
                 <Layout size={14} />
-                <span>{viewMode === 'print' ? 'Page 1 of 1' : 'Web Layout'}</span>
+                <span>{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>
             </div>
             
             <div 

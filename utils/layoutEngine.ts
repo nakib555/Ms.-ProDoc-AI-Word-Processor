@@ -69,15 +69,34 @@ export const paginateContent = (html: string, config: PageConfig): PaginatorResu
   const children = Array.from(sandbox.childNodes);
 
   children.forEach((node) => {
-    // Clone node to measure it individually in context if needed, 
-    // but here we just check its rendered height in the flow.
+    const element = node as HTMLElement;
+    const isElement = node.nodeType === Node.ELEMENT_NODE;
     
-    // In a complex engine, we'd append one by one to a clean sandbox.
-    // Let's do the robust "append and check" method.
-    const nodeHeight = (node as HTMLElement).offsetHeight || 20; // Fallback for text nodes
+    // Determine node height
+    const nodeHeight = isElement ? element.offsetHeight : 24; // Fallback for text nodes/comments
     
-    // Basic Greedy Algorithm
-    if (currentHeight + nodeHeight > contentHeight) {
+    // Check for explicit page break
+    let isPageBreak = false;
+    if (isElement) {
+        isPageBreak = element.classList.contains('prodoc-page-break') || 
+                      element.style.pageBreakAfter === 'always' ||
+                      element.style.breakAfter === 'page';
+    }
+
+    if (isPageBreak) {
+        // Add the break element to the current page so it exists in the DOM structure
+        currentPageNodes.push(node);
+        
+        // Force finalize current page
+        const pageWrapper = document.createElement('div');
+        currentPageNodes.forEach(n => pageWrapper.appendChild(n.cloneNode(true)));
+        pages.push(pageWrapper.innerHTML);
+        
+        // Reset for next page
+        currentPageNodes = [];
+        currentHeight = 0;
+    } 
+    else if (currentHeight + nodeHeight > contentHeight) {
       // Overflow!
       if (currentPageNodes.length > 0) {
         // Push current page
@@ -103,7 +122,7 @@ export const paginateContent = (html: string, config: PageConfig): PaginatorResu
     }
   });
 
-  // Push final page
+  // Push final page if there's content left
   if (currentPageNodes.length > 0) {
     const pageWrapper = document.createElement('div');
     currentPageNodes.forEach(n => pageWrapper.appendChild(n.cloneNode(true)));

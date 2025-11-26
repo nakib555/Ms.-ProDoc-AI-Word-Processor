@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
@@ -7,6 +8,7 @@ import { PageConfig } from '../../../../../types';
 import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
+import { PAGE_SIZES } from '../../../../../constants';
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -43,9 +45,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
   showFormattingMarks,
   containerRef
 }) => {
+  const { setTotalPages, setCurrentPage } = useEditor();
   // Initialize state with synchronous pagination to prevent flash
   const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
-  const activePageRef = useRef<number>(0);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
   const listOuterRef = useRef<HTMLDivElement>(null);
 
@@ -59,14 +61,16 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
         if (!isMounted) return;
         const result = paginateContent(content, pageConfig);
         setPages(result.pages);
+        // Update the global page count context
+        setTotalPages(result.pages.length);
       }, 10);
     };
 
     runPagination();
     return () => { isMounted = false; };
-  }, [content, pageConfig]);
+  }, [content, pageConfig, setTotalPages]);
 
-  // Sync Ruler scroll with List scroll
+  // Sync Ruler scroll and detect current page
   useEffect(() => {
       const el = listOuterRef.current;
       if (el) {
@@ -74,18 +78,56 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
           containerRef(el);
 
           const handleScroll = () => {
+              // 1. Sync Ruler
               if (rulerContainerRef.current) {
                   rulerContainerRef.current.scrollLeft = el.scrollLeft;
               }
+
+              // 2. Detect Current Page
+              const { scrollTop, clientHeight } = el;
+              
+              // Determine page height in pixels based on configuration and zoom
+              let pageHeightPx = 0;
+              if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
+                  const h = pageConfig.orientation === 'portrait' ? pageConfig.customHeight : pageConfig.customWidth;
+                  pageHeightPx = h * 96;
+              } else {
+                  const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
+                  const h = pageConfig.orientation === 'portrait' ? base.height : base.width;
+                  pageHeightPx = h;
+              }
+              
+              const scale = zoom / 100;
+              const scaledPageHeight = pageHeightPx * scale;
+              
+              // 32px vertical padding (py-8) at top of container + 32px gap (gap-8) between pages
+              const gap = 32; 
+              const initialOffset = 32;
+              const totalItemHeight = scaledPageHeight + gap;
+              
+              // Calculate the page that is roughly in the center of the viewport
+              const viewCenter = scrollTop + (clientHeight / 2);
+              
+              // Solve for index: viewCenter = initialOffset + index * totalItemHeight + (scaledPageHeight/2)
+              // This is an approximation assuming all pages are same size (which they are in this editor)
+              let pageIndex = Math.floor((viewCenter - initialOffset) / totalItemHeight);
+              
+              // Clamp index
+              pageIndex = Math.max(0, Math.min(pageIndex, pages.length - 1));
+              
+              setCurrentPage(pageIndex + 1);
           };
           
           el.addEventListener('scroll', handleScroll);
+          // Run once to set initial state
+          handleScroll();
+          
           return () => {
               el.removeEventListener('scroll', handleScroll);
               containerRef(null);
           };
       }
-  }, [containerRef]);
+  }, [containerRef, zoom, pageConfig, pages.length, setCurrentPage]);
 
   // Handle updates from specific pages
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
@@ -96,12 +138,12 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
         setContent(fullContent);
         return updatedPages;
     });
-    activePageRef.current = pageIndex;
   }, [setContent]);
 
-  const setActivePage = useCallback((index: number) => {
-      activePageRef.current = index;
-  }, []);
+  // Allow pages to set themselves as active on focus (click/typing)
+  const handlePageFocus = useCallback((index: number) => {
+      setCurrentPage(index + 1);
+  }, [setCurrentPage]);
 
   return (
     <div className="w-full h-full flex flex-col relative">
@@ -137,7 +179,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
                             zoom={zoom}
                             showFormattingMarks={showFormattingMarks}
                             onContentChange={handlePageUpdate}
-                            onFocus={() => setActivePage(index)}
+                            onFocus={() => handlePageFocus(index)}
                         />
                     </div>
                 ))}
