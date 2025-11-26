@@ -43,13 +43,13 @@ const StatusBar: React.FC = () => {
     <>
         <div className="h-9 bg-slate-900 dark:bg-slate-950 text-slate-400 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 border-t border-slate-800 dark:border-slate-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] overflow-hidden transition-colors duration-300">
           <div className="flex items-center gap-2 sm:gap-6 font-medium">
-            <div className="flex items-center space-x-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
+            <div className="flex items-center gap-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
                 <Layout size={14} />
                 <span>{viewMode === 'print' ? 'Page 1 of 1' : 'Web Layout'}</span>
             </div>
             
             <div 
-                className="flex items-center space-x-1.5 hover:bg-slate-800 hover:text-white cursor-pointer transition-all px-2 py-0.5 rounded active:bg-slate-700 whitespace-nowrap" 
+                className="flex items-center gap-1.5 hover:bg-slate-800 hover:text-white cursor-pointer transition-all px-2 py-0.5 rounded active:bg-slate-700 whitespace-nowrap" 
                 title="Click for detailed statistics"
                 onClick={() => setShowWordCountDialog(true)}
             >
@@ -90,13 +90,13 @@ const StatusBar: React.FC = () => {
             {/* Zoom Controls - Always Visible */}
             <div 
                 ref={zoomControlsRef}
-                className="flex items-center space-x-1 sm:space-x-3 cursor-ew-resize hover:bg-slate-800/50 rounded-lg px-1 transition-colors"
+                className="flex items-center gap-1 sm:gap-3 cursor-ew-resize hover:bg-slate-800/50 rounded-lg px-1 transition-colors"
                 title="Scroll to Zoom"
             >
                 <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
                 <button onClick={() => setZoom(z => Math.max(10, z - 2))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom Out"><Minus size={14} /></button>
                 
-                <div className="items-center space-x-2 group relative hidden sm:flex">
+                <div className="items-center gap-2 group relative hidden sm:flex">
                     <input 
                         type="range" 
                         min="10" 

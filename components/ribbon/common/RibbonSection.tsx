@@ -7,7 +7,7 @@ interface RibbonSectionProps {
 
 export const RibbonSection: React.FC<RibbonSectionProps> = ({ title, children }) => (
   <div className="flex flex-col h-full px-3 relative group py-1 after:content-[''] after:absolute after:right-0 after:top-2 after:bottom-2 after:w-[1px] after:bg-slate-200 dark:after:bg-slate-700 after:rounded-full last:after:hidden">
-    <div className="flex flex-1 items-center justify-center space-x-1 min-h-0">
+    <div className="flex flex-1 items-center justify-center gap-1 min-h-0">
       {children}
     </div>
     <div className="h-4 flex items-end justify-center pt-0.5 mt-0.5">

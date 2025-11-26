@@ -126,7 +126,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
   };
 
   const CompactInput = ({ label, value, onChange, suffix = '"' }: any) => (
-    <div className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 px-3 py-2 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/10 transition-all group shadow-sm">
+    <div className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 px-3 py-2 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all group shadow-sm">
         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400 transition-colors">{label}</span>
         <div className="flex items-center gap-1">
             <input 
@@ -186,7 +186,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
     }, [isOpen]);
 
     return (
-        <div className={`space-y-1.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`flex flex-col gap-1.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide ml-1">{label}</span>
             <button
                 ref={buttonRef}
@@ -228,7 +228,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
   };
 
   const ApplyToSection = () => (
-    <div className="space-y-4 pt-2">
+    <div className="flex flex-col gap-4 pt-2">
         <CompactSelect 
             label="Apply to" 
             value={localConfig.applyTo || 'wholeDocument'} 
@@ -412,9 +412,9 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/30 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div 
-        className="bg-white dark:bg-slate-900 w-[340px] h-[520px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
+        className="bg-white dark:bg-slate-900 w-[360px] h-[540px] rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/5"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -480,7 +480,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                 {activeTab === 'margins' && (
                     <div className="animate-in slide-in-from-right-4 duration-300 fade-in">
                         {marginSubTab === 'margins' && (
-                            <div className="space-y-4 pt-2">
+                            <div className="flex flex-col gap-4 pt-2">
                                 <div className="grid grid-cols-2 gap-3">
                                     <CompactInput label="Top" value={localConfig.margins.top} onChange={(e: any) => handleMarginInputChange('top', e.target.value)} />
                                     <CompactInput label="Bottom" value={localConfig.margins.bottom} onChange={(e: any) => handleMarginInputChange('bottom', e.target.value)} />
@@ -503,7 +503,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                         )}
 
                         {marginSubTab === 'orientation' && (
-                            <div className="space-y-4 pt-2">
+                            <div className="flex flex-col gap-4 pt-2">
                                 <div className="flex gap-4">
                                      <button 
                                         onClick={() => handleOrientationChange('portrait')}
@@ -528,7 +528,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                         )}
 
                         {marginSubTab === 'pages' && (
-                            <div className="space-y-4 pt-2">
+                            <div className="flex flex-col gap-4 pt-2">
                                 <div className="grid grid-cols-1 gap-4">
                                     <CompactSelect
                                         label="Multiple pages"
@@ -568,7 +568,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                 {activeTab === 'paper' && (
                     <div className="animate-in slide-in-from-right-4 duration-300 fade-in">
                         {paperSubTab === 'size' && (
-                            <div className="space-y-5 pt-2">
+                            <div className="flex flex-col gap-5 pt-2">
                                 <CompactSelect 
                                     label="Paper size" 
                                     value={localConfig.size} 
@@ -607,7 +607,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                         )}
 
                         {paperSubTab === 'source' && (
-                            <div className="space-y-3 pt-2">
+                            <div className="flex flex-col gap-3 pt-2">
                                 <CompactSelect 
                                     label="First page" 
                                     value={localConfig.paperSourceFirstPage || 'Default tray'} 
@@ -636,7 +636,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                 {activeTab === 'layout' && (
                     <div className="animate-in slide-in-from-right-4 duration-300 fade-in">
                         {layoutSubTab === 'section' && (
-                            <div className="space-y-5 pt-2">
+                            <div className="flex flex-col gap-5 pt-2">
                                 <CompactSelect 
                                     label="Section Start" 
                                     value={localConfig.sectionStart} 
@@ -652,12 +652,12 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                         )}
 
                         {layoutSubTab === 'headers' && (
-                            <div className="space-y-5 pt-2">
+                            <div className="flex flex-col gap-5 pt-2">
                                 <div className="grid grid-cols-2 gap-3">
                                     <CompactInput label="Header" value={localConfig.headerDistance} onChange={(e: any) => setLocalConfig({...localConfig, headerDistance: parseFloat(e.target.value)})} />
                                     <CompactInput label="Footer" value={localConfig.footerDistance} onChange={(e: any) => setLocalConfig({...localConfig, footerDistance: parseFloat(e.target.value)})} />
                                 </div>
-                                <div className="space-y-3">
+                                <div className="flex flex-col gap-3">
                                     <label className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
                                         <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${localConfig.differentFirstPage ? 'bg-blue-600 border-blue-600' : 'bg-white border-slate-300 group-hover:border-blue-400'}`}>
                                             {localConfig.differentFirstPage && <Check size={12} className="text-white" strokeWidth={3} />}
@@ -677,7 +677,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                         )}
 
                         {layoutSubTab === 'page' && (
-                            <div className="space-y-5 pt-2">
+                            <div className="flex flex-col gap-5 pt-2">
                                 <CompactSelect 
                                     label="Vertical Alignment" 
                                     value={localConfig.verticalAlign} 

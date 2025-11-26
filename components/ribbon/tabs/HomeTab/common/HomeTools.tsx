@@ -72,5 +72,5 @@ export const ToolBtn: React.FC<{
 ));
 
 export const GroupRow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex items-center space-x-1">{children}</div>
+  <div className="flex items-center gap-1">{children}</div>
 );
