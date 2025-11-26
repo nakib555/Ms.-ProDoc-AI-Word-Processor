@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { LayoutTemplate, Columns, ArrowLeftRight, MoveVertical, ArrowRightLeft, Monitor } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useLayoutTab } from '../LayoutTabContext';
@@ -7,7 +7,8 @@ import { DropdownButton } from '../common/LayoutTools';
 import { MenuPortal } from '../../../common/MenuPortal';
 import { MARGIN_PRESETS } from '../../../../../constants';
 import { MarginPreset, PageConfig } from '../../../../../types';
-import { PageSetupDialog } from '../../../../PageSetupDialog';
+
+const PageSetupDialog = React.lazy(() => import('../../../../PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 
 export const MarginsTool: React.FC = () => {
   const { setPageConfig, pageConfig } = useEditor();
@@ -49,7 +50,6 @@ export const MarginsTool: React.FC = () => {
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={260}>
              <div className="p-1 space-y-0.5">
-                 
                  <button 
                     onClick={() => handleMarginChange('normal')} 
                     className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group ${isPresetActive('normal') ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : ''}`}
@@ -139,12 +139,16 @@ export const MarginsTool: React.FC = () => {
              </div>
          </MenuPortal>
 
-         <PageSetupDialog 
-            isOpen={showCustomDialog}
-            onClose={() => setShowCustomDialog(false)}
-            config={pageConfig}
-            onSave={handleCustomSave}
-         />
+         {showCustomDialog && (
+             <Suspense fallback={null}>
+                <PageSetupDialog 
+                    isOpen={showCustomDialog}
+                    onClose={() => setShowCustomDialog(false)}
+                    config={pageConfig}
+                    onSave={handleCustomSave}
+                />
+             </Suspense>
+         )}
     </>
   );
 };

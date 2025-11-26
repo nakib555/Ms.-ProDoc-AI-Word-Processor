@@ -1,12 +1,22 @@
-import React from 'react';
-import { X } from 'lucide-react';
+
+import React, { Suspense } from 'react';
+import { X, Loader2 } from 'lucide-react';
 import { useFileTab } from './FileTabContext';
-import { InfoModal } from './modals/InfoModal';
-import { NewModal } from './modals/NewModal';
-import { OpenModal } from './modals/OpenModal';
-import { SaveAsModal } from './modals/SaveAsModal';
-import { PrintModal } from './modals/PrintModal';
-import { ShareModal } from './modals/ShareModal';
+
+// Lazy Load Modals
+const InfoModal = React.lazy(() => import('./modals/InfoModal').then(m => ({ default: m.InfoModal })));
+const NewModal = React.lazy(() => import('./modals/NewModal').then(m => ({ default: m.NewModal })));
+const OpenModal = React.lazy(() => import('./modals/OpenModal').then(m => ({ default: m.OpenModal })));
+const SaveAsModal = React.lazy(() => import('./modals/SaveAsModal').then(m => ({ default: m.SaveAsModal })));
+const PrintModal = React.lazy(() => import('./modals/PrintModal').then(m => ({ default: m.PrintModal })));
+const ShareModal = React.lazy(() => import('./modals/ShareModal').then(m => ({ default: m.ShareModal })));
+
+const ModalLoading = () => (
+  <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+    <Loader2 className="animate-spin mb-2" size={24} />
+    <span className="text-sm">Loading...</span>
+  </div>
+);
 
 export const FileModal: React.FC = () => {
   const { activeModal, closeModal } = useFileTab();
@@ -14,15 +24,21 @@ export const FileModal: React.FC = () => {
   if (!activeModal) return null;
 
   const renderModalContent = () => {
-    switch (activeModal) {
-      case 'info': return <InfoModal />;
-      case 'new': return <NewModal />;
-      case 'open': return <OpenModal />;
-      case 'save_as': return <SaveAsModal />;
-      case 'print': return <PrintModal />;
-      case 'share': return <ShareModal />;
-      default: return null;
-    }
+    return (
+      <Suspense fallback={<ModalLoading />}>
+        {(() => {
+          switch (activeModal) {
+            case 'info': return <InfoModal />;
+            case 'new': return <NewModal />;
+            case 'open': return <OpenModal />;
+            case 'save_as': return <SaveAsModal />;
+            case 'print': return <PrintModal />;
+            case 'share': return <ShareModal />;
+            default: return null;
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   const getTitle = () => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
@@ -81,10 +82,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
   }, [setContent]);
 
   return (
-    <div className="flex flex-col items-center min-h-full pt-8 pb-20">
+    <div className="flex flex-col min-h-full pt-8 pb-20 w-full relative">
        {showRuler && (
          <div 
-           className="sticky top-0 z-20 mb-6 origin-top transition-all duration-300" 
+           className="sticky top-0 z-20 mb-6 origin-top transition-all duration-300 mx-auto" 
            style={{ 
              transform: `scale(${scale})`,
              marginBottom: `${24 * scale}px`

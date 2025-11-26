@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { FileText, Mail, StickyNote, File, Files } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -47,7 +46,8 @@ export const SizeTool: React.FC = () => {
                  {paperSizes.map((item) => (
                      <button 
                         key={item.size} 
-                        onClick={() => handleSizeChange(item.size)} 
+                        onClick={() => handleSizeChange(item.size)}
+                        onMouseDown={(e) => e.preventDefault()}
                         className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group transition-colors ${pageConfig.size === item.size ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'text-slate-700'}`}
                      >
                          <item.icon size={18} className={`flex-shrink-0 ${pageConfig.size === item.size ? 'text-blue-500' : 'text-slate-400 group-hover:text-slate-600'}`} strokeWidth={1.5} />
@@ -64,6 +64,7 @@ export const SizeTool: React.FC = () => {
                  <button 
                     className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs text-slate-700 rounded-md font-medium"
                     onClick={() => { alert("Use Page Setup Dialog for Custom Sizes"); closeMenu(); }}
+                    onMouseDown={(e) => e.preventDefault()}
                  >
                     More Paper Sizes...
                  </button>

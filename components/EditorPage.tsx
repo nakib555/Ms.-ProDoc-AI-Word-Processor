@@ -1,3 +1,4 @@
+
 import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { PageConfig } from '../types';
 import { PAGE_SIZES } from '../constants';
@@ -14,7 +15,7 @@ interface EditorPageProps {
   showFormattingMarks: boolean;
 }
 
-export const EditorPage: React.FC<EditorPageProps> = ({
+export const EditorPage: React.FC<EditorPageProps> = React.memo(({
   content,
   pageNumber,
   totalPages,
@@ -64,43 +65,35 @@ export const EditorPage: React.FC<EditorPageProps> = ({
 
   const getMargins = () => {
     const m = config.margins;
-    
-    // 96px per inch
-    const top = m.top * 96;
-    const bottom = m.bottom * 96;
-    
+    let top = m.top * 96;
+    let bottom = m.bottom * 96;
     let left = m.left * 96;
     let right = m.right * 96;
     const gutterPx = (m.gutter || 0) * 96;
     
-    // Handle Multiple Pages Modes (Mirror Margins / Book Fold)
-    const isSpread = config.multiplePages === 'mirrorMargins' || config.multiplePages === 'bookFold';
+    const isMirroredOrBookFold = ['mirrorMargins', 'bookFold'].includes(config.multiplePages || '');
     
-    if (isSpread) {
-       // If Mirror Margins is set:
-       // config.margins.left is treated as "Inside"
-       // config.margins.right is treated as "Outside"
+    if (isMirroredOrBookFold) {
        const inside = m.left * 96;
        const outside = m.right * 96;
-       
-       const isOdd = pageNumber % 2 !== 0;
-       
+       const isOdd = pageNumber % 2 !== 0; // Assuming pageNumber starts from 1, odd pages are right-hand pages
+
+       // Word's "Mirror Margins" means that Left becomes Inside and Right becomes Outside.
+       // For odd pages (right-hand pages), the 'inside' margin is on the left.
+       // For even pages (left-hand pages), the 'inside' margin is on the right.
        if (isOdd) {
-           // Odd Page (Right side of spread): Binding is on Left (Inside)
-           left = inside + gutterPx; // Gutter adds to Inside (Left)
+           left = inside + (config.gutterPosition === 'left' ? gutterPx : 0);
            right = outside;
        } else {
-           // Even Page (Left side of spread): Binding is on Right (Inside)
            left = outside;
-           right = inside + gutterPx; // Gutter adds to Inside (Right)
+           right = inside + (config.gutterPosition === 'left' ? gutterPx : 0);
        }
     } else {
-        // Standard or 2 Pages Per Sheet
-        // Gutter adds to Left unless Top is specified
+        // Normal margins
         if (config.gutterPosition === 'top') {
-            // Top gutter handled via return value gutterTop logic below
-        } else {
-            left += gutterPx;
+            top += gutterPx; // Add gutter to top margin
+        } else { // Default or 'left'
+            left += gutterPx; // Add gutter to left margin
         }
     }
 
@@ -111,7 +104,6 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       const base: React.CSSProperties = {
           backgroundColor: config.pageColor || '#ffffff',
       };
-      
       if (config.background === 'ruled') {
           return {
               ...base,
@@ -128,47 +120,40 @@ export const EditorPage: React.FC<EditorPageProps> = ({
       return base;
   };
 
-  // Calculate Dimensions
   let width, height;
   if (config.size === 'Custom' && config.customWidth && config.customHeight) {
       width = config.customWidth * 96;
       height = config.customHeight * 96;
   } else {
       const base = PAGE_SIZES[config.size as keyof typeof PAGE_SIZES] || PAGE_SIZES['Letter'];
-      
       width = config.orientation === 'portrait' ? base.width : base.height;
       height = config.orientation === 'portrait' ? base.height : base.width;
   }
 
   const margins = getMargins();
-  const gutterTop = (!['mirrorMargins', 'bookFold'].includes(config.multiplePages || '') && config.gutterPosition === 'top') ? margins.gutterPx : 0;
+  const gutterTop = config.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(config.multiplePages || '') ? margins.gutterPx : 0;
 
-  // Vertical Alignment
   const getVerticalAlignStyle = (): React.CSSProperties => {
       const style: React.CSSProperties = {
           display: 'flex',
           flexDirection: 'column'
       };
-      
       let justifyContent: 'center' | 'flex-end' | 'space-between' | 'flex-start' = 'flex-start';
-
       if (config.verticalAlign === 'center') justifyContent = 'center';
       else if (config.verticalAlign === 'bottom') justifyContent = 'flex-end';
       else if (config.verticalAlign === 'justify') justifyContent = 'space-between';
-      
       return { ...style, justifyContent };
   };
 
   return (
     <div 
-        className="relative group transition-all duration-300 ease-out page-shadow"
+        className="relative group transition-all duration-300 ease-out page-shadow mx-auto"
         style={{
             width: `${width * scale}px`,
             height: `${height * scale}px`,
             marginBottom: '2rem'
         }}
     >
-        {/* Page Container */}
         <div 
             className="absolute inset-0 bg-white shadow-[rgba(0,0,0,0.06)_0px_4px_12px,rgba(0,0,0,0.04)_0px_0px_0px_1px] transition-shadow group-hover:shadow-[rgba(0,0,0,0.1)_0px_10px_20px,rgba(0,0,0,0.04)_0px_0px_0px_1px]"
             style={{
@@ -179,16 +164,18 @@ export const EditorPage: React.FC<EditorPageProps> = ({
                 ...getBackgroundStyle()
             }}
         >
-            {/* Header Area */}
+            {/* Header */}
             <div 
                 className="absolute left-0 right-0 pointer-events-none flex items-end justify-center border-b border-transparent hover:border-slate-200 transition-colors z-20"
                 style={{ 
                     top: 0, 
                     height: `${(config.headerDistance || 0.5) * 96}px`,
-                    paddingBottom: '4px'
+                    paddingBottom: '4px',
+                    paddingLeft: `${margins.left}px`,
+                    paddingRight: `${margins.right}px`,
                 }}
             >
-                <div className="w-full px-8 text-center relative">
+                <div className="w-full text-center relative">
                     <span className="text-[10px] text-slate-400 uppercase tracking-widest opacity-0 group-hover:opacity-50 transition-opacity absolute top-1 left-1/2 -translate-x-1/2">Header</span>
                 </div>
             </div>
@@ -202,11 +189,14 @@ export const EditorPage: React.FC<EditorPageProps> = ({
                  </div>
             )}
 
-            {/* Body Frame */}
+            {/* Body */}
             <div 
                 className="relative w-full h-full"
                 style={{ 
-                    padding: `${margins.top + gutterTop}px ${margins.right}px ${margins.bottom}px ${margins.left}px`,
+                    paddingTop: `${margins.top + gutterTop}px`, 
+                    paddingRight: `${margins.right}px`, 
+                    paddingBottom: `${margins.bottom}px`, 
+                    paddingLeft: `${margins.left}px`,
                     ...getVerticalAlignStyle()
                 }}
             >
@@ -220,19 +210,20 @@ export const EditorPage: React.FC<EditorPageProps> = ({
                     style={{
                         fontFamily: 'Calibri, Inter, sans-serif',
                         color: '#000000',
-                        // Ensure flex children (if vertical align justify) work
                         flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined 
                     }}
                 />
             </div>
 
-            {/* Footer Area */}
+            {/* Footer */}
             <div 
                 className="absolute left-0 right-0 pointer-events-none flex items-start justify-center border-t border-transparent hover:border-slate-200 transition-colors z-20"
                 style={{
                     bottom: 0,
                     height: `${(config.footerDistance || 0.5) * 96}px`,
-                    paddingTop: '4px'
+                    paddingTop: '4px',
+                    paddingLeft: `${margins.left}px`,
+                    paddingRight: `${margins.right}px`,
                 }}
             >
                  <span className="text-[10px] text-slate-400 font-mono opacity-50">Page {pageNumber} of {totalPages}</span>
@@ -240,4 +231,4 @@ export const EditorPage: React.FC<EditorPageProps> = ({
         </div>
     </div>
   );
-};
+});

@@ -16,29 +16,37 @@ const createSandbox = (width: number) => {
   return sandbox;
 };
 
+// Fix: Rewritten getPageDimensions to correctly calculate content dimensions
 const getPageDimensions = (config: PageConfig) => {
   const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
-  const width = config.orientation === 'portrait' ? base.width : base.height;
-  const height = config.orientation === 'portrait' ? base.height : base.width;
+  let totalWidth = config.orientation === 'portrait' ? base.width : base.height;
+  let totalHeight = config.orientation === 'portrait' ? base.height : base.width;
   
-  // 96px = 1 inch
-  // Using the actual margins from config
   const margins = config.margins;
   
-  // Basic calculation: Top + Bottom
-  const verticalPadding = (margins.top + margins.bottom) * 96;
-  
-  // Basic calculation: Left + Right + Gutter
-  let horizontalPadding = (margins.left + margins.right + margins.gutter) * 96;
+  // Calculate vertical and horizontal space consumed by margins and gutter
+  let consumedVerticalSpace = (margins.top + margins.bottom) * 96;
+  let consumedHorizontalSpace = (margins.left + margins.right) * 96;
 
-  // If gutter is at top (rare but supported in types), add to vertical
-  // Note: Implementation logic here assumes standard left/right gutter usage mostly.
+  // Add gutter space based on its position
+  const gutterPx = (margins.gutter || 0) * 96; // Get gutter from margins, convert to px
+
+  if (config.gutterPosition === 'top') {
+    consumedVerticalSpace += gutterPx;
+  } else { // Default or 'left'. Gutter primarily affects horizontal space for content.
+           // For mirrored pages, it effectively adds to the 'inside' margin.
+    consumedHorizontalSpace += gutterPx; 
+  }
+
+  // Calculate the available content area
+  let contentWidth = totalWidth - consumedHorizontalSpace;
+  let contentHeight = totalHeight - consumedVerticalSpace;
 
   return { 
-    width, 
-    height, 
-    contentHeight: Math.max(100, height - verticalPadding), 
-    contentWidth: Math.max(100, width - horizontalPadding) 
+    width: totalWidth, 
+    height: totalHeight, 
+    contentHeight: Math.max(100, contentHeight), // Ensure minimum height
+    contentWidth: Math.max(100, contentWidth) // Ensure minimum width
   };
 };
 

@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 
 export interface DocumentState {
@@ -67,6 +68,8 @@ export type PageOrientation = 'portrait' | 'landscape';
 export type PageBackground = 'none' | 'ruled' | 'grid';
 export type VerticalAlignment = 'top' | 'center' | 'justify' | 'bottom';
 export type MultiplePagesType = 'normal' | 'mirrorMargins' | 'twoPagesPerSheet' | 'bookFold';
+export type ApplyToType = 'wholeDocument' | 'thisSection' | 'thisPointForward';
+export type SheetsPerBookletType = 'all' | '16' | '8' | '4' | '2';
 
 export type MarginPreset = 'normal' | 'narrow' | 'moderate' | 'wide' | 'mirrored' | 'office2003' | 'custom';
 
@@ -99,6 +102,8 @@ export interface PageConfig {
   differentFirstPage?: boolean;
   multiplePages?: MultiplePagesType; // MS Word style page layout
   mirrorMargins?: boolean; // Legacy helper, derived from multiplePages usually
+  applyTo?: ApplyToType;
+  sheetsPerBooklet?: SheetsPerBookletType;
   
   // Paper Source
   paperSourceFirstPage?: string;

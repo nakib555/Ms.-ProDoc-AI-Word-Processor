@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { useEditor } from '../../../../../contexts/EditorContext';
-import { FindReplaceDialog } from '../../../../FindReplaceDialog';
 import { FindTool } from './FindTool';
 import { ReplaceTool } from './ReplaceTool';
 import { SelectTool } from './SelectTool';
+
+const FindReplaceDialog = React.lazy(() => import('../../../../FindReplaceDialog').then(m => ({ default: m.FindReplaceDialog })));
 
 export const EditingGroup: React.FC = () => {
   const { editorRef } = useEditor();
@@ -30,12 +31,16 @@ export const EditingGroup: React.FC = () => {
              </div>
         </RibbonSection>
 
-        <FindReplaceDialog 
-            isOpen={showFindReplace} 
-            onClose={() => setShowFindReplace(false)} 
-            editorRef={editorRef}
-            initialMode={findReplaceMode}
-        />
+        {showFindReplace && (
+            <Suspense fallback={null}>
+                <FindReplaceDialog 
+                    isOpen={showFindReplace} 
+                    onClose={() => setShowFindReplace(false)} 
+                    editorRef={editorRef}
+                    initialMode={findReplaceMode}
+                />
+            </Suspense>
+        )}
     </>
   );
 };

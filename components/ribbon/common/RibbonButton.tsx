@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LucideIcon, ChevronDown } from 'lucide-react';
 
@@ -11,7 +12,7 @@ interface RibbonButtonProps {
   hasArrow?: boolean;
 }
 
-export const RibbonButton: React.FC<RibbonButtonProps> = ({
+export const RibbonButton: React.FC<RibbonButtonProps> = React.memo(({
   icon: Icon,
   label,
   onClick,
@@ -33,4 +34,4 @@ export const RibbonButton: React.FC<RibbonButtonProps> = ({
         {hasArrow && <ChevronDown size={8} className="ml-0.5 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0" />}
     </div>
   </button>
-);
+));

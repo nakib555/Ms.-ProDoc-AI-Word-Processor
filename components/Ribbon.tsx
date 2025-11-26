@@ -1,24 +1,35 @@
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+
+import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';
-import { HomeTab } from './ribbon/tabs/HomeTab/HomeTab';
-import { InsertTab } from './ribbon/tabs/InsertTab/InsertTab';
-import { ViewTab } from './ribbon/tabs/ViewTab/ViewTab';
-import { FileTab } from './ribbon/tabs/FileTab/FileTab';
-import { LayoutTab } from './ribbon/tabs/LayoutTab/LayoutTab';
-import { ReferencesTab } from './ribbon/tabs/ReferencesTab/ReferencesTab';
-import { MailingsTab } from './ribbon/tabs/MailingsTab/MailingsTab';
-import { AIAssistantTab } from './ribbon/tabs/AIAssistantTab/AIAssistantTab';
-import { DrawTab } from './ribbon/tabs/DrawTab/DrawTab';
-import { DesignTab } from './ribbon/tabs/DesignTab/DesignTab';
-import { ReviewTab } from './ribbon/tabs/ReviewTab/ReviewTab';
-import { TableDesignTab } from './ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign';
-import { TableLayoutTab } from './ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout';
+import { Loader2 } from 'lucide-react';
+
+// Lazy Load Tabs
+const HomeTab = React.lazy(() => import('./ribbon/tabs/HomeTab/HomeTab').then(m => ({ default: m.HomeTab })));
+const InsertTab = React.lazy(() => import('./ribbon/tabs/InsertTab/InsertTab').then(m => ({ default: m.InsertTab })));
+const ViewTab = React.lazy(() => import('./ribbon/tabs/ViewTab/ViewTab').then(m => ({ default: m.ViewTab })));
+const FileTab = React.lazy(() => import('./ribbon/tabs/FileTab/FileTab').then(m => ({ default: m.FileTab })));
+const LayoutTab = React.lazy(() => import('./ribbon/tabs/LayoutTab/LayoutTab').then(m => ({ default: m.LayoutTab })));
+const ReferencesTab = React.lazy(() => import('./ribbon/tabs/ReferencesTab/ReferencesTab').then(m => ({ default: m.ReferencesTab })));
+const MailingsTab = React.lazy(() => import('./ribbon/tabs/MailingsTab/MailingsTab').then(m => ({ default: m.MailingsTab })));
+const AIAssistantTab = React.lazy(() => import('./ribbon/tabs/AIAssistantTab/AIAssistantTab').then(m => ({ default: m.AIAssistantTab })));
+const DrawTab = React.lazy(() => import('./ribbon/tabs/DrawTab/DrawTab').then(m => ({ default: m.DrawTab })));
+const DesignTab = React.lazy(() => import('./ribbon/tabs/DesignTab/DesignTab').then(m => ({ default: m.DesignTab })));
+const ReviewTab = React.lazy(() => import('./ribbon/tabs/ReviewTab/ReviewTab').then(m => ({ default: m.ReviewTab })));
+const TableDesignTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign').then(m => ({ default: m.TableDesignTab })));
+const TableLayoutTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout').then(m => ({ default: m.TableLayoutTab })));
 
 interface RibbonProps {
   activeTab: RibbonTab | null;
   onTabChange: (tab: RibbonTab) => void;
 }
+
+const TabLoading = () => (
+  <div className="flex items-center justify-center h-20 w-full text-slate-400 gap-2">
+    <Loader2 className="animate-spin" size={16} />
+    <span className="text-xs">Loading tools...</span>
+  </div>
+);
 
 const Ribbon: React.FC<RibbonProps> = ({ 
   activeTab, 
@@ -31,8 +42,14 @@ const Ribbon: React.FC<RibbonProps> = ({
   useEffect(() => {
      if (activeTab && contentRef.current) {
         // Calculate height with a minimum to prevent layout shifts for smaller tabs
-        const contentHeight = contentRef.current.scrollHeight;
-        setHeight(Math.max(contentHeight, 96));
+        // Using slightly delayed height calc to allow Suspense to resolve if quick
+        const timer = setTimeout(() => {
+            if (contentRef.current) {
+                const contentHeight = contentRef.current.scrollHeight;
+                setHeight(Math.max(contentHeight, 96));
+            }
+        }, 50);
+        return () => clearTimeout(timer);
      } else {
         setHeight(0);
      }
@@ -44,7 +61,6 @@ const Ribbon: React.FC<RibbonProps> = ({
     if (el) {
       const onWheel = (e: WheelEvent) => {
         if (e.deltaY === 0) return;
-        // Check if content actually overflows
         if (el.scrollWidth > el.clientWidth) {
            e.preventDefault();
            el.scrollLeft += e.deltaY;
@@ -53,50 +69,41 @@ const Ribbon: React.FC<RibbonProps> = ({
       el.addEventListener('wheel', onWheel, { passive: false });
       return () => el.removeEventListener('wheel', onWheel);
     }
-  }, [activeTab]); // Re-bind if tab changes to ensure dims are correct
+  }, [activeTab]); 
 
-  // Memoize tab content to prevent re-construction on every render
+  // Memoize tab content
   const tabContent = useMemo(() => {
-    switch (activeTab) {
-      case RibbonTab.HOME:
-        return <HomeTab />;
-      case RibbonTab.INSERT:
-        return <InsertTab />;
-      case RibbonTab.DRAW:
-        return <DrawTab />;
-      case RibbonTab.DESIGN:
-        return <DesignTab />;
-      case RibbonTab.LAYOUT:
-        return <LayoutTab />;
-      case RibbonTab.REFERENCES:
-        return <ReferencesTab />;
-      case RibbonTab.MAILINGS:
-        return <MailingsTab />;
-      case RibbonTab.REVIEW:
-        return <ReviewTab />;
-      case RibbonTab.VIEW:
-        return <ViewTab />;
-      case RibbonTab.FILE:
-        return <FileTab />;
-      case RibbonTab.AI_ASSISTANT:
-        return <AIAssistantTab />;
-      case RibbonTab.TABLE_DESIGN:
-        return <TableDesignTab />;
-      case RibbonTab.TABLE_LAYOUT:
-        return <TableLayoutTab />;
-      default:
-        return activeTab ? <div className="flex items-center justify-center w-full h-full text-slate-400 italic text-xs">Tools coming soon...</div> : null;
-    }
+    return (
+      <Suspense fallback={<TabLoading />}>
+        {(() => {
+          switch (activeTab) {
+            case RibbonTab.HOME: return <HomeTab />;
+            case RibbonTab.INSERT: return <InsertTab />;
+            case RibbonTab.DRAW: return <DrawTab />;
+            case RibbonTab.DESIGN: return <DesignTab />;
+            case RibbonTab.LAYOUT: return <LayoutTab />;
+            case RibbonTab.REFERENCES: return <ReferencesTab />;
+            case RibbonTab.MAILINGS: return <MailingsTab />;
+            case RibbonTab.REVIEW: return <ReviewTab />;
+            case RibbonTab.VIEW: return <ViewTab />;
+            case RibbonTab.FILE: return <FileTab />;
+            case RibbonTab.AI_ASSISTANT: return <AIAssistantTab />;
+            case RibbonTab.TABLE_DESIGN: return <TableDesignTab />;
+            case RibbonTab.TABLE_LAYOUT: return <TableLayoutTab />;
+            default: return activeTab ? <div className="flex items-center justify-center w-full h-full text-slate-400 italic text-xs">Tools coming soon...</div> : null;
+          }
+        })()}
+      </Suspense>
+    );
   }, [activeTab]);
 
   return (
     <div className="flex flex-col z-20 no-print relative shadow-sm bg-slate-900 dark:bg-slate-950 transition-colors duration-300">
       <RibbonTabBar activeTab={activeTab} onTabChange={onTabChange} />
 
-      {/* Toolbar Container with Smooth Transition */}
       <div 
         className={`bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 relative z-10 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
-        style={{ height: activeTab ? `${height}px` : '0px' }}
+        style={{ height: activeTab ? `${Math.max(height, 96)}px` : '0px' }}
       >
          <div 
             ref={scrollContainerRef}
@@ -110,7 +117,6 @@ const Ribbon: React.FC<RibbonProps> = ({
             </div>
          </div>
          
-         {/* Fade mask for scroll indication on mobile */}
          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-800 to-transparent pointer-events-none md:hidden"></div>
       </div>
     </div>

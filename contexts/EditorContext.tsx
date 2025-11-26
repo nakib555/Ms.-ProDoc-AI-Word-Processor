@@ -1,7 +1,7 @@
 
+
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType } from '../types';
-import { countWords } from '../utils/textUtils';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, PAGE_MARGIN_PADDING, MARGIN_PRESETS } from '../constants';
 
@@ -36,7 +36,6 @@ interface EditorContextType {
   setLastModified: React.Dispatch<React.SetStateAction<Date>>;
   showFormattingMarks: boolean;
   setShowFormattingMarks: React.Dispatch<React.SetStateAction<boolean>>;
-  // New Features
   customStyles: CustomStyle[];
   addCustomStyle: (name: string) => void;
   applyCustomStyle: (style: CustomStyle) => void;
@@ -76,7 +75,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     differentOddEven: false,
     differentFirstPage: false,
     gutterPosition: 'left',
-    multiplePages: 'normal'
+    multiplePages: 'normal',
+    applyTo: 'wholeDocument', // Default for Page Setup Dialog
+    sheetsPerBooklet: 'all' // Default for Page Setup Dialog
   });
 
   const [readConfig, setReadConfig] = useState<ReadModeConfig>({
@@ -99,14 +100,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     triggerAutoSave();
   }, [triggerAutoSave]);
 
-  // Debounce Word Count Calculation
+  // Word Count Calculation (Main Thread)
   useEffect(() => {
     const handler = setTimeout(() => {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = content;
-      const count = countWords(tempDiv.innerText);
-      setWordCount(count);
-    }, 300);
+      const text = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      setWordCount(text ? text.split(' ').filter(w => w.length > 0).length : 0);
+    }, 500);
 
     return () => clearTimeout(handler);
   }, [content]);
@@ -128,13 +127,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       let type: ActiveElementType = 'text';
       let current = node as HTMLElement | null;
 
-      // Traverse up to find Table
       while (current && current !== editorRef.current && !current.classList.contains('prodoc-editor')) {
         if (current.tagName === 'TABLE' || current.tagName === 'TD' || current.tagName === 'TH') {
           type = 'table';
           break;
         }
-        // Simple image check (usually images are selected directly, but just in case)
         if (current.tagName === 'IMG') {
           type = 'image';
           break;
@@ -146,7 +143,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     document.addEventListener('selectionchange', checkSelection);
-    // Also check on mouseup/keyup within editor
     const el = editorRef.current;
     if (el) {
         el.addEventListener('mouseup', checkSelection);
@@ -237,18 +233,14 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } else if (command === 'shrinkFont') {
         document.execCommand('decreaseFontSize', false, undefined);
     } else {
-        // Execute browser command
         document.execCommand(command, false, value);
     }
     
-    // Sync state and focus
     if (viewMode === 'web' && editorRef.current) {
       editorRef.current.focus();
       setHtmlContent(editorRef.current.innerHTML);
     }
   }, [manualSave, calculateFitZoom, viewMode]);
-
-  // --- New Features Logic ---
 
   const addCustomStyle = useCallback((name: string) => {
     const selection = window.getSelection();
@@ -261,7 +253,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const computed = window.getComputedStyle(element);
     
-    // Extract relevant styles
     const styles: React.CSSProperties = {
         fontFamily: computed.fontFamily,
         fontSize: computed.fontSize,
@@ -299,7 +290,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       span.appendChild(contents);
       range.insertNode(span);
       
-      // If in web mode, sync immediately
       if (viewMode === 'web' && editorRef.current) {
           editorRef.current.normalize();
           setHtmlContent(editorRef.current.innerHTML);
@@ -315,7 +305,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       Object.assign(span.style, styles);
       
       if (range.collapsed) {
-         // Insert span with ZWS to handle collapsed selection styles
          const text = document.createTextNode('\u200B');
          span.appendChild(text);
          range.insertNode(span);
@@ -343,14 +332,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
-    // Traverse up to find the nearest block element (P, H1-H6, DIV, LI)
     let node = selection.anchorNode;
-    // Limit traversal
     let depth = 0;
     while (node && depth < 50) {
         if (node.nodeType === Node.ELEMENT_NODE) {
             const tagName = (node as HTMLElement).tagName;
-            // Check if we hit the editor container itself to stop
             if ((node as HTMLElement).classList.contains('prodoc-editor')) break;
 
             if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'LI', 'BLOCKQUOTE', 'TD', 'TH'].includes(tagName)) {
@@ -365,8 +351,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         node = node.parentNode;
         depth++;
     }
-    
-    // If no block found (e.g., bare text), wrap in P
     document.execCommand('formatBlock', false, 'P');
   }, [viewMode]);
 
@@ -430,7 +414,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     creationDate,
     showFormattingMarks,
     setShowFormattingMarks,
-    // New
     customStyles,
     addCustomStyle,
     applyCustomStyle,

@@ -1,10 +1,11 @@
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon } from 'lucide-react';
+import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
+import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Loader2 } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { WordCountDialog } from './WordCountDialog';
 import { getDocumentStats } from '../utils/textUtils';
+
+const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
   const { wordCount, zoom, viewMode, setZoom, setViewMode, content } = useEditor();
@@ -114,11 +115,13 @@ const StatusBar: React.FC = () => {
         </div>
 
         {showWordCountDialog && detailedStats && (
-            <WordCountDialog 
-                isOpen={showWordCountDialog}
-                onClose={() => setShowWordCountDialog(false)}
-                stats={detailedStats}
-            />
+            <Suspense fallback={<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/5"><div className="bg-white p-4 rounded shadow"><Loader2 className="animate-spin" /></div></div>}>
+                <WordCountDialog 
+                    isOpen={showWordCountDialog}
+                    onClose={() => setShowWordCountDialog(false)}
+                    stats={detailedStats}
+                />
+            </Suspense>
         )}
     </>
   );

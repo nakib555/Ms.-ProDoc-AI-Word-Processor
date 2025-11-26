@@ -38,10 +38,9 @@ export const AIAssistantTabProvider: React.FC<{ children: React.ReactNode }> = (
   useEffect(() => {
     const handleResize = () => setActiveMenu(null);
     window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleResize, true);
+    // Removed scroll listener to allow scrolling inside dropdowns without closing them
     return () => {
         window.removeEventListener('resize', handleResize);
-        window.removeEventListener('scroll', handleResize, true);
     };
   }, []);
 

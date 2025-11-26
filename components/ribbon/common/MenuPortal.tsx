@@ -77,7 +77,11 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
   useEffect(() => {
      if (!isOpen) return;
      
-     const handleEvent = () => {
+     const handleEvent = (e: Event) => {
+         // Ignore scroll events originating from inside the menu to prevent re-renders interrupting scroll
+         if (e.type === 'scroll' && menuRef.current && menuRef.current.contains(e.target as Node)) {
+             return;
+         }
          // Use requestAnimationFrame for smoother performance on scroll
          requestAnimationFrame(calculatePosition);
      };
