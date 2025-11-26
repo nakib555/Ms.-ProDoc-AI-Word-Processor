@@ -132,6 +132,10 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           type = 'table';
           break;
         }
+        if (current.classList.contains('prodoc-equation')) {
+          type = 'equation';
+          break;
+        }
         if (current.tagName === 'IMG') {
           type = 'image';
           break;

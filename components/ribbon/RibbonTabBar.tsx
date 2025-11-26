@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useEffect, useState } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
@@ -6,7 +7,7 @@ import {
   ChevronLeft, ChevronRight,
   FileText, Home, Blocks, PenTool, Palette,
   Layout, BookOpen, Mail, CheckSquare,
-  Eye, Sparkles, Table, PaintBucket
+  Eye, Sparkles, Table, PaintBucket, Sigma
 } from 'lucide-react';
 
 interface RibbonTabBarProps {
@@ -74,16 +75,21 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   useEffect(() => {
       let timeoutId: ReturnType<typeof setTimeout>;
 
-      // If we are NOT on a table, check if we need to leave the table tabs
-      if (activeElementType !== 'table') {
-          if (activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) {
+      if (activeElementType === 'equation') {
+          // Auto switch to equation tab if an equation is selected
+          if (activeTab !== RibbonTab.EQUATION) {
+              onTabChange(RibbonTab.EQUATION);
+          }
+      } else if (activeElementType === 'table') {
+          // Table logic... handled by user interaction mostly, but ensure we don't auto-close if user is navigating
+      } else {
+          // If leaving contextual element
+          if (activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT || activeTab === RibbonTab.EQUATION) {
               // Wait 200ms before switching back to Home to allow for momentary focus loss/clicks
               timeoutId = setTimeout(() => {
                   onTabChange(RibbonTab.HOME);
               }, 200);
           }
-      } else {
-          // Optional: Auto-switch logic (disabled by default to avoid jumping)
       }
 
       return () => clearTimeout(timeoutId);
@@ -132,13 +138,13 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
               ${isActive 
                 ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold` 
                 : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/30 mb-0.5`}
-              ${isContextual ? 'border-t-2 border-t-amber-500' : ''}
+              ${isContextual ? 'border-t-2 border-t-current' : ''}
             `}
           >
             {Icon && (
               <Icon 
                 size={16} 
-                className={`transition-colors duration-200 ${isActive ? activeColor : 'text-slate-500 group-hover:text-slate-300'} ${isContextual && isActive ? 'text-amber-600' : ''}`}
+                className={`transition-colors duration-200 ${isActive ? activeColor : 'text-slate-500 group-hover:text-slate-300'} ${isContextual && isActive ? 'text-current' : ''}`}
                 strokeWidth={isActive ? 2.5 : 2}
               />
             )}
@@ -187,8 +193,16 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
         {activeElementType === 'table' && (
             <>
                 <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
-                {renderTabButton(RibbonTab.TABLE_DESIGN, PaintBucket, "Table Design", true)}
-                {renderTabButton(RibbonTab.TABLE_LAYOUT, Table, "Table Layout", true)}
+                {renderTabButton(RibbonTab.TABLE_DESIGN, PaintBucket, "Table Design", true, "text-amber-600")}
+                {renderTabButton(RibbonTab.TABLE_LAYOUT, Table, "Table Layout", true, "text-amber-600")}
+            </>
+        )}
+
+        {/* Contextual Equation Tabs */}
+        {activeElementType === 'equation' && (
+            <>
+                <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
+                {renderTabButton(RibbonTab.EQUATION, Sigma, "Equation", true, "text-blue-500")}
             </>
         )}
 

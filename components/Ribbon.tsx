@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';
@@ -18,6 +19,7 @@ const DesignTab = React.lazy(() => import('./ribbon/tabs/DesignTab/DesignTab').t
 const ReviewTab = React.lazy(() => import('./ribbon/tabs/ReviewTab/ReviewTab').then(m => ({ default: m.ReviewTab })));
 const TableDesignTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign').then(m => ({ default: m.TableDesignTab })));
 const TableLayoutTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout').then(m => ({ default: m.TableLayoutTab })));
+const EquationTab = React.lazy(() => import('./ribbon/tabs/InsertTab/symbols/equation_subTab/EquationTab').then(m => ({ default: m.EquationTab })));
 
 interface RibbonProps {
   activeTab: RibbonTab | null;
@@ -90,6 +92,7 @@ const Ribbon: React.FC<RibbonProps> = ({
             case RibbonTab.AI_ASSISTANT: return <AIAssistantTab />;
             case RibbonTab.TABLE_DESIGN: return <TableDesignTab />;
             case RibbonTab.TABLE_LAYOUT: return <TableLayoutTab />;
+            case RibbonTab.EQUATION: return <EquationTab />;
             default: return activeTab ? <div className="flex items-center justify-center w-full h-full text-slate-400 italic text-xs">Tools coming soon...</div> : null;
           }
         })()}

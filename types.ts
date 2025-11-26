@@ -34,7 +34,8 @@ export enum RibbonTab {
   AI_ASSISTANT = '🤖 AI Assistant',
   // Contextual Tabs
   TABLE_DESIGN = 'Table Design',
-  TABLE_LAYOUT = 'Table Layout'
+  TABLE_LAYOUT = 'Table Layout',
+  EQUATION = 'Equation'
 }
 
 export interface AIResponse {
@@ -129,4 +130,4 @@ export interface ReadModeConfig {
   textScale: number; // 1 is default (100%)
 }
 
-export type ActiveElementType = 'text' | 'table' | 'image' | 'none';
+export type ActiveElementType = 'text' | 'table' | 'image' | 'equation' | 'none';
