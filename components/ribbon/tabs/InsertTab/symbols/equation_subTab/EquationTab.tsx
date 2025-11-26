@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { RibbonSection } from '../../../../common/RibbonSection';
 import { RibbonButton } from '../../../../common/RibbonButton';
 import { SmallRibbonButton } from '../../../ViewTab/common/ViewTools';
+import { MenuPortal } from '../../../../common/MenuPortal';
 import { 
   Sigma, PenTool, Type, RefreshCw, 
-  ChevronDown, ChevronUp, ArrowDown
+  ChevronDown, ChevronUp, ChevronsDown, Check
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 
@@ -93,23 +94,68 @@ const MatrixIcon = (props: any) => (
   </svg>
 );
 
+const SYMBOL_CATEGORIES: Record<string, string[]> = {
+  'Basic Math': ['±', '∞', '=', '≠', '≈', '×', '÷', '!', '∝', '<', '≪', '>', '≫', '≤', '≥', '∓', '≅', '≡', '∀', '∁', '∂', '√', '∛', '∜', '∩', '∪', '∫', '∬', '∭', '∮', '∴', '∵', '∶', '∷', '∼', '≂', '⊕', '⊗', '⊥', '∆', '∇', '∃', '∉', '∌', '−', '∓', '∝', '∞', '∟', '∠', '∡', '∢', '∣', '∤', '∥', '∦', '∧', '∨', '∩', '∪', '∫', '∬', '∭', '∮', '∯', '∰', '∱', '∲', '∳'],
+  'Greek Letters': [
+    'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω',
+    'Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ', 'Η', 'Θ', 'Ι', 'Κ', 'Λ', 'Μ', 'Ν', 'Ξ', 'Ο', 'Π', 'Ρ', 'Σ', 'Τ', 'Υ', 'Φ', 'Χ', 'Ψ', 'Ω'
+  ],
+  'Letter-Like Symbols': ['℃', '℉', '℀', '℁', 'ℂ', '℄', '℅', '℆', 'ℇ', '℈', '℉', 'ℊ', 'ℋ', 'ℌ', 'ℍ', 'ℎ', 'ℏ', 'ℐ', 'ℑ', 'ℒ', 'ℓ', '℔', 'ℕ', '№', '℗', '℘', 'ℙ', 'ℚ', 'ℛ', 'ℜ', 'ℝ', '℞', '℟', '℠', '℡', '™', '℣', 'ℤ', '℥', 'Ω', '℧', 'K', 'Å', '℮', 'ℯ'],
+  'Operators': ['∑', '∏', '∐', '⋂', '⋃', '⋀', '⋁', '⨀', '⨂', '⨁', '⨄', '⨆', '⋆', '⋄', '∘', '∙', '∗', '·', '×', '÷', '⊎', '⊓', '⊔', '⊕', '⊖', '⊗', '⊘', '⊙', '⊚', '⊛', '⊜', '⊝', '⊞', '⊟', '⊠', '⊡'],
+  'Arrows': ['←', '↑', '→', '↓', '↔', '↕', '↖', '↗', '↘', '↙', '↚', '↛', '↜', '↝', '↞', '↟', '↠', '↡', '↢', '↣', '↤', '↥', '↦', '↧', '↨', '↩', '↪', '↫', '↬', '↭', '↮', '↯', '↰', '↱', '↲', '↳', '↴', '↵', '↶', '↷', '↸', '↹', '↺', '↻', '↼', '↽', '↾', '↿', '⇀', '⇁', '⇂', '⇃', '⇄', '⇅', '⇆', '⇇', '⇈', '⇉', '⇊', '⇋', '⇌'],
+  'Negated Relations': ['≠', '≮', '≯', '≰', '≱', '⊄', '⊅', '⊈', '⊉', '⊀', '⊁', '⊊', '⊋', '⊬', '⊭', '⊮', '⊯', '≂', '≃', '≄', '≅', '≆', '≇', '≈', '≉', '≊', '≋', '≌', '≍', '≎', '≏', '≐', '≑', '≒', '≓', '≔', '≕', '≖', '≗', '≘', '≙', '≚', '≛', '≜', '≝', '≞', '≟'],
+  'Scripts': ['𝒜', 'ℬ', '𝒞', '𝒟', 'ℰ', 'ℱ', '𝒢', 'ℋ', 'ℐ', '𝒥', '𝒦', 'ℒ', 'ℳ', '𝒩', '𝒪', '𝒫', '𝒬', 'ℛ', '𝒮', '𝒯', '𝒰', '𝒱', '𝒲', '𝒳', '𝒴', '𝒵', '𝔞', '𝔟', '𝔠', '𝔡', '𝔢', '𝔣', '𝔤', '𝔥', '𝔦', '𝔧', '𝔨', '𝔩', '𝔪', '𝔫', '𝔬', '𝔭', '𝔮', '𝔯', '𝔰', '𝔱', '𝔲', '𝔳', '𝔴', '𝔵', '𝔶', '𝔷'],
+  'Geometry': ['⊥', '∥', '∦', '∠', '∟', '∡', '∢', '⊾', '⊿', '⋈', '▱', '◆', '◇', '○', '◎', '●', '▰', '▱', '▲', '△', '▴', '▵', '▶', '▷', '▸', '▹', '►', '▻', '▼', '▽', '▾', '▿', '◀', '◁', '◂', '◃', '◄', '◅', '◆', '◇', '◈', '◉', '◊', '○', '◌', '◍', '◎', '●']
+};
 
 export const EquationTab: React.FC = () => {
   const { executeCommand } = useEditor();
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [selectedCategory, setSelectedCategory] = useState('Basic Math');
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   const insertSymbol = (symbol: string) => {
       executeCommand('insertText', symbol);
+      if (activeMenu) setActiveMenu(null);
   };
 
   const insertStructure = (html: string) => {
       executeCommand('insertHTML', html);
   };
 
+  const toggleGallery = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (activeMenu === 'symbol_gallery') {
+          setActiveMenu(null);
+      } else {
+          if (triggerRef.current) {
+              const rect = triggerRef.current.getBoundingClientRect();
+              // Calculate position to align nicely with the section
+              const ribbonRect = triggerRef.current.closest('.ribbon-container')?.getBoundingClientRect() || rect;
+              setMenuPos({ top: rect.bottom, left: Math.max(10, rect.left - 180) }); 
+          }
+          setActiveMenu('symbol_gallery');
+      }
+  };
+
+  const closeMenu = () => setActiveMenu(null);
+
+  const scrollSymbols = (dir: 'up' | 'down') => {
+      if (scrollContainerRef.current) {
+          const amount = 57; // Approx 3 rows height (19px * 3)
+          scrollContainerRef.current.scrollBy({ top: dir === 'up' ? -amount : amount, behavior: 'smooth' });
+      }
+  };
+
+  // Flatten basic math for the compact view
+  const compactSymbols = SYMBOL_CATEGORIES['Basic Math'];
+
   // CSS Helpers for readability
   const flexColCenter = "display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px;";
   const flexRowCenter = "display: inline-flex; align-items: center; vertical-align: middle;";
-  const tableStyle = "display: inline-table; vertical-align: middle; border-collapse: collapse; margin: 0 4px;";
-  const cellStyle = "padding: 0 2px; text-align: center; display: block;";
   const borderBottom = "border-bottom: 1px solid currentColor;";
   
   // Structure Definitions
@@ -171,33 +217,115 @@ export const EquationTab: React.FC = () => {
 
       {/* Symbols Group */}
       <RibbonSection title="Symbols">
-          <div className="flex h-full items-start gap-0">
-              <div className="grid grid-cols-6 gap-[2px] p-[2px] h-[76px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 w-[190px] bg-white border border-slate-200 rounded-sm content-start">
-                  {[
-                      '±', '∞', '=', '≠', '≈', '×', 
-                      '÷', '!', '∝', '<', '≪', '>', 
-                      '≫', '≤', '≥', '∓', '≅', '≡',
-                      '∀', '∁', '∂', '√', '∛', '∜',
-                      '∩', '∪', '∫', '∬', '∭', '∮',
-                      '∴', '∵', '∶', '∷', '∼', '≂',
-                      '⊕', '⊗', '⊥', '∆', '∇', '∃'
-                  ].map(sym => (
+          <div className="flex h-full items-start gap-0 relative">
+              {/* Compact Grid */}
+              <div 
+                ref={scrollContainerRef}
+                className="grid grid-cols-8 gap-[1px] p-[1px] h-[76px] overflow-hidden w-[240px] bg-white border border-slate-200 rounded-l-sm content-start"
+              >
+                  {compactSymbols.map((sym, i) => (
                       <button 
-                        key={sym} 
+                        key={i} 
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => insertSymbol(sym)}
-                        className="flex items-center justify-center hover:bg-blue-100 hover:text-blue-700 rounded-[2px] text-sm font-serif h-5 w-full transition-colors"
+                        className="flex items-center justify-center hover:bg-blue-100 hover:text-blue-700 rounded-[1px] text-sm font-serif h-[18px] w-full transition-colors text-slate-700"
+                        title={sym}
                       >
                           {sym}
                       </button>
                   ))}
               </div>
-              <div className="flex flex-col h-full border-l border-slate-200 ml-1 pl-0.5 justify-between py-0.5 gap-0.5">
-                  <button className="p-0.5 hover:bg-slate-200 rounded text-slate-500 h-5 flex items-center justify-center"><ChevronUp size={10}/></button>
-                  <button className="p-0.5 hover:bg-slate-200 rounded text-slate-500 h-5 flex items-center justify-center"><ChevronDown size={10}/></button>
-                  <button className="p-0.5 hover:bg-slate-200 rounded text-slate-500 h-5 flex items-center justify-center"><ArrowDown size={10}/></button>
+              
+              {/* Controls */}
+              <div className="flex flex-col h-full border-y border-r border-slate-200 rounded-r-sm w-[18px] bg-slate-50">
+                  <button 
+                    onClick={() => scrollSymbols('up')}
+                    className="flex-1 hover:bg-blue-200 flex items-center justify-center text-slate-500 hover:text-blue-700 border-b border-slate-200"
+                  >
+                      <ChevronUp size={8} strokeWidth={3} />
+                  </button>
+                  <button 
+                    onClick={() => scrollSymbols('down')}
+                    className="flex-1 hover:bg-blue-200 flex items-center justify-center text-slate-500 hover:text-blue-700 border-b border-slate-200"
+                  >
+                      <ChevronDown size={8} strokeWidth={3} />
+                  </button>
+                  <button 
+                    ref={triggerRef}
+                    onClick={toggleGallery}
+                    className={`flex-1 hover:bg-blue-200 flex items-center justify-center text-slate-500 hover:text-blue-700 transition-colors ${activeMenu ? 'bg-blue-200 text-blue-800 shadow-inner' : ''}`}
+                    title="More Symbols"
+                  >
+                      <div className="relative">
+                          <div className="w-2 h-[1px] bg-current absolute -top-1 left-0 right-0 mx-auto"></div>
+                          <ChevronDown size={8} strokeWidth={3} />
+                      </div>
+                  </button>
               </div>
           </div>
+          
+          {/* Expanded Gallery Portal */}
+          <MenuPortal 
+            id="symbol_gallery" 
+            activeMenu={activeMenu} 
+            menuPos={menuPos} 
+            closeMenu={closeMenu} 
+            width={340}
+          >
+              <div className="flex flex-col bg-white rounded-lg shadow-xl border border-slate-300 overflow-hidden h-[320px]">
+                  {/* Header / Category Selector */}
+                  <div className="bg-slate-100 px-2 py-1.5 border-b border-slate-200 flex items-center justify-between shrink-0 relative z-10">
+                      <div className="relative">
+                          <button 
+                            onClick={() => setCategoryOpen(!categoryOpen)}
+                            className="flex items-center gap-2 px-2 py-1 bg-white border border-slate-300 rounded hover:border-blue-400 text-xs font-semibold text-slate-700 min-w-[140px] justify-between"
+                          >
+                              <span className="truncate">{selectedCategory}</span>
+                              <ChevronDown size={12} className="text-slate-500" />
+                          </button>
+                          
+                          {/* Custom Category Dropdown inside the portal */}
+                          {categoryOpen && (
+                              <div className="absolute top-full left-0 mt-1 w-[180px] bg-white border border-slate-200 shadow-lg rounded-md py-1 z-50 max-h-[200px] overflow-y-auto">
+                                  {Object.keys(SYMBOL_CATEGORIES).map(cat => (
+                                      <button
+                                        key={cat}
+                                        onClick={() => { setSelectedCategory(cat); setCategoryOpen(false); }}
+                                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 flex items-center justify-between ${selectedCategory === cat ? 'bg-blue-50 text-blue-700 font-medium' : 'text-slate-700'}`}
+                                      >
+                                          {cat}
+                                          {selectedCategory === cat && <Check size={12} />}
+                                      </button>
+                                  ))}
+                              </div>
+                          )}
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-medium">Symbol Gallery</span>
+                  </div>
+
+                  {/* Scrollable Grid */}
+                  <div className="flex-1 overflow-y-auto p-2 bg-white scrollbar-thin scrollbar-thumb-slate-300">
+                      <div className="grid grid-cols-10 gap-1">
+                          {SYMBOL_CATEGORIES[selectedCategory].map((sym, i) => (
+                              <button 
+                                key={i}
+                                onClick={() => insertSymbol(sym)}
+                                className="w-7 h-7 flex items-center justify-center hover:bg-blue-100 hover:text-blue-700 hover:scale-125 hover:shadow-sm rounded transition-all text-base text-slate-700 font-serif border border-transparent hover:border-blue-200"
+                                title={`Insert ${sym}`}
+                              >
+                                  {sym}
+                              </button>
+                          ))}
+                      </div>
+                  </div>
+                  
+                  {/* Footer */}
+                  <div className="bg-slate-50 px-2 py-1 border-t border-slate-200 text-[10px] text-slate-500 flex justify-end">
+                      <button onClick={() => insertSymbol(' ')} className="hover:text-blue-600 hover:underline mr-3">Character Map...</button>
+                      <button onClick={closeMenu} className="hover:text-blue-600 hover:underline">Cancel</button>
+                  </div>
+              </div>
+          </MenuPortal>
       </RibbonSection>
 
       {/* Structures Group */}
