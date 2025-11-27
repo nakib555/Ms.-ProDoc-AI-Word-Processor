@@ -8,14 +8,6 @@ import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
-import { FixedSizeList as List } from 'react-window';
-
-// Define props interface locally as it might not be exported in some versions
-interface ListChildComponentProps {
-  index: number;
-  style: React.CSSProperties;
-  data: any;
-}
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -41,32 +33,6 @@ interface PrintLayoutViewProps {
   containerRef: (node: HTMLDivElement | null) => void;
 }
 
-// Separate component for Row to prevent unnecessary re-renders of the list itself
-const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
-  const { pages, pageConfig, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, pageWidth } = data;
-  const pageContent = pages[index];
-  
-  // Calculate padding to center the page if the viewport is wider than the page
-  // Note: react-window manages 'style' for positioning. We add inner centering.
-  
-  return (
-    <div style={style} className="flex justify-center w-full">
-       <div className="py-4 box-border"> {/* Vertical Gap padding */}
-          <EditorPage
-              pageNumber={index + 1}
-              totalPages={pages.length}
-              content={pageContent}
-              config={pageConfig}
-              zoom={zoom}
-              showFormattingMarks={showFormattingMarks}
-              onContentChange={handlePageUpdate}
-              onFocus={() => handlePageFocus(index)}
-          />
-       </div>
-    </div>
-  );
-});
-
 export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   width,
   height,
@@ -81,10 +47,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const { setTotalPages, setCurrentPage } = useEditor();
   const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<List>(null);
-  const outerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Pagination Effect - Debounced for performance
+  // Pagination Effect
   useEffect(() => {
     let isMounted = true;
     const timer = setTimeout(() => {
@@ -92,7 +57,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         const result = paginateContent(content, pageConfig);
         setPages(result.pages);
         setTotalPages(result.pages.length);
-    }, 150); // Debounce delay
+    }, 150);
 
     return () => { 
         isMounted = false; 
@@ -100,14 +65,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     };
   }, [content, pageConfig, setTotalPages]);
 
-  // Reset list cache when zoom or page config changes to recalculate heights
-  useEffect(() => {
-      // FixedSizeList doesn't usually need reset unless itemSize prop changes, 
-      // but if we were using VariableSizeList we would need resetAfterIndex.
-      // For FixedSizeList, reacting to itemSize prop change is handled internally by the component.
-  }, [zoom, pageConfig]);
-
-  // Calculate Page Dimensions in px
   const pageDimensions = useMemo(() => {
       let w, h;
       if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
@@ -115,19 +72,15 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           h = pageConfig.orientation === 'portrait' ? pageConfig.customHeight : pageConfig.customWidth;
       } else {
           const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
-          w = (pageConfig.orientation === 'portrait' ? base.width : base.height) / 96; // back to inches for calc if needed, but here we use base values usually
-          // Re-derive px
           w = pageConfig.orientation === 'portrait' ? base.width : base.height;
           h = pageConfig.orientation === 'portrait' ? base.height : base.width;
       }
       return { width: w, height: h };
   }, [pageConfig]);
 
-  // Item Size Calculation (Height + Vertical Gap) - Number for FixedSizeList
   const itemSize = useMemo(() => {
       const scale = zoom / 100;
-      // 32px is the vertical gap (py-4 = 1rem top + 1rem bottom = 32px roughly)
-      return (pageDimensions.height * scale) + 32;
+      return (pageDimensions.height * scale) + 32; // + vertical padding
   }, [pageDimensions.height, zoom]);
 
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
@@ -135,10 +88,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         const updatedPages = [...currentPages];
         if (updatedPages[pageIndex] !== newHtml) {
             updatedPages[pageIndex] = newHtml;
-            // Debounce the full content update to avoid rapid re-pagination triggers
-            // We use a simple join here, but the context debounces the save.
             const fullContent = updatedPages.join('');
-            // Use setTimeout to push this to end of event loop, reducing input lag
             setTimeout(() => setContent(fullContent), 0);
             return updatedPages;
         }
@@ -150,56 +100,25 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       setCurrentPage(index + 1);
   }, [setCurrentPage]);
 
-  // Handle Scroll: Sync Page Number and Ruler
   const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
       const target = e.currentTarget;
-      
-      // Update Page Number
       const scrollOffset = target.scrollTop;
-      
-      // Add slight offset (height/3) to trigger change when page is mostly visible
       const pageIndex = Math.floor((scrollOffset + (height / 3)) / itemSize);
       const newPage = Math.min(pages.length, Math.max(1, pageIndex + 1));
-      
-      // Update Context (Debounce this if it causes lag, though setCurrentPage is usually fast)
       setCurrentPage(newPage);
-      
-      // Update Ruler Horizontal Scroll
+
       if (rulerContainerRef.current) {
           rulerContainerRef.current.scrollLeft = target.scrollLeft;
       }
   }, [height, itemSize, pages.length, setCurrentPage]);
 
-  // Attach native scroll listener to outerRef for smoother updates than react-window onScroll prop
-  useEffect(() => {
-      const el = outerRef.current;
-      if (el) {
-          containerRef(el); // Register with parent Editor
-          
-          const handleNativeScroll = (e: Event) => {
-             // Cast to React.UIEvent-like object for the callback
-             onScroll(e as unknown as React.UIEvent<HTMLDivElement>);
-          };
-
-          el.addEventListener('scroll', handleNativeScroll, { passive: true });
-          return () => el.removeEventListener('scroll', handleNativeScroll);
-      }
-  }, [onScroll, containerRef]);
-
-  // Data to pass to rows
-  const itemData = useMemo(() => ({
-      pages,
-      pageConfig,
-      zoom,
-      showFormattingMarks,
-      handlePageUpdate,
-      handlePageFocus,
-      pageWidth: pageDimensions.width
-  }), [pages, pageConfig, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, pageDimensions.width]);
+  const setRefs = useCallback((node: HTMLDivElement | null) => {
+      scrollContainerRef.current = node;
+      containerRef(node);
+  }, [containerRef]);
 
   return (
     <div className="w-full h-full flex flex-col relative bg-[#F8F9FA] dark:bg-slate-950">
-       {/* Sticky Ruler Container */}
        {showRuler && (
          <div 
             ref={rulerContainerRef}
@@ -213,21 +132,26 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
          </div>
        )}
 
-       {/* Virtualized Page Container */}
-       <div className="flex-1 relative">
-           <List
-              ref={listRef}
-              height={showRuler ? height - 25 : height}
-              width={width}
-              itemCount={pages.length}
-              itemSize={itemSize}
-              itemData={itemData}
-              outerRef={outerRef}
-              className="scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
-              style={{ overflowX: 'auto', overflowY: 'auto' }}
-           >
-              {PageRow}
-           </List>
+       <div 
+          ref={setRefs}
+          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent flex flex-col items-center"
+          onScroll={onScroll}
+       >
+           {pages.map((pageContent, index) => (
+                <div key={index} className="py-4 box-border">
+                    <EditorPage
+                        pageNumber={index + 1}
+                        totalPages={pages.length}
+                        content={pageContent}
+                        config={pageConfig}
+                        zoom={zoom}
+                        showFormattingMarks={showFormattingMarks}
+                        onContentChange={handlePageUpdate}
+                        onFocus={() => handlePageFocus(index)}
+                    />
+                </div>
+           ))}
+           <div className="h-16 shrink-0" />
        </div>
     </div>
   );
