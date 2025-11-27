@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
 import { MenuPortal } from '../../../../../common/MenuPortal';
@@ -51,6 +51,32 @@ const TabButton = ({ label, active, onClick, className = '' }: { label: string, 
         {label}
     </button>
 );
+
+const HorizontalScrollContainer: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    
+    useEffect(() => {
+        const el = ref.current;
+        if (el) {
+            const onWheel = (e: WheelEvent) => {
+                if (e.deltaY === 0) return;
+                // If the element has overflow, translate vertical scroll to horizontal
+                if (el.scrollWidth > el.clientWidth) {
+                    e.preventDefault();
+                    el.scrollLeft += e.deltaY;
+                }
+            };
+            el.addEventListener('wheel', onWheel, { passive: false });
+            return () => el.removeEventListener('wheel', onWheel);
+        }
+    }, []);
+
+    return (
+        <div ref={ref} className={className}>
+            {children}
+        </div>
+    );
+};
 
 export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, symbols: string[] }> = ({ category, icon: Icon, symbols }) => {
     const { executeCommand } = useEditor();
@@ -104,16 +130,17 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                     
                     {isOperators ? (
                         <div className="flex flex-col h-full max-h-[400px]">
-                            <div className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
+                            <HorizontalScrollContainer className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
                                 {['Binary', 'Relational', 'N-ary', 'Adv. Binary', 'Adv. Relational'].map(tab => (
                                     <TabButton 
                                         key={tab} 
                                         label={tab} 
                                         active={opTab === tab} 
                                         onClick={() => setOpTab(tab as any)} 
+                                        className="grow"
                                     />
                                 ))}
-                            </div>
+                            </HorizontalScrollContainer>
                             <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                     {opTab === 'Binary' && symbols.slice(0, 18).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
@@ -126,10 +153,10 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                         </div>
                     ) : isGreek ? (
                         <div className="flex flex-col h-full max-h-[400px]">
-                            <div className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
+                            <HorizontalScrollContainer className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
                                 <TabButton label="Lowercase" active={greekTab === 'Lowercase'} onClick={() => setGreekTab('Lowercase')} className="flex-1 min-w-[80px]" />
                                 <TabButton label="Uppercase" active={greekTab === 'Uppercase'} onClick={() => setGreekTab('Uppercase')} className="flex-1 min-w-[80px]" />
-                            </div>
+                            </HorizontalScrollContainer>
                             <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                     {(greekTab === 'Lowercase' ? symbols.slice(0, 30) : symbols.slice(30)).map((s, i) => (
@@ -144,11 +171,11 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                         </div>
                     ) : isScripts ? (
                         <div className="flex flex-col h-full max-h-[400px]">
-                            <div className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
+                            <HorizontalScrollContainer className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
                                 <TabButton label="Scripts" active={scriptTab === 'Scripts'} onClick={() => setScriptTab('Scripts')} className="flex-1 min-w-[70px]" />
                                 <TabButton label="Frakturs" active={scriptTab === 'Frakturs'} onClick={() => setScriptTab('Frakturs')} className="flex-1 min-w-[70px]" />
                                 <TabButton label="Double-Struck" active={scriptTab === 'Double-Struck'} onClick={() => setScriptTab('Double-Struck')} className="flex-1 min-w-[90px]" />
-                            </div>
+                            </HorizontalScrollContainer>
                             <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                     {scriptTab === 'Scripts' && symbols.slice(0, 52).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
