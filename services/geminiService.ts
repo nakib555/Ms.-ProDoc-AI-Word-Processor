@@ -179,3 +179,35 @@ export const streamAIContent = async function* (
     throw error;
   }
 };
+
+export const generateAIImage = async (prompt: string): Promise<string | null> => {
+  const client = getClient();
+  if (!client) {
+    throw new Error("API Key not configured.");
+  }
+
+  try {
+    // According to guidelines: Use gemini-2.5-flash-image for general tasks.
+    // We do NOT set responseMimeType for nano banana models.
+    const response = await client.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [{ text: prompt }],
+      },
+    });
+
+    // Iterate through parts to find the image
+    if (response.candidates && response.candidates.length > 0) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+        }
+      }
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.error("Gemini Image Gen Error:", error);
+    throw new Error(error.message || "Failed to generate image.");
+  }
+};

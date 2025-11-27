@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -8,6 +8,14 @@ import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
+import { FixedSizeList as List } from 'react-window';
+
+// Define props interface locally as it might not be exported in some versions
+interface ListChildComponentProps {
+  index: number;
+  style: React.CSSProperties;
+  data: any;
+}
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -33,7 +41,33 @@ interface PrintLayoutViewProps {
   containerRef: (node: HTMLDivElement | null) => void;
 }
 
-export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
+// Separate component for Row to prevent unnecessary re-renders of the list itself
+const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
+  const { pages, pageConfig, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, pageWidth } = data;
+  const pageContent = pages[index];
+  
+  // Calculate padding to center the page if the viewport is wider than the page
+  // Note: react-window manages 'style' for positioning. We add inner centering.
+  
+  return (
+    <div style={style} className="flex justify-center w-full">
+       <div className="py-4 box-border"> {/* Vertical Gap padding */}
+          <EditorPage
+              pageNumber={index + 1}
+              totalPages={pages.length}
+              content={pageContent}
+              config={pageConfig}
+              zoom={zoom}
+              showFormattingMarks={showFormattingMarks}
+              onContentChange={handlePageUpdate}
+              onFocus={() => handlePageFocus(index)}
+          />
+       </div>
+    </div>
+  );
+});
+
+export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   width,
   height,
   content,
@@ -45,122 +79,133 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
   containerRef
 }) => {
   const { setTotalPages, setCurrentPage } = useEditor();
-  // Initialize state with synchronous pagination to prevent flash
   const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
-  const listOuterRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<List>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
 
-  // Pagination Effect: Runs when content or config changes
+  // Pagination Effect - Debounced for performance
   useEffect(() => {
     let isMounted = true;
-    const runPagination = async () => {
-      if (!isMounted) return;
-      // Use a timeout to allow React to render and unblock the main thread
-      setTimeout(() => {
+    const timer = setTimeout(() => {
         if (!isMounted) return;
         const result = paginateContent(content, pageConfig);
         setPages(result.pages);
-        // Update the global page count context
         setTotalPages(result.pages.length);
-      }, 10);
-    };
+    }, 150); // Debounce delay
 
-    runPagination();
-    return () => { isMounted = false; };
+    return () => { 
+        isMounted = false; 
+        clearTimeout(timer);
+    };
   }, [content, pageConfig, setTotalPages]);
 
-  // Sync Ruler scroll and detect current page
+  // Reset list cache when zoom or page config changes to recalculate heights
   useEffect(() => {
-      const el = listOuterRef.current;
-      if (el) {
-          // Pass the outer ref to the parent container registration logic (for fit-to-width etc)
-          containerRef(el);
+      // FixedSizeList doesn't usually need reset unless itemSize prop changes, 
+      // but if we were using VariableSizeList we would need resetAfterIndex.
+      // For FixedSizeList, reacting to itemSize prop change is handled internally by the component.
+  }, [zoom, pageConfig]);
 
-          const handleScroll = () => {
-              // 1. Sync Ruler
-              if (rulerContainerRef.current) {
-                  rulerContainerRef.current.scrollLeft = el.scrollLeft;
-              }
-
-              // 2. Detect Current Page
-              const { scrollTop, clientHeight } = el;
-              
-              // Determine page height in pixels based on configuration and zoom
-              let pageHeightPx = 0;
-              if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
-                  const h = pageConfig.orientation === 'portrait' ? pageConfig.customHeight : pageConfig.customWidth;
-                  pageHeightPx = h * 96;
-              } else {
-                  const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
-                  const h = pageConfig.orientation === 'portrait' ? base.height : base.width;
-                  pageHeightPx = h;
-              }
-              
-              const scale = zoom / 100;
-              const scaledPageHeight = pageHeightPx * scale;
-              
-              // 32px vertical padding (py-8) at top of container + 32px gap (gap-8) between pages
-              const gap = 32; 
-              const initialOffset = 32;
-              const totalItemHeight = scaledPageHeight + gap;
-              
-              // Calculate the page that is roughly in the center of the viewport
-              const viewCenter = scrollTop + (clientHeight / 2);
-              
-              // Solve for index: viewCenter = initialOffset + index * totalItemHeight + (scaledPageHeight/2)
-              // This is an approximation assuming all pages are same size (which they are in this editor)
-              let pageIndex = Math.floor((viewCenter - initialOffset) / totalItemHeight);
-              
-              // Clamp index
-              pageIndex = Math.max(0, Math.min(pageIndex, pages.length - 1));
-              
-              setCurrentPage(pageIndex + 1);
-          };
-          
-          el.addEventListener('scroll', handleScroll);
-          // Run once to set initial state
-          handleScroll();
-          
-          return () => {
-              el.removeEventListener('scroll', handleScroll);
-              containerRef(null);
-          };
+  // Calculate Page Dimensions in px
+  const pageDimensions = useMemo(() => {
+      let w, h;
+      if (pageConfig.size === 'Custom' && pageConfig.customWidth && pageConfig.customHeight) {
+          w = pageConfig.orientation === 'portrait' ? pageConfig.customWidth : pageConfig.customHeight;
+          h = pageConfig.orientation === 'portrait' ? pageConfig.customHeight : pageConfig.customWidth;
+      } else {
+          const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
+          w = (pageConfig.orientation === 'portrait' ? base.width : base.height) / 96; // back to inches for calc if needed, but here we use base values usually
+          // Re-derive px
+          w = pageConfig.orientation === 'portrait' ? base.width : base.height;
+          h = pageConfig.orientation === 'portrait' ? base.height : base.width;
       }
-  }, [containerRef, zoom, pageConfig, pages.length, setCurrentPage]);
+      return { width: w, height: h };
+  }, [pageConfig]);
 
-  // Handle updates from specific pages
+  // Item Size Calculation (Height + Vertical Gap) - Number for FixedSizeList
+  const itemSize = useMemo(() => {
+      const scale = zoom / 100;
+      // 32px is the vertical gap (py-4 = 1rem top + 1rem bottom = 32px roughly)
+      return (pageDimensions.height * scale) + 32;
+  }, [pageDimensions.height, zoom]);
+
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPages(currentPages => {
         const updatedPages = [...currentPages];
-        updatedPages[pageIndex] = newHtml;
-        const fullContent = updatedPages.join('');
-        setContent(fullContent);
-        return updatedPages;
+        if (updatedPages[pageIndex] !== newHtml) {
+            updatedPages[pageIndex] = newHtml;
+            // Debounce the full content update to avoid rapid re-pagination triggers
+            // We use a simple join here, but the context debounces the save.
+            const fullContent = updatedPages.join('');
+            // Use setTimeout to push this to end of event loop, reducing input lag
+            setTimeout(() => setContent(fullContent), 0);
+            return updatedPages;
+        }
+        return currentPages;
     });
   }, [setContent]);
 
-  // Allow pages to set themselves as active on focus (click/typing)
   const handlePageFocus = useCallback((index: number) => {
       setCurrentPage(index + 1);
   }, [setCurrentPage]);
 
-  const handleBackgroundMouseDown = (e: React.MouseEvent) => {
-      // If clicking on the gray background (not the page itself or its contents)
-      // prevent default to avoid blurring the active editor
-      if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('page-container-wrapper')) {
-          e.preventDefault();
+  // Handle Scroll: Sync Page Number and Ruler
+  const onScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+      const target = e.currentTarget;
+      
+      // Update Page Number
+      const scrollOffset = target.scrollTop;
+      
+      // Add slight offset (height/3) to trigger change when page is mostly visible
+      const pageIndex = Math.floor((scrollOffset + (height / 3)) / itemSize);
+      const newPage = Math.min(pages.length, Math.max(1, pageIndex + 1));
+      
+      // Update Context (Debounce this if it causes lag, though setCurrentPage is usually fast)
+      setCurrentPage(newPage);
+      
+      // Update Ruler Horizontal Scroll
+      if (rulerContainerRef.current) {
+          rulerContainerRef.current.scrollLeft = target.scrollLeft;
       }
-  };
+  }, [height, itemSize, pages.length, setCurrentPage]);
+
+  // Attach native scroll listener to outerRef for smoother updates than react-window onScroll prop
+  useEffect(() => {
+      const el = outerRef.current;
+      if (el) {
+          containerRef(el); // Register with parent Editor
+          
+          const handleNativeScroll = (e: Event) => {
+             // Cast to React.UIEvent-like object for the callback
+             onScroll(e as unknown as React.UIEvent<HTMLDivElement>);
+          };
+
+          el.addEventListener('scroll', handleNativeScroll, { passive: true });
+          return () => el.removeEventListener('scroll', handleNativeScroll);
+      }
+  }, [onScroll, containerRef]);
+
+  // Data to pass to rows
+  const itemData = useMemo(() => ({
+      pages,
+      pageConfig,
+      zoom,
+      showFormattingMarks,
+      handlePageUpdate,
+      handlePageFocus,
+      pageWidth: pageDimensions.width
+  }), [pages, pageConfig, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, pageDimensions.width]);
 
   return (
-    <div className="w-full h-full flex flex-col relative">
+    <div className="w-full h-full flex flex-col relative bg-[#F8F9FA] dark:bg-slate-950">
        {/* Sticky Ruler Container */}
        {showRuler && (
          <div 
             ref={rulerContainerRef}
             className="w-full overflow-hidden bg-[#f1f5f9] border-b border-slate-200 z-20 shrink-0 flex justify-center"
             style={{ height: '25px' }}
-            onMouseDown={(e) => e.preventDefault()} // Ruler shouldn't steal focus
+            onMouseDown={(e) => e.preventDefault()}
          >
              <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
                 <Ruler pageConfig={pageConfig} zoom={zoom} />
@@ -168,32 +213,22 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = ({
          </div>
        )}
 
-       {/* Scrollable Page Container */}
-       <div 
-            ref={listOuterRef}
-            className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent bg-[#F8F9FA] dark:bg-slate-950"
-            style={{
-                height: height - (showRuler ? 25 : 0),
-            }}
-            onMouseDown={handleBackgroundMouseDown}
-       >
-           <div className="flex flex-col items-center py-8 gap-8 min-h-full page-container-wrapper">
-                {pages.map((pageContent, index) => (
-                    <div key={index} className="flex justify-center w-full shrink-0">
-                        <EditorPage
-                            pageNumber={index + 1}
-                            totalPages={pages.length}
-                            content={pageContent}
-                            config={pageConfig}
-                            zoom={zoom}
-                            showFormattingMarks={showFormattingMarks}
-                            onContentChange={handlePageUpdate}
-                            onFocus={() => handlePageFocus(index)}
-                        />
-                    </div>
-                ))}
-           </div>
+       {/* Virtualized Page Container */}
+       <div className="flex-1 relative">
+           <List
+              ref={listRef}
+              height={showRuler ? height - 25 : height}
+              width={width}
+              itemCount={pages.length}
+              itemSize={itemSize}
+              itemData={itemData}
+              outerRef={outerRef}
+              className="scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+              style={{ overflowX: 'auto', overflowY: 'auto' }}
+           >
+              {PageRow}
+           </List>
        </div>
     </div>
   );
-};
+});

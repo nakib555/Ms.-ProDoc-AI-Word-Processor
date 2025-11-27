@@ -15,7 +15,7 @@ interface EditorPageProps {
   showFormattingMarks: boolean;
 }
 
-export const EditorPage: React.FC<EditorPageProps> = React.memo(({
+const EditorPageComponent: React.FC<EditorPageProps> = ({
   content,
   pageNumber,
   totalPages,
@@ -32,6 +32,7 @@ export const EditorPage: React.FC<EditorPageProps> = React.memo(({
   // Sync content to editable div without losing cursor
   useLayoutEffect(() => {
     if (editorRef.current) {
+      // Only update if significantly different to avoid cursor jumps
       if (editorRef.current.innerHTML !== content) {
         editorRef.current.innerHTML = content;
       }
@@ -41,6 +42,7 @@ export const EditorPage: React.FC<EditorPageProps> = React.memo(({
   useEffect(() => {
     if (!editorRef.current || readOnly || !onContentChange) return;
 
+    // Use MutationObserver for robust change detection (e.g. from command execution)
     const observer = new MutationObserver(() => {
         if (editorRef.current) {
             onContentChange(editorRef.current.innerHTML, pageNumber - 1);
@@ -76,11 +78,8 @@ export const EditorPage: React.FC<EditorPageProps> = React.memo(({
     if (isMirroredOrBookFold) {
        const inside = m.left * 96;
        const outside = m.right * 96;
-       const isOdd = pageNumber % 2 !== 0; // Assuming pageNumber starts from 1, odd pages are right-hand pages
+       const isOdd = pageNumber % 2 !== 0; 
 
-       // Word's "Mirror Margins" means that Left becomes Inside and Right becomes Outside.
-       // For odd pages (right-hand pages), the 'inside' margin is on the left.
-       // For even pages (left-hand pages), the 'inside' margin is on the right.
        if (isOdd) {
            left = inside + (config.gutterPosition === 'left' ? gutterPx : 0);
            right = outside;
@@ -89,11 +88,10 @@ export const EditorPage: React.FC<EditorPageProps> = React.memo(({
            right = inside + (config.gutterPosition === 'left' ? gutterPx : 0);
        }
     } else {
-        // Normal margins
         if (config.gutterPosition === 'top') {
-            top += gutterPx; // Add gutter to top margin
-        } else { // Default or 'left'
-            left += gutterPx; // Add gutter to left margin
+            top += gutterPx;
+        } else {
+            left += gutterPx;
         }
     }
 
@@ -151,7 +149,7 @@ export const EditorPage: React.FC<EditorPageProps> = React.memo(({
         style={{
             width: `${width * scale}px`,
             height: `${height * scale}px`,
-            marginBottom: '2rem'
+            // Note: Virtualization handles outer spacing usually, but we keep this for structure
         }}
     >
         <div 
@@ -231,4 +229,28 @@ export const EditorPage: React.FC<EditorPageProps> = React.memo(({
         </div>
     </div>
   );
-});
+};
+
+// Custom comparison function for performance
+const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
+    return (
+        prev.content === next.content &&
+        prev.pageNumber === next.pageNumber &&
+        prev.totalPages === next.totalPages &&
+        prev.zoom === next.zoom &&
+        prev.readOnly === next.readOnly &&
+        prev.showFormattingMarks === next.showFormattingMarks &&
+        // Shallow compare config object keys relevant to rendering
+        prev.config.size === next.config.size &&
+        prev.config.orientation === next.config.orientation &&
+        prev.config.margins.top === next.config.margins.top &&
+        prev.config.margins.bottom === next.config.margins.bottom &&
+        prev.config.margins.left === next.config.margins.left &&
+        prev.config.margins.right === next.config.margins.right &&
+        prev.config.pageColor === next.config.pageColor &&
+        prev.config.watermark === next.config.watermark &&
+        prev.config.background === next.config.background
+    );
+};
+
+export const EditorPage = React.memo(EditorPageComponent, arePropsEqual);

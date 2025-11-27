@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { RibbonSeparator } from '../../common/RibbonSeparator';
 import { AIAssistantTabProvider } from './AIAssistantTabContext';
@@ -7,6 +8,7 @@ import { RefineGroup } from './refine/RefineGroup';
 import { ToneGroup } from './tone/ToneGroup';
 import { DraftGroup } from './draft/DraftGroup';
 import { TranslateGroup } from './translate/TranslateGroup';
+import { ImageGroup } from './image/ImageGroup';
 import { SettingsGroup } from './settings/SettingsGroup';
 
 export const AIAssistantTab: React.FC = () => {
@@ -19,6 +21,8 @@ export const AIAssistantTab: React.FC = () => {
        <ToneGroup />
        <RibbonSeparator />
        <TranslateGroup />
+       <RibbonSeparator />
+       <ImageGroup />
        <RibbonSeparator />
        <SettingsGroup />
     </AIAssistantTabProvider>

@@ -1,19 +1,28 @@
-import React from 'react';
+
+import React, { useState, Suspense } from 'react';
 import { FileText, Mail, StickyNote, File, Files } from 'lucide-react';
-import { useEditor } from '../../../../../contexts/EditorContext';
-import { useLayoutTab } from '../LayoutTabContext';
-import { DropdownButton } from '../common/LayoutTools';
-import { MenuPortal } from '../../../common/MenuPortal';
-import { PageSize } from '../../../../../types';
+import { useEditor } from '../../../../../../../contexts/EditorContext';
+import { useLayoutTab } from '../../LayoutTabContext';
+import { DropdownButton } from '../../common/LayoutTools';
+import { MenuPortal } from '../../../../common/MenuPortal';
+import { PageSize, PageConfig } from '../../../../../../../types';
+
+const PageSetupDialog = React.lazy(() => import('./MorePageSizes/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 
 export const SizeTool: React.FC = () => {
   const { pageConfig, setPageConfig } = useEditor();
   const { activeMenu, menuPos, closeMenu } = useLayoutTab();
+  const [showDialog, setShowDialog] = useState(false);
   const menuId = 'size';
 
   const handleSizeChange = (size: PageSize) => {
       setPageConfig(prev => ({ ...prev, size }));
       closeMenu();
+  };
+
+  const handleDialogSave = (newConfig: PageConfig) => {
+      setPageConfig(newConfig);
+      setShowDialog(false);
   };
 
   const paperSizes: { size: PageSize; label: string; dims: string; icon: React.ElementType }[] = [
@@ -63,13 +72,24 @@ export const SizeTool: React.FC = () => {
                  <div className="border-t border-slate-100 my-1"></div>
                  <button 
                     className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs text-slate-700 rounded-md font-medium"
-                    onClick={() => { alert("Use Page Setup Dialog for Custom Sizes"); closeMenu(); }}
+                    onClick={() => { closeMenu(); setShowDialog(true); }}
                     onMouseDown={(e) => e.preventDefault()}
                  >
                     More Paper Sizes...
                  </button>
              </div>
          </MenuPortal>
+
+         {showDialog && (
+             <Suspense fallback={null}>
+                <PageSetupDialog 
+                    isOpen={showDialog}
+                    onClose={() => setShowDialog(false)}
+                    config={pageConfig}
+                    onSave={handleDialogSave}
+                />
+             </Suspense>
+         )}
     </>
   );
 };

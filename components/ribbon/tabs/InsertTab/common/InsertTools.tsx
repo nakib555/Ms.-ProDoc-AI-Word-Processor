@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useInsertTab } from '../InsertTabContext';
@@ -11,7 +12,7 @@ interface DropdownButtonProps {
   variant?: 'large' | 'small';
 }
 
-export const DropdownButton: React.FC<DropdownButtonProps> = ({ 
+export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({ 
   id, icon: Icon, label, disabled = false, hasArrow = true, variant = 'large' 
 }) => {
    const { activeMenu, toggleMenu, registerTrigger } = useInsertTab();
@@ -55,9 +56,9 @@ export const DropdownButton: React.FC<DropdownButtonProps> = ({
           </button>
       </div>
    );
-};
+});
 
-export const SmallRibbonButton: React.FC<{ icon: any, label: string, onClick: () => void, className?: string }> = ({ icon: Icon, label, onClick, className }) => (
+export const SmallRibbonButton: React.FC<{ icon: any, label: string, onClick: () => void, className?: string }> = React.memo(({ icon: Icon, label, onClick, className }) => (
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -67,4 +68,4 @@ export const SmallRibbonButton: React.FC<{ icon: any, label: string, onClick: ()
     <Icon size={14} className="text-slate-500 group-hover:text-blue-600 mr-2 shrink-0" />
     <span className="text-[11px] font-medium text-slate-600 group-hover:text-blue-700 truncate leading-tight">{label}</span>
   </button>
-);
+));

@@ -29,7 +29,7 @@ interface WebLayoutViewProps {
   backgroundStyle: React.CSSProperties;
 }
 
-export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
+export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
   editorRef,
   content,
   onInput,
@@ -113,4 +113,4 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
          </div>
     </div>
   );
-};
+});

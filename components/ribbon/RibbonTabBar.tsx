@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
 import { 
@@ -28,30 +28,76 @@ const TAB_CONFIG: Record<string, { icon: React.ElementType, label?: string }> = 
   [RibbonTab.AI_ASSISTANT]: { icon: Sparkles, label: "AI Assistant" }
 };
 
+interface TabButtonProps {
+    tabId: string;
+    icon: any;
+    label: string;
+    isActive: boolean;
+    onClick: () => void;
+    isContextual?: boolean;
+    colorClass?: string;
+}
+
+const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContextual, colorClass = 'text-amber-600' }: TabButtonProps) => {
+    const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-200';
+    const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : 'text-blue-900 dark:text-blue-200';
+    const activeBg = 'bg-white dark:bg-slate-800';
+
+    return (
+        <button
+            onClick={onClick}
+            onMouseDown={(e) => e.preventDefault()}
+            className={`
+              px-3 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2
+              ${isActive 
+                ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold` 
+                : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/30 mb-0.5`}
+              ${isContextual ? 'border-t-2 border-t-current' : ''}
+            `}
+        >
+            {Icon && (
+              <Icon 
+                size={16} 
+                className={`transition-colors duration-200 ${isActive ? activeColor : 'text-slate-500 group-hover:text-slate-300'} ${isContextual && isActive ? 'text-current' : ''}`}
+                strokeWidth={isActive ? 2.5 : 2}
+              />
+            )}
+            <span>{label}</span>
+            
+            {isActive && (
+               <>
+                 {/* Corner smoothing */}
+                 <div className="absolute bottom-0 left-0 right-0 h-3 bg-white dark:bg-slate-800 z-20"></div>
+                 <div className="absolute bottom-0 -left-2 w-2 h-2 bg-transparent shadow-[2px_2px_0_#fff] dark:shadow-[2px_2px_0_#1e293b] rounded-br-full z-20 pointer-events-none"></div>
+                 <div className="absolute bottom-0 -right-2 w-2 h-2 bg-transparent shadow-[-2px_2px_0_#fff] dark:shadow-[-2px_2px_0_#1e293b] rounded-bl-full z-20 pointer-events-none"></div>
+               </>
+            )}
+        </button>
+    );
+});
+
 export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab, onTabChange }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
   const { activeElementType } = useEditor();
-  
-  // Track previous element type to handle transitions only when state changes
   const prevElementTypeRef = useRef(activeElementType);
 
-  const checkScroll = () => {
+  const checkScroll = useCallback(() => {
     if (scrollContainerRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
       setShowLeftArrow(scrollLeft > 0);
       setShowRightArrow(Math.ceil(scrollLeft + clientWidth) < scrollWidth);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkScroll();
     window.addEventListener('resize', checkScroll);
     return () => window.removeEventListener('resize', checkScroll);
-  }, []);
+  }, [checkScroll]);
 
-  const scroll = (direction: 'left' | 'right') => {
+  const scroll = useCallback((direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
       const scrollAmount = 200;
       scrollContainerRef.current.scrollBy({
@@ -59,7 +105,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
         behavior: 'smooth'
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (activeTab && scrollContainerRef.current) {
@@ -78,36 +124,25 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       let timeoutId: ReturnType<typeof setTimeout>;
       const prevType = prevElementTypeRef.current;
 
-      // 1. Entered Equation Context -> Auto Switch to Equation Tab
       if (activeElementType === 'equation' && prevType !== 'equation') {
           onTabChange(RibbonTab.EQUATION);
       } 
-      // 2. Entered Table Context -> Auto Switch to Table Design Tab
       else if (activeElementType === 'table' && prevType !== 'table') {
           onTabChange(RibbonTab.TABLE_DESIGN);
       } 
-      // 3. Handle leaving context or cleanup
       else {
-          // If currently on Equation tab but no longer in equation context
           if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
-              timeoutId = setTimeout(() => {
-                  onTabChange(RibbonTab.HOME);
-              }, 200);
+              timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
           }
-          // If currently on Table tabs but no longer in table context
           else if ((activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) && activeElementType !== 'table') {
-              timeoutId = setTimeout(() => {
-                  onTabChange(RibbonTab.HOME);
-              }, 200);
+              timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
           }
       }
 
       prevElementTypeRef.current = activeElementType;
-
       return () => clearTimeout(timeoutId);
   }, [activeElementType, activeTab, onTabChange]);
 
-  // Handle horizontal scrolling via mouse wheel & update arrows on scroll
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (el) {
@@ -123,8 +158,6 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
 
       el.addEventListener('wheel', onWheel, { passive: false });
       el.addEventListener('scroll', onScroll);
-      
-      // Delay check slightly to ensure layout is complete
       setTimeout(checkScroll, 50);
 
       return () => {
@@ -132,51 +165,10 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
         el.removeEventListener('scroll', onScroll);
       };
     }
-  }, [activeElementType]); // Re-bind when tabs change
-
-  const renderTabButton = (tabId: string, Icon: any, label: string, isContextual = false, colorClass = 'text-amber-600') => {
-      const isActive = activeTab === tabId;
-      const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-200';
-      const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : 'text-blue-900 dark:text-blue-200';
-      const activeBg = 'bg-white dark:bg-slate-800';
-      
-      return (
-          <button
-            key={tabId}
-            onClick={() => onTabChange(tabId as RibbonTab)}
-            onMouseDown={(e) => e.preventDefault()} // Prevent focus loss from editor when clicking tab
-            className={`
-              px-3 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2
-              ${isActive 
-                ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold` 
-                : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/30 mb-0.5`}
-              ${isContextual ? 'border-t-2 border-t-current' : ''}
-            `}
-          >
-            {Icon && (
-              <Icon 
-                size={16} 
-                className={`transition-colors duration-200 ${isActive ? activeColor : 'text-slate-500 group-hover:text-slate-300'} ${isContextual && isActive ? 'text-current' : ''}`}
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-            )}
-            <span>{label}</span>
-            
-            {isActive && (
-               <>
-                 {/* Corner smoothing for the active tab effect */}
-                 <div className="absolute bottom-0 left-0 right-0 h-3 bg-white dark:bg-slate-800 z-20"></div>
-                 <div className="absolute bottom-0 -left-2 w-2 h-2 bg-transparent shadow-[2px_2px_0_#fff] dark:shadow-[2px_2px_0_#1e293b] rounded-br-full z-20 pointer-events-none"></div>
-                 <div className="absolute bottom-0 -right-2 w-2 h-2 bg-transparent shadow-[-2px_2px_0_#fff] dark:shadow-[-2px_2px_0_#1e293b] rounded-bl-full z-20 pointer-events-none"></div>
-               </>
-            )}
-          </button>
-      );
-  };
+  }, [activeElementType, checkScroll]);
 
   return (
     <div className="relative flex items-end bg-slate-900 dark:bg-slate-950 pt-1 flex-shrink-0 z-20 w-full group select-none border-b border-slate-800 dark:border-slate-900">
-       {/* Left Navigation Arrow */}
        <div 
           className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-8 bg-gradient-to-r from-slate-900 dark:from-slate-950 via-slate-900/90 dark:via-slate-950/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >
@@ -194,35 +186,39 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
         ref={scrollContainerRef}
         className="flex px-2 md:px-4 overflow-x-auto overflow-y-hidden no-scrollbar w-full items-end gap-1 scroll-smooth"
       >
-        {/* Standard Tabs */}
         {Object.keys(TAB_CONFIG).map((key) => {
           const tab = key as RibbonTab;
           const config = TAB_CONFIG[tab];
-          return renderTabButton(tab, config.icon, config.label || tab);
+          return (
+            <TabButton 
+                key={tab}
+                tabId={tab}
+                icon={config.icon}
+                label={config.label || tab}
+                isActive={activeTab === tab}
+                onClick={() => onTabChange(tab)}
+            />
+          );
         })}
 
-        {/* Contextual Table Tabs */}
         {activeElementType === 'table' && (
             <>
                 <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
-                {renderTabButton(RibbonTab.TABLE_DESIGN, PaintBucket, "Table Design", true, "text-amber-600")}
-                {renderTabButton(RibbonTab.TABLE_LAYOUT, Table, "Table Layout", true, "text-amber-600")}
+                <TabButton tabId={RibbonTab.TABLE_DESIGN} icon={PaintBucket} label="Table Design" isActive={activeTab === RibbonTab.TABLE_DESIGN} onClick={() => onTabChange(RibbonTab.TABLE_DESIGN)} isContextual colorClass="text-amber-600" />
+                <TabButton tabId={RibbonTab.TABLE_LAYOUT} icon={Table} label="Table Layout" isActive={activeTab === RibbonTab.TABLE_LAYOUT} onClick={() => onTabChange(RibbonTab.TABLE_LAYOUT)} isContextual colorClass="text-amber-600" />
             </>
         )}
 
-        {/* Contextual Equation Tabs */}
         {activeElementType === 'equation' && (
             <>
                 <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
-                {renderTabButton(RibbonTab.EQUATION, Sigma, "Equation", true, "text-blue-500")}
+                <TabButton tabId={RibbonTab.EQUATION} icon={Sigma} label="Equation" isActive={activeTab === RibbonTab.EQUATION} onClick={() => onTabChange(RibbonTab.EQUATION)} isContextual colorClass="text-blue-500" />
             </>
         )}
 
-        {/* Spacer */}
         <div className="w-8 flex-shrink-0 h-1"></div> 
       </div>
 
-      {/* Right Navigation Arrow */}
        <div 
           className={`absolute right-0 top-0 bottom-0 z-30 flex items-center pr-1 pl-8 bg-gradient-to-l from-slate-900 dark:from-slate-950 via-slate-900/90 dark:via-slate-950/90 to-transparent transition-opacity duration-200 ${showRightArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >

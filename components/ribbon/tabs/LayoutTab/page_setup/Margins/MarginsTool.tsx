@@ -1,14 +1,14 @@
 
 import React, { useState, Suspense } from 'react';
 import { LayoutTemplate, Columns, ArrowLeftRight, MoveVertical, ArrowRightLeft, Monitor, Settings2 } from 'lucide-react';
-import { useEditor } from '../../../../../contexts/EditorContext';
-import { useLayoutTab } from '../LayoutTabContext';
-import { DropdownButton } from '../common/LayoutTools';
-import { MenuPortal } from '../../../common/MenuPortal';
-import { MARGIN_PRESETS } from '../../../../../constants';
-import { MarginPreset, PageConfig } from '../../../../../types';
+import { useEditor } from '../../../../../../../contexts/EditorContext';
+import { useLayoutTab } from '../../LayoutTabContext';
+import { DropdownButton } from '../../common/LayoutTools';
+import { MenuPortal } from '../../../../common/MenuPortal';
+import { MARGIN_PRESETS } from '../../../../../../../constants';
+import { MarginPreset, PageConfig } from '../../../../../../../types';
 
-const PageSetupDialog = React.lazy(() => import('../../../../PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
+const PageSetupDialog = React.lazy(() => import('./CustomMargin/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 
 export const MarginsTool: React.FC = () => {
   const { setPageConfig, pageConfig } = useEditor();

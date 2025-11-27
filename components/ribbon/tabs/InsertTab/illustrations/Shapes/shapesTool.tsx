@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Shapes } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 import { useInsertTab } from '../../InsertTabContext';
@@ -152,11 +152,11 @@ export const ShapesTool: React.FC = () => {
   const { activeMenu, menuPos, closeMenu } = useInsertTab();
   const menuId = 'shapes_menu';
 
-  const insertShape = (shape: ShapeDef) => {
+  const insertShape = useCallback((shape: ShapeDef) => {
       const html = getShapeHtml(shape);
       executeCommand('insertHTML', html);
       closeMenu();
-  };
+  }, [executeCommand, closeMenu]);
 
   return (
     <>

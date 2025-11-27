@@ -138,4 +138,4 @@ const StatusBar: React.FC = () => {
   );
 };
 
-export default StatusBar;
+export default React.memo(StatusBar);

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { BookOpen, X, Columns, Layout, Sun, Moon, Coffee, Type, Minus, Plus } from 'lucide-react';
-import { useEditor } from '../contexts/EditorContext';
+import { useEditor } from '../../../../../../contexts/EditorContext';
 
 export const ReadModeToolbar: React.FC = () => {
   const { readConfig, setReadConfig, setViewMode } = useEditor();

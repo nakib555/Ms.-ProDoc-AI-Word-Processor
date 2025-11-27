@@ -5,10 +5,9 @@ import { RibbonButton } from '../../../../common/RibbonButton';
 import { SmallRibbonButton } from '../../../ViewTab/common/ViewTools';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { 
-  Sigma, PenTool, Type, RefreshCw, 
+  Sigma, Omega, PenTool, Type, RefreshCw, 
   ChevronDown, Check, ArrowUp, ArrowDown,
-  Calculator, Percent, Ban, ScrollText, Triangle, ArrowRight, Activity,
-  Plus, Divide
+  Calculator, Percent, Ban, ScrollText, Triangle, ArrowRight, Activity
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 
@@ -111,10 +110,10 @@ const SYMBOL_CATEGORIES: Record<string, string[]> = {
 };
 
 const CATEGORY_ICONS: Record<string, any> = {
-  'Basic Math': Plus,
-  'Greek Letters': Sigma,
+  'Basic Math': Calculator,
+  'Greek Letters': Omega,
   'Letter-Like Symbols': Type,
-  'Operators': Divide,
+  'Operators': Activity,
   'Arrows': ArrowRight,
   'Negated Relations': Ban,
   'Scripts': ScrollText,

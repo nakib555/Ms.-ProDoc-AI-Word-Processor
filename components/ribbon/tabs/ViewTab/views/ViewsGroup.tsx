@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
-import { ReadModeTool } from './ReadModeTool';
+import { ReadModeTool } from './ReadMode/ReadModeTool';
 import { PrintLayoutTool } from './PrintLayoutTool';
 import { WebLayoutTool } from './WebLayoutTool';
 import { OutlineTool } from './OutlineTool';

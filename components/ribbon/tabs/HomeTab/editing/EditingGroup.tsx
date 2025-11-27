@@ -1,4 +1,3 @@
-
 import React, { useState, Suspense } from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -6,7 +5,7 @@ import { FindTool } from './FindTool';
 import { ReplaceTool } from './ReplaceTool';
 import { SelectTool } from './SelectTool';
 
-const FindReplaceDialog = React.lazy(() => import('../../../../FindReplaceDialog').then(m => ({ default: m.FindReplaceDialog })));
+const FindReplaceDialog = React.lazy(() => import('./FindReplaceDialog').then(m => ({ default: m.FindReplaceDialog })));
 
 export const EditingGroup: React.FC = () => {
   const { editorRef } = useEditor();
