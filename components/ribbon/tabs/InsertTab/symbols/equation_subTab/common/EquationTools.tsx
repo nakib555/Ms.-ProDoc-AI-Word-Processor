@@ -4,6 +4,18 @@ import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
 import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
+import { insertMathStructure } from './mathUtils';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'read-only'?: boolean;
+        placeholder?: string;
+      };
+    }
+  }
+}
 
 export const StructureButton: React.FC<{
   icon: any;
@@ -42,10 +54,10 @@ const SymbolBtn: React.FC<{ symbol: string, onClick: () => void }> = ({ symbol, 
 const TabButton: React.FC<{ label: string, active: boolean, onClick: () => void, className?: string }> = ({ label, active, onClick, className = '' }) => (
     <button
         onClick={(e) => { e.stopPropagation(); onClick(); }}
-        className={`px-3 py-2 text-[10px] font-bold uppercase tracking-wide transition-colors whitespace-nowrap rounded-t-md border-b-2 flex-shrink-0 outline-none ${
+        className={`px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all whitespace-nowrap rounded-lg flex-shrink-0 outline-none select-none border ${
             active 
-            ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/20' 
-            : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 border-transparent hover:text-slate-700 dark:hover:text-slate-200'
+            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border-slate-200 dark:border-slate-600 ring-1 ring-black/[0.02]' 
+            : 'text-slate-500 dark:text-slate-400 border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200'
         } ${className}`}
     >
         {label}
@@ -130,7 +142,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                     
                     {isOperators ? (
                         <div className="flex flex-col h-full max-h-[400px]">
-                            <HorizontalScrollContainer className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
+                            <HorizontalScrollContainer className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto no-scrollbar mb-2 gap-1">
                                 {['Binary', 'Relational', 'N-ary', 'Adv. Binary', 'Adv. Relational'].map(tab => (
                                     <TabButton 
                                         key={tab} 
@@ -153,7 +165,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                         </div>
                     ) : isGreek ? (
                         <div className="flex flex-col h-full max-h-[400px]">
-                            <HorizontalScrollContainer className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
+                            <HorizontalScrollContainer className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto no-scrollbar mb-2 gap-1">
                                 <TabButton label="Lowercase" active={greekTab === 'Lowercase'} onClick={() => setGreekTab('Lowercase')} className="flex-1 min-w-[80px]" />
                                 <TabButton label="Uppercase" active={greekTab === 'Uppercase'} onClick={() => setGreekTab('Uppercase')} className="flex-1 min-w-[80px]" />
                             </HorizontalScrollContainer>
@@ -171,7 +183,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                         </div>
                     ) : isScripts ? (
                         <div className="flex flex-col h-full max-h-[400px]">
-                            <HorizontalScrollContainer className="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-x-auto no-scrollbar mb-2 gap-1 pb-1">
+                            <HorizontalScrollContainer className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto no-scrollbar mb-2 gap-1">
                                 <TabButton label="Scripts" active={scriptTab === 'Scripts'} onClick={() => setScriptTab('Scripts')} className="flex-1 min-w-[70px]" />
                                 <TabButton label="Frakturs" active={scriptTab === 'Frakturs'} onClick={() => setScriptTab('Frakturs')} className="flex-1 min-w-[70px]" />
                                 <TabButton label="Double-Struck" active={scriptTab === 'Double-Struck'} onClick={() => setScriptTab('Double-Struck')} className="flex-1 min-w-[90px]" />
@@ -193,6 +205,149 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </div>
                         </div>
                     )}
+                </div>
+            </MenuPortal>
+        </>
+    );
+};
+
+export interface StructureOption {
+    label?: string;
+    latex: string;
+    insertValue: string;
+}
+
+export interface StructureSection {
+    title?: string;
+    items: StructureOption[];
+    cols?: number; // Optional override for grid columns
+}
+
+// Reusable Dropdown for Equation Structures (Fraction, Script, etc.)
+export const StructureDropdown: React.FC<{
+    id: string;
+    icon: any;
+    label: string;
+    sections: StructureSection[];
+    width?: string | number;
+}> = ({ id, icon: Icon, label, sections, width = 380 }) => {
+    const { activeMenu, toggleMenu, closeMenu, registerTrigger, menuPos } = useEquationTab();
+    const isOpen = activeMenu === id;
+    const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+
+    return (
+        <>
+            <button
+                ref={(el) => registerTrigger(id, el)}
+                onClick={(e) => { e.stopPropagation(); toggleMenu(id); }}
+                onMouseDown={(e) => e.preventDefault()}
+                className={`flex flex-col items-center justify-center px-1 py-1 min-w-[56px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex-shrink-0 ${isOpen ? 'bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : ''}`}
+                title={label}
+            >
+                <div className="p-1.5 rounded-md group-hover:bg-white dark:group-hover:bg-slate-700 group-hover:shadow-sm transition-all mb-0.5 bg-transparent">
+                    <Icon className={`w-5 h-5 transition-colors ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`} strokeWidth={1.5} />
+                </div>
+                <div className="flex items-center justify-center w-full px-0.5">
+                    <span className="text-[10px] font-medium leading-tight text-center text-slate-500 dark:text-slate-400 group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate w-full">{label}</span>
+                    <ChevronDown size={8} className={`ml-0.5 transition-transform ${isOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'} shrink-0`} />
+                </div>
+            </button>
+
+            <MenuPortal
+                id={id}
+                activeMenu={activeMenu}
+                menuPos={menuPos}
+                closeMenu={closeMenu}
+                width={width}
+            >
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg shadow-sm overflow-hidden flex flex-col h-full max-h-[480px]">
+                    {sections.length > 1 && (
+                        <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-2 shrink-0">
+                            <HorizontalScrollContainer className="flex overflow-x-auto no-scrollbar gap-1.5">
+                                {sections.map((section, i) => (
+                                    <TabButton 
+                                        key={i}
+                                        label={section.title || `Set ${i + 1}`}
+                                        active={activeSectionIndex === i}
+                                        onClick={() => setActiveSectionIndex(i)}
+                                        className="flex-1"
+                                    />
+                                ))}
+                            </HorizontalScrollContainer>
+                        </div>
+                    )}
+
+                    <div className="overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 flex-1 bg-white dark:bg-slate-900">
+                        {(() => {
+                            const section = sections[activeSectionIndex];
+                            return (
+                                <div>
+                                    {sections.length === 1 && section.title && (
+                                        <div className="px-1 mb-3 pb-1 border-b border-slate-100 dark:border-slate-800">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{section.title}</span>
+                                        </div>
+                                    )}
+                                    <div 
+                                        className="grid gap-3 p-1" 
+                                        style={{ 
+                                            gridTemplateColumns: `repeat(${section.cols || 2}, 1fr)` 
+                                        }}
+                                    >
+                                        {section.items.map((item, j) => (
+                                            <button 
+                                                key={j}
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    insertMathStructure(item.insertValue); 
+                                                    closeMenu(); 
+                                                }}
+                                                className="
+                                                    group relative flex flex-col items-center justify-center 
+                                                    aspect-[1.25/1] rounded-xl transition-all duration-300 ease-out
+                                                    bg-white dark:bg-slate-800 
+                                                    border border-slate-200 dark:border-slate-700
+                                                    hover:border-blue-500/50 dark:hover:border-blue-400/50
+                                                    hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]
+                                                    hover:-translate-y-0.5
+                                                    hover:bg-slate-50/50 dark:hover:bg-slate-700/30
+                                                    focus:outline-none focus:ring-2 focus:ring-blue-500/20
+                                                    overflow-hidden
+                                                "
+                                                title={item.label}
+                                            >
+                                                <div className="
+                                                    w-full h-full flex items-center justify-center 
+                                                    text-slate-700 dark:text-slate-200
+                                                    group-hover:text-slate-900 dark:group-hover:text-white
+                                                    group-hover:scale-110 transition-transform duration-300
+                                                    p-3
+                                                ">
+                                                    <math-field read-only style={{
+                                                        border:'none', 
+                                                        background:'transparent', 
+                                                        pointerEvents:'none', 
+                                                        fontSize:'1.5em', 
+                                                        width: '100%', 
+                                                        textAlign: 'center',
+                                                        color: 'currentColor'
+                                                    }}>
+                                                        {item.latex}
+                                                    </math-field>
+                                                </div>
+                                                
+                                                {/* Label Overlay on Hover */}
+                                                {item.label && (
+                                                    <div className="absolute bottom-0 left-0 right-0 py-1 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-800 dark:via-slate-800/90 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                                        <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[90%] px-1">{item.label}</span>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>
             </MenuPortal>
         </>

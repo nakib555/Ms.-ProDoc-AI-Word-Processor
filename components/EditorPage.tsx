@@ -2,6 +2,7 @@
 import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { PageConfig } from '../types';
 import { PAGE_SIZES } from '../constants';
+import { useMathLive } from '../hooks/useMathLive';
 
 interface EditorPageProps {
   content: string;
@@ -29,9 +30,22 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
 
+  // Initialize MathLive handling for any equations on this page
+  useMathLive(content, editorRef);
+
   // Sync content to editable div without losing cursor
   useLayoutEffect(() => {
     if (editorRef.current) {
+      // Protection: If focus is inside a math-field, do not enforce content sync from props.
+      // This prevents the React render cycle (triggered by the math-field's own mutation)
+      // from overwriting the DOM with a slightly stale value, which would kill the math-field focus/state.
+      const activeEl = document.activeElement;
+      const isMathFieldFocused = activeEl && activeEl.tagName.toLowerCase() === 'math-field' && editorRef.current.contains(activeEl);
+      
+      if (isMathFieldFocused) {
+          return;
+      }
+
       // Only update if significantly different to avoid cursor jumps
       if (editorRef.current.innerHTML !== content) {
         editorRef.current.innerHTML = content;

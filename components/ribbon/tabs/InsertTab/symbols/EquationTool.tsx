@@ -8,8 +8,11 @@ export const EquationTool: React.FC = () => {
   const { executeCommand } = useEditor();
 
   const insertEquation = () => {
-      // Insert a styled span that acts as the equation box
-      const html = `&nbsp;<span class="prodoc-equation" style="display: inline-block; border: 1px solid #cbd5e1; background-color: #f8fafc; padding: 4px 8px; margin: 0 2px; border-radius: 2px; min-width: 20px; text-align: center;"><span style="font-family: 'Cambria Math', 'Times New Roman', serif; font-style: italic; color: #64748b;">Type equation here.</span></span>&nbsp;`;
+      // Insert a structured equation box mimicking MS Word
+      // Wrapper has contenteditable="false" to act as a single block for the editor's cursor handling logic,
+      // but allows focus to enter the math-field inside.
+      // Using zero-width spaces (&#8203;) for seamless cursor boundary
+      const html = `&#8203;<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type equation here."></math-field><span class="equation-dropdown">▼</span></span>&#8203;`;
       executeCommand('insertHTML', html);
   };
 

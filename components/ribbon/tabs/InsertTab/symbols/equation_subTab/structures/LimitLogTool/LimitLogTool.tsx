@@ -1,7 +1,5 @@
-
 import React from 'react';
-import { useEditor } from '../../../../../../../../contexts/EditorContext';
-import { StructureButton } from '../../common/EquationTools';
+import { StructureDropdown } from '../../common/EquationTools';
 
 const LimitIcon = (props: any) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
@@ -11,11 +9,35 @@ const LimitIcon = (props: any) => (
 );
 
 export const LimitLogTool: React.FC = () => {
-  const { executeCommand } = useEditor();
-  const flexColCenter = "display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px;";
-  const limitHTML = `<span style="${flexColCenter} margin-right: 4px;"><span style="font-family: 'Times New Roman', serif;">lim</span><span style="font-size: 0.7em;">n&rarr;&infin;</span></span>&nbsp;`;
+  const sections = [
+    {
+      title: "Functions",
+      items: [
+        // Row 1
+        { label: "Log with Base", latex: "\\log_{\\placeholder{}} \\placeholder{}", insertValue: "\\log_{\\placeholder{}} \\placeholder{}" },
+        { label: "Log", latex: "\\log \\placeholder{}", insertValue: "\\log \\placeholder{}" },
+        { label: "Limit", latex: "\\lim_{\\placeholder{}} \\placeholder{}", insertValue: "\\lim_{\\placeholder{}} \\placeholder{}" },
+        // Row 2
+        { label: "Minimum", latex: "\\min_{\\placeholder{}} \\placeholder{}", insertValue: "\\min_{\\placeholder{}} \\placeholder{}" },
+        { label: "Maximum", latex: "\\max_{\\placeholder{}} \\placeholder{}", insertValue: "\\max_{\\placeholder{}} \\placeholder{}" },
+        { label: "Natural Log", latex: "\\ln \\placeholder{}", insertValue: "\\ln \\placeholder{}" }
+      ]
+    },
+    {
+        title: "Common Functions",
+        items: [
+            { label: "Euler's Limit", latex: "\\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^{n}", insertValue: "\\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^{n}" },
+            { label: "Max Example", latex: "\\max_{0 \\le x \\le 1} x e^{-x^2}", insertValue: "\\max_{0 \\le x \\le 1} x e^{-x^2}" }
+        ]
+    }
+  ];
 
   return (
-    <StructureButton icon={LimitIcon} label="Limit and Log" onClick={() => executeCommand('insertHTML', limitHTML)} hasArrow />
+    <StructureDropdown 
+        id="struct-limitlog"
+        icon={LimitIcon} 
+        label="Limit and Log" 
+        sections={sections}
+    />
   );
 };

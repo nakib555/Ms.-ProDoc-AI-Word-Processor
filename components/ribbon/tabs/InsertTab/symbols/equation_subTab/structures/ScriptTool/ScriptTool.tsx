@@ -1,7 +1,5 @@
-
 import React from 'react';
-import { useEditor } from '../../../../../../../../contexts/EditorContext';
-import { StructureButton } from '../../common/EquationTools';
+import { StructureDropdown } from '../../common/EquationTools';
 
 const ScriptIcon = (props: any) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
@@ -11,11 +9,33 @@ const ScriptIcon = (props: any) => (
 );
 
 export const ScriptTool: React.FC = () => {
-  const { executeCommand } = useEditor();
-  const placeholder = `<span style="border: 1px dotted #94a3b8; min-width: 12px; min-height: 12px; display: inline-block; background-color: rgba(0,0,0,0.02); margin: 0 1px;">&nbsp;</span>`;
-  const scriptHTML = `${placeholder}<sup>${placeholder}</sup>`;
+  const sections = [
+    {
+      title: "Subscripts and Superscripts",
+      items: [
+        { label: "Superscript", latex: "\\placeholder{}^{\\placeholder{}}", insertValue: "\\placeholder{}^{\\placeholder{}}" },
+        { label: "Subscript", latex: "\\placeholder{}_{\\placeholder{}}", insertValue: "\\placeholder{}_{\\placeholder{}}" },
+        { label: "Subscript-Superscript", latex: "\\placeholder{}_{\\placeholder{}}^{\\placeholder{}}", insertValue: "\\placeholder{}_{\\placeholder{}}^{\\placeholder{}}" },
+        { label: "Left Sub-Superscript", latex: "{}_{\\placeholder{}}^{\\placeholder{}}\\placeholder{}", insertValue: "{}_{\\placeholder{}}^{\\placeholder{}}\\placeholder{}" }
+      ]
+    },
+    {
+      title: "Common Subscripts and Superscripts",
+      items: [
+        { label: "Subscript Expression", latex: "x_{y^2}", insertValue: "x_{y^2}" },
+        { label: "Exponential", latex: "e^{-i\\omega t}", insertValue: "e^{-i\\omega t}" },
+        { label: "Squared", latex: "x^2", insertValue: "x^2" },
+        { label: "Prescript Tensor", latex: "{}_{1}^{n}Y", insertValue: "{}_{1}^{n}Y" }
+      ]
+    }
+  ];
 
   return (
-    <StructureButton icon={ScriptIcon} label="Script" onClick={() => executeCommand('insertHTML', scriptHTML)} hasArrow />
+    <StructureDropdown 
+        id="struct-script"
+        icon={ScriptIcon} 
+        label="Script" 
+        sections={sections}
+    />
   );
 };

@@ -120,6 +120,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Selection Detection Logic
   useEffect(() => {
     const checkSelection = () => {
+      // Priority check for MathLive active element (Shadow DOM focus)
+      if (document.activeElement && document.activeElement.tagName === 'MATH-FIELD') {
+          setActiveElementType('equation');
+          return;
+      }
+
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
         return;
@@ -139,7 +145,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (current === editorRef.current || current.classList.contains('prodoc-editor')) {
                 break;
             }
-            if (current.classList.contains('prodoc-equation')) {
+            if (current.tagName === 'MATH-FIELD' || current.classList.contains('prodoc-equation')) {
                 type = 'equation';
                 break;
             }
@@ -162,12 +168,15 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     document.addEventListener('mouseup', checkSelection);
     document.addEventListener('keyup', checkSelection);
     document.addEventListener('click', checkSelection);
+    // Add focusin to detect focus changes into web components/shadow DOM
+    document.addEventListener('focusin', checkSelection);
 
     return () => {
       document.removeEventListener('selectionchange', checkSelection);
       document.removeEventListener('mouseup', checkSelection);
       document.removeEventListener('keyup', checkSelection);
       document.removeEventListener('click', checkSelection);
+      document.removeEventListener('focusin', checkSelection);
     };
   }, []);
 

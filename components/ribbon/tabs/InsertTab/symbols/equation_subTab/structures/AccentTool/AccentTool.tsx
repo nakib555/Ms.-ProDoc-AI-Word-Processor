@@ -1,7 +1,5 @@
-
 import React from 'react';
-import { useEditor } from '../../../../../../../../contexts/EditorContext';
-import { StructureButton } from '../../common/EquationTools';
+import { StructureDropdown } from '../../common/EquationTools';
 
 const AccentIcon = (props: any) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
@@ -12,12 +10,64 @@ const AccentIcon = (props: any) => (
 );
 
 export const AccentTool: React.FC = () => {
-  const { executeCommand } = useEditor();
-  const flexColCenter = "display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px;";
-  const placeholder = `<span style="border: 1px dotted #94a3b8; min-width: 12px; min-height: 12px; display: inline-block; background-color: rgba(0,0,0,0.02); margin: 0 1px;">&nbsp;</span>`;
-  const accentHTML = `<span style="${flexColCenter}"><span style="font-size: 0.5em;">^</span><span style="margin-top: -0.4em;">${placeholder}</span></span>&nbsp;`;
+  const sections = [
+    {
+      title: "Accents",
+      items: [
+        // Row 1
+        { label: "Dot", latex: "\\dot{\\placeholder{}}", insertValue: "\\dot{\\placeholder{}}" },
+        { label: "Double Dot", latex: "\\ddot{\\placeholder{}}", insertValue: "\\ddot{\\placeholder{}}" },
+        { label: "Triple Dot", latex: "\\dddot{\\placeholder{}}", insertValue: "\\dddot{\\placeholder{}}" },
+        { label: "Hat", latex: "\\hat{\\placeholder{}}", insertValue: "\\hat{\\placeholder{}}" },
+        // Row 2
+        { label: "Check", latex: "\\check{\\placeholder{}}", insertValue: "\\check{\\placeholder{}}" },
+        { label: "Acute", latex: "\\acute{\\placeholder{}}", insertValue: "\\acute{\\placeholder{}}" },
+        { label: "Grave", latex: "\\grave{\\placeholder{}}", insertValue: "\\grave{\\placeholder{}}" },
+        { label: "Breve", latex: "\\breve{\\placeholder{}}", insertValue: "\\breve{\\placeholder{}}" },
+        // Row 3
+        { label: "Tilde", latex: "\\tilde{\\placeholder{}}", insertValue: "\\tilde{\\placeholder{}}" },
+        { label: "Bar", latex: "\\bar{\\placeholder{}}", insertValue: "\\bar{\\placeholder{}}" },
+        { label: "Vector", latex: "\\vec{\\placeholder{}}", insertValue: "\\vec{\\placeholder{}}" },
+        { label: "Left Vector", latex: "\\overleftarrow{\\placeholder{}}", insertValue: "\\overleftarrow{\\placeholder{}}" },
+        // Row 4
+        { label: "Right Arrow", latex: "\\overrightarrow{\\placeholder{}}", insertValue: "\\overrightarrow{\\placeholder{}}" },
+        { label: "Left Arrow", latex: "\\overleftarrow{\\placeholder{}}", insertValue: "\\overleftarrow{\\placeholder{}}" },
+        { label: "Double Arrow", latex: "\\overleftrightarrow{\\placeholder{}}", insertValue: "\\overleftrightarrow{\\placeholder{}}" },
+        { label: "Wide Hat", latex: "\\widehat{\\placeholder{}}", insertValue: "\\widehat{\\placeholder{}}" },
+      ]
+    },
+    {
+        title: "Boxed Formulas",
+        items: [
+            { label: "Boxed", latex: "\\boxed{\\placeholder{}}", insertValue: "\\boxed{\\placeholder{}}" }
+        ]
+    },
+    {
+        title: "Overbars and Underbars",
+        items: [
+            { label: "Overline", latex: "\\overline{\\placeholder{}}", insertValue: "\\overline{\\placeholder{}}" },
+            { label: "Underline", latex: "\\underline{\\placeholder{}}", insertValue: "\\underline{\\placeholder{}}" },
+            { label: "Overbrace", latex: "\\overbrace{\\placeholder{}}", insertValue: "\\overbrace{\\placeholder{}}" },
+            { label: "Underbrace", latex: "\\underbrace{\\placeholder{}}", insertValue: "\\underbrace{\\placeholder{}}" }
+        ]
+    },
+    {
+        title: "Common Accent Objects",
+        items: [
+            // These items match the visuals in the screenshot but insert generic structures
+            { label: "Bar A", latex: "\\bar{A}", insertValue: "\\bar{\\placeholder{}}" },
+            { label: "Overline ABC", latex: "\\overline{ABC}", insertValue: "\\overline{\\placeholder{}}" },
+            { label: "Overline Expression", latex: "\\overline{x \\oplus y}", insertValue: "\\overline{\\placeholder{} \\oplus \\placeholder{}}" }
+        ]
+    }
+  ];
 
   return (
-    <StructureButton icon={AccentIcon} label="Accent" onClick={() => executeCommand('insertHTML', accentHTML)} hasArrow />
+    <StructureDropdown 
+        id="struct-accent"
+        icon={AccentIcon} 
+        label="Accent" 
+        sections={sections}
+    />
   );
 };

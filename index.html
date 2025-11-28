@@ -13,6 +13,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- MathLive Dependencies -->
+    <script defer src="//unpkg.com/mathlive"></script>
+
     <script>
       tailwind.config = {
         darkMode: 'class',
@@ -89,6 +93,136 @@
         outline: none;
       }
 
+      /* --- MathLive / Equation Box Styles --- */
+      
+      /* The Wrapper Container */
+      .equation-wrapper {
+        display: inline-flex;
+        align-items: stretch;
+        vertical-align: middle;
+        margin: 4px 2px;
+        border: 1px solid transparent;
+        position: relative;
+        border-radius: 2px;
+        transition: background-color 0.1s ease, border-color 0.1s ease;
+        cursor: text; /* Allow clicking to feel like editing text */
+      }
+
+      /* Hover State */
+      .equation-wrapper:hover {
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+      }
+
+      /* Active State (Focus Within) */
+      .equation-wrapper:focus-within {
+        border-color: #cbd5e1; /* slate-300 */
+        background-color: #f1f5f9; /* slate-100 */
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+
+      /* Handle (Left Grip) */
+      .equation-handle {
+        display: none; /* Hidden by default */
+        width: 14px;
+        background-color: #cbd5e1; /* Match border */
+        color: #475569; /* slate-600 */
+        font-size: 12px;
+        line-height: 1;
+        align-items: center;
+        justify-content: center;
+        cursor: default;
+        user-select: none;
+        flex-shrink: 0;
+        font-family: sans-serif;
+      }
+
+      .equation-wrapper:focus-within .equation-handle {
+        display: flex;
+      }
+
+      /* Dropdown Arrow (Right) */
+      .equation-dropdown {
+        display: none; /* Hidden by default */
+        width: 14px;
+        color: #475569;
+        font-size: 8px;
+        align-items: flex-end;
+        justify-content: center;
+        cursor: pointer;
+        user-select: none;
+        padding-bottom: 4px;
+        flex-shrink: 0;
+      }
+
+      .equation-wrapper:focus-within .equation-dropdown {
+        display: flex;
+      }
+
+      /* Math Field Overrides inside Wrapper */
+      .equation-wrapper math-field {
+        margin: 0 !important;
+        padding: 4px 8px !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        min-width: 100px;
+        color: #1e293b; /* slate-800 */
+        cursor: text;
+      }
+
+      .equation-wrapper math-field:focus,
+      .equation-wrapper math-field:focus-within {
+        outline: none !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Standalone MathLive Integration Styles (fallback) */
+      math-field:not(.equation-wrapper math-field) {
+        display: inline-block;
+        font-size: 1.15em;
+        margin: 0 2px;
+        padding: 4px 8px;
+        background-color: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 4px;
+        color: #1e293b;
+        min-width: 100px;
+        vertical-align: middle;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+      }
+      
+      math-field:not(.equation-wrapper math-field):focus, 
+      math-field:not(.equation-wrapper math-field):focus-within {
+        outline: none;
+        border-color: #3b82f6;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      }
+
+      /* Dark mode support */
+      .dark .equation-wrapper:focus-within {
+        background-color: #1e293b;
+        border-color: #475569;
+      }
+      .dark .equation-wrapper:hover {
+        background-color: #1e293b;
+        border-color: #334155;
+      }
+      .dark .equation-handle {
+        background-color: #475569;
+        color: #94a3b8;
+      }
+      .dark .equation-dropdown {
+        color: #94a3b8;
+      }
+      .dark .equation-wrapper math-field {
+        color: #e2e8f0;
+      }
+
       /* Formatting Marks */
       .show-formatting-marks p::after, 
       .show-formatting-marks div::after,
@@ -126,6 +260,19 @@
           margin: 0 !important;
           page-break-after: always;
         }
+        math-field {
+          border: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+        }
+        .equation-wrapper {
+          border: none !important;
+          background: transparent !important;
+        }
+        .equation-handle, .equation-dropdown {
+          display: none !important;
+        }
       }
     </style>
   <script type="importmap">
@@ -146,6 +293,7 @@
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-slate-100 dark:bg-slate-950 h-[100dvh] overflow-hidden text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-blue-200 selection:text-blue-900">
     <div id="root" class="h-full flex flex-col"></div>

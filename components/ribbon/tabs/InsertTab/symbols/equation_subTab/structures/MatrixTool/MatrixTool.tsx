@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { useEditor } from '../../../../../../../../contexts/EditorContext';
-import { StructureButton } from '../../common/EquationTools';
+import { StructureDropdown } from '../../common/EquationTools';
 
 const MatrixIcon = (props: any) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
@@ -13,12 +12,52 @@ const MatrixIcon = (props: any) => (
 );
 
 export const MatrixTool: React.FC = () => {
-  const { executeCommand } = useEditor();
-  const flexRowCenter = "display: inline-flex; align-items: center; vertical-align: middle;";
-  const placeholder = `<span style="border: 1px dotted #94a3b8; min-width: 12px; min-height: 12px; display: inline-block; background-color: rgba(0,0,0,0.02); margin: 0 1px;">&nbsp;</span>`;
-  const matrixHTML = `<span style="${flexRowCenter}"><span style="font-size: 2.5em; font-weight: lighter;">[</span><span style="display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin: 0 4px; text-align: center;"><span>${placeholder}</span><span>${placeholder}</span><span>${placeholder}</span><span>${placeholder}</span></span><span style="font-size: 2.5em; font-weight: lighter;">]</span></span>&nbsp;`;
+  const sections = [
+    {
+      title: "Empty Matrices",
+      items: [
+        { label: "1x2 Matrix", latex: "\\begin{matrix} \\placeholder & \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder & \\placeholder \\end{matrix}" },
+        { label: "2x1 Matrix", latex: "\\begin{matrix} \\placeholder \\\\ \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder \\\\ \\placeholder \\end{matrix}" },
+        { label: "2x2 Matrix", latex: "\\begin{matrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{matrix}" },
+        { label: "3x3 Matrix", latex: "\\begin{matrix} \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\end{matrix}" }
+      ]
+    },
+    {
+      title: "Matrices with Brackets",
+      items: [
+        { label: "Parentheses Matrix", latex: "\\begin{pmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{pmatrix}", insertValue: "\\begin{pmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{pmatrix}" },
+        { label: "Square Brackets Matrix", latex: "\\begin{bmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{bmatrix}", insertValue: "\\begin{bmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{bmatrix}" }
+      ]
+    },
+    {
+        title: "Dots",
+        items: [
+            { label: "Dots", latex: "\\dots", insertValue: "\\dots" },
+            { label: "Vertical Dots", latex: "\\vdots", insertValue: "\\vdots" },
+            { label: "Diagonal Dots", latex: "\\ddots", insertValue: "\\ddots" }
+        ]
+    },
+    {
+        title: "Identity Matrices",
+        items: [
+            { label: "2x2 Identity", latex: "\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}", insertValue: "\\begin{pmatrix} 1 & 0 \\\\ 0 & 1 \\end{pmatrix}" },
+            { label: "3x3 Identity", latex: "\\begin{pmatrix} 1 & 0 & 0 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 1 \\end{pmatrix}", insertValue: "\\begin{pmatrix} 1 & 0 & 0 \\\\ 0 & 1 & 0 \\\\ 0 & 0 & 1 \\end{pmatrix}" }
+        ]
+    },
+    {
+        title: "Sparse Matrices",
+        items: [
+            { label: "Sparse", latex: "\\begin{pmatrix} 1 & & \\\\ & 1 & \\\\ & & 1 \\end{pmatrix}", insertValue: "\\begin{pmatrix} 1 & & \\\\ & 1 & \\\\ & & 1 \\end{pmatrix}" }
+        ]
+    }
+  ];
 
   return (
-    <StructureButton icon={MatrixIcon} label="Matrix" onClick={() => executeCommand('insertHTML', matrixHTML)} hasArrow />
+    <StructureDropdown 
+        id="struct-matrix"
+        icon={MatrixIcon} 
+        label="Matrix" 
+        sections={sections}
+    />
   );
 };

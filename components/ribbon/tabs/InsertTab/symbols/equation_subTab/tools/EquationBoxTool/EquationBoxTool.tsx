@@ -6,13 +6,18 @@ import { useEditor } from '../../../../../../../../contexts/EditorContext';
 
 export const EquationBoxTool: React.FC = () => {
   const { executeCommand } = useEditor();
+  
+  // Insert structured Equation Box
   const insertStructure = (html: string) => executeCommand('insertHTML', html);
+
+  // Use zero-width spaces (&#8203;) around the wrapper
+  const boxHtml = `&#8203;<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type equation here."></math-field><span class="equation-dropdown">▼</span></span>&#8203;`;
 
   return (
     <RibbonButton 
         icon={Sigma} 
         label="Equation" 
-        onClick={() => insertStructure('&nbsp;<span class="prodoc-equation" style="display: inline-block; border: 1px solid #cbd5e1; background-color: #f8fafc; padding: 4px 8px; margin: 0 2px; border-radius: 2px; min-width: 20px; text-align: center;"><span style="font-family: \'Cambria Math\', \'Times New Roman\', serif; font-style: italic; color: #64748b;">Type equation here.</span></span>&nbsp;')} 
+        onClick={() => insertStructure(boxHtml)} 
         hasArrow 
         className="min-w-[60px]"
         title="Insert Equation Box"

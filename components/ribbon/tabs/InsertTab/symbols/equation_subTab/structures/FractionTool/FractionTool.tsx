@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { useEditor } from '../../../../../../../../contexts/EditorContext';
-import { StructureButton } from '../../common/EquationTools';
+import { StructureDropdown } from '../../common/EquationTools';
 
 const FractionIcon = (props: any) => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" {...props}>
@@ -12,13 +11,50 @@ const FractionIcon = (props: any) => (
 );
 
 export const FractionTool: React.FC = () => {
-  const { executeCommand } = useEditor();
-  const flexColCenter = "display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 2px;";
-  const borderBottom = "border-bottom: 1px solid currentColor;";
-  const placeholder = `<span style="border: 1px dotted #94a3b8; min-width: 12px; min-height: 12px; display: inline-block; background-color: rgba(0,0,0,0.02); margin: 0 1px;">&nbsp;</span>`;
-  const fractionHTML = `<span style="${flexColCenter} vertical-align: -0.5em;"><span style="${borderBottom} padding: 0 2px;">${placeholder}</span><span style="padding: 0 2px;">${placeholder}</span></span>&nbsp;`;
+  const sections = [
+    {
+  title: "Fraction",
+  cols: 4,
+  items: [
+    {
+      label: "Stacked Fraction",
+      latex: "\\frac{\\placeholder{}}{\\placeholder{}}",
+      insertValue: "\\frac{\\placeholder{}}{\\placeholder{}}"
+    },
+    { label: "Skewed Fraction", latex: " {}^{\\displaystyle \\placeholder{}}/_{\\displaystyle \\placeholder{}}", 
+      insertValue: "{ {}^{\\displaystyle \\placeholder{}}/_{\\displaystyle \\placeholder{}}}" },
+    {
+      label: "Linear Fraction",
+      latex: "{\\placeholder{}}/{\\placeholder{}}",
+      insertValue: "{\\placeholder{}}/{\\placeholder{}}"
+    },
+    {
+      label: "Small Fraction",
+      latex: "\\tfrac{\\placeholder{}}{\\placeholder{}}",
+      insertValue: "\\tfrac{\\placeholder{}}{\\placeholder{}}"
+    }
+  ]
+}
+,
+    {
+      title: "Common Fraction",
+      cols: 4,
+      items: [
+        { label: "dy over dx", latex: "\\frac{dy}{dx}", insertValue: "\\frac{dy}{dx}" },
+        { label: "Delta y over Delta x", latex: "\\frac{\\Delta y}{\\Delta x}", insertValue: "\\frac{\\Delta y}{\\Delta x}" },
+        { label: "Partial y over Partial x", latex: "\\frac{\\partial y}{\\partial x}", insertValue: "\\frac{\\partial y}{\\partial x}" },
+        { label: "delta y over delta x", latex: "\\frac{\\delta y}{\\delta x}", insertValue: "\\frac{\\delta y}{\\delta x}" },
+        { label: "Pi over 2", latex: "\\frac{\\pi}{2}", insertValue: "\\frac{\\pi}{2}" }
+      ]
+    }
+  ];
 
   return (
-    <StructureButton icon={FractionIcon} label="Fraction" onClick={() => executeCommand('insertHTML', fractionHTML)} hasArrow />
+    <StructureDropdown 
+        id="struct-fraction"
+        icon={FractionIcon} 
+        label="Fraction" 
+        sections={sections}
+    />
   );
 };

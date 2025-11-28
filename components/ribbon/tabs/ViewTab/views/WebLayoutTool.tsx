@@ -4,6 +4,7 @@ import { Globe } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { PageConfig } from '../../../../../types';
+import { useMathLive } from '../../../../../hooks/useMathLive';
 
 export const WebLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -42,6 +43,9 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
 }) => {
   const scale = zoom / 100;
   
+  // Initialize MathLive for any equations
+  useMathLive(content, editorRef);
+
   // In Web Layout, we scale the container but compensate width to fill viewport
   const webLayoutStyle: React.CSSProperties = {
     minHeight: '100%',
@@ -55,9 +59,15 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
   // Sync content to editable div without losing cursor
   useLayoutEffect(() => {
     if (editorRef.current) {
+      // Protection: If focus is inside a math-field, do not enforce content sync from props.
+      const activeEl = document.activeElement;
+      const isMathFieldFocused = activeEl && activeEl.tagName.toLowerCase() === 'math-field' && editorRef.current.contains(activeEl);
+      
+      if (isMathFieldFocused) {
+          return;
+      }
+
       // Only update innerHTML if it differs from the prop.
-      // This prevents resetting the cursor position during normal typing where 
-      // the DOM is already ahead or in sync with the React state.
       if (editorRef.current.innerHTML !== content) {
         editorRef.current.innerHTML = content;
       }
