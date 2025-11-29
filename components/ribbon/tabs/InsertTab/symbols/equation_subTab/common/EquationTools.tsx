@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
@@ -5,16 +6,7 @@ import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
 import { insertMathStructure } from './mathUtils';
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        'read-only'?: boolean;
-        placeholder?: string;
-      };
-    }
-  }
-}
+const MathField = 'math-field' as any;
 
 export const StructureButton: React.FC<{
   icon: any;
@@ -321,17 +313,17 @@ export const StructureDropdown: React.FC<{
                                                     group-hover:scale-110 transition-transform duration-300
                                                     p-2
                                                 ">
-                                                    <math-field read-only style={{
+                                                    <MathField read-only style={{
                                                         border:'none', 
                                                         background:'transparent', 
                                                         pointerEvents:'none', 
-                                                        fontSize:'1.6rem', 
+                                                        fontSize:'auto', 
                                                         width: '100%', 
                                                         textAlign: 'center',
                                                         color: 'currentColor'
                                                     }}>
                                                         {item.latex}
-                                                    </math-field>
+                                                    </MathField>
                                                 </div>
                                                 
                                                 {/* Label Overlay on Hover */}
@@ -352,3 +344,4 @@ export const StructureDropdown: React.FC<{
         </>
     );
 };
+    
