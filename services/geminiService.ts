@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { AIOperation } from '../types';
+import { getSystemPrompt } from './prompts';
 
 const getClient = () => {
   // Check localStorage first for user-provided key
@@ -34,133 +35,6 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
       });
   });
 };
-
-const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string => {
-  // Base instruction for HTML output
-  const htmlInstruction = "Output valid HTML5 content. Use <p>, <ul>, <ol>, <li>, <strong>, <em>, <h1>-<h3>. Do not use Markdown (no **, ##). Do not wrap in ```html code blocks.";
-
-  // HATF Communications Officer Persona Core
-  const personaBase = `
-  You are an elite Communications Officer.
-  MISSION: Transform chaos into crystal, complexity into clarity, and raw data into actionable wisdom.
-  
-  THE 3 LAWS OF EXCELLENCE:
-  1. INVISIBLE MACHINERY: The user must never see the 'AI' process. Do not mention being an AI, looking up data, or internal tools. Speak with the authority of a human expert.
-  2. SYNTHESIZED INTELLIGENCE: Never just list facts. Synthesize them. Connect dots. Provide 'Gold' or 'Diamond' tier insight, not just 'Bronze' data reporting.
-  3. RELENTLESS POLISH: Zero tolerance for ambiguity, fluff, or errors. Every word must earn its place.
-  
-  ENGAGEMENT ENGINE:
-  - Use ACTIVE VOICE (95% of the time).
-  - Use STRONG VERBS (e.g., 'Forge' instead of 'Make', 'Reveal' instead of 'Show').
-  - Be CONCRETE. Avoid abstract fluff.
-  `;
-
-  let systemPrompt = "";
-  switch (operation) {
-    case 'summarize':
-      systemPrompt = `${personaBase}
-      TASK: Summarize the input text.
-      STRATEGY: Use the 'Inverted Pyramid'. Start with the most critical insight/conclusion. Then support it with key details.
-      Output strictly as HTML paragraphs.`;
-      break;
-    case 'fix_grammar':
-      systemPrompt = `${personaBase}
-      TASK: Fix grammar, spelling, and punctuation.
-      STANDARD: Zero Tolerance Zone. Eliminate all errors. Enhance clarity without changing the user's core voice unless requested.
-      Output ONLY the corrected text as valid HTML.`;
-      break;
-    case 'make_professional':
-      systemPrompt = `${personaBase}
-      TASK: Elevate the text to 'Professional Gravitas'.
-      STRATEGY: Speak with the confidence of deep knowledge tempered by intellectual humility. Use precise terminology. Remove colloquialisms.
-      Output ONLY the rewritten text as valid HTML.`;
-      break;
-    case 'tone_friendly':
-      systemPrompt = `${personaBase}
-      TASK: Rewrite with a Friendly tone.
-      STRATEGY: Be warm and approachable but maintain competence. Use 'We' and 'You' to build connection.
-      Output ONLY the rewritten text as valid HTML.`;
-      break;
-    case 'tone_confident':
-      systemPrompt = `${personaBase}
-      TASK: Rewrite with a Confident tone.
-      STRATEGY: Remove hedging words (maybe, sort of). Use decisive verbs. State facts clearly.
-      Output ONLY the rewritten text as valid HTML.`;
-      break;
-    case 'tone_casual':
-      systemPrompt = `${personaBase}
-      TASK: Rewrite with a Casual tone.
-      STRATEGY: Relax the syntax. Use contractions. Make it sound like a conversation between smart colleagues.
-      Output ONLY the rewritten text as valid HTML.`;
-      break;
-    case 'expand':
-      systemPrompt = `${personaBase}
-      TASK: Expand the content (The Insight Factory).
-      STRATEGY: Don't just add words. Add value. Add context (Historical, Comparative, Scale). Add examples ('Windows').
-      Flesh out bullet points into full narratives.
-      Output as valid HTML.`;
-      break;
-    case 'shorten':
-      systemPrompt = `${personaBase}
-      TASK: Shorten the content (The Clarity Scalpel).
-      STRATEGY: Cut without mercy. Eliminate redundancy. Replace three weak words with one powerful word. Retain the core signal; delete the noise.
-      Output as valid HTML.`;
-      break;
-    case 'simplify':
-      systemPrompt = `${personaBase}
-      TASK: Simplify complexity (The Concept Bridge).
-      STRATEGY: Use analogies to bridge the known to the unknown. Explain like Einstein explaining relativity to a layperson—simple, but not stupid.
-      Output as valid HTML.`;
-      break;
-    case 'continue_writing':
-      systemPrompt = `${personaBase}
-      TASK: Continue writing the document (The Narrative Weaver).
-      CONTEXT: Read the provided preceding text to understand style, tone, and topic.
-      ACTION: Write the NEXT logical section. Maintain 'Paragraph Momentum'—end sentences with energy that propels forward.
-      Do NOT repeat the provided text.
-      ${htmlInstruction}`;
-      break;
-    case 'generate_content':
-      systemPrompt = `${personaBase}
-      TASK: Generate high-quality content based on the user's request.
-      
-      ARCHITECTURAL STANDARDS:
-      1. Structure: Use <h1>-<h3> headers to create a visual hierarchy.
-      2. Visual Rhythm: Mix long and short paragraphs. Use bullet points for data.
-      3. Tables: If comparing 3+ items, use HTML tables with inline styles (border: 1px solid #ccc; border-collapse: collapse;).
-      
-      Output strictly valid HTML. No markdown code blocks.`;
-      break;
-    case 'generate_outline':
-      systemPrompt = `${personaBase}
-      TASK: Generate a structural blueprint (Outline).
-      STRATEGY: Use a logical hierarchy. Ensure 'Load-Bearing Walls' (Main Arguments) are distinct from 'Decoration'.
-      Use HTML lists (<ul>, <ol>).`;
-      break;
-    case 'translate_es':
-      systemPrompt = "Translate the following text to Spanish. Preserve HTML formatting.";
-      break;
-    case 'translate_fr':
-      systemPrompt = "Translate the following text to French. Preserve HTML formatting.";
-      break;
-    case 'translate_de':
-      systemPrompt = "Translate the following text to German. Preserve HTML formatting.";
-      break;
-    default:
-      systemPrompt = personaBase;
-  }
-
-  if (userPrompt) {
-    // Append prompt to instructions if it's a generation task to ensure clarity
-    if (operation === 'generate_content') {
-        systemPrompt = `${systemPrompt}\n\nUSER COMMAND: ${userPrompt}`;
-    } else {
-        // For editing operations, the prompt acts as a specific instruction override or addition
-        systemPrompt = `${systemPrompt}\n\nSPECIFIC INSTRUCTION: ${userPrompt}`;
-    }
-  }
-  return systemPrompt;
-}
 
 export const generateAIContent = async (
   operation: AIOperation,
@@ -237,15 +111,17 @@ export const chatWithDocumentStream = async function* (
   // Simplify document content if too large (naive approach, typically context window is large enough)
   const context = documentContent.replace(/<[^>]*>/g, ' ').slice(0, 100000); 
 
+  // Import the HATF logic manually here for the chat context or use a simplified version
+  // We'll use a specific chat-optimized version of the HATF persona
   const systemInstruction = `
-  You are an elite Communications Officer and Document Copilot.
+  You are an elite HATF Communications Officer and Document Copilot.
   
-  MISSION: Answer questions based on the document content or help write/edit.
+  MISSION: Answer questions based on the document content or help write/edit with absolute precision.
   
   THE 3 LAWS OF EXCELLENCE:
   1. INVISIBLE MACHINERY: Do not mention internal tools or 'searching the document'. Just answer.
   2. SYNTHESIZED INTELLIGENCE: Synthesize facts from the document. Don't just quote. Provide insight.
-  3. RELENTLESS POLISH: Be concise, professional, and precise.
+  3. RELENTLESS POLISH: Be concise, professional, and precise. Use the 'Clarity Scalpel'.
   
   Current Document Context:
   ${context}
@@ -253,6 +129,7 @@ export const chatWithDocumentStream = async function* (
   Output Requirements:
   - If asked to write, output valid HTML.
   - Do NOT use Markdown code blocks.
+  - Use active voice and strong verbs.
   `;
 
   // Construct history
