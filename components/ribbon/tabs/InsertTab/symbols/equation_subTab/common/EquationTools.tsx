@@ -1,10 +1,20 @@
-
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
 import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
 import { insertMathStructure } from './mathUtils';
+
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'read-only'?: boolean;
+        placeholder?: string;
+      };
+    }
+  }
+}
 
 export const StructureButton: React.FC<{
   icon: any;
@@ -219,7 +229,7 @@ export const StructureDropdown: React.FC<{
     label: string;
     sections: StructureSection[];
     width?: string | number;
-}> = ({ id, icon: Icon, label, sections, width = 'min(420px, 94vw)' }) => {
+}> = ({ id, icon: Icon, label, sections, width = 'min(480px, 96vw)' }) => {
     const { activeMenu, toggleMenu, closeMenu, registerTrigger, menuPos } = useEquationTab();
     const isOpen = activeMenu === id;
     const [activeSectionIndex, setActiveSectionIndex] = useState(0);
@@ -249,7 +259,7 @@ export const StructureDropdown: React.FC<{
                 closeMenu={closeMenu}
                 width={width}
             >
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg shadow-sm overflow-hidden flex flex-col h-full max-h-[480px]">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg shadow-sm overflow-hidden flex flex-col h-full max-h-[500px]">
                     {sections.length > 1 && (
                         <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-2 shrink-0">
                             <HorizontalScrollContainer className="flex overflow-x-auto no-scrollbar gap-1.5">
@@ -279,7 +289,7 @@ export const StructureDropdown: React.FC<{
                                     <div 
                                         className="grid gap-2 p-2" 
                                         style={{ 
-                                            gridTemplateColumns: 'repeat(auto-fill, minmax(64px, 1fr))' 
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))' 
                                         }}
                                     >
                                         {section.items.map((item, j) => (
@@ -292,7 +302,7 @@ export const StructureDropdown: React.FC<{
                                                 }}
                                                 className="
                                                     group relative flex flex-col items-center justify-center 
-                                                    aspect-[1.25/1] rounded-xl transition-all duration-300 ease-out
+                                                    aspect-[1.4/1] rounded-xl transition-all duration-300 ease-out
                                                     bg-white dark:bg-slate-800 
                                                     border border-slate-200 dark:border-slate-700
                                                     hover:border-blue-500/50 dark:hover:border-blue-400/50
@@ -309,13 +319,13 @@ export const StructureDropdown: React.FC<{
                                                     text-slate-700 dark:text-slate-200
                                                     group-hover:text-slate-900 dark:group-hover:text-white
                                                     group-hover:scale-110 transition-transform duration-300
-                                                    p-3
+                                                    p-2
                                                 ">
                                                     <math-field read-only style={{
                                                         border:'none', 
                                                         background:'transparent', 
                                                         pointerEvents:'none', 
-                                                        fontSize:'1.15rem', 
+                                                        fontSize:'1.6rem', 
                                                         width: '100%', 
                                                         textAlign: 'center',
                                                         color: 'currentColor'
@@ -327,7 +337,7 @@ export const StructureDropdown: React.FC<{
                                                 {/* Label Overlay on Hover */}
                                                 {item.label && (
                                                     <div className="absolute bottom-0 left-0 right-0 py-1 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-800 dark:via-slate-800/90 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                                        <span className="text-[9px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[90%] px-1">{item.label}</span>
+                                                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[90%] px-1">{item.label}</span>
                                                     </div>
                                                 )}
                                             </button>
