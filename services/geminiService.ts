@@ -36,37 +36,45 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
 };
 
 const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string => {
+  // Base instruction for HTML output
+  const htmlInstruction = "Output valid HTML5 content. Use <p>, <ul>, <ol>, <li>, <strong>, <em>, <h1>-<h3>. Do not use Markdown (no **, ##). Do not wrap in ```html code blocks.";
+
   let systemPrompt = "";
   switch (operation) {
     case 'summarize':
-      systemPrompt = "You are a helpful editor. Summarize the following text concisely in a single paragraph. Retain the core message.";
+      systemPrompt = `You are a helpful editor. Summarize the following text concisely in a single paragraph. Retain the core message. ${htmlInstruction}`;
       break;
     case 'fix_grammar':
-      systemPrompt = "You are a professional editor. Fix any grammar, spelling, or punctuation errors in the following text. Do not change the meaning or style. Output only the corrected text.";
+      systemPrompt = `You are a professional editor. Fix any grammar, spelling, or punctuation errors in the following text. Do not change the meaning or style. Output ONLY the corrected text as valid HTML. ${htmlInstruction}`;
       break;
     case 'make_professional':
-      systemPrompt = "You are a corporate communication expert. Rewrite the following text to sound more professional, formal, and polished. Output only the rewritten text.";
+      systemPrompt = `You are a corporate communication expert. Rewrite the following text to sound more professional, formal, and polished. Output ONLY the rewritten text. ${htmlInstruction}`;
       break;
     case 'tone_friendly':
-      systemPrompt = "Rewrite the following text to sound friendly, warm, and approachable. Output only the rewritten text.";
+      systemPrompt = `Rewrite the following text to sound friendly, warm, and approachable. Output ONLY the rewritten text. ${htmlInstruction}`;
       break;
     case 'tone_confident':
-      systemPrompt = "Rewrite the following text to sound confident, assertive, and authoritative. Output only the rewritten text.";
+      systemPrompt = `Rewrite the following text to sound confident, assertive, and authoritative. Output ONLY the rewritten text. ${htmlInstruction}`;
       break;
     case 'tone_casual':
-      systemPrompt = "Rewrite the following text to sound casual, relaxed, and conversational. Output only the rewritten text.";
+      systemPrompt = `Rewrite the following text to sound casual, relaxed, and conversational. Output ONLY the rewritten text. ${htmlInstruction}`;
       break;
     case 'expand':
-      systemPrompt = "You are a creative writer. Expand on the following text, adding more detail, context, and descriptive language. Ensure the expanded version flows naturally. Use HTML tags (<p>, <strong>, etc.) for formatting.";
+      systemPrompt = `You are a creative writer. Expand on the following text, adding more detail, context, and descriptive language. Ensure the expanded version flows naturally. ${htmlInstruction}`;
       break;
     case 'shorten':
-      systemPrompt = "You are a concise editor. Shorten the following text to be more direct and to the point, removing unnecessary fluff and redundancy. Keep the key information.";
+      systemPrompt = `You are a concise editor. Shorten the following text to be more direct and to the point, removing unnecessary fluff and redundancy. Keep the key information. ${htmlInstruction}`;
       break;
     case 'simplify':
-      systemPrompt = "Rewrite the following text using simple language that is easy to understand for a general audience (EL5 style). Output only the simplified text.";
+      systemPrompt = `Rewrite the following text using simple language that is easy to understand for a general audience (EL5 style). Output ONLY the simplified text. ${htmlInstruction}`;
       break;
     case 'continue_writing':
-      systemPrompt = "You are a skilled co-author. Read the provided text context and write the NEXT logical 1-2 paragraphs. \n\nIMPORTANT Rules:\n1. Do NOT repeat the provided text.\n2. Maintain the same tone, style, and formatting.\n3. Output strictly valid HTML tags (e.g., <p>, <strong>) for the new content.";
+      systemPrompt = `You are a skilled co-author. Read the provided text context and write the NEXT logical 1-2 paragraphs. 
+      
+      **Rules:**
+      1. Do NOT repeat the provided text.
+      2. Maintain the same tone, style, and formatting.
+      3. ${htmlInstruction}`;
       break;
     case 'generate_content':
       systemPrompt = `You are an elite professional document writer. Generate high-quality content based on the user's request.
@@ -83,6 +91,9 @@ const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string =>
       - **Table Style:** <table style="border-collapse: collapse; width: 100%; margin: 1em 0; border: 1px solid #cbd5e1;">
       - **Header Style:** <th style="background-color: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-weight: 600;">
       - **Cell Style:** <td style="border: 1px solid #cbd5e1; padding: 8px;">
+      
+      **Tone Handling:**
+      - If the user request includes a tone instruction (e.g. "[Tone: Professional]"), adapt your writing style accordingly.
       
       **Output:**
       - Return ONLY the HTML content to be inserted into the document body.
@@ -190,7 +201,7 @@ export const chatWithDocumentStream = async function* (
   if (!client) throw new Error("API Key not configured.");
 
   // Simplify document content if too large (naive approach, typically context window is large enough)
-  const context = documentContent.replace(/<[^>]*>/g, ' ').slice(0, 100000); // Strip HTML tags for cleaner context or keep them if structural understanding is needed
+  const context = documentContent.replace(/<[^>]*>/g, ' ').slice(0, 100000); 
 
   const systemInstruction = `You are Copilot, an intelligent document assistant. 
   You have access to the current document content. 
@@ -201,7 +212,8 @@ export const chatWithDocumentStream = async function* (
   
   Guidelines:
   - Be concise and professional.
-  - If asked to write content, provide just the text.
+  - If asked to write content, output valid HTML (<p>, <ul>, <b>, etc.) so it renders nicely.
+  - Do NOT use Markdown code blocks.
   - If asked about the document, reference the content provided above.
   `;
 

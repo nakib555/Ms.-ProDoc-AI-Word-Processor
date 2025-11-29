@@ -1,14 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3, MessageCircle } from 'lucide-react';
+import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3, MessageCircle, Wand2, Check } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useAI } from '../../../../../hooks/useAI';
 
 type GenMode = 'insert' | 'replace' | 'edit';
 type ToneType = 'Professional' | 'Casual' | 'Confident' | 'Friendly' | 'Creative' | 'Concise';
 
+const TONES: { id: ToneType; label: string; color: string }[] = [
+    { id: 'Professional', label: 'Professional', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+    { id: 'Casual', label: 'Casual', color: 'bg-orange-100 text-orange-700 border-orange-200' },
+    { id: 'Confident', label: 'Confident', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+    { id: 'Friendly', label: 'Friendly', color: 'bg-green-100 text-green-700 border-green-200' },
+    { id: 'Creative', label: 'Creative', color: 'bg-pink-100 text-pink-700 border-pink-200' },
+    { id: 'Concise', label: 'Concise', color: 'bg-slate-100 text-slate-700 border-slate-200' },
+];
+
 export const WriteWithAITool: React.FC = () => {
-  const { performAIAction } = useAI();
+  const { performAIAction, isProcessing } = useAI();
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<GenMode>('insert');
@@ -22,18 +31,19 @@ export const WriteWithAITool: React.FC = () => {
         setHasSelection(hasSel);
         // Default to 'edit' mode if there's a selection, otherwise 'insert'
         setMode(hasSel ? 'edit' : 'insert');
+        setPrompt('');
     }
   }, [isOpen]);
 
   const handleGenerate = () => {
     if (prompt.trim()) {
+        // Construct a directive for the model that embeds the tone instruction
         const enhancedPrompt = `[Tone: ${tone}] ${prompt}`;
         performAIAction('generate_content', enhancedPrompt, { 
             mode: mode === 'replace' ? 'replace' : 'insert',
             useSelection: mode === 'edit'
         });
         setIsOpen(false);
-        setPrompt('');
     }
   };
 
@@ -43,130 +53,154 @@ export const WriteWithAITool: React.FC = () => {
             icon={Sparkles} 
             label="Write with AI" 
             onClick={() => setIsOpen(true)} 
-            title="Generate content, create tables, or edit text"
-            className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+            title="Generate content, create tables, or edit text with AI"
+            className="text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50"
         />
 
         {isOpen && (
             <div 
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-200 p-4"
                 onClick={() => setIsOpen(false)}
             >
                 <div 
-                    className="bg-white w-full max-w-xl rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 m-4"
+                    className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
                     role="dialog"
                     aria-modal="true"
-                    aria-labelledby="ai-dialog-title"
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-4 flex justify-between items-center">
-                        <h3 id="ai-dialog-title" className="text-white font-bold text-lg flex items-center gap-2">
-                            <Sparkles size={20} className="text-yellow-300"/> 
-                            Write with AI
-                        </h3>
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-5 flex justify-between items-center shrink-0">
+                        <div>
+                            <h3 className="text-white font-bold text-xl flex items-center gap-2.5">
+                                <Wand2 size={24} className="text-yellow-300"/> 
+                                Magic Editor
+                            </h3>
+                            <p className="text-indigo-100 text-xs mt-1 font-medium opacity-90">Powered by Gemini 2.5 Flash</p>
+                        </div>
                         <button 
                             onClick={() => setIsOpen(false)} 
-                            className="text-white/80 hover:text-white hover:bg-white/10 p-1 rounded-full transition-colors"
-                            aria-label="Close"
+                            className="text-white/70 hover:text-white hover:bg-white/20 p-2 rounded-full transition-colors"
                         >
                             <X size={20} />
                         </button>
                     </div>
                     
-                    <div className="p-6">
-                        <div className="mb-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <label htmlFor="ai-prompt-textarea" className="block text-sm font-semibold text-slate-700">Prompt</label>
-                                <div className="flex items-center gap-2">
-                                    <MessageCircle size={14} className="text-slate-400"/>
-                                    <select 
-                                        value={tone}
-                                        onChange={(e) => setTone(e.target.value as ToneType)}
-                                        className="text-xs border-none bg-slate-100 hover:bg-slate-200 rounded-md px-2 py-1 outline-none text-slate-700 font-medium cursor-pointer transition-colors"
-                                    >
-                                        <option value="Professional">Professional</option>
-                                        <option value="Casual">Casual</option>
-                                        <option value="Confident">Confident</option>
-                                        <option value="Friendly">Friendly</option>
-                                        <option value="Creative">Creative</option>
-                                        <option value="Concise">Concise</option>
-                                    </select>
+                    <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar">
+                        {/* Prompt Input */}
+                        <div className="mb-6 relative">
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2 flex justify-between">
+                                <span>What should I write?</span>
+                                <span className="font-normal text-indigo-600 dark:text-indigo-400 cursor-help" title="Try: 'Draft an email to client', 'Create a comparison table for X and Y'">Examples</span>
+                            </label>
+                            <div className="relative group">
+                                <textarea 
+                                    value={prompt}
+                                    onChange={(e) => setPrompt(e.target.value)}
+                                    placeholder={mode === 'edit' ? "e.g., 'Make this text more concise', 'Convert these bullet points to a paragraph'" : "e.g., 'Write a blog post about React hooks', 'Draft a meeting agenda', 'Create a table of Q1 sales'"}
+                                    className="w-full h-32 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-base text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none resize-none shadow-inner transition-all placeholder:text-slate-400"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                            e.preventDefault();
+                                            handleGenerate();
+                                        }
+                                    }}
+                                />
+                                <div className="absolute bottom-3 right-3">
+                                    <div className="p-1.5 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-100 dark:border-slate-600">
+                                        <MessageCircle size={16} className="text-slate-400"/>
+                                    </div>
                                 </div>
                             </div>
-                            <textarea 
-                                id="ai-prompt-textarea"
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                placeholder={mode === 'edit' ? "How should the selected text be changed? (e.g., 'Make this more concise', 'Convert to a table')" : "What would you like to write? (e.g., 'Create a table comparing React and Vue', 'Draft a meeting agenda')"}
-                                className="w-full h-28 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none shadow-inner"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                        e.preventDefault(); // Prevent new line in textarea
-                                        handleGenerate();
-                                    }
-                                }}
-                                aria-label="AI Prompt"
-                            />
                         </div>
 
-                        <div className="mb-6">
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Action</label>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <button 
-                                    onClick={() => setMode('insert')}
-                                    className={`flex flex-col items-center p-3 rounded-lg border text-center transition-all ${mode === 'insert' ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
-                                    aria-pressed={mode === 'insert'}
-                                >
-                                    <ArrowRight size={20} className="mb-1.5 opacity-80"/>
-                                    <span className="text-xs font-semibold">Insert at Cursor</span>
-                                </button>
-                                
-                                <button 
-                                    onClick={() => setMode('edit')}
-                                    disabled={!hasSelection}
-                                    className={`flex flex-col items-center p-3 rounded-lg border text-center transition-all ${mode === 'edit' ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'} ${!hasSelection ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    title={!hasSelection ? "Select text to edit" : ""}
-                                    aria-pressed={mode === 'edit'}
-                                    aria-disabled={!hasSelection}
-                                >
-                                    <Edit3 size={20} className="mb-1.5 opacity-80"/>
-                                    <span className="text-xs font-semibold">Edit Selection</span>
-                                </button>
-
-                                <button 
-                                    onClick={() => setMode('replace')}
-                                    className={`flex flex-col items-center p-3 rounded-lg border text-center transition-all ${mode === 'replace' ? 'bg-red-50 border-red-500 text-red-700 ring-1 ring-red-500' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'}`}
-                                    aria-pressed={mode === 'replace'}
-                                >
-                                    <FileText size={20} className="mb-1.5 opacity-80"/>
-                                    <span className="text-xs font-semibold">New Document</span>
-                                </button>
+                        {/* Tone Selector */}
+                        <div className="mb-8">
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Tone & Style</label>
+                            <div className="flex flex-wrap gap-2">
+                                {TONES.map((t) => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => setTone(t.id)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 flex items-center gap-1.5 ${
+                                            tone === t.id 
+                                            ? `${t.color} ring-2 ring-offset-1 ring-indigo-500/30 shadow-sm transform scale-105` 
+                                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-slate-50 dark:hover:bg-slate-750'
+                                        }`}
+                                    >
+                                        {tone === t.id && <Check size={12} strokeWidth={3} />}
+                                        {t.label}
+                                    </button>
+                                ))}
                             </div>
                         </div>
-                        
-                        <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+
+                        {/* Mode Selection */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <button 
-                                onClick={() => setIsOpen(false)}
-                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                onClick={() => setMode('insert')}
+                                className={`relative flex flex-col items-center p-4 rounded-xl border-2 text-center transition-all duration-200 ${
+                                    mode === 'insert' 
+                                    ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-md' 
+                                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50 dark:hover:bg-slate-750'
+                                }`}
                             >
-                                Cancel
+                                <div className={`p-2 rounded-full mb-2 ${mode === 'insert' ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                                    <ArrowRight size={20} />
+                                </div>
+                                <span className="text-sm font-bold">Insert</span>
+                                <span className="text-[10px] opacity-70 mt-1">Add at cursor position</span>
                             </button>
+                            
                             <button 
-                                onClick={handleGenerate}
-                                disabled={!prompt.trim()}
-                                className="px-5 py-2 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg shadow-md shadow-indigo-200 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
-                                aria-label={
-                                    mode === 'insert' ? 'Generate content' : 
-                                    mode === 'edit' ? 'Update selected text' : 
-                                    'Rewrite entire document'
-                                }
-                                aria-disabled={!prompt.trim()}
+                                onClick={() => setMode('edit')}
+                                disabled={!hasSelection}
+                                className={`relative flex flex-col items-center p-4 rounded-xl border-2 text-center transition-all duration-200 ${
+                                    mode === 'edit' 
+                                    ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-md' 
+                                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50 dark:hover:bg-slate-750'
+                                } ${!hasSelection ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
                             >
-                                <PenLine size={16} /> 
-                                {mode === 'insert' ? 'Generate' : mode === 'edit' ? 'Update Text' : 'Rewrite All'}
+                                <div className={`p-2 rounded-full mb-2 ${mode === 'edit' ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                                    <Edit3 size={20} />
+                                </div>
+                                <span className="text-sm font-bold">Refine</span>
+                                <span className="text-[10px] opacity-70 mt-1">{hasSelection ? 'Modify selected text' : 'Select text first'}</span>
+                            </button>
+
+                            <button 
+                                onClick={() => setMode('replace')}
+                                className={`relative flex flex-col items-center p-4 rounded-xl border-2 text-center transition-all duration-200 ${
+                                    mode === 'replace' 
+                                    ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-md' 
+                                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50 dark:hover:bg-slate-750'
+                                }`}
+                            >
+                                <div className={`p-2 rounded-full mb-2 ${mode === 'replace' ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                                    <FileText size={20} />
+                                </div>
+                                <span className="text-sm font-bold">New Doc</span>
+                                <span className="text-[10px] opacity-70 mt-1">Start from scratch</span>
                             </button>
                         </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-6 py-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 shrink-0">
+                        <button 
+                            onClick={() => setIsOpen(false)}
+                            className="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 rounded-xl transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleGenerate}
+                            disabled={!prompt.trim()}
+                            className="px-6 py-2.5 text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none hover:shadow-indigo-300 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 transform active:scale-[0.98]"
+                        >
+                            <PenLine size={18} /> 
+                            {mode === 'insert' ? 'Generate Content' : mode === 'edit' ? 'Update Selection' : 'Rewrite Document'}
+                        </button>
                     </div>
                 </div>
             </div>

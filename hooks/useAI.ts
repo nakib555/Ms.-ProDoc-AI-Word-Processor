@@ -22,7 +22,7 @@ export const useAI = () => {
     const hasSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed;
     let textToProcess = hasSelection ? selection.toString() : "";
 
-    // Context gathering
+    // Context gathering for continuation
     if (operation === 'continue_writing' && !textToProcess) {
         if (editorRef.current) {
             const allText = editorRef.current.innerText;
@@ -31,7 +31,7 @@ export const useAI = () => {
     }
 
     // For "generate_content", we rely on the prompt.
-    // If "useSelection" is true (Edit Mode), we append the selection to the prompt context.
+    // If "useSelection" is true (Edit Mode), we append the selection to the prompt context via the service.
     if (operation === 'generate_content') {
         if (!customInput) {
             alert("Please provide a prompt.");
@@ -40,11 +40,10 @@ export const useAI = () => {
         
         if (options.useSelection && hasSelection) {
              // We are editing the selection based on the prompt
-             // The textToProcess is already set to selection.toString() above
+             // textToProcess is already set to selection.toString()
         } else {
-             // We are generating new content (either fresh or replacing doc)
-             // We don't strictly need textToProcess unless we want to give full doc context?
-             // For now, let's just send the prompt if it's a fresh generation.
+             // We are generating new content.
+             // If we are not using selection as context, clear textToProcess so we don't confuse the model
              textToProcess = ""; 
         }
     } else if (!textToProcess && operation !== 'generate_content') {
@@ -53,7 +52,17 @@ export const useAI = () => {
         return;
     }
 
-    const shouldStream = operation === 'generate_content' || operation === 'continue_writing' || operation === 'expand';
+    // Expanded list of streaming operations for better UX
+    const shouldStream = 
+        operation === 'generate_content' || 
+        operation === 'continue_writing' || 
+        operation === 'expand' ||
+        operation === 'shorten' ||
+        operation === 'simplify' ||
+        operation === 'fix_grammar' ||
+        operation === 'make_professional' ||
+        operation.startsWith('tone_') ||
+        operation.startsWith('translate_');
 
     setIsProcessing(true);
 
@@ -63,12 +72,13 @@ export const useAI = () => {
             let isFirstChunk = true;
             let streamSpan: HTMLElement | null = null;
             let accumulatedContent = "";
+            let spanId = "";
             
             for await (const chunk of stream) {
                 if (isFirstChunk) {
                     setIsProcessing(false); // Hide loading overlay once writing starts
                     
-                    // Handle Replacement Mode
+                    // Handle Replacement Mode (New Document)
                     if (operation === 'generate_content' && options.mode === 'replace') {
                         if (editorRef.current) {
                             editorRef.current.innerHTML = ''; 
@@ -77,9 +87,10 @@ export const useAI = () => {
                         }
                     }
 
-                    const spanId = `ai-stream-${Date.now()}`;
+                    spanId = `ai-stream-${Date.now()}`;
                     // Insert a span with visual indicators that AI is writing
-                    const html = `<span id="${spanId}" class="ai-streaming" style="background-color: rgba(59, 130, 246, 0.08); transition: all 0.2s ease;">&#8203;</span>`;
+                    // If text was selected, insertHTML replaces it, effectively "editing" it in place
+                    const html = `<span id="${spanId}" class="ai-streaming" style="background-color: rgba(59, 130, 246, 0.1); border-bottom: 2px solid #3b82f6; transition: all 0.1s ease;">&#8203;</span>`;
                     executeCommand('insertHTML', html);
                     streamSpan = document.getElementById(spanId);
                     isFirstChunk = false;
@@ -90,8 +101,10 @@ export const useAI = () => {
                     
                     // Basic Markdown code block stripping for the stream view
                     let cleanHTML = accumulatedContent;
+                    // Remove markdown code blocks wrapper if present
                     if (cleanHTML.startsWith('```html')) cleanHTML = cleanHTML.substring(7);
-                    if (cleanHTML.startsWith('```')) cleanHTML = cleanHTML.substring(3);
+                    else if (cleanHTML.startsWith('```')) cleanHTML = cleanHTML.substring(3);
+                    
                     if (cleanHTML.endsWith('```')) cleanHTML = cleanHTML.substring(0, cleanHTML.length - 3);
                     
                     // Update the content of the span directly
@@ -103,15 +116,22 @@ export const useAI = () => {
             }
             
             // Cleanup: Unwrap the span to merge content naturally into the document
-            if (streamSpan) {
-                const parent = streamSpan.parentNode;
-                if (parent) {
-                    while (streamSpan.firstChild) {
-                        parent.insertBefore(streamSpan.firstChild, streamSpan);
+            if (spanId) {
+                // Re-fetch in case ref changed
+                streamSpan = document.getElementById(spanId);
+                if (streamSpan) {
+                    const parent = streamSpan.parentNode;
+                    if (parent) {
+                        // Move children out
+                        while (streamSpan.firstChild) {
+                            parent.insertBefore(streamSpan.firstChild, streamSpan);
+                        }
+                        // Remove the styling span
+                        parent.removeChild(streamSpan);
                     }
-                    parent.removeChild(streamSpan);
                 }
 
+                // Normalization ensures adjacent text nodes are merged
                 editorRef.current?.normalize();
                 if (editorRef.current) {
                     setContent(editorRef.current.innerHTML);
@@ -126,7 +146,7 @@ export const useAI = () => {
         return;
     }
 
-    // Non-streaming operations
+    // Non-streaming operations (Fallback)
     try {
       const result = await generateAIContent(operation as AIOperation, textToProcess, customInput);
       
