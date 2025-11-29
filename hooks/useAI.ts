@@ -21,10 +21,14 @@ export const useAI = () => {
   ) => {
     // 1. Restore Selection FIRST if provided (crucial for Modals)
     if (restoreRange) {
-        const sel = window.getSelection();
-        if (sel) {
-            sel.removeAllRanges();
-            sel.addRange(restoreRange);
+        try {
+            const sel = window.getSelection();
+            if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(restoreRange);
+            }
+        } catch (e) {
+            console.warn("Could not restore selection range", e);
         }
     } else {
         // Fallback: If focus is lost and no range provided, try to refocus editor
@@ -72,7 +76,7 @@ export const useAI = () => {
     const shouldStream = 
         operation === 'generate_content' || 
         operation === 'continue_writing' || 
-        operation === 'expand' ||
+        operation === 'expand' || 
         operation === 'shorten' ||
         operation === 'simplify' ||
         operation === 'fix_grammar' ||
@@ -112,7 +116,12 @@ export const useAI = () => {
                     isFirstChunk = false;
                 }
 
-                if (streamSpan && streamSpan.isConnected) {
+                // Robustness: Re-acquire element if lost (e.g., due to layout change/virtualization)
+                if (!streamSpan || !streamSpan.isConnected) {
+                    streamSpan = document.getElementById(spanId);
+                }
+
+                if (streamSpan) {
                     accumulatedContent += chunk;
                     
                     // Basic Markdown code block stripping for the stream view
@@ -126,15 +135,19 @@ export const useAI = () => {
                     // Update the content of the span directly
                     streamSpan.innerHTML = cleanHTML;
                     
-                    // Keep visible
-                    streamSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    // Keep visible - optional, can be jarring during layout changes if forced scroll
+                    // streamSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    // Buffer content if element is temporarily missing during render cycles
+                    accumulatedContent += chunk;
                 }
             }
             
             // Cleanup: Unwrap the span to merge content naturally into the document
+            // Attempt to find the span one last time in case it reappeared
             if (spanId) {
-                // Re-fetch in case ref changed
                 streamSpan = document.getElementById(spanId);
+                
                 if (streamSpan) {
                     const parent = streamSpan.parentNode;
                     if (parent) {
