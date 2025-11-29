@@ -1,16 +1,26 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Send, Sparkles, Loader2 } from 'lucide-react';
 import { useAI } from '../../../../../hooks/useAI';
 
 export const QuickPromptTool: React.FC = () => {
   const { performAIAction, isProcessing } = useAI();
   const [prompt, setPrompt] = useState('');
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
 
   const handleGenerate = () => {
     if (!prompt.trim() || isProcessing) return;
-    performAIAction('generate_content', prompt);
+    performAIAction('generate_content', prompt, { mode: 'insert' }, savedRange);
     setPrompt('');
+    setSavedRange(null);
+  };
+
+  const handleFocus = () => {
+      // Capture the current selection from the editor before the input steals focus
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+          setSavedRange(sel.getRangeAt(0).cloneRange());
+      }
   };
 
   return (
@@ -24,6 +34,7 @@ export const QuickPromptTool: React.FC = () => {
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+                onFocus={handleFocus}
                 placeholder="Describe what to write..."
                 className="flex-1 min-w-0 border-none outline-none text-xs px-2.5 text-slate-700 placeholder:text-slate-400 bg-transparent h-full rounded-l-lg"
                 disabled={isProcessing}

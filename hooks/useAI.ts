@@ -5,7 +5,7 @@ import { generateAIContent, streamAIContent } from '../services/geminiService';
 import { useEditor } from '../contexts/EditorContext';
 
 export interface AIOptions {
-  mode?: 'insert' | 'replace' | 'append';
+  mode?: 'insert' | 'replace' | 'edit';
   useSelection?: boolean;
 }
 
@@ -16,15 +16,31 @@ export const useAI = () => {
   const performAIAction = async (
     operation: string, 
     customInput?: string, 
-    options: AIOptions = { mode: 'insert' }
+    options: AIOptions = { mode: 'insert' },
+    restoreRange?: Range | null
   ) => {
+    // 1. Restore Selection FIRST if provided (crucial for Modals)
+    if (restoreRange) {
+        const sel = window.getSelection();
+        if (sel) {
+            sel.removeAllRanges();
+            sel.addRange(restoreRange);
+        }
+    } else {
+        // Fallback: If focus is lost and no range provided, try to refocus editor
+        if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
+             editorRef.current.focus();
+        }
+    }
+
     const selection = window.getSelection();
     const hasSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed;
     let textToProcess = hasSelection ? selection.toString() : "";
 
-    // Context gathering for continuation
+    // Context gathering for continuation if no selection
     if (operation === 'continue_writing' && !textToProcess) {
         if (editorRef.current) {
+            // Get last ~2000 chars to provide context
             const allText = editorRef.current.innerText;
             textToProcess = allText.slice(-2000);
         }

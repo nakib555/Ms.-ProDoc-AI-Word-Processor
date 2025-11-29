@@ -23,12 +23,19 @@ export const WriteWithAITool: React.FC = () => {
   const [mode, setMode] = useState<GenMode>('insert');
   const [tone, setTone] = useState<ToneType>('Professional');
   const [hasSelection, setHasSelection] = useState(false);
+  const [savedRange, setSavedRange] = useState<Range | null>(null);
 
   useEffect(() => {
     if (isOpen) {
         const selection = window.getSelection();
         const hasSel = !!(selection && selection.rangeCount > 0 && !selection.isCollapsed);
         setHasSelection(hasSel);
+        
+        // Capture range to restore later
+        if (selection && selection.rangeCount > 0) {
+            setSavedRange(selection.getRangeAt(0).cloneRange());
+        }
+
         // Default to 'edit' mode if there's a selection, otherwise 'insert'
         setMode(hasSel ? 'edit' : 'insert');
         setPrompt('');
@@ -42,7 +49,7 @@ export const WriteWithAITool: React.FC = () => {
         performAIAction('generate_content', enhancedPrompt, { 
             mode: mode === 'replace' ? 'replace' : 'insert',
             useSelection: mode === 'edit'
-        });
+        }, savedRange); // Pass saved range to restore focus
         setIsOpen(false);
     }
   };

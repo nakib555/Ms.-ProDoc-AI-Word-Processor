@@ -60,10 +60,10 @@ const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string =>
       systemPrompt = `Rewrite the following text to sound casual, relaxed, and conversational. Output ONLY the rewritten text. ${htmlInstruction}`;
       break;
     case 'expand':
-      systemPrompt = `You are a creative writer. Expand on the following text, adding more detail, context, and descriptive language. Ensure the expanded version flows naturally. ${htmlInstruction}`;
+      systemPrompt = `You are a creative writer. Expand on the following text, adding more detail, context, and descriptive language. Flesh out bullet points into full paragraphs if necessary. Ensure the expanded version flows naturally. ${htmlInstruction}`;
       break;
     case 'shorten':
-      systemPrompt = `You are a concise editor. Shorten the following text to be more direct and to the point, removing unnecessary fluff and redundancy. Keep the key information. ${htmlInstruction}`;
+      systemPrompt = `You are a concise editor. Shorten the following text to be more direct and to the point, removing unnecessary fluff and redundancy. Retain key facts and meaning. ${htmlInstruction}`;
       break;
     case 'simplify':
       systemPrompt = `Rewrite the following text using simple language that is easy to understand for a general audience (EL5 style). Output ONLY the simplified text. ${htmlInstruction}`;
