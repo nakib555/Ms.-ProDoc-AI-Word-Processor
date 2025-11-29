@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
@@ -5,7 +6,16 @@ import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
 import { insertMathStructure } from './mathUtils';
 
-const MathField = 'math-field' as any;
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'math-field': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'read-only'?: boolean;
+        placeholder?: string;
+      };
+    }
+  }
+}
 
 export const StructureButton: React.FC<{
   icon: any;
@@ -308,7 +318,7 @@ export const StructureDropdown: React.FC<{
                                                     group-hover:scale-110 transition-transform duration-300
                                                     p-2
                                                 ">
-                                                    <MathField 
+                                                    <math-field 
                                                         read-only
                                                         style={{
                                                             border:'none', 
@@ -321,7 +331,7 @@ export const StructureDropdown: React.FC<{
                                                         }}
                                                     >
                                                         {item.latex}
-                                                    </MathField>
+                                                    </math-field>
                                                 </div>
                                                 
                                                 {item.label && (
