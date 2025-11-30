@@ -50,6 +50,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Pagination Effect
+  // Low latency debounce (40ms) to feel "immediate" when content flows to new page
   useEffect(() => {
     let isMounted = true;
     const timer = setTimeout(() => {
@@ -57,7 +58,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         const result = paginateContent(content, pageConfig);
         setPages(result.pages);
         setTotalPages(result.pages.length);
-    }, 150);
+    }, 40);
 
     return () => { 
         isMounted = false; 
@@ -68,9 +69,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPages(currentPages => {
         const updatedPages = [...currentPages];
+        // Only update if content actually changed to avoid cycles
         if (updatedPages[pageIndex] !== newHtml) {
             updatedPages[pageIndex] = newHtml;
             const fullContent = updatedPages.join('');
+            // Defer the setContent to next tick to allow rendering to complete
             setTimeout(() => setContent(fullContent), 0);
             return updatedPages;
         }
@@ -123,16 +126,17 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       containerRef(node);
   }, [containerRef]);
 
-  // Click on background focuses last page
+  // Click on background focuses last page or the nearest page's bottom
   const handleBackgroundClick = (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) {
+          // Default to last page if clicked in void
           const lastPageId = `prodoc-editor-${pages.length}`;
           const lastPage = document.getElementById(lastPageId);
           if (lastPage) {
               lastPage.focus();
               const range = document.createRange();
               range.selectNodeContents(lastPage);
-              range.collapse(false);
+              range.collapse(false); // End of document
               const sel = window.getSelection();
               sel?.removeAllRanges();
               sel?.addRange(range);
@@ -143,11 +147,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const isVertical = pageMovement === 'vertical';
 
   return (
-    <div className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900">
+    <div className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900 transition-colors duration-300">
        {showRuler && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#F0F0F0] border-b border-slate-300 z-20 shrink-0 flex justify-center"
+            className="w-full overflow-hidden bg-[#F0F0F0] border-b border-slate-300 z-20 shrink-0 flex justify-center sticky top-0 shadow-sm"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
@@ -162,17 +166,18 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
           onScroll={handleScroll}
        >
-           {/* Container for pages - standardized p-4 (1rem) padding for equal spacing on all sides */}
+           {/* Container for pages - standardized p-8 (2rem) vertical spacing for Word-like gap */}
            <div 
-                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center justify-center gap-8 p-4' : 'flex-row flex-wrap justify-center content-center gap-8 p-4'}`}
+                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center justify-start py-8 gap-8' : 'flex-row flex-wrap justify-center content-start py-8 gap-8'}`}
                 onClick={handleBackgroundClick}
            >
                 {pages.map((pageContent, index) => (
                     <div 
                         key={index} 
-                        className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300"
+                        className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
                         data-page-index={index}
                     >
+                        {/* Page Content */}
                         <EditorPage
                             pageNumber={index + 1}
                             totalPages={pages.length}
@@ -183,6 +188,13 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                             onContentChange={handlePageUpdate}
                             onFocus={() => handlePageFocus(index)}
                         />
+                        
+                        {/* Visual Gap indicator on hover between pages (optional interaction area) */}
+                        {index < pages.length - 1 && isVertical && (
+                            <div className="absolute left-0 right-0 -bottom-8 h-8 opacity-0 group-hover:opacity-100 flex items-center justify-center pointer-events-none transition-opacity">
+                                <div className="h-[1px] bg-slate-400 w-12"></div>
+                            </div>
+                        )}
                     </div>
                 ))}
            </div>

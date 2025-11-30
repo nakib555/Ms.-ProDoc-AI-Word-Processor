@@ -211,8 +211,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const getMargins = () => {
     const m = config.margins;
-    let top = m.top * 96;
-    let bottom = m.bottom * 96;
+    // Enforce absolute header/footer margin boundaries
+    // Content should start below header distance and end above footer distance
+    let top = Math.max(m.top, config.headerDistance || 0) * 96;
+    let bottom = Math.max(m.bottom, config.footerDistance || 0) * 96;
+    
     let left = m.left * 96;
     let right = m.right * 96;
     const gutterPx = (m.gutter || 0) * 96;
@@ -302,13 +305,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 transformOrigin: 'top left',
                 width: `${width}px`,
                 height: `${height}px`,
-                boxShadow: 'rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.06) 0px 2px 4px -1px, rgba(0, 0, 0, 0.1) 0px 0px 0px 1px',
+                // Word-like shadow: Ring for subtle border, shadow for depth
+                boxShadow: '0 0 0 1px #d1d5db, 0 10px 20px -5px rgba(0,0,0,0.15)',
                 ...getBackgroundStyle()
             }}
         >
-            {/* Header */}
+            {/* Header Area */}
             <div 
-                className="absolute left-0 right-0 pointer-events-none flex items-end justify-center border-b border-transparent hover:border-slate-200 transition-colors z-20"
+                className="absolute left-0 right-0 pointer-events-none flex items-end justify-center border-b border-transparent hover:border-dashed hover:border-slate-300 transition-colors z-20 group/header"
                 style={{ 
                     top: 0, 
                     height: `${(config.headerDistance || 0.5) * 96}px`,
@@ -317,8 +321,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     paddingRight: `${margins.right}px`,
                 }}
             >
-                <div className="w-full text-center relative">
-                    <span className="text-[10px] text-slate-400 uppercase tracking-widest opacity-0 group-hover:opacity-50 transition-opacity absolute top-1 left-1/2 -translate-x-1/2">Header</span>
+                {/* Visual indicator for Header area */}
+                <div className="absolute top-2 right-2 bg-slate-200 text-slate-500 text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover/header:opacity-100 transition-opacity">
+                    Header
                 </div>
             </div>
 
@@ -332,6 +337,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             )}
 
             {/* Body Container - Strict Overflow Hidden */}
+            {/* paddingTop incorporates margin and gutter, ensuring no overlap with header area */}
             <div 
                 className="relative w-full h-full overflow-hidden"
                 style={{ 
@@ -360,9 +366,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 />
             </div>
 
-            {/* Footer */}
+            {/* Footer Area */}
             <div 
-                className="absolute left-0 right-0 pointer-events-none flex items-start justify-center border-t border-transparent hover:border-slate-200 transition-colors z-20"
+                className="absolute left-0 right-0 pointer-events-none flex items-start justify-center border-t border-transparent hover:border-dashed hover:border-slate-300 transition-colors z-20 group/footer"
                 style={{
                     bottom: 0,
                     height: `${(config.footerDistance || 0.5) * 96}px`,
@@ -371,6 +377,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     paddingRight: `${margins.right}px`,
                 }}
             >
+                 <div className="absolute bottom-2 right-2 bg-slate-200 text-slate-500 text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover/footer:opacity-100 transition-opacity">
+                    Footer
+                 </div>
                  <span className="text-[10px] text-slate-400 font-mono opacity-50">Page {pageNumber} of {totalPages}</span>
             </div>
         </div>
@@ -394,6 +403,8 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
         prev.config.margins.bottom === next.config.margins.bottom &&
         prev.config.margins.left === next.config.margins.left &&
         prev.config.margins.right === next.config.margins.right &&
+        prev.config.headerDistance === next.config.headerDistance &&
+        prev.config.footerDistance === next.config.footerDistance &&
         prev.config.pageColor === next.config.pageColor &&
         prev.config.watermark === next.config.watermark &&
         prev.config.background === next.config.background

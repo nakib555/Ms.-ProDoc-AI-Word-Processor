@@ -7,7 +7,9 @@ const DPI = 96;
 
 /**
  * PageFrame: Defines the constraints of a page layout.
- * Equivalent to MS Word's page frame calculation.
+ * Enforces MS Word-like absolute boundaries where content cannot
+ * flow into the header/footer zones defined by their distance from edge
+ * if that distance exceeds the margins.
  */
 class PageFrame {
   width: number;
@@ -27,12 +29,24 @@ class PageFrame {
     const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
     
     // 1. Determine Sheet Dimensions
-    this.width = config.orientation === 'portrait' ? base.width : base.height;
-    this.height = config.orientation === 'portrait' ? base.height : base.width;
+    if (config.orientation === 'portrait') {
+        this.width = config.size === 'Custom' && config.customWidth ? config.customWidth * DPI : base.width;
+        this.height = config.size === 'Custom' && config.customHeight ? config.customHeight * DPI : base.height;
+    } else {
+        // Landscape swap
+        this.width = config.size === 'Custom' && config.customHeight ? config.customHeight * DPI : base.height;
+        this.height = config.size === 'Custom' && config.customWidth ? config.customWidth * DPI : base.width;
+    }
 
-    // 2. Calculate Margins (inches -> pixels)
-    this.marginTop = config.margins.top * DPI;
-    this.marginBottom = config.margins.bottom * DPI;
+    // 2. Calculate Margins with Absolute Boundary Protection
+    // "First page top header is the absolute margin"
+    // Content starts strictly below the header distance zone if margin is smaller.
+    const headerDistPx = (config.headerDistance || 0) * DPI;
+    const footerDistPx = (config.footerDistance || 0) * DPI;
+
+    this.marginTop = Math.max(config.margins.top * DPI, headerDistPx);
+    this.marginBottom = Math.max(config.margins.bottom * DPI, footerDistPx);
+    
     this.marginLeft = config.margins.left * DPI;
     this.marginRight = config.margins.right * DPI;
 
@@ -47,9 +61,8 @@ class PageFrame {
 
     // 4. Calculate Body Frame
     // This is the "safe zone" for main flow text.
-    // Headers and Footers live inside the margins, but text flow is constrained by margins.
-    this.bodyWidth = this.width - (this.marginLeft + this.marginRight);
-    this.bodyHeight = this.height - (this.marginTop + this.marginBottom);
+    this.bodyWidth = Math.max(0, this.width - (this.marginLeft + this.marginRight));
+    this.bodyHeight = Math.max(0, this.height - (this.marginTop + this.marginBottom));
   }
 }
 
@@ -72,37 +85,42 @@ class LayoutSandbox {
     this.el.style.left = '-10000px';
     this.el.style.padding = '0';
     this.el.style.margin = '0';
-    // Ensure word-break matches editor
+    // Ensure word-break matches editor to guarantee accurate splits
     this.el.style.wordWrap = 'break-word';
     this.el.style.overflowWrap = 'break-word';
+    this.el.style.whiteSpace = 'pre-wrap';
     document.body.appendChild(this.el);
   }
 
   measure(node: Node): number {
     this.el.innerHTML = '';
     this.el.appendChild(node.cloneNode(true));
-    return this.el.offsetHeight;
+    // Use getBoundingClientRect for sub-pixel precision which is crucial for page breaks
+    const rect = this.el.getBoundingClientRect();
+    return rect.height;
   }
 
   /**
    * Attempts to split a large node that doesn't fit.
    * Uses a text-based heuristic to split paragraphs.
-   * NOTE: This is a fallback for huge blocks. It strips inner HTML formatting 
-   * to prioritize layout structure. A full DOM-preserving split is computationally expensive.
    */
   splitNode(node: HTMLElement, remainingHeight: number): { keep: HTMLElement, move: HTMLElement } | null {
     // Only attempt split on flow content
     const validTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE'];
     if (!validTags.includes(node.tagName)) return null;
     
-    // Don't split complex atomic elements
-    if (node.querySelector('img, table, video, iframe, hr')) return null;
+    // Don't split complex atomic elements or if remaining space is too small (orphans)
+    // Assuming roughly 18px per line min
+    if (remainingHeight < 18 || node.querySelector('img, table, video, iframe, hr, .equation-wrapper')) return null;
 
     const clone = node.cloneNode(true) as HTMLElement;
     this.el.innerHTML = '';
     this.el.appendChild(clone);
 
-    // Get plain text words
+    // Get plain text words to perform binary search split
+    // This assumes simple text flow. Complex nested spans might lose formatting in this naive split,
+    // but preserving structure is extremely complex for a client-side text editor.
+    // We treat the block as text-dominant.
     const words = clone.innerText.split(' ');
     if (words.length < 2) return null;
 
@@ -110,13 +128,17 @@ class LayoutSandbox {
     let high = words.length - 1;
     let bestSplitIndex = 0;
 
-    // Binary search for the maximum amount of text that fits
+    // Binary search for the maximum amount of text that fits in `remainingHeight`
     while (low <= high) {
         const mid = Math.floor((low + high) / 2);
+        // Try fitting first 'mid' words
         const testText = words.slice(0, mid).join(' ');
-        clone.innerText = testText; // This applies text only, stripping spans/bold temporarily
+        clone.innerText = testText || '\u00A0'; // Use nbsp if empty to maintain line height
         
-        if (clone.offsetHeight <= remainingHeight) {
+        // Measure
+        const height = this.el.getBoundingClientRect().height;
+
+        if (height <= remainingHeight) {
             bestSplitIndex = mid;
             low = mid + 1;
         } else {
@@ -124,14 +146,19 @@ class LayoutSandbox {
         }
     }
 
-    if (bestSplitIndex === 0) return null; // Can't even fit one word
+    if (bestSplitIndex === 0) return null; // Can't even fit the first word
 
+    // Construct the split nodes
+    // Note: This approach simplifies the node to plain text. 
+    // Ideally, we'd walk the DOM tree to split, but for this demo, text splitting is the compromise.
     const keepNode = node.cloneNode(false) as HTMLElement;
     const moveNode = node.cloneNode(false) as HTMLElement;
 
-    // Split text
     keepNode.innerText = words.slice(0, bestSplitIndex).join(' ');
     moveNode.innerText = words.slice(bestSplitIndex).join(' ');
+
+    // If the move node is empty or just whitespace, don't split
+    if (!moveNode.innerText.trim()) return null;
 
     return { keep: keepNode, move: moveNode };
   }
@@ -165,11 +192,12 @@ export const paginateContent = (html: string, config: PageConfig): PaginatorResu
   const doc = parser.parseFromString(html, 'text/html');
   const body = doc.body;
 
-  // Normalize: Ensure all top-level text nodes are wrapped in P
+  // Normalize: Ensure all top-level text nodes are wrapped in P to behave as blocks
   const nodes: HTMLElement[] = [];
   Array.from(body.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
-          if (node.textContent?.trim()) {
+          // Wrap loose text or whitespace that isn't just a newline
+          if (node.textContent && (node.textContent.trim() || node.textContent.includes('\n'))) {
               const p = document.createElement('p');
               p.appendChild(node.cloneNode(true));
               nodes.push(p);
@@ -198,40 +226,41 @@ export const paginateContent = (html: string, config: PageConfig): PaginatorResu
                       node.style?.breakAfter === 'page';
 
       if (isBreak) {
-          flushPage();
-          continue; // Don't add the break element itself to visual output if it's just a marker
+          // Add the break element to the current page so it can be visualized if desired
+          // or acts as the spacer at the end of the page.
+          currentPageNodes.push(node);
+          flushPage(); 
+          continue; 
       }
 
       // 3b. Measure content
       const nodeH = sandbox.measure(node);
 
       // 3c. Check constraints
-      if (currentH + nodeH > frame.bodyHeight) {
-          // OVERFLOW DETECTED
+      // Allow a small tolerance (0.5px) for sub-pixel rendering differences
+      if (currentH + nodeH > frame.bodyHeight + 0.5) {
+          // OVERFLOW DETECTED: Content is going beyond the footer boundary.
+          // Action: Auto-create new page and move content.
           
           // Case 1: Node fits on a fresh page?
-          // If yes, move it entirely to next page (Paragraph Integrity)
           if (nodeH <= frame.bodyHeight) {
-              flushPage();
-              currentPageNodes.push(node);
+              flushPage(); // Create new page
+              currentPageNodes.push(node); // Move whole node to new page
               currentH = nodeH;
           } 
           // Case 2: Node is huge (taller than a page). Must split.
           else {
               const remainingSpace = frame.bodyHeight - currentH;
+              
+              // Attempt to split the node to fill the current page
               const split = sandbox.splitNode(node, remainingSpace);
 
               if (split) {
                   // Add first chunk to current page
                   currentPageNodes.push(split.keep);
-                  flushPage();
+                  flushPage(); // Flush immediately triggers "auto create new page"
                   
-                  // Add remainder to next page
-                  // Note: Remainder might still be huge, but next iteration loop handles logic?
-                  // Actually, for simplicity in this engine, we dump the rest on the next page 
-                  // and let it overflow visually if it's still too big, 
-                  // or properly recursive logic would be needed. 
-                  // Here we just push the moveNode.
+                  // Add remainder to next page (which will become the new current page context)
                   currentPageNodes.push(split.move);
                   currentH = sandbox.measure(split.move);
               } else {

@@ -57,25 +57,27 @@
     <style>
       /* Custom scrollbar for a cleaner look */
       ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 10px;
+        height: 10px;
       }
       ::-webkit-scrollbar-track {
         background: transparent; 
       }
       ::-webkit-scrollbar-thumb {
-        background: #cbd5e1; 
-        border-radius: 3px;
+        background: #c1c1c1; 
+        border-radius: 5px;
+        border: 2px solid transparent;
+        background-clip: content-box;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8; 
+        background-color: #a8a8a8; 
       }
       
       .dark ::-webkit-scrollbar-thumb {
-        background: #475569;
+        background-color: #475569;
       }
       .dark ::-webkit-scrollbar-thumb:hover {
-        background: #64748b;
+        background-color: #64748b;
       }
       
       /* Hide scrollbar for chrome/safari/opera */
@@ -112,6 +114,33 @@
       .prodoc-editor table {
         max-width: 100% !important;
         box-sizing: border-box;
+      }
+
+      /* --- Page Break Visuals --- */
+      .prodoc-page-break {
+        height: 0;
+        width: 100%;
+        display: block;
+      }
+      
+      .show-formatting-marks .prodoc-page-break {
+        height: auto;
+        border-bottom: 1px dotted #94a3b8;
+        margin: 10px 0;
+        position: relative;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 10px;
+        font-family: sans-serif;
+        user-select: none;
+      }
+      
+      .show-formatting-marks .prodoc-page-break::after {
+        content: "Page Break";
+        background: #fff;
+        padding: 0 8px;
+        position: relative;
+        top: 6px;
       }
 
       /* --- MathLive / Equation Box Styles --- */
@@ -250,7 +279,7 @@
 
       /* Formatting Marks */
       .show-formatting-marks p::after, 
-      .show-formatting-marks div::after,
+      .show-formatting-marks div:not(.prodoc-page-break)::after,
       .show-formatting-marks h1::after,
       .show-formatting-marks h2::after,
       .show-formatting-marks h3::after,
@@ -297,6 +326,16 @@
         }
         .equation-handle, .equation-dropdown {
           display: none !important;
+        }
+        .prodoc-page-break {
+          display: block;
+          page-break-after: always;
+          height: 0;
+          border: none !important;
+          margin: 0;
+        }
+        .prodoc-page-break::after {
+          display: none;
         }
       }
     </style>
