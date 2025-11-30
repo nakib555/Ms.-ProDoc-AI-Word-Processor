@@ -33,6 +33,62 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   // Initialize MathLive handling for any equations on this page
   useMathLive(content, editorRef);
 
+  // --- Cursor Management Helpers ---
+  const getCaretCharacterOffsetWithin = (element: HTMLElement) => {
+    let caretOffset = 0;
+    const doc = element.ownerDocument || document;
+    const win = doc.defaultView || window;
+    const sel = win.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      try {
+        const range = sel.getRangeAt(0);
+        if (element.contains(range.startContainer)) {
+            const preCaretRange = range.cloneRange();
+            preCaretRange.selectNodeContents(element);
+            preCaretRange.setEnd(range.endContainer, range.endOffset);
+            caretOffset = preCaretRange.toString().length;
+        }
+      } catch (e) {
+        // Fallback or ignore if selection is invalid for this element
+      }
+    }
+    return caretOffset;
+  };
+
+  const setCaretPosition = (element: HTMLElement, offset: number) => {
+      let charIndex = 0;
+      const range = document.createRange();
+      range.setStart(element, 0);
+      range.collapse(true);
+      
+      const nodeStack: Node[] = [element];
+      let node: Node | undefined;
+      let found = false;
+
+      while (!found && (node = nodeStack.pop())) {
+          if (node.nodeType === 3) {
+              const nextCharIndex = charIndex + (node.nodeValue || "").length;
+              if (offset >= charIndex && offset <= nextCharIndex) {
+                  range.setStart(node, offset - charIndex);
+                  range.collapse(true);
+                  found = true;
+              }
+              charIndex = nextCharIndex;
+          } else {
+              let i = node.childNodes.length;
+              while (i--) {
+                  nodeStack.push(node.childNodes[i]);
+              }
+          }
+      }
+
+      const sel = window.getSelection();
+      if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+      }
+  };
+
   // Sync content to editable div without losing cursor
   useLayoutEffect(() => {
     if (editorRef.current) {
@@ -46,7 +102,24 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
       // Only update if significantly different to avoid cursor jumps
       if (editorRef.current.innerHTML !== content) {
+        // Check if focused to save cursor
+        const isFocused = document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement);
+        let savedOffset = 0;
+        
+        if (isFocused) {
+            savedOffset = getCaretCharacterOffsetWithin(editorRef.current);
+        }
+
         editorRef.current.innerHTML = content;
+
+        if (isFocused) {
+            editorRef.current.focus();
+            try {
+                setCaretPosition(editorRef.current, savedOffset);
+            } catch (e) {
+                console.warn("Could not restore cursor position", e);
+            }
+        }
       }
     }
   }, [content]);
@@ -216,14 +289,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   return (
     <div 
-        className="relative group transition-transform duration-200 ease-out mx-auto"
+        className="relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] mx-auto origin-top"
         style={{
             width: `${width * scale}px`,
             height: `${height * scale}px`,
         }}
     >
         <div 
-            className="absolute inset-0 bg-white overflow-hidden"
+            className="absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',

@@ -97,7 +97,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
          `}</style>
 
          {/* Fluid Container Wrapper */}
-         <div style={webLayoutStyle} className="relative transition-transform duration-200 origin-top-left">
+         <div style={webLayoutStyle} className="relative transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left">
              {/* Watermark Layer */}
              {pageConfig.watermark && (
                  <div className="fixed inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0 opacity-60">

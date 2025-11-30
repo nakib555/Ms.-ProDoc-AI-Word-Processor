@@ -71,7 +71,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom }) => 
 
   return (
     <div 
-      className="h-6 bg-[#D1D5DB] border-b border-slate-300 flex items-end relative select-none no-print z-10 shadow-sm transition-transform duration-100 ease-out origin-top-left"
+      className="h-6 bg-[#D1D5DB] border-b border-slate-300 flex items-end relative select-none no-print z-10 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left"
       style={{ 
         width: `${width}px`,
         transform: `scale(${scale})`,

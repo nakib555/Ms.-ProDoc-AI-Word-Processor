@@ -27,7 +27,7 @@ const StatusBar: React.FC = () => {
       e.preventDefault();
       const direction = e.deltaY > 0 ? -1 : 1;
       setZoom(prev => {
-        const next = prev + (direction * 2);
+        const next = prev + (direction * 5); // Faster scroll zoom
         return Math.min(500, Math.max(10, next));
       });
     };
@@ -105,7 +105,7 @@ const StatusBar: React.FC = () => {
                 title="Scroll to Zoom"
             >
                 <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
-                <button onClick={() => setZoom(z => Math.max(10, z - 2))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom Out"><Minus size={14} /></button>
+                <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom Out"><Minus size={14} /></button>
                 
                 <div className="items-center gap-2 group relative hidden sm:flex">
                     <input 
@@ -120,7 +120,7 @@ const StatusBar: React.FC = () => {
                 </div>
                 <span className="w-8 sm:w-12 text-right font-semibold tabular-nums text-slate-200">{zoom}%</span>
                 
-                <button onClick={() => setZoom(z => Math.min(500, z + 2))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom In"><Plus size={14} /></button>
+                <button onClick={() => setZoom(z => Math.min(500, z + 10))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom In"><Plus size={14} /></button>
             </div>
           </div>
         </div>
