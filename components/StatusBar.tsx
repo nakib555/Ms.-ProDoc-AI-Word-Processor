@@ -8,7 +8,7 @@ import { getDocumentStats } from '../utils/textUtils';
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
-  const { wordCount, zoom, viewMode, setZoom, setViewMode, content, currentPage, totalPages } = useEditor();
+  const { wordCount, zoom, viewMode, setZoom, setViewMode, content, currentPage, totalPages, isAIProcessing } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
@@ -83,15 +83,17 @@ const StatusBar: React.FC = () => {
             {/* View Modes */}
             <div className="flex items-center bg-slate-800 dark:bg-slate-900 rounded-md p-0.5 border border-slate-700 dark:border-slate-800">
                  <button 
-                    onClick={() => setViewMode('print')} 
-                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'print' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}
+                    onClick={() => !isAIProcessing && setViewMode('print')} 
+                    disabled={isAIProcessing}
+                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'print' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'} ${isAIProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                     title="Print Layout"
                  >
                     <FileText size={14} />
                  </button>
                  <button 
-                    onClick={() => setViewMode('web')} 
-                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'web' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}
+                    onClick={() => !isAIProcessing && setViewMode('web')} 
+                    disabled={isAIProcessing}
+                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'web' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'} ${isAIProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                     title="Web Layout"
                  >
                     <Globe size={14} />

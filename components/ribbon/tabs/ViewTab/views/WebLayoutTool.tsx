@@ -7,14 +7,16 @@ import { PageConfig } from '../../../../../types';
 import { useMathLive } from '../../../../../hooks/useMathLive';
 
 export const WebLayoutTool: React.FC = () => {
-  const { viewMode, setViewMode } = useEditor();
+  const { viewMode, setViewMode, isAIProcessing } = useEditor();
   return (
-    <RibbonButton 
-        icon={Globe} 
-        label="Web Layout" 
-        onClick={() => setViewMode('web')} 
-        className={viewMode === 'web' ? 'bg-slate-100 text-blue-700' : ''}
-    />
+    <div className={isAIProcessing ? "opacity-50 cursor-not-allowed" : ""}>
+        <RibbonButton 
+            icon={Globe} 
+            label="Web Layout" 
+            onClick={() => !isAIProcessing && setViewMode('web')} 
+            className={viewMode === 'web' ? 'bg-slate-100 text-blue-700' : ''}
+        />
+    </div>
   );
 };
 

@@ -12,7 +12,7 @@ interface Message {
 }
 
 export const CopilotSidebar: React.FC = () => {
-  const { showCopilot, setShowCopilot, content, executeCommand } = useEditor();
+  const { showCopilot, setShowCopilot, content, executeCommand, viewMode } = useEditor();
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'model', text: "Hi! I'm Copilot. I can help you write, summarize, or edit this document. What would you like to do?" }
   ]);
@@ -82,7 +82,7 @@ export const CopilotSidebar: React.FC = () => {
       }
   };
 
-  if (!showCopilot) return null;
+  if (!showCopilot || viewMode === 'web') return null;
 
   return (
     <div className="w-[350px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-xl z-20 transition-all duration-300">

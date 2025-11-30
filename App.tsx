@@ -9,13 +9,11 @@ import { RibbonTab } from './types';
 import { Loader2 } from 'lucide-react';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { useAI } from './hooks/useAI';
 import { useResponsive } from './hooks/useResponsive';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
-  const { isProcessing } = useAI();
-  const { setViewMode, viewMode } = useEditor();
+  const { isAIProcessing, setViewMode, viewMode } = useEditor();
   
   const { isMobile } = useResponsive('print');
 
@@ -52,7 +50,7 @@ const AppContent: React.FC = () => {
             <Editor />
             
             {/* AI Overlay Loading State */}
-            {isProcessing && (
+            {isAIProcessing && (
               <div className="absolute inset-0 bg-slate-900/20 dark:bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-500">
                  <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-zoom-in mx-4 max-w-sm w-full border border-white/40 dark:border-slate-700 ring-1 ring-black/5">
                     <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 ring-4 ring-blue-50 dark:ring-blue-900/30 relative">
@@ -66,7 +64,7 @@ const AppContent: React.FC = () => {
             )}
           </div>
           
-          <CopilotSidebar />
+          {viewMode !== 'web' && <CopilotSidebar />}
         </div>
       </div>
 

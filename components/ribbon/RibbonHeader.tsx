@@ -8,7 +8,7 @@ interface RibbonHeaderProps {
 }
 
 export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => {
-  const { saveStatus, documentTitle, setDocumentTitle, showCopilot, setShowCopilot } = useEditor();
+  const { saveStatus, documentTitle, setDocumentTitle, showCopilot, setShowCopilot, viewMode } = useEditor();
   
   const renderSaveStatus = () => {
     switch (saveStatus) {
@@ -83,14 +83,16 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
        </div>
 
        <div className="flex items-center gap-3">
-           <button 
-              onClick={() => setShowCopilot(!showCopilot)}
-              className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${showCopilot ? 'bg-white/10 border-white/20 text-white shadow-inner' : 'bg-transparent border-transparent hover:bg-white/5 text-slate-300 hover:text-white'}`}
-              title="Copilot"
-           >
-              <Sparkles size={16} className={showCopilot ? "text-purple-400 fill-purple-400/20" : ""} />
-              <span className="text-xs font-semibold">Copilot</span>
-           </button>
+           {viewMode !== 'web' && (
+             <button 
+                onClick={() => setShowCopilot(!showCopilot)}
+                className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${showCopilot ? 'bg-white/10 border-white/20 text-white shadow-inner' : 'bg-transparent border-transparent hover:bg-white/5 text-slate-300 hover:text-white'}`}
+                title="Copilot"
+             >
+                <Sparkles size={16} className={showCopilot ? "text-purple-400 fill-purple-400/20" : ""} />
+                <span className="text-xs font-semibold">Copilot</span>
+             </button>
+           )}
 
            <div className="hidden md:flex items-center bg-slate-800/80 backdrop-blur-sm rounded-full px-3 py-1 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition-colors group">
               <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2 shadow-[0_0_8px_rgba(34,197,94,0.5)] group-hover:shadow-[0_0_12px_rgba(34,197,94,0.8)] transition-shadow"></div>

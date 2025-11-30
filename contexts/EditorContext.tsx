@@ -51,6 +51,8 @@ interface EditorContextType {
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
   showCopilot: boolean;
   setShowCopilot: React.Dispatch<React.SetStateAction<boolean>>;
+  isAIProcessing: boolean;
+  setIsAIProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   
   // Header/Footer & Editing Area
   activeEditingArea: EditingArea;
@@ -80,6 +82,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
   
   // Header & Footer State
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
@@ -490,6 +493,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTotalPages,
     showCopilot,
     setShowCopilot,
+    isAIProcessing,
+    setIsAIProcessing,
     activeEditingArea,
     setActiveEditingArea,
     headerContent,
@@ -525,6 +530,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     currentPage,
     totalPages,
     showCopilot,
+    isAIProcessing,
     activeEditingArea,
     headerContent,
     footerContent

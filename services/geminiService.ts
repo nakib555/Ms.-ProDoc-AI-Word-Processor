@@ -43,7 +43,7 @@ export const generateAIContent = async (
 ): Promise<string> => {
   const client = getClient();
   if (!client) {
-    return "Error: API Key not configured. Please use the API Key tool in the AI Assistant tab to configure your key.";
+    return JSON.stringify({ error: "API Key not configured. Please use the API Key tool in the AI Assistant tab." });
   }
 
   const systemPrompt = getSystemPrompt(operation, userPrompt);
@@ -54,19 +54,25 @@ export const generateAIContent = async (
       contents: [
         { role: "user", parts: [{ text: `SYSTEM DIRECTIVE: ${systemPrompt}\n\nINPUT CONTEXT:\n${text}` }] }
       ],
+      config: {
+        responseMimeType: "application/json", 
+      }
     });
 
     const response = await withTimeout<GenerateContentResponse>(call, 30000);
-    let resultText = response.text || "No response generated.";
-    // Cleanup any markdown code blocks just in case, though prompt instructs against them
-    resultText = resultText.replace(/^```html\s*/i, '').replace(/\s*```$/, '');
-    return resultText;
+    
+    // Safety check for empty responses
+    if (!response.text) {
+        throw new Error("Empty response from AI model.");
+    }
+
+    return response.text;
   } catch (error: any) {
     console.error("Gemini API Error:", error);
     if (error.message?.includes('timed out')) {
-      return "The request took too long to process. Please try a shorter text selection.";
+      return JSON.stringify({ error: "The request took too long to process." });
     }
-    return "Sorry, I encountered an error processing your request. Please check your API key and internet connection.";
+    return JSON.stringify({ error: error.message || "Unknown API Error" });
   }
 };
 
@@ -76,7 +82,7 @@ export const streamAIContent = async function* (
   userPrompt?: string
 ): AsyncGenerator<string, void, unknown> {
   const client = getClient();
-  if (!client) throw new Error("API Key not configured. Please select an API key in the AI Assistant tab.");
+  if (!client) throw new Error("API Key not configured.");
 
   const systemPrompt = getSystemPrompt(operation, userPrompt);
 
@@ -108,10 +114,8 @@ export const chatWithDocumentStream = async function* (
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
 
-  // Use the specific chat prompt from prompts.ts which includes the HATF manual
   const systemInstruction = getChatSystemPrompt(documentContent);
 
-  // Construct history
   const historyContent = history.map(msg => ({
     role: msg.role,
     parts: [{ text: msg.text }]

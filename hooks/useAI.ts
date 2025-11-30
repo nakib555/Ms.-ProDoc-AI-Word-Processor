@@ -1,8 +1,8 @@
 
-import { useState } from 'react';
 import { AIOperation } from '../types';
 import { generateAIContent, streamAIContent } from '../services/geminiService';
 import { useEditor } from '../contexts/EditorContext';
+import { jsonToHtml } from '../utils/documentConverter';
 
 export interface AIOptions {
   mode?: 'insert' | 'replace' | 'edit';
@@ -10,8 +10,7 @@ export interface AIOptions {
 }
 
 export const useAI = () => {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { executeCommand, editorRef, setContent } = useEditor();
+  const { executeCommand, editorRef, setContent, isAIProcessing, setIsAIProcessing } = useEditor();
 
   const performAIAction = async (
     operation: string, 
@@ -19,7 +18,7 @@ export const useAI = () => {
     options: AIOptions = { mode: 'insert' },
     restoreRange?: Range | null
   ) => {
-    // 1. Restore Selection FIRST if provided (crucial for Modals)
+    // 1. Restore Selection or Focus
     if (restoreRange) {
         try {
             const sel = window.getSelection();
@@ -31,7 +30,6 @@ export const useAI = () => {
             console.warn("Could not restore selection range", e);
         }
     } else {
-        // Fallback: If focus is lost and no range provided, try to refocus editor
         if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
              editorRef.current.focus();
         }
@@ -41,39 +39,29 @@ export const useAI = () => {
     const hasSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed;
     let textToProcess = hasSelection ? selection.toString() : "";
 
-    // Context gathering for continuation if no selection
     if (operation === 'continue_writing' && !textToProcess) {
         if (editorRef.current) {
-            // Get last ~2000 chars to provide context
             const allText = editorRef.current.innerText;
             textToProcess = allText.slice(-2000);
         }
     }
 
-    // For "generate_content", we rely on the prompt.
-    // If "useSelection" is true (Edit Mode), we append the selection to the prompt context via the service.
     if (operation === 'generate_content') {
         if (!customInput) {
             alert("Please provide a prompt.");
             return;
         }
-        
-        if (options.useSelection && hasSelection) {
-             // We are editing the selection based on the prompt
-             // textToProcess is already set to selection.toString()
-        } else {
-             // We are generating new content.
-             // If we are not using selection as context, clear textToProcess so we don't confuse the model
+        if (options.useSelection && !hasSelection) {
              textToProcess = ""; 
         }
     } else if (!textToProcess && operation !== 'generate_content') {
-        // For refine tools etc, we need text.
-        alert("Please select some text or ensure the document has content to use the AI Assistant.");
+        alert("Please select some text to use the AI Assistant.");
         return;
     }
 
-    // Expanded list of streaming operations for better UX
-    const shouldStream = 
+    // Determine if we should treat the response as JSON (Structured Document)
+    // Most generation tasks now use the JSON format defined in prompts.ts
+    const expectsJson = 
         operation === 'generate_content' || 
         operation === 'continue_writing' || 
         operation === 'expand' || 
@@ -81,123 +69,92 @@ export const useAI = () => {
         operation === 'simplify' ||
         operation === 'fix_grammar' ||
         operation === 'make_professional' ||
-        operation.startsWith('tone_') ||
-        operation.startsWith('translate_');
+        operation === 'generate_outline' ||
+        operation.startsWith('tone_');
 
-    setIsProcessing(true);
+    setIsAIProcessing(true);
 
-    if (shouldStream) {
-        try {
+    try {
+        // If we expect JSON, we don't stream visualization because we need the full valid JSON to parse
+        // We use generateAIContent which waits for the full response and forces JSON mode
+        if (expectsJson) {
+            let jsonString = await generateAIContent(operation as AIOperation, textToProcess, customInput);
+            
+            // Clean Markdown code blocks if present (common issue with LLM output)
+            // Use regex to find the first JSON object structure
+            jsonString = jsonString.trim();
+            const match = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (match) {
+                jsonString = match[1];
+            } else if (jsonString.startsWith('```')) {
+                // Fallback for unclosed code blocks or other variations
+                jsonString = jsonString.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
+            }
+
+            let parsedData;
+            try {
+                parsedData = JSON.parse(jsonString);
+            } catch (jsonError) {
+                console.error("JSON Parse Error:", jsonError, "Raw Output:", jsonString);
+                // Fallback: If it's not JSON, it might be an error message or plain text. 
+                // We'll try to insert it as text if it's short, otherwise show error.
+                if (jsonString.length < 500 && !jsonString.trim().startsWith('{')) {
+                     executeCommand('insertText', jsonString);
+                } else {
+                     alert("The AI response was not in the expected format. Please try again.");
+                }
+                return;
+            }
+
+            if (parsedData.error) {
+                alert("AI Error: " + parsedData.error);
+                return;
+            }
+
+            // Convert structured JSON to HTML
+            const generatedHtml = jsonToHtml(parsedData);
+
+            if (options.mode === 'replace') {
+                if (editorRef.current) {
+                    // Safe replacement
+                    executeCommand('selectAll');
+                    executeCommand('insertHTML', generatedHtml);
+                    // Clear selection
+                    const sel = window.getSelection();
+                    if(sel) sel.removeAllRanges();
+                }
+            } else {
+                if (generatedHtml) {
+                    executeCommand('insertHTML', generatedHtml);
+                }
+            }
+
+        } else {
+            // Legacy/Simple streaming for other tasks (like translate if not converted yet)
             const stream = streamAIContent(operation as AIOperation, textToProcess, customInput);
-            let isFirstChunk = true;
-            let streamSpan: HTMLElement | null = null;
             let accumulatedContent = "";
-            let spanId = "";
+            let isFirstChunk = true;
             
             for await (const chunk of stream) {
                 if (isFirstChunk) {
-                    setIsProcessing(false); // Hide loading overlay once writing starts
-                    
-                    // Handle Replacement Mode (New Document)
-                    if (operation === 'generate_content' && options.mode === 'replace') {
-                        if (editorRef.current) {
-                            editorRef.current.innerHTML = ''; 
-                            setContent(''); // Sync state
-                            editorRef.current.focus(); 
-                        }
-                    }
-
-                    spanId = `ai-stream-${Date.now()}`;
-                    // Insert a span with visual indicators that AI is writing
-                    // If text was selected, insertHTML replaces it, effectively "editing" it in place
-                    const html = `<span id="${spanId}" class="ai-streaming" style="background-color: rgba(59, 130, 246, 0.1); border-bottom: 2px solid #3b82f6; transition: all 0.1s ease;">&#8203;</span>`;
-                    executeCommand('insertHTML', html);
-                    streamSpan = document.getElementById(spanId);
+                    setIsAIProcessing(false); // Hide loader once we start streaming text to screen
+                    // Simple text insertion logic for non-JSON stream
+                    document.execCommand('insertText', false, chunk);
                     isFirstChunk = false;
-                }
-
-                // Robustness: Re-acquire element if lost (e.g., due to layout change/virtualization)
-                if (!streamSpan || !streamSpan.isConnected) {
-                    streamSpan = document.getElementById(spanId);
-                }
-
-                if (streamSpan) {
-                    accumulatedContent += chunk;
-                    
-                    // Basic Markdown code block stripping for the stream view
-                    let cleanHTML = accumulatedContent;
-                    // Remove markdown code blocks wrapper if present
-                    if (cleanHTML.startsWith('```html')) cleanHTML = cleanHTML.substring(7);
-                    else if (cleanHTML.startsWith('```')) cleanHTML = cleanHTML.substring(3);
-                    
-                    if (cleanHTML.endsWith('```')) cleanHTML = cleanHTML.substring(0, cleanHTML.length - 3);
-                    
-                    // Update the content of the span directly
-                    streamSpan.innerHTML = cleanHTML;
-                    
-                    // Keep visible - optional, can be jarring during layout changes if forced scroll
-                    // streamSpan.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 } else {
-                    // Buffer content if element is temporarily missing during render cycles
-                    accumulatedContent += chunk;
-                    
-                    // Fallback: If we genuinely lost the span (layout switch killed it), 
-                    // we keep accumulating. When layout stabilizes or stream ends, we might need to recover.
-                    // For now, we rely on the re-acquisition logic above which checks every chunk.
+                    document.execCommand('insertText', false, chunk);
                 }
+                accumulatedContent += chunk;
             }
-            
-            // Cleanup: Unwrap the span to merge content naturally into the document
-            // Attempt to find the span one last time in case it reappeared
-            if (spanId) {
-                // Re-acquire one last time
-                streamSpan = document.getElementById(spanId);
-                
-                if (streamSpan) {
-                    const parent = streamSpan.parentNode;
-                    if (parent) {
-                        // Move children out
-                        while (streamSpan.firstChild) {
-                            parent.insertBefore(streamSpan.firstChild, streamSpan);
-                        }
-                        // Remove the styling span
-                        parent.removeChild(streamSpan);
-                    }
-                }
-
-                // Normalization ensures adjacent text nodes are merged
-                editorRef.current?.normalize();
-                if (editorRef.current) {
-                    setContent(editorRef.current.innerHTML);
-                }
-            }
-        } catch (e) {
-            console.error(e);
-            alert("AI Stream Error: " + e);
-        } finally {
-            setIsProcessing(false);
         }
-        return;
-    }
 
-    // Non-streaming operations (Fallback)
-    try {
-      const result = await generateAIContent(operation as AIOperation, textToProcess, customInput);
-      
-      if (result) {
-         if (result.trim().startsWith('<') || operation === 'generate_outline') {
-             executeCommand('insertHTML', result);
-         } else {
-             executeCommand('insertText', result);
-         }
-      }
     } catch (e) {
-      console.error(e);
-      alert("AI Error: " + e);
+        console.error(e);
+        alert("AI processing failed. Please check your API key and network connection.");
     } finally {
-      setIsProcessing(false);
+        setIsAIProcessing(false);
     }
   };
 
-  return { isProcessing, performAIAction };
+  return { isProcessing: isAIProcessing, performAIAction };
 };
