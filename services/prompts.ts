@@ -107,7 +107,11 @@ export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): st
       specificDirective = `TASK: Generate rich content based on the USER PROMPT. Use headings, paragraphs, and lists to structure the response effectively. Use Tables where appropriate for data. Ignore INPUT CONTEXT unless specifically referenced in the prompt.`;
       break;
     case 'edit_content':
-      specificDirective = `TASK: Edit, Refine, or Transform the INPUT CONTEXT based on the instructions in USER PROMPT. Maintain the original semantic structure unless asked to change. Output the result as structured JSON blocks.`;
+      specificDirective = `TASK: Edit, Refine, or Transform the INPUT CONTEXT based on the instructions in USER PROMPT.
+      IMPORTANT:
+      1. Your goal is to MODIFY the selected text, NOT to generate a whole new unrelated document.
+      2. Maintain the original semantic structure (e.g. if input is a table, return a modified table) unless asked to change format.
+      3. Return valid JSON blocks representing the edited result.`;
       break;
     case 'generate_outline':
       specificDirective = `TASK: Generate a detailed outline. Use nested "list" blocks.`;

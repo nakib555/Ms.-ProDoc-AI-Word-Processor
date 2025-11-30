@@ -17,6 +17,9 @@ const TONES: { id: ToneType; label: string; color: string; desc: string }[] = [
     { id: 'Concise', label: 'Concise', color: 'bg-slate-100 text-slate-700 border-slate-200', desc: 'Direct & to the point' },
 ];
 
+// Wrapped component to animate only the icon
+const SpinningLoader = (props: any) => <Loader2 {...props} className="animate-spin" />;
+
 export const WriteWithAITool: React.FC = () => {
   const { performAIAction } = useAI();
   const { aiState } = useEditor();
@@ -56,7 +59,8 @@ export const WriteWithAITool: React.FC = () => {
         performAIAction(operation, enhancedPrompt, { 
             mode: mode === 'replace' ? 'replace' : 'insert',
             useSelection: mode === 'edit'
-        }, savedRange); // Pass saved range to restore focus
+        }, savedRange); 
+        
         setIsOpen(false);
     }
   };
@@ -67,13 +71,13 @@ export const WriteWithAITool: React.FC = () => {
   let className = "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50 border border-indigo-100";
 
   if (aiState === 'thinking') {
-      Icon = Loader2;
+      Icon = SpinningLoader;
       label = "Thinking...";
-      className = "text-amber-600 bg-amber-50 border border-amber-200 animate-pulse";
+      className = "text-amber-600 bg-amber-50 border border-amber-200 cursor-wait";
   } else if (aiState === 'writing') {
       Icon = PenLine;
-      label = "Generating...";
-      className = "text-green-600 bg-green-50 border border-green-200 animate-pulse";
+      label = "Writing...";
+      className = "text-green-600 bg-green-50 border border-green-200 animate-pulse cursor-wait";
   }
 
   return (
@@ -81,9 +85,9 @@ export const WriteWithAITool: React.FC = () => {
         <RibbonButton 
             icon={Icon} 
             label={label} 
-            onClick={() => setIsOpen(true)} 
+            onClick={() => { if(aiState === 'idle') setIsOpen(true); }} 
             title="Generate content, create tables, or edit text with AI"
-            className={`${className} ${aiState === 'thinking' ? 'animate-[spin_3s_linear_infinite_reverse]' : ''}`}
+            className={className}
         />
 
         {isOpen && (
