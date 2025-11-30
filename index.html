@@ -293,6 +293,27 @@
         margin-left: 4px;
         user-select: none;
       }
+
+      /* Header & Footer Editing Styles */
+      .header-footer-label {
+        position: absolute;
+        background-color: #2563eb; /* blue-600 */
+        color: white;
+        padding: 2px 8px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        user-select: none;
+        z-index: 50;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        font-family: 'Inter', sans-serif;
+        border-radius: 0 0 4px 4px; /* Bottom rounded for header tag */
+      }
+      
+      .header-footer-label.footer-tag {
+        border-radius: 4px 4px 0 0; /* Top rounded for footer tag */
+      }
       
       /* Print styles */
       @media print {
@@ -336,6 +357,9 @@
         }
         .prodoc-page-break::after {
           display: none;
+        }
+        .header-footer-label {
+          display: none !important;
         }
       }
     </style>

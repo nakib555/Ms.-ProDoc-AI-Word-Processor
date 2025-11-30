@@ -34,7 +34,8 @@ export enum RibbonTab {
   // Contextual Tabs
   TABLE_DESIGN = 'Table Design',
   TABLE_LAYOUT = 'Table Layout',
-  EQUATION = 'Equation'
+  EQUATION = 'Equation',
+  HEADER_FOOTER = 'Header & Footer',
 }
 
 export interface AIResponse {
@@ -130,4 +131,5 @@ export interface ReadModeConfig {
   textScale: number; // 1 is default (100%)
 }
 
-export type ActiveElementType = 'text' | 'table' | 'image' | 'equation' | 'none';
+export type ActiveElementType = 'text' | 'table' | 'image' | 'equation' | 'header' | 'footer' | 'none';
+export type EditingArea = 'body' | 'header' | 'footer';

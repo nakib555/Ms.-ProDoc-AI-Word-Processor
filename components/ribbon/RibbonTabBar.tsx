@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
@@ -6,7 +5,7 @@ import {
   ChevronLeft, ChevronRight,
   FileText, Home, Blocks, PenTool, Palette,
   Layout, BookOpen, Mail, CheckSquare,
-  Eye, Sparkles, Table, PaintBucket, Sigma
+  Eye, Sparkles, Table, PaintBucket, Sigma, LayoutPanelTop
 } from 'lucide-react';
 
 interface RibbonTabBarProps {
@@ -124,14 +123,19 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       let timeoutId: ReturnType<typeof setTimeout>;
       const prevType = prevElementTypeRef.current;
 
-      if (activeElementType === 'equation' && prevType !== 'equation') {
+      if ((activeElementType === 'header' || activeElementType === 'footer') && (prevType !== 'header' && prevType !== 'footer')) {
+          onTabChange(RibbonTab.HEADER_FOOTER);
+      } else if (activeElementType === 'equation' && prevType !== 'equation') {
           onTabChange(RibbonTab.EQUATION);
       } 
       else if (activeElementType === 'table' && prevType !== 'table') {
           onTabChange(RibbonTab.TABLE_DESIGN);
       } 
       else {
-          if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
+          if (activeTab === RibbonTab.HEADER_FOOTER && activeElementType !== 'header' && activeElementType !== 'footer') {
+              timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
+          }
+          else if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
               timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
           }
           else if ((activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) && activeElementType !== 'table') {
@@ -200,6 +204,13 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
             />
           );
         })}
+        
+        { (activeElementType === 'header' || activeElementType === 'footer') && (
+            <>
+                <div className="w-[1px] h-6 bg-slate-700 mx-1 mb-2"></div>
+                <TabButton tabId={RibbonTab.HEADER_FOOTER} icon={LayoutPanelTop} label="Header & Footer" isActive={activeTab === RibbonTab.HEADER_FOOTER} onClick={() => onTabChange(RibbonTab.HEADER_FOOTER)} isContextual colorClass="text-cyan-500" />
+            </>
+        )}
 
         {activeElementType === 'table' && (
             <>

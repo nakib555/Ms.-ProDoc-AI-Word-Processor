@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement } from '../types';
+import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, PAGE_MARGIN_PADDING, MARGIN_PRESETS } from '../constants';
 import { handleMathInput } from '../utils/mathAutoCorrect';
@@ -51,6 +51,14 @@ interface EditorContextType {
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
   showCopilot: boolean;
   setShowCopilot: React.Dispatch<React.SetStateAction<boolean>>;
+  
+  // Header/Footer & Editing Area
+  activeEditingArea: EditingArea;
+  setActiveEditingArea: React.Dispatch<React.SetStateAction<EditingArea>>;
+  headerContent: string;
+  setHeaderContent: React.Dispatch<React.SetStateAction<string>>;
+  footerContent: string;
+  setFooterContent: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -72,6 +80,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showCopilot, setShowCopilot] = useState(false);
+  
+  // Header & Footer State
+  const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
+  const [headerContent, setHeaderContent] = useState('<div style="text-align: right; color: #94a3b8;">[Header]</div>');
+  const [footerContent, setFooterContent] = useState('<div style="text-align: center; color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
   
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -148,6 +161,16 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       while (current && depth < 50) {
         if (current.nodeType === Node.ELEMENT_NODE) {
+            // Check for Header/Footer containers
+            if (current.classList.contains('prodoc-header')) {
+                type = 'header';
+                break;
+            }
+            if (current.classList.contains('prodoc-footer')) {
+                type = 'footer';
+                break;
+            }
+
             if (current === editorRef.current || current.classList.contains('prodoc-editor')) {
                 break;
             }
@@ -466,7 +489,13 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     totalPages,
     setTotalPages,
     showCopilot,
-    setShowCopilot
+    setShowCopilot,
+    activeEditingArea,
+    setActiveEditingArea,
+    headerContent,
+    setHeaderContent,
+    footerContent,
+    setFooterContent
   }), [
     content,
     wordCount,
@@ -495,7 +524,10 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     activeElementType,
     currentPage,
     totalPages,
-    showCopilot
+    showCopilot,
+    activeEditingArea,
+    headerContent,
+    footerContent
   ]);
 
   return (

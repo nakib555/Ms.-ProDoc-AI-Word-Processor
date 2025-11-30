@@ -19,6 +19,7 @@ const ReviewTab = React.lazy(() => import('./ribbon/tabs/ReviewTab/ReviewTab').t
 const TableDesignTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign').then(m => ({ default: m.TableDesignTab })));
 const TableLayoutTab = React.lazy(() => import('./ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout').then(m => ({ default: m.TableLayoutTab })));
 const EquationTab = React.lazy(() => import('./ribbon/tabs/InsertTab/symbols/equation_subTab/EquationTab').then(m => ({ default: m.EquationTab })));
+const HeaderFooterTab = React.lazy(() => import('./ribbon/tabs/HeaderFooterTab/HeaderFooterTab').then(m => ({ default: m.HeaderFooterTab })));
 
 interface RibbonProps {
   activeTab: RibbonTab | null;
@@ -92,6 +93,7 @@ const Ribbon: React.FC<RibbonProps> = ({
             case RibbonTab.TABLE_DESIGN: return <TableDesignTab />;
             case RibbonTab.TABLE_LAYOUT: return <TableLayoutTab />;
             case RibbonTab.EQUATION: return <EquationTab />;
+            case RibbonTab.HEADER_FOOTER: return <HeaderFooterTab />;
             default: return activeTab ? <div className="flex items-center justify-center w-full h-full text-slate-400 italic text-xs">Tools coming soon...</div> : null;
           }
         })()}

@@ -1,6 +1,6 @@
 
 import React, { useRef, useLayoutEffect, useEffect } from 'react';
-import { PageConfig } from '../types';
+import { PageConfig, EditingArea } from '../types';
 import { PAGE_SIZES } from '../constants';
 import { useMathLive } from '../hooks/useMathLive';
 
@@ -14,7 +14,27 @@ interface EditorPageProps {
   onContentChange?: (html: string, pageIndex: number) => void;
   onFocus?: () => void;
   showFormattingMarks: boolean;
+  
+  // Header/Footer Props
+  activeEditingArea?: EditingArea;
+  setActiveEditingArea?: (area: EditingArea) => void;
+  headerContent?: string;
+  setHeaderContent?: (html: string) => void;
+  footerContent?: string;
+  setFooterContent?: (html: string) => void;
 }
+
+// Helper to calculate text length consistent with cursor logic
+const getTextLength = (node: Node): number => {
+    if (node.nodeType === Node.TEXT_NODE) return (node.nodeValue || "").length;
+    if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR') return 1;
+    }
+    let len = 0;
+    node.childNodes.forEach(c => len += getTextLength(c));
+    return len;
+};
 
 const EditorPageComponent: React.FC<EditorPageProps> = ({
   content,
@@ -25,10 +45,21 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   readOnly,
   onContentChange,
   onFocus,
-  showFormattingMarks
+  showFormattingMarks,
+  activeEditingArea = 'body',
+  setActiveEditingArea,
+  headerContent = '',
+  setHeaderContent,
+  footerContent = '',
+  setFooterContent
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
+
+  const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
+  const MIN_BODY_GAP = 192; // 2 inches minimum body gap @ 96 DPI
 
   // Initialize MathLive handling for any equations on this page
   useMathLive(content, editorRef);
@@ -55,7 +86,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     return caretOffset;
   };
 
-  const setCaretPosition = (element: HTMLElement, offset: number) => {
+  const setCaretPosition = (element: HTMLElement, offset: number): boolean => {
       let charIndex = 0;
       const range = document.createRange();
       range.setStart(element, 0);
@@ -82,11 +113,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           }
       }
 
-      const sel = window.getSelection();
-      if (sel) {
-          sel.removeAllRanges();
-          sel.addRange(range);
+      if (found) {
+          const sel = window.getSelection();
+          if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(range);
+          }
       }
+      return found;
   };
 
   // Sync content to editable div without losing cursor
@@ -113,16 +147,49 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         editorRef.current.innerHTML = content;
 
         if (isFocused) {
-            editorRef.current.focus();
-            try {
-                setCaretPosition(editorRef.current, savedOffset);
-            } catch (e) {
-                console.warn("Could not restore cursor position", e);
+            // Check if the saved offset is within bounds of the NEW content
+            // If content moved to next page, this page's content is shorter.
+            // We should NOT restore cursor here if it's out of bounds, 
+            // as that would force scroll back to this page end.
+            // The global cursor restoration in PrintLayoutView will handle focusing the next page.
+            const newContentLength = getTextLength(editorRef.current);
+            
+            if (savedOffset <= newContentLength) {
+                editorRef.current.focus();
+                try {
+                    setCaretPosition(editorRef.current, savedOffset);
+                } catch (e) {
+                    // Ignore cursor errors
+                }
             }
         }
       }
     }
-  }, [content]);
+  }, [content, pageNumber, totalPages]);
+
+  // Sync Header Content across pages
+  useEffect(() => {
+      if (headerRef.current) {
+          const isFocused = document.activeElement === headerRef.current;
+          if (!isFocused && headerRef.current.innerHTML !== headerContent) {
+              headerRef.current.innerHTML = headerContent;
+          }
+      }
+  }, [headerContent]);
+
+  // Sync Footer Content across pages
+  useEffect(() => {
+      if (footerRef.current) {
+          // Replace placeholder page number for display
+          const displayHtml = footerContent.replace(/\[Page \d+\]/g, `[Page ${pageNumber}]`)
+                                           .replace(/<span class="page-number-placeholder">\d+<\/span>/g, `<span class="page-number-placeholder">${pageNumber}</span>`);
+          
+          const isFocused = document.activeElement === footerRef.current;
+          if (!isFocused && footerRef.current.innerHTML !== displayHtml) {
+              footerRef.current.innerHTML = displayHtml;
+          }
+      }
+  }, [footerContent, pageNumber]);
 
   useEffect(() => {
     if (!editorRef.current || readOnly || !onContentChange) return;
@@ -150,61 +217,109 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
 
+  const handleHeaderInput = (e: React.FormEvent<HTMLDivElement>) => {
+      if (setHeaderContent) setHeaderContent(e.currentTarget.innerHTML);
+  };
+
+  const handleFooterInput = (e: React.FormEvent<HTMLDivElement>) => {
+      if (setFooterContent) setFooterContent(e.currentTarget.innerHTML);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (readOnly) return;
 
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount || !editorRef.current) return;
+    const range = selection.getRangeAt(0);
+
     if (e.key === 'ArrowDown') {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && editorRef.current) {
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            const editorRect = editorRef.current.getBoundingClientRect();
-            
-            // Check if we are visually at the bottom line (within margin of error ~30px)
-            if (editorRect.bottom - rect.bottom < 30) {
-                // We are at the bottom. 
-                if (pageNumber < totalPages) {
-                    e.preventDefault();
-                    const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
-                    if (nextPage) {
-                        nextPage.focus();
-                        // Move cursor to start
-                        const r = document.createRange();
-                        r.selectNodeContents(nextPage);
-                        r.collapse(true);
-                        selection.removeAllRanges();
-                        selection.addRange(r);
-                        nextPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
+        const editorRect = editorRef.current.getBoundingClientRect();
+        const rangeRect = range.getBoundingClientRect();
+        
+        // Check if we are visually at the bottom area (within 40px of bottom)
+        const cursorBottom = rangeRect.bottom !== 0 ? rangeRect.bottom : editorRect.bottom;
+
+        if (editorRect.bottom - cursorBottom < 40) {
+            if (pageNumber < totalPages) {
+                e.preventDefault();
+                const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
+                if (nextPage) {
+                    nextPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(nextPage);
+                    r.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(r);
+                    nextPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         }
     }
     
     if (e.key === 'ArrowUp') {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0 && editorRef.current) {
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            const editorRect = editorRef.current.getBoundingClientRect();
-            
-            // Check if we are visually at the top line
-            if (rect.top - editorRect.top < 30) {
-                if (pageNumber > 1) {
-                    e.preventDefault();
-                    const prevPage = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
-                    if (prevPage) {
-                        prevPage.focus();
-                        // Move cursor to end
-                        const r = document.createRange();
-                        r.selectNodeContents(prevPage);
-                        r.collapse(false);
-                        selection.removeAllRanges();
-                        selection.addRange(r);
-                        // Optional: prevPage.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                    }
+        const editorRect = editorRef.current.getBoundingClientRect();
+        const rangeRect = range.getBoundingClientRect();
+        const cursorTop = rangeRect.top !== 0 ? rangeRect.top : editorRect.top;
+        
+        // Check if we are visually at the top line
+        if (cursorTop - editorRect.top < 40) {
+            if (pageNumber > 1) {
+                e.preventDefault();
+                const prevPage = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
+                if (prevPage) {
+                    prevPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(prevPage);
+                    r.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(r);
                 }
             }
+        }
+    }
+
+    if (e.key === 'ArrowRight') {
+        // Check if cursor is at the very end of the content
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(editorRef.current);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        
+        if (preCaretRange.toString().length === editorRef.current.innerText.length) {
+             if (pageNumber < totalPages) {
+                e.preventDefault();
+                const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
+                if (nextPage) {
+                    nextPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(nextPage);
+                    r.collapse(true); // Start of next page
+                    selection.removeAllRanges();
+                    selection.addRange(r);
+                    nextPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+             }
+        }
+    }
+
+    if (e.key === 'ArrowLeft') {
+        // Check if cursor is at start
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(editorRef.current);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        
+        if (preCaretRange.toString().length === 0) {
+             if (pageNumber > 1) {
+                e.preventDefault();
+                const prevPage = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
+                if (prevPage) {
+                    prevPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(prevPage);
+                    r.collapse(false); // End of prev page
+                    selection.removeAllRanges();
+                    selection.addRange(r);
+                }
+             }
         }
     }
   };
@@ -212,7 +327,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const getMargins = () => {
     const m = config.margins;
     // Enforce absolute header/footer margin boundaries
-    // Content should start below header distance and end above footer distance
     let top = Math.max(m.top, config.headerDistance || 0) * 96;
     let bottom = Math.max(m.bottom, config.footerDistance || 0) * 96;
     
@@ -290,6 +404,64 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       return { ...style, justifyContent };
   };
 
+  // --- Interaction Handlers for Header/Footer ---
+  const onHeaderDoubleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (setActiveEditingArea) {
+          setActiveEditingArea('header');
+          setTimeout(() => {
+              if (headerRef.current) {
+                  headerRef.current.focus();
+                  const range = document.createRange();
+                  range.selectNodeContents(headerRef.current);
+                  range.collapse(false);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }, 10);
+      }
+  };
+
+  const onFooterDoubleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (setActiveEditingArea) {
+          setActiveEditingArea('footer');
+          setTimeout(() => {
+              if (footerRef.current) {
+                  footerRef.current.focus();
+                  const range = document.createRange();
+                  range.selectNodeContents(footerRef.current);
+                  range.collapse(false);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }, 10);
+      }
+  };
+
+  const onBodyDoubleClick = (e: React.MouseEvent) => {
+      if (activeEditingArea !== 'body' && setActiveEditingArea) {
+          e.stopPropagation();
+          setActiveEditingArea('body');
+          setTimeout(() => {
+              if (editorRef.current) {
+                  editorRef.current.focus();
+              }
+          }, 10);
+      }
+  };
+
+  const visualHeaderDist = (config.headerDistance || 0.5) * 96;
+  const visualFooterDist = (config.footerDistance || 0.5) * 96;
+  const safeMaxHeaderHeight = (height - MIN_BODY_GAP) / 2;
+  const safeMaxFooterHeight = (height - MIN_BODY_GAP) / 2;
+
+  // Calculate strict body dimensions
+  const bodyWidth = width - margins.left - margins.right;
+  const bodyHeight = height - margins.top - margins.bottom - gutterTop;
+
   return (
     <div 
         className="relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] mx-auto origin-top"
@@ -305,25 +477,36 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 transformOrigin: 'top left',
                 width: `${width}px`,
                 height: `${height}px`,
-                // Word-like shadow: Ring for subtle border, shadow for depth
                 boxShadow: '0 0 0 1px #d1d5db, 0 10px 20px -5px rgba(0,0,0,0.15)',
                 ...getBackgroundStyle()
             }}
         >
             {/* Header Area */}
             <div 
-                className="absolute left-0 right-0 pointer-events-none flex items-end justify-center border-b border-transparent hover:border-dashed hover:border-slate-300 transition-colors z-20 group/header"
+                className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
                 style={{ 
                     top: 0, 
-                    height: `${(config.headerDistance || 0.5) * 96}px`,
-                    paddingBottom: '4px',
+                    minHeight: `${margins.top}px`, 
+                    maxHeight: `${safeMaxHeaderHeight}px`,
+                    paddingTop: `${visualHeaderDist}px`, 
                     paddingLeft: `${margins.left}px`,
                     paddingRight: `${margins.right}px`,
                 }}
+                onDoubleClick={onHeaderDoubleClick}
             >
-                {/* Visual indicator for Header area */}
-                <div className="absolute top-2 right-2 bg-slate-200 text-slate-500 text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover/header:opacity-100 transition-opacity">
-                    Header
+                <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-blue-500' : 'hover:bg-slate-50/50'}`}>
+                    {isHeaderFooterMode && (
+                        <div className="header-footer-label" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>Header</div>
+                    )}
+                    <div 
+                        ref={headerRef}
+                        className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterMode ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
+                        contentEditable={isHeaderFooterMode}
+                        suppressContentEditableWarning
+                        onInput={handleHeaderInput}
+                        onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
+                        style={{ minHeight: '1em' }}
+                    />
                 </div>
             </div>
 
@@ -336,23 +519,23 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                  </div>
             )}
 
-            {/* Body Container - Strict Overflow Hidden */}
-            {/* paddingTop incorporates margin and gutter, ensuring no overlap with header area */}
+            {/* Body Container (Writable Area) - Strict Absolute Positioning */}
             <div 
-                className="relative w-full h-full overflow-hidden"
+                className={`absolute overflow-hidden transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
                 style={{ 
-                    paddingTop: `${margins.top + gutterTop}px`, 
-                    paddingRight: `${margins.right}px`, 
-                    paddingBottom: `${margins.bottom}px`, 
-                    paddingLeft: `${margins.left}px`,
+                    top: `${margins.top + gutterTop}px`,
+                    left: `${margins.left}px`,
+                    width: `${bodyWidth}px`,
+                    height: `${bodyHeight}px`,
                     ...getVerticalAlignStyle()
                 }}
+                onDoubleClick={onBodyDoubleClick}
             >
                 <div
                     id={`prodoc-editor-${pageNumber}`}
                     ref={editorRef}
-                    className={`prodoc-editor w-full h-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''}`}
-                    contentEditable={!readOnly}
+                    className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
+                    contentEditable={!readOnly && !isHeaderFooterMode}
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
                     onFocus={onFocus}
@@ -361,26 +544,39 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         fontFamily: 'Calibri, Inter, sans-serif',
                         color: '#000000',
                         flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined,
-                        minHeight: '100%' // Ensure full height for cursor
+                        // Ensure content has minimum height but allows flow
+                        minHeight: '100%' 
                     }}
                 />
             </div>
 
             {/* Footer Area */}
             <div 
-                className="absolute left-0 right-0 pointer-events-none flex items-start justify-center border-t border-transparent hover:border-dashed hover:border-slate-300 transition-colors z-20 group/footer"
+                className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
                 style={{
                     bottom: 0,
-                    height: `${(config.footerDistance || 0.5) * 96}px`,
-                    paddingTop: '4px',
+                    minHeight: `${margins.bottom}px`, 
+                    maxHeight: `${safeMaxFooterHeight}px`,
+                    paddingBottom: `${visualFooterDist}px`, 
                     paddingLeft: `${margins.left}px`,
                     paddingRight: `${margins.right}px`,
                 }}
+                onDoubleClick={onFooterDoubleClick}
             >
-                 <div className="absolute bottom-2 right-2 bg-slate-200 text-slate-500 text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover/footer:opacity-100 transition-opacity">
-                    Footer
+                 <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-blue-500' : 'hover:bg-slate-50/50'}`}>
+                    {isHeaderFooterMode && (
+                        <div className="header-footer-label footer-tag" style={{ left: 0, top: -2, transform: 'translateY(-100%)' }}>Footer</div>
+                    )}
+                    <div 
+                        ref={footerRef}
+                        className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterMode ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
+                        contentEditable={isHeaderFooterMode}
+                        suppressContentEditableWarning
+                        onInput={handleFooterInput}
+                        onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
+                        style={{ minHeight: '1em' }}
+                    />
                  </div>
-                 <span className="text-[10px] text-slate-400 font-mono opacity-50">Page {pageNumber} of {totalPages}</span>
             </div>
         </div>
     </div>
@@ -396,6 +592,9 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
         prev.zoom === next.zoom &&
         prev.readOnly === next.readOnly &&
         prev.showFormattingMarks === next.showFormattingMarks &&
+        prev.activeEditingArea === next.activeEditingArea &&
+        prev.headerContent === next.headerContent &&
+        prev.footerContent === next.footerContent &&
         // Shallow compare config object keys relevant to rendering
         prev.config.size === next.config.size &&
         prev.config.orientation === next.config.orientation &&
