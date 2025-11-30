@@ -164,7 +164,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
        >
            {/* Container for pages - standardized p-4 (1rem) padding for equal spacing on all sides */}
            <div 
-                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center gap-8 p-4' : 'flex-row flex-wrap justify-center content-start gap-8 p-4'}`}
+                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center justify-center gap-8 p-4' : 'flex-row flex-wrap justify-center content-center gap-8 p-4'}`}
                 onClick={handleBackgroundClick}
            >
                 {pages.map((pageContent, index) => (
