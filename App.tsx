@@ -8,26 +8,14 @@ import { RibbonTab } from './types';
 import { Loader2 } from 'lucide-react';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { useResponsive } from './hooks/useResponsive';
 
 // Lazy load the sidebar as it's a secondary feature
 const CopilotSidebar = React.lazy(() => import('./components/CopilotSidebar').then(m => ({ default: m.CopilotSidebar })));
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
-  const { aiState, setViewMode, viewMode } = useEditor();
+  const { aiState, viewMode } = useEditor();
   
-  const { isMobile } = useResponsive('print');
-
-  // Sync responsive view mode recommendation to context on mount/change
-  useEffect(() => {
-    if (isMobile) {
-        // Only force web layout if not in specific read mode
-        if (viewMode !== 'read') setViewMode('web');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMobile, setViewMode]); 
-
   // Automatically switch away from AI Assistant tab if in Web Layout
   useEffect(() => {
     if (viewMode === 'web' && activeTab === RibbonTab.AI_ASSISTANT) {
