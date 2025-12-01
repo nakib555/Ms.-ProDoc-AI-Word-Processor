@@ -2,7 +2,7 @@
 import React from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { CheckboxItem } from '../../ViewTab/common/ViewTools';
-import { useEditor } from '../../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const OptionsGroup: React.FC = () => {
   const { pageConfig, setPageConfig } = useEditor();

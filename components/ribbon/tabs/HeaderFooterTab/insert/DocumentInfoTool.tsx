@@ -4,7 +4,7 @@ import { FileText, User, File } from 'lucide-react';
 import { DropdownButton } from '../../InsertTab/common/InsertTools';
 import { MenuPortal } from '../../../common/MenuPortal';
 import { useInsertTab } from '../../InsertTab/InsertTabContext';
-import { useEditor } from '../../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const DocumentInfoTool: React.FC = () => {
   const { executeCommand, documentTitle } = useEditor();

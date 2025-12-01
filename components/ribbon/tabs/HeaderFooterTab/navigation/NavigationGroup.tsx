@@ -4,7 +4,7 @@ import { ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Link2 } from 'lucide-react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { SmallRibbonButton } from '../../ViewTab/common/ViewTools';
-import { useEditor } from '../../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const NavigationGroup: React.FC = () => {
   const { setActiveEditingArea, activeEditingArea } = useEditor();

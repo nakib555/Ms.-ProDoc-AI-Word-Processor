@@ -3,7 +3,7 @@ import React from 'react';
 import { PanelTop, PanelBottom, ArrowRightToLine, ChevronUp, ChevronDown } from 'lucide-react';
 import { RibbonSection } from '../../../common/RibbonSection';
 import { RibbonButton } from '../../../common/RibbonButton';
-import { useEditor } from '../../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 const PositionInput: React.FC<{ label: string; value: number; onChange: (val: number) => void; icon: any }> = ({ label, value, onChange, icon: Icon }) => (
     <div className="flex items-center gap-2">
