@@ -36,7 +36,18 @@ export const AIAssistantTabProvider: React.FC<{ children: React.ReactNode }> = (
   const closeMenu = useCallback(() => setActiveMenu(null), []);
 
   useEffect(() => {
-    const handleResize = () => setActiveMenu(null);
+    // Track width to distinguish between window resize (orientation/desktop) and keyboard open (height change)
+    let lastWidth = window.innerWidth;
+
+    const handleResize = () => {
+        const currentWidth = window.innerWidth;
+        // Only close menu if width changes significantly (ignoring small jitters, but handling orientation/window resize)
+        if (currentWidth !== lastWidth) {
+            setActiveMenu(null);
+            lastWidth = currentWidth;
+        }
+    };
+
     window.addEventListener('resize', handleResize);
     // Removed scroll listener to allow scrolling inside dropdowns without closing them
     return () => {
