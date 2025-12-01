@@ -9,7 +9,7 @@ import {
   Receipt, Building2, ShieldAlert, Hammer, Map, Plane, Leaf, Recycle, Wind, 
   TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
   Brain, Tv, Radio, HeartHandshake, Film, Gamepad2, Scissors, Lightbulb, GitBranch,
-  History, Palette, Globe, Library, Microscope
+  History, Palette, Globe, Library, Microscope, ShoppingBag, Heart, Rocket
 } from 'lucide-react';
 
 import { RESEARCH_ACADEMIC } from './Research & Academic';
@@ -40,17 +40,23 @@ import { BUSINESS_ENTREPRENEURSHIP } from './Business & Entrepreneurship';
 import { LEGAL_COMPLIANCE } from './Legal & Compliance';
 import { MEDIA_JOURNALISM } from './Media & Journalism';
 import { SPORTS_RECREATION } from './Sports & Recreation';
+import { FASHION_LIFESTYLE } from './Fashion & Lifestyle';
+import { PHILANTHROPY_NGOS } from './Philanthropy & NGOs';
+import { SCIFI_FANTASY } from './Science Fiction & Fantasy';
+import { HISTORICAL_RESEARCH } from './Historical Research';
 
 const PREDICTIVE_CATEGORIES = {
   "Technology & Innovation": TECHNOLOGY_INNOVATION,
   "Cultural Studies & Humanities": CULTURAL_HUMANITIES,
   "Research & Academic": RESEARCH_ACADEMIC,
   "Science & Research Documentation": SCIENCE_RESEARCH_DOCUMENTATION,
+  "Historical Research": HISTORICAL_RESEARCH,
   "Technical & Engineering": TECHNICAL_ENGINEERING,
   "Business & Management": BUSINESS_MANAGEMENT,
   "Business & Entrepreneurship": BUSINESS_ENTREPRENEURSHIP,
   "Creative & Media": CREATIVE_MEDIA,
   "Media & Journalism": MEDIA_JOURNALISM,
+  "Science Fiction & Fantasy": SCIFI_FANTASY,
   "Arts & Performing Arts": ARTS_PERFORMING_ARTS,
   "Education & Teaching": EDUCATION_TEACHING,
   "Legal & Regulatory": LEGAL_REGULATORY,
@@ -59,11 +65,13 @@ const PREDICTIVE_CATEGORIES = {
   "Health & Wellness": HEALTH_WELLNESS,
   "Finance & Accounting": FINANCE_ACCOUNTING,
   "Government & Policy": GOVERNMENT_POLICY,
+  "Philanthropy & NGOs": PHILANTHROPY_NGOS,
   "Architecture & Construction": ARCHITECTURE_CONSTRUCTION,
   "Travel & Tourism": TRAVEL_TOURISM,
   "Travel & Tourism Innovations": TRAVEL_TOURISM_INNOVATIONS,
   "Environmental Science & Sustainability": ENVIRONMENTAL_SUSTAINABILITY,
   "Food & Recipe": FOOD_RECIPE,
+  "Fashion & Lifestyle": FASHION_LIFESTYLE,
   "Sports & Fitness": SPORTS_FITNESS,
   "Sports & Recreation": SPORTS_RECREATION,
   "Entertainment & Media": ENTERTAINMENT_MEDIA,
@@ -82,12 +90,18 @@ const getIconForOption = (label: string) => {
   if (l.includes('specification') || l.includes('spec') || l.includes('requirement')) return ClipboardList;
   if (l.includes('architecture') || l.includes('system') || l.includes('design')) return Settings;
   
-  // Cultural Studies & Humanities
-  if (l.includes('history') || l.includes('historical') || l.includes('archive') || l.includes('past')) return History;
+  // Cultural Studies & Humanities & History
+  if (l.includes('history') || l.includes('historical') || l.includes('archive') || l.includes('past') || l.includes('chronology')) return History;
   if (l.includes('culture') || l.includes('society') || l.includes('ethnography') || l.includes('anthropology')) return Globe;
   if (l.includes('art') || l.includes('museum') || l.includes('exhibit') || l.includes('gallery')) return Palette;
   if (l.includes('literature') || l.includes('book') || l.includes('novel') || l.includes('poem')) return BookOpen;
   if (l.includes('research') || l.includes('study') || l.includes('paper') || l.includes('thesis')) return Library;
+
+  // Sci-Fi & Fantasy
+  if (l.includes('magic') || l.includes('spell') || l.includes('fantasy') || l.includes('creature')) return Sparkles;
+  if (l.includes('alien') || l.includes('space') || l.includes('planet') || l.includes('sci-fi') || l.includes('future')) return Rocket;
+  if (l.includes('world') || l.includes('map') || l.includes('universe')) return Globe;
+  if (l.includes('character') || l.includes('hero') || l.includes('villain')) return User;
 
   // Gaming & eSports
   if (l.includes('game') || l.includes('level') || l.includes('player') || l.includes('match') || l.includes('tournament') || l.includes('esport') || l.includes('patch') || l.includes('bug') || l.includes('quest') || l.includes('streaming') || l.includes('leaderboard')) return Gamepad2;
@@ -95,6 +109,15 @@ const getIconForOption = (label: string) => {
   // DIY & How-To
   if (l.includes('diy') || l.includes('repair') || l.includes('craft') || l.includes('paint') || l.includes('home improvement') || l.includes('assembly') || l.includes('project plan') || l.includes('renovation') || l.includes('woodworking')) return Hammer;
   
+  // Fashion & Lifestyle
+  if (l.includes('fashion') || l.includes('style') || l.includes('outfit') || l.includes('wardrobe') || l.includes('collection') || l.includes('trend')) return ShoppingBag;
+  if (l.includes('lifestyle') || l.includes('blog') || l.includes('living')) return Heart;
+
+  // Philanthropy & NGOs
+  if (l.includes('grant') || l.includes('donation') || l.includes('fundraising') || l.includes('charity')) return HeartHandshake;
+  if (l.includes('volunteer') || l.includes('community') || l.includes('outreach')) return User;
+  if (l.includes('ngo') || l.includes('non-profit') || l.includes('impact')) return Globe;
+
   // Entertainment & Media
   if (l.includes('tv') || l.includes('broadcast') || l.includes('show')) return Tv;
   if (l.includes('radio') || l.includes('podcast')) return Radio;
@@ -213,6 +236,11 @@ const Box = (props: any) => (
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
+);
+
+// Helper for Sparkles icon usage in getIconForOption
+const Sparkles = (props: any) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v2"/><path d="M21 21h-2"/></svg>
 );
 
 interface PredictiveBuilderProps {

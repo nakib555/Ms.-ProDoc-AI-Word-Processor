@@ -69,5 +69,16 @@ export const FOOD_RECIPE = [
     { l: "Dietary Restriction Recipe", f: "Dish → Alternative" },
     { l: "Restaurant Recipe Card", f: "Dish → Steps" },
     { l: "Food Preparation Timeline", f: "Step → Time" },
-    { l: "Culinary Event Report", f: "Activity → Outcome" }
+    { l: "Culinary Event Report", f: "Activity → Outcome" },
+    // New additions
+    { l: "Recipe Template", f: "Ingredient → Quantity" },
+    { l: "Menu Planning Sheet", f: "Meal → Dish" },
+    { l: "Ingredient Inventory", f: "Item → Quantity" },
+    { l: "Cooking Step Checklist", f: "Step → Action" },
+    { l: "Recipe Development Notes", f: "Dish → Observation" },
+    { l: "Nutritional Analysis Report", f: "Dish → Value" },
+    { l: "Meal Prep Schedule", f: "Day → Dish" },
+    { l: "Culinary Workshop Agenda", f: "Topic → Activity" },
+    { l: "Kitchen Safety Guidelines", f: "Task → Precaution" },
+    { l: "Recipe Feedback Form", f: "Dish → Comment" }
 ];

@@ -69,5 +69,26 @@ export const TECHNOLOGY_INNOVATION = [
     { l: "Innovation Pitch Notes", f: "Slide → Talking Point" },
     { l: "Software Deployment Notes", f: "Step → Outcome" },
     { l: "Technical Review Checklist", f: "Item → Status" },
-    { l: "Technology Performance Dashboard", f: "Metric → Value" }
+    { l: "Technology Performance Dashboard", f: "Metric → Value" },
+    // New additions
+    { l: "Product Development Notes", f: "Feature → Step" },
+    { l: "Innovation Roadmap", f: "Milestone → Deadline" },
+    { l: "Patent Filing Template", f: "Invention → Detail" },
+    { l: "Tech Research Paper", f: "Section → Content" },
+    { l: "Prototype Testing Log", f: "Component → Result" },
+    { l: "Software Architecture Diagram", f: "Module → Connection" },
+    { l: "Technical Feasibility Study", f: "Task → Outcome" },
+    { l: "Technology Stack Overview", f: "Layer → Tool" },
+    { l: "System Design Notes", f: "Module → Specification" },
+    { l: "R&D Project Proposal", f: "Objective → Method" },
+    { l: "Technical Evaluation Form", f: "Metric → Score" },
+    { l: "Innovation Metrics Tracker", f: "Metric → Value" },
+    { l: "Prototype Revision Notes", f: "Component → Change" },
+    { l: "Technology Implementation Plan", f: "Task → Step" },
+    { l: "Technical Workshop Agenda", f: "Topic → Activity" },
+    { l: "Innovation Case Study", f: "Example → Analysis" },
+    { l: "Product Feature Specification", f: "Feature → Detail" },
+    { l: "Software Testing Checklist", f: "Test → Status" },
+    { l: "Technology Trend Report", f: "Trend → Analysis" },
+    { l: "R&D Budget Planner", f: "Project → Cost" }
 ];

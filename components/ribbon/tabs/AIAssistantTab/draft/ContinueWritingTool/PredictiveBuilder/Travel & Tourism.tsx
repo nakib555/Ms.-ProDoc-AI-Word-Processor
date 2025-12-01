@@ -59,5 +59,21 @@ export const TRAVEL_TOURISM = [
     { l: "Tourist Emergency Plan", f: "Situation → Procedure" },
     { l: "Travel Packing List", f: "Item → Quantity" },
     { l: "Travel Booking Confirmation", f: "Booking → Details" },
-    { l: "Travel Expense Summary", f: "Category → Total" }
+    { l: "Travel Expense Summary", f: "Category → Total" },
+    // New additions
+    { l: "Destination Overview", f: "Location → Highlight" },
+    { l: "Itinerary Template", f: "Day → Activity" },
+    { l: "Travel Checklist", f: "Item → Status" },
+    { l: "Accommodation Notes", f: "Hotel → Detail" },
+    { l: "Transport Plan", f: "Mode → Route" },
+    { l: "Travel Budget Planner", f: "Expense → Amount" },
+    { l: "Local Attraction Guide", f: "Place → Description" },
+    { l: "Cultural Insights Notes", f: "Region → Detail" },
+    { l: "Travel Safety Tips", f: "Risk → Precaution" },
+    { l: "Travel Journal Template", f: "Date → Entry" },
+    { l: "Packing List", f: "Item → Quantity" },
+    { l: "Travel Photography Plan", f: "Location → Shot" },
+    { l: "Tourist Feedback Form", f: "Question → Answer" },
+    { l: "Route Map Annotations", f: "Location → Detail" },
+    { l: "Travel Experience Report", f: "Trip → Summary" }
 ];
