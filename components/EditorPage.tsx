@@ -12,7 +12,7 @@ interface EditorPageProps {
   zoom: number;
   readOnly?: boolean;
   onContentChange?: (html: string, pageIndex: number) => void;
-  onFocus?: () => void;
+  onFocus?: (e: React.FocusEvent<HTMLDivElement>) => void;
   showFormattingMarks: boolean;
   
   // Header/Footer Props
@@ -456,7 +456,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                   headerRef.current.focus();
                   const range = document.createRange();
                   range.selectNodeContents(headerRef.current);
-                  range.collapse(false);
+                  range.collapse(true);
                   const sel = window.getSelection();
                   sel?.removeAllRanges();
                   sel?.addRange(range);
@@ -474,7 +474,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                   footerRef.current.focus();
                   const range = document.createRange();
                   range.selectNodeContents(footerRef.current);
-                  range.collapse(false);
+                  range.collapse(true);
                   const sel = window.getSelection();
                   sel?.removeAllRanges();
                   sel?.addRange(range);

@@ -301,6 +301,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const { 
     setTotalPages, 
     setCurrentPage, 
+    currentPage,
     pageMovement,
     activeEditingArea,
     setActiveEditingArea,
@@ -308,6 +309,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setHeaderContent,
     footerContent,
     setFooterContent,
+    editorRef
   } = useEditor();
   
   const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
@@ -352,6 +354,16 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, [pages]); // Runs when pages structure updates
 
+  // On Mount or Page Change, sync context ref to the active page so AI tools know where to insert
+  useEffect(() => {
+      const activePageEl = document.getElementById(`prodoc-editor-${currentPage}`);
+      if (activePageEl && editorRef) {
+          // Check if we are focusing something else (like Copilot input), don't steal
+          // But if nothing relevant is focused, or selection is inside page, update context ref
+          (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = activePageEl as HTMLDivElement;
+      }
+  }, [currentPage, editorRef, pages]);
+
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPages(currentPages => {
         const updatedPages = [...currentPages];
@@ -366,9 +378,12 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     });
   }, [setContent]);
 
-  const handlePageFocus = useCallback((index: number) => {
+  const handlePageFocus = useCallback((index: number, e: React.FocusEvent<HTMLDivElement>) => {
       setCurrentPage(index + 1);
-  }, [setCurrentPage]);
+      if (editorRef) {
+          (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = e.currentTarget;
+      }
+  }, [setCurrentPage, editorRef]);
 
   // Unified scroll handler
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -426,6 +441,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
               const sel = window.getSelection();
               sel?.removeAllRanges();
               sel?.addRange(range);
+              
+              // Also update ref
+              if (editorRef) {
+                  (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = lastPage as HTMLDivElement;
+              }
           }
       }
   };
@@ -471,7 +491,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                             zoom={zoom}
                             showFormattingMarks={showFormattingMarks}
                             onContentChange={handlePageUpdate}
-                            onFocus={() => handlePageFocus(index)}
+                            onFocus={(e) => handlePageFocus(index, e)}
                             activeEditingArea={activeEditingArea}
                             setActiveEditingArea={setActiveEditingArea}
                             headerContent={headerContent}
