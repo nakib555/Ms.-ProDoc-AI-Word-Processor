@@ -407,45 +407,48 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                         </div>
                     ) : result ? (
                         <div className="flex-1 flex flex-col h-full overflow-hidden">
-                            {/* Dashboard Stats */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 pb-4 shrink-0">
-                                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-5 hover:border-indigo-200 transition-colors">
-                                    <ScoreGauge score={result.readabilityScore} />
-                                    <div>
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Readability</div>
-                                        <div className="text-xl font-bold text-slate-800 dark:text-white">{result.readabilityLevel}</div>
-                                        <div className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1"><Check size={10} strokeWidth={3}/> Optimized</div>
+                            {/* Scrollable Container */}
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                {/* Dashboard Stats */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8 pb-4">
+                                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-5 hover:border-indigo-200 transition-colors">
+                                        <ScoreGauge score={result.readabilityScore} />
+                                        <div>
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Readability</div>
+                                            <div className="text-xl font-bold text-slate-800 dark:text-white">{result.readabilityLevel}</div>
+                                            <div className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1"><Check size={10} strokeWidth={3}/> Optimized</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="md:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-center hover:border-indigo-200 transition-colors">
+                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <ThumbsUp size={14} className="text-indigo-500" /> Key Improvements
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
+                                            {result.improvements.map((imp, i) => (
+                                                <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-300">
+                                                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+                                                    <span className="leading-snug">{imp}</span>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="md:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-center hover:border-indigo-200 transition-colors">
-                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                        <ThumbsUp size={14} className="text-indigo-500" /> Key Improvements
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
-                                        {result.improvements.map((imp, i) => (
-                                            <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-300">
-                                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-                                                <span className="leading-snug">{imp}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Result Text */}
-                            <div className="flex-1 px-8 pb-4 overflow-hidden">
-                                <div className="h-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 overflow-y-auto custom-scrollbar">
-                                    <div className="max-w-3xl mx-auto prose dark:prose-invert">
-                                        <p className="text-lg leading-loose text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-serif">
-                                            {result.correctedText}
-                                        </p>
+                                {/* Result Text */}
+                                <div className="px-8 pb-8">
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-8">
+                                        <div className="max-w-3xl mx-auto prose dark:prose-invert">
+                                            <p className="text-lg leading-loose text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-serif">
+                                                {result.correctedText}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Action Bar */}
-                            <div className="px-8 py-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
+                            <div className="px-8 py-5 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0 z-10">
                                 <div className="text-xs text-slate-400 font-medium flex items-center gap-2">
                                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                                     AI processing complete
