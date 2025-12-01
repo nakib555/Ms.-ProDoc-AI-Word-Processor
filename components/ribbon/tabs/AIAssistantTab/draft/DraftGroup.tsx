@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
-import { ContinueWritingTool } from './ContinueWritingTool';
+import { ContinueWritingTool } from './ContinueWritingTool/ContinueWritingTool';
 import { QuickPromptTool } from './QuickPromptTool';
 import { WriteWithAITool } from './WriteWithAITool';
 
