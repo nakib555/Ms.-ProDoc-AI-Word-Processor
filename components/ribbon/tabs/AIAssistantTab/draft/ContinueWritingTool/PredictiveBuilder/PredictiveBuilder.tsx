@@ -7,7 +7,8 @@ import {
   ClipboardList, Scale, Clapperboard, Music, Mic, GraduationCap, CheckSquare, 
   User, Projector, Scroll, Stethoscope, Pill, Gavel, FileSignature, Landmark,
   Receipt, Building2, ShieldAlert, Hammer, Map, Plane, Leaf, Recycle, Wind, 
-  Construction, Tent, TreeDeciduous, Factory, Wrench, Mountain, Camera
+  TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
+  Brain, Tv, Radio, HeartHandshake, Film
 } from 'lucide-react';
 
 import { RESEARCH_ACADEMIC } from './Research & Academic';
@@ -22,6 +23,10 @@ import { GOVERNMENT_POLICY } from './Government & Policy';
 import { ARCHITECTURE_CONSTRUCTION } from './Architecture & Construction';
 import { TRAVEL_TOURISM } from './Travel & Tourism';
 import { ENVIRONMENTAL_SUSTAINABILITY } from './Environmental Science & Sustainability';
+import { FOOD_RECIPE } from './Food & Recipe';
+import { SPORTS_FITNESS } from './Sports & Fitness';
+import { ENTERTAINMENT_MEDIA } from './Entertainment & Media';
+import { PSYCHOLOGY_MENTAL_HEALTH } from './Psychology & Mental Health';
 
 const PREDICTIVE_CATEGORIES = {
   "Research & Academic": RESEARCH_ACADEMIC,
@@ -35,12 +40,37 @@ const PREDICTIVE_CATEGORIES = {
   "Government & Policy": GOVERNMENT_POLICY,
   "Architecture & Construction": ARCHITECTURE_CONSTRUCTION,
   "Travel & Tourism": TRAVEL_TOURISM,
-  "Environmental Science & Sustainability": ENVIRONMENTAL_SUSTAINABILITY
+  "Environmental Science & Sustainability": ENVIRONMENTAL_SUSTAINABILITY,
+  "Food & Recipe": FOOD_RECIPE,
+  "Sports & Fitness": SPORTS_FITNESS,
+  "Entertainment & Media": ENTERTAINMENT_MEDIA,
+  "Psychology & Mental Health": PSYCHOLOGY_MENTAL_HEALTH
 };
 
 const getIconForOption = (label: string) => {
   const l = label.toLowerCase();
   
+  // Entertainment & Media
+  if (l.includes('tv') || l.includes('broadcast') || l.includes('show')) return Tv;
+  if (l.includes('radio') || l.includes('podcast')) return Radio;
+  if (l.includes('film') || l.includes('movie') || l.includes('cinema')) return Film;
+  if (l.includes('script') || l.includes('screenplay') || l.includes('production')) return Clapperboard;
+  if (l.includes('music') || l.includes('album') || l.includes('song') || l.includes('lyrics')) return Music;
+  if (l.includes('casting') || l.includes('actor') || l.includes('role')) return User;
+  
+  // Psychology & Mental Health
+  if (l.includes('therapy') || l.includes('counseling') || l.includes('psych') || l.includes('mental')) return Brain;
+  if (l.includes('patient') || l.includes('client') || l.includes('support') || l.includes('care')) return HeartHandshake;
+  if (l.includes('assessment') || l.includes('evaluation') || l.includes('test')) return ClipboardList;
+  if (l.includes('mood') || l.includes('emotion') || l.includes('behavior')) return Activity;
+
+  // Food & Recipe
+  if (l.includes('recipe') || l.includes('cook') || l.includes('food') || l.includes('meal') || l.includes('menu') || l.includes('chef') || l.includes('ingredient') || l.includes('dish') || l.includes('baking') || l.includes('culinary')) return Utensils;
+
+  // Sports & Fitness
+  if (l.includes('fitness') || l.includes('workout') || l.includes('exercise') || l.includes('gym') || l.includes('strength') || l.includes('cardio') || l.includes('endurance')) return Dumbbell;
+  if (l.includes('sport') || l.includes('game') || l.includes('match') || l.includes('tournament') || l.includes('league') || l.includes('competition') || l.includes('athlete') || l.includes('team') || l.includes('coach') || l.includes('award')) return Trophy;
+
   // Architecture & Construction
   if (l.includes('blueprint') || l.includes('plan') || l.includes('architect') || l.includes('layout')) return Building2;
   if (l.includes('construction') || l.includes('build') || l.includes('contractor') || l.includes('site')) return Hammer;
@@ -56,7 +86,7 @@ const getIconForOption = (label: string) => {
   if (l.includes('guide') || l.includes('brochure') || l.includes('culture')) return BookOpen;
   if (l.includes('hiking') || l.includes('camping') || l.includes('adventure') || l.includes('backpack')) return Mountain;
   if (l.includes('photo') || l.includes('sightseeing')) return Camera;
-  if (l.includes('cruise') || l.includes('sea')) return Video; // Fallback or Ship if available
+  if (l.includes('cruise') || l.includes('sea')) return Video;
 
   // Environmental
   if (l.includes('environment') || l.includes('ecology') || l.includes('nature') || l.includes('habitat')) return Leaf;
@@ -99,7 +129,6 @@ const getIconForOption = (label: string) => {
   if (l.includes('health') || l.includes('nursing') || l.includes('vital') || l.includes('discharge')) return Activity;
 
   // Creative
-  if (l.includes('script') || l.includes('screenplay') || l.includes('movie') || l.includes('film')) return Clapperboard;
   if (l.includes('music') || l.includes('song') || l.includes('lyric')) return Music;
   if (l.includes('podcast') || l.includes('audio') || l.includes('speech')) return Mic;
   if (l.includes('video') || l.includes('animation')) return Video;
@@ -149,7 +178,9 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                      <LayoutTemplate size={10}/> Predictive Builder
                  </div>
-                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">700+</span>
+                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
+                    {Object.values(PREDICTIVE_CATEGORIES).reduce((acc, curr) => acc + curr.length, 0)}+
+                 </span>
              </div>
              <div className="relative group">
                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500"/>
