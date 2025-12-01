@@ -4,7 +4,7 @@ import {
   Search, ChevronRight, ChevronDown, Code, Database, Server, Cpu, Settings, 
   FlaskConical, FileSearch, Sigma, DollarSign, TrendingUp, Calendar, Briefcase, 
   ClipboardList, Scale, Clapperboard, Music, Mic, GraduationCap, CheckSquare, 
-  User, Projector, Scroll
+  User, Projector, Scroll, Stethoscope, Pill, Gavel, FileSignature
 } from 'lucide-react';
 
 import { RESEARCH_ACADEMIC } from './Research & Academic';
@@ -12,35 +12,52 @@ import { TECHNICAL_ENGINEERING } from './Technical & Engineering';
 import { BUSINESS_MANAGEMENT } from './Business & Management';
 import { CREATIVE_MEDIA } from './Creative & Media';
 import { EDUCATION_TEACHING } from './Education & Teaching';
+import { LEGAL_REGULATORY } from './Legal & Regulatory';
+import { HEALTHCARE_MEDICAL } from './Healthcare & Medical';
 
 const PREDICTIVE_CATEGORIES = {
   "Research & Academic": RESEARCH_ACADEMIC,
   "Technical & Engineering": TECHNICAL_ENGINEERING,
   "Business & Management": BUSINESS_MANAGEMENT,
   "Creative & Media": CREATIVE_MEDIA,
-  "Education & Teaching": EDUCATION_TEACHING
+  "Education & Teaching": EDUCATION_TEACHING,
+  "Legal & Regulatory": LEGAL_REGULATORY,
+  "Healthcare & Medical": HEALTHCARE_MEDICAL
 };
 
 const getIconForOption = (label: string) => {
   const l = label.toLowerCase();
   
+  // Tech
   if (l.includes('code') || l.includes('sdk') || l.includes('api') || l.includes('snippet')) return Code;
   if (l.includes('database') || l.includes('sql') || l.includes('schema')) return Database;
   if (l.includes('server') || l.includes('cloud') || l.includes('devops')) return Server;
   if (l.includes('hardware') || l.includes('iot') || l.includes('robotics')) return Cpu;
   if (l.includes('technical') || l.includes('spec') || l.includes('system')) return Settings;
   
+  // Science & Math
   if (l.includes('lab') || l.includes('experiment') || l.includes('science') || l.includes('chemical')) return FlaskConical;
   if (l.includes('research') || l.includes('study') || l.includes('analysis') || l.includes('thesis')) return FileSearch;
   if (l.includes('math') || l.includes('equation') || l.includes('formula')) return Sigma;
   
+  // Business
   if (l.includes('financial') || l.includes('budget') || l.includes('profit')) return DollarSign;
   if (l.includes('market') || l.includes('sales') || l.includes('growth') || l.includes('trend')) return TrendingUp;
   if (l.includes('meeting') || l.includes('agenda') || l.includes('schedule')) return Calendar;
   if (l.includes('business') || l.includes('company') || l.includes('startup')) return Briefcase;
   if (l.includes('report') || l.includes('audit') || l.includes('log') || l.includes('review')) return ClipboardList;
-  if (l.includes('contract') || l.includes('agreement') || l.includes('legal')) return Scale;
   
+  // Legal
+  if (l.includes('legal') || l.includes('court') || l.includes('litigation') || l.includes('judgment')) return Gavel;
+  if (l.includes('contract') || l.includes('agreement') || l.includes('policy') || l.includes('terms')) return FileSignature;
+  if (l.includes('regulation') || l.includes('compliance') || l.includes('law')) return Scale;
+
+  // Medical
+  if (l.includes('medical') || l.includes('patient') || l.includes('doctor') || l.includes('clinical') || l.includes('surgery') || l.includes('diagnosis')) return Stethoscope;
+  if (l.includes('medication') || l.includes('drug') || l.includes('prescription') || l.includes('pharmacy') || l.includes('treatment')) return Pill;
+  if (l.includes('health') || l.includes('nursing') || l.includes('vital') || l.includes('discharge')) return Activity;
+
+  // Creative
   if (l.includes('script') || l.includes('screenplay') || l.includes('movie') || l.includes('film')) return Clapperboard;
   if (l.includes('music') || l.includes('song') || l.includes('lyric')) return Music;
   if (l.includes('podcast') || l.includes('audio') || l.includes('speech')) return Mic;
@@ -48,9 +65,11 @@ const getIconForOption = (label: string) => {
   if (l.includes('poem') || l.includes('poetry')) return Feather;
   if (l.includes('story') || l.includes('novel') || l.includes('fiction')) return BookOpen;
   
+  // Education
   if (l.includes('lesson') || l.includes('syllabus') || l.includes('curriculum') || l.includes('teaching')) return GraduationCap;
   if (l.includes('quiz') || l.includes('exam') || l.includes('test') || l.includes('grade')) return CheckSquare;
   
+  // General
   if (l.includes('resume') || l.includes('cv') || l.includes('profile')) return User;
   if (l.includes('email') || l.includes('letter')) return Mail;
   if (l.includes('presentation') || l.includes('slide')) return Projector;
@@ -89,7 +108,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                      <LayoutTemplate size={10}/> Predictive Builder
                  </div>
-                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">250+</span>
+                 <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">400+</span>
              </div>
              <div className="relative group">
                  <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500"/>
