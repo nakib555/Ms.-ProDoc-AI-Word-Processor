@@ -5,7 +5,7 @@ import { GenerateImageTool } from './GenerateImageTool';
 
 export const ImageGroup: React.FC = () => {
   return (
-    <RibbonSection title="Image">
+    <RibbonSection title="Media">
        <GenerateImageTool />
     </RibbonSection>
   );

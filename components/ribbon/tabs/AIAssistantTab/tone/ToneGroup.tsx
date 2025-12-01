@@ -5,7 +5,7 @@ import { ToneTool } from './ToneTool';
 
 export const ToneGroup: React.FC = () => {
   return (
-    <RibbonSection title="Tone & Voice">
+    <RibbonSection title="Voice & Tone">
        <ToneTool />
     </RibbonSection>
   );
