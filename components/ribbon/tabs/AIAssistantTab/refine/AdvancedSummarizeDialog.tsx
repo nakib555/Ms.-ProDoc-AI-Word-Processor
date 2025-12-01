@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   X, FileText, List, AlignLeft, Hash, Zap, Globe, 
   Sparkles, Check, Copy, ArrowRight, Settings2, Sliders, 
@@ -79,38 +79,70 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
       ${config.highlightInsights ? '- KEY INSIGHTS: Identify the top 3 critical takeaways in a separate section.' : ''}
       
       INPUT TEXT:
-      "${initialText}"
+      "${initialText.replace(/"/g, '\\"')}"
       
-      OUTPUT FORMAT:
-      Return a structured JSON object matching the ProDoc schema.
-      - The root object must contain "document" -> "blocks".
-      - Use "heading" blocks for titles/sections.
-      - Use "paragraph" blocks for text.
-      - Use "list" blocks for bullet points or data extraction.
+      OUTPUT FORMAT (STRICT):
+      You MUST return ONLY a VALID JSON object matching the ProDoc schema.
+      Do not add any text before or after the JSON.
+      
+      JSON Structure:
+      {
+        "document": {
+          "blocks": [
+            { "type": "heading", "level": 2, "content": "Summary Title" },
+            { "type": "paragraph", "content": "Summary content here..." },
+            { "type": "list", "listType": "unordered", "items": ["Point 1", "Point 2"] }
+          ]
+        }
+      }
     `;
 
     try {
-      // Use generic generation operation which returns JSON schema
-      const response = await generateAIContent('generate_content', '', prompt);
+      // Use gemini-3-pro-preview for best quality reasoning on summaries
+      const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');
       
-      // Clean up markdown block syntax if present
+      // Robust JSON Extraction
       let cleanJson = response.trim();
-      if (cleanJson.startsWith('```')) {
-          cleanJson = cleanJson.replace(/^```(?:json)?/, '').replace(/```$/, '');
+      
+      // 1. Try finding JSON within code blocks
+      const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
+      if (codeBlockMatch) {
+          cleanJson = codeBlockMatch[1].trim();
+      } else {
+          // 2. Try finding the outermost object manually
+          const firstBrace = cleanJson.indexOf('{');
+          const lastBrace = cleanJson.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace !== -1) {
+              cleanJson = cleanJson.substring(firstBrace, lastBrace + 1);
+          }
       }
       
       try {
           const parsed = JSON.parse(cleanJson);
           // Convert the structured JSON response to HTML for display
           const html = jsonToHtml(parsed);
+          if (!html) throw new Error("Empty HTML generated from JSON");
           setResult(html);
       } catch (parseError) {
           console.error("JSON Parse Error", parseError);
-          setResult('<p style="color:red">Error parsing summary. Please try again.</p>');
+          // Fallback: If JSON fails, treat the whole text as a paragraph unless it looks completely broken
+          let fallbackHtml = response
+              .replace(/#+\s+(.*)/g, '<h3>$1</h3>') // Headings
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+              .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+              .replace(/^- (.*)/gm, '<li>$1</li>') // List items
+              .replace(/\n/g, '<br/>'); // Newlines
+          
+          // Wrap list items if any
+          if (fallbackHtml.includes('<li>')) {
+              fallbackHtml = fallbackHtml.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+          }
+          
+          setResult(`<div class="fallback-content">${fallbackHtml}</div>`);
       }
     } catch (e) {
       console.error(e);
-      setResult('<p style="color:red">Error generating summary. Please check your API key.</p>');
+      setResult('<p style="color:red">Error generating summary. Please check your API key and try again.</p>');
     } finally {
       setIsGenerating(false);
     }
@@ -128,7 +160,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
         <div className="w-full md:w-80 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
             <div className="p-5 border-b border-slate-200 dark:border-slate-800">
                 <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                    <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg text-violet-600 dark:text-violet-400">
                         <Zap size={18} />
                     </div>
                     Summarizer
@@ -150,8 +182,8 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                                 onClick={() => setConfig(c => ({...c, type: type.id}))}
                                 className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
                                     config.type === type.id 
-                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' 
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-slate-600'
+                                    ? 'bg-violet-600 border-violet-600 text-white shadow-md' 
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-violet-300 dark:hover:border-slate-600'
                                 }`}
                             >
                                 <type.icon size={18} className="mb-1.5" />
@@ -168,7 +200,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         <select 
                             value={config.focus}
                             onChange={(e) => setConfig(c => ({...c, focus: e.target.value}))}
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm"
                         >
                             {FOCUS_MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                         </select>
@@ -179,7 +211,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         <select 
                             value={config.language}
                             onChange={(e) => setConfig(c => ({...c, language: e.target.value}))}
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm"
                         >
                             {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
@@ -203,7 +235,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         step="10"
                         value={config.length}
                         onChange={(e) => setConfig(c => ({...c, length: parseInt(e.target.value)}))}
-                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
                     />
                     <div className="flex justify-between text-[10px] text-slate-400 font-medium">
                         <span>Concise</span>
@@ -214,20 +246,26 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 {/* 4. Advanced Toggles */}
                 <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
                     <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${config.extractData ? 'bg-violet-600 border-violet-600' : 'bg-white border-slate-300'}`}>
+                            {config.extractData && <Check size={10} className="text-white" strokeWidth={4} />}
+                        </div>
                         <input 
                             type="checkbox" 
                             checked={config.extractData}
                             onChange={(e) => setConfig(c => ({...c, extractData: e.target.checked}))}
-                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            className="hidden"
                         />
                         <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex-1">Extract Key Data</span>
                     </label>
                     <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${config.highlightInsights ? 'bg-violet-600 border-violet-600' : 'bg-white border-slate-300'}`}>
+                            {config.highlightInsights && <Check size={10} className="text-white" strokeWidth={4} />}
+                        </div>
                         <input 
                             type="checkbox" 
                             checked={config.highlightInsights}
                             onChange={(e) => setConfig(c => ({...c, highlightInsights: e.target.checked}))}
-                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            className="hidden"
                         />
                         <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex-1">Highlight Insights</span>
                     </label>
@@ -238,7 +276,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 <button 
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
                     {isGenerating ? <RefreshCw className="animate-spin" size={16}/> : <Sparkles size={16} />}
                     {isGenerating ? 'Summarizing...' : 'Generate Summary'}
@@ -247,7 +285,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
         </div>
 
         {/* Right Panel: Content */}
-        <div className="flex-1 flex flex-col bg-[#f8fafc] dark:bg-slate-950 min-w-0">
+        <div className="flex-1 flex flex-col bg-white dark:bg-slate-950 min-w-0">
             {/* Header */}
             <div className="h-14 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
                 <div className="flex items-center gap-2">
@@ -269,21 +307,21 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         />
                     </div>
                 ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-60">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-70">
                         {isGenerating ? (
                             <div className="space-y-4">
-                                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
-                                <p className="text-sm font-medium animate-pulse">Analyzing text structure...</p>
+                                <div className="w-16 h-16 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mx-auto"></div>
+                                <p className="text-sm font-medium animate-pulse text-violet-600">Analyzing text structure...</p>
                             </div>
                         ) : (
                             <div className="space-y-4 max-w-md">
-                                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                    <MessageSquare size={32} />
+                                <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                                    <MessageSquare size={32} className="text-slate-300"/>
                                 </div>
                                 <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Summarize</h3>
-                                <p className="text-sm">
+                                <p className="text-sm leading-relaxed text-slate-400">
                                     Configure your summary options on the left and click <strong>Generate</strong>.
-                                    The AI will analyze "{initialText.substring(0, 30)}..." and extract the key information.
+                                    The AI will analyze "{initialText.substring(0, 20)}..." and extract the key information.
                                 </p>
                             </div>
                         )}
@@ -303,7 +341,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         </button>
                         <button 
                             onClick={() => { onInsert(result); onClose(); }}
-                            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center gap-2 active:scale-95"
+                            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center gap-2 active:scale-95"
                         >
                             <Check size={18} /> Insert into Document
                         </button>

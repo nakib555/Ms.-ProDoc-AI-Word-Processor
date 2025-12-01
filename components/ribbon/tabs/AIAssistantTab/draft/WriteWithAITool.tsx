@@ -108,7 +108,7 @@ export const WriteWithAITool: React.FC = () => {
                                 <Wand2 size={24} className="text-yellow-300"/> 
                                 Magic Editor
                             </h3>
-                            <p className="text-indigo-100 text-xs mt-1 font-medium opacity-90 tracking-wide">HATF-Class Intelligence • Powered by Gemini 2.5</p>
+                            <p className="text-indigo-100 text-xs mt-1 font-medium opacity-90 tracking-wide">HATF-Class Intelligence • Powered by Gemini 3.0 Pro</p>
                         </div>
                         <button 
                             onClick={() => setIsOpen(false)} 

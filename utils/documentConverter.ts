@@ -15,10 +15,21 @@ const styleToString = (style: any): string => {
   }).join('; ');
 };
 
-const renderInlineContent = (contentItems: any[]): string => {
-  if (!contentItems || !Array.isArray(contentItems)) return '';
+const renderInlineContent = (contentItems: any): string => {
+  if (!contentItems) return '';
   
-  return contentItems.map(item => {
+  // Handle if content is just a string
+  if (typeof contentItems === 'string') return contentItems;
+
+  // Handle if content is not an array (single object)
+  if (!Array.isArray(contentItems)) {
+      contentItems = [contentItems];
+  }
+  
+  return contentItems.map((item: any) => {
+    // Handle if item is just a string
+    if (typeof item === 'string') return item;
+
     let text = item.text || '';
     if (!text && !item.type) return ''; // Skip empty text
 
@@ -51,11 +62,32 @@ const renderInlineContent = (contentItems: any[]): string => {
 };
 
 export const jsonToHtml = (jsonData: any): string => {
-  if (!jsonData || !jsonData.document || !jsonData.document.blocks) {
-    return '';
+  if (!jsonData) return '';
+
+  // If it's a raw string response, assume it's just a paragraph
+  if (typeof jsonData === 'string') {
+      return `<p>${jsonData}</p>`;
   }
 
-  const blocks = jsonData.document.blocks;
+  // Robustness: Handle different root structures
+  let blocks = [];
+  if (jsonData.document && Array.isArray(jsonData.document.blocks)) {
+      blocks = jsonData.document.blocks;
+  } else if (jsonData.blocks && Array.isArray(jsonData.blocks)) {
+      blocks = jsonData.blocks;
+  } else if (Array.isArray(jsonData)) {
+      blocks = jsonData;
+  } else if (jsonData.type && jsonData.content) {
+      // Single block object treated as root
+      blocks = [jsonData];
+  } else {
+      // Fallback: If object keys look like content, try to render
+      if (jsonData.title) blocks.push({type: 'heading', level: 1, content: jsonData.title});
+      if (jsonData.summary) blocks.push({type: 'paragraph', content: jsonData.summary});
+      // If we still have nothing, stringify it safely
+      if (blocks.length === 0) return `<p>${JSON.stringify(jsonData)}</p>`;
+  }
+
   let html = '';
 
   blocks.forEach((block: any) => {
@@ -91,7 +123,7 @@ export const jsonToHtml = (jsonData: any): string => {
         break;
 
       case 'code':
-        html += `<pre style="background-color: #1e1e1e; color: #d4d4d4; padding: 1em; border-radius: 4px; overflow-x: auto; ${styleStr}"><code>${block.content}</code></pre>`;
+        html += `<pre style="background-color: #1e1e1e; color: #d4d4d4; padding: 1em; border-radius: 4px; overflow-x: auto; ${styleStr}"><code>${typeof block.content === 'string' ? block.content : renderInlineContent(block.content)}</code></pre>`;
         break;
 
       case 'equation':
@@ -107,16 +139,19 @@ export const jsonToHtml = (jsonData: any): string => {
             tableHtml += '<tr>';
             const isHeader = block.config?.hasHeaderRow && rIndex === 0;
             const cellTag = isHeader ? 'th' : 'td';
-            row.cells.forEach((cell: any) => {
-              const cellStyle = {
-                padding: '8px',
-                border: `1px solid ${block.config?.borderColor || '#cbd5e1'}`,
-                textAlign: 'left',
-                backgroundColor: isHeader ? '#f1f5f9' : (block.config?.bandedRows && rIndex % 2 === 0 ? '#f8fafc' : 'transparent'),
-                ...(cell.style || {})
-              };
-              tableHtml += `<${cellTag} style="${styleToString(cellStyle)}">${renderInlineContent(cell.content)}</${cellTag}>`;
-            });
+            
+            if (row.cells) {
+              row.cells.forEach((cell: any) => {
+                const cellStyle = {
+                  padding: '8px',
+                  border: `1px solid ${block.config?.borderColor || '#cbd5e1'}`,
+                  textAlign: 'left',
+                  backgroundColor: isHeader ? '#f1f5f9' : (block.config?.bandedRows && rIndex % 2 === 0 ? '#f8fafc' : 'transparent'),
+                  ...(cell.style || {})
+                };
+                tableHtml += `<${cellTag} style="${styleToString(cellStyle)}">${renderInlineContent(cell.content)}</${cellTag}>`;
+              });
+            }
             tableHtml += '</tr>';
           });
         }
@@ -129,11 +164,11 @@ export const jsonToHtml = (jsonData: any): string => {
         html += `<${tag} style="${styleStr}">`;
         if (block.items) {
           block.items.forEach((item: any) => {
-            html += `<li>${renderInlineContent(item.content)}`;
+            html += `<li>${renderInlineContent(item.content || item)}`; // Robust handle if item is direct text
             if (item.subItems) {
                html += `<${tag}>`;
                item.subItems.forEach((sub: any) => {
-                   html += `<li>${renderInlineContent(sub.content)}</li>`;
+                   html += `<li>${renderInlineContent(sub.content || sub)}</li>`;
                });
                html += `</${tag}>`;
             }
@@ -148,7 +183,10 @@ export const jsonToHtml = (jsonData: any): string => {
         break;
 
       default:
-        console.warn(`Unknown block type: ${block.type}`);
+        // Try generic fallback if content exists
+        if (block.content) {
+             html += `<div style="${styleStr}">${renderInlineContent(block.content)}</div>`;
+        }
         break;
     }
   });

@@ -39,7 +39,8 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
 export const generateAIContent = async (
   operation: AIOperation,
   text: string,
-  userPrompt?: string
+  userPrompt?: string,
+  model: string = "gemini-3-pro-preview"
 ): Promise<string> => {
   const client = getClient();
   if (!client) {
@@ -50,7 +51,7 @@ export const generateAIContent = async (
 
   try {
     const call = client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: model,
       contents: [
         { role: "user", parts: [{ text: `SYSTEM DIRECTIVE: ${systemPrompt}\n\nINPUT CONTEXT:\n${text}` }] }
       ],
@@ -79,7 +80,8 @@ export const generateAIContent = async (
 export const streamAIContent = async function* (
   operation: AIOperation,
   text: string,
-  userPrompt?: string
+  userPrompt?: string,
+  model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
@@ -88,7 +90,7 @@ export const streamAIContent = async function* (
 
   try {
     const responseStream = await client.models.generateContentStream({
-      model: "gemini-2.5-flash",
+      model: model,
       contents: [
         { role: "user", parts: [{ text: `SYSTEM DIRECTIVE: ${systemPrompt}\n\nINPUT CONTEXT:\n${text}` }] }
       ],
@@ -109,7 +111,8 @@ export const streamAIContent = async function* (
 export const chatWithDocumentStream = async function* (
   history: { role: 'user' | 'model', text: string }[],
   lastMessage: string,
-  documentContent: string
+  documentContent: string,
+  model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
@@ -123,7 +126,7 @@ export const chatWithDocumentStream = async function* (
 
   try {
     const chat = client.chats.create({
-      model: "gemini-2.5-flash",
+      model: model,
       config: { systemInstruction },
       history: historyContent
     });
@@ -150,7 +153,7 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
 
   try {
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-3-pro-image-preview',
       contents: {
         parts: [{ text: prompt }],
       },

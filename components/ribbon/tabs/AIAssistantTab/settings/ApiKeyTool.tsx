@@ -35,9 +35,9 @@ export const ApiKeyTool: React.FC = () => {
 
     try {
         const client = new GoogleGenAI({ apiKey: inputKey });
-        // Simple test call to verify validity
+        // Simple test call to verify validity using the new high-performance model
         await client.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3-pro-preview",
             contents: [{ role: "user", parts: [{ text: "Ping" }] }],
         });
         setVerifyStatus('valid');

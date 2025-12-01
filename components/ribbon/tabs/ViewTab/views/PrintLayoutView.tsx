@@ -305,7 +305,6 @@ const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
                         footerContent={footerContent}
                         setFooterContent={setFooterContent}
                     />
-                    {/* Visual separation logic mostly handled by gap/padding now, but keeping for consistency if needed */}
                 </div>
             </div>
         </div>
@@ -438,23 +437,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       setCurrentPage(visibleStartIndex + 1);
   }, [setCurrentPage]);
 
-  // Handle Scroll Sync for Ruler
-  const onScroll = useCallback(({ scrollOffset }: { scrollOffset: number, scrollUpdateWasRequested: boolean }) => {
-      // Typically vertical scroll doesn't affect horizontal ruler scroll, 
-      // but if we had horizontal scrolling on the outer container, we'd need to sync.
-      // FixedSizeList handles vertical scrolling. 
-      // If the content is wider than viewport, FixedSizeList allows horizontal overflow via `style={{ overflow: 'auto' }}` on outer element?
-      // react-window list usually handles one direction.
-      // For print layout, horizontal scroll is usually needed.
-      // FixedSizeList creates a container of `width`. If page is wider, we need `width` to match content or `overflow: auto`.
-      // We set List `width={width}` which is the AutoSizer width (viewport width).
-      // The Row inner content centers the page. If page > viewport, centering might clip or require scroll.
-      // To support horizontal scroll with react-window, we typically rely on the inner elements being wide,
-      // but react-window clips overflow. 
-      // Ideally, `width` passed to List should be `Math.max(viewportWidth, pageScaledWidth + padding)`.
-      // But AutoSizer gives viewport width.
-  }, []);
-
   // Compute actual content width for horizontal scrolling support
   const contentWidth = useMemo(() => {
       let baseW = 0;
@@ -484,12 +466,14 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
        {showRuler && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#F0F0F0] border-b border-slate-300 z-20 shrink-0 flex justify-center sticky top-0 shadow-sm"
+            className="w-full overflow-hidden bg-[#F0F0F0] border-b border-slate-300 z-20 shrink-0 sticky top-0 shadow-sm"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
-             <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
-                <Ruler pageConfig={pageConfig} zoom={zoom} />
+             <div style={{ width: listWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
+                 <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
+                    <Ruler pageConfig={pageConfig} zoom={zoom} />
+                 </div>
              </div>
          </div>
        )}
