@@ -91,10 +91,15 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
           "blocks": [
             { "type": "heading", "level": 2, "content": "Summary Title" },
             { "type": "paragraph", "content": "Summary content here..." },
-            { "type": "list", "listType": "unordered", "items": ["Point 1", "Point 2"] }
+            { "type": "list", "listType": "unordered", "items": ["<b>Point 1:</b> Detail text", "<b>Point 2:</b> Detail text"] }
           ]
         }
       }
+
+      CRITICAL RULES:
+      1. Do NOT include any "style", "paragraphStyle", or "config" properties in the blocks. These cause rendering issues and overlapping text.
+      2. Return plain semantic blocks only.
+      3. You can use HTML tags like <b>, <i>, <u> inside content strings for formatting if needed.
     `;
 
     try {
@@ -300,7 +305,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             {/* Viewport */}
             <div className="flex-1 overflow-hidden relative">
                 {result ? (
-                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-8">
+                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-8 animate-in slide-in-from-top-4 fade-in duration-500">
                         <div 
                             className="prose dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800"
                             dangerouslySetInnerHTML={{ __html: result }}

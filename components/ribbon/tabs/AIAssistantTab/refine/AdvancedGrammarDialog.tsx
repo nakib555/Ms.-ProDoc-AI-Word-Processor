@@ -6,7 +6,7 @@ import {
   ThumbsUp, BookOpen, PenTool, History, Settings2, Clock, ChevronRight, RotateCcw,
   Menu, ArrowLeft
 } from 'lucide-react';
-import { generateAIContent } from '../../../../../services/geminiService';
+import { GoogleGenAI } from "@google/genai";
 
 interface AdvancedGrammarDialogProps {
   isOpen: boolean;
@@ -36,12 +36,13 @@ interface HistoryItem {
 const ScoreGauge = ({ score }: { score: number }) => {
   const radius = 30;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+  const normalizedScore = isNaN(score) ? 0 : Math.max(0, Math.min(100, score));
+  const strokeDashoffset = circumference - (normalizedScore / 100) * circumference;
   
   let colorClass = "text-red-500";
-  if (score >= 40) colorClass = "text-amber-500";
-  if (score >= 70) colorClass = "text-emerald-500";
-  if (score >= 90) colorClass = "text-indigo-500";
+  if (normalizedScore >= 40) colorClass = "text-amber-500";
+  if (normalizedScore >= 70) colorClass = "text-emerald-500";
+  if (normalizedScore >= 90) colorClass = "text-indigo-500";
 
   return (
     <div className="relative w-20 h-20 flex items-center justify-center">
@@ -57,7 +58,7 @@ const ScoreGauge = ({ score }: { score: number }) => {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className={`text-xl font-bold ${colorClass}`}>{score}</span>
+        <span className={`text-xl font-bold ${colorClass}`}>{normalizedScore}</span>
       </div>
     </div>
   );
@@ -91,6 +92,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   const [text, setText] = useState(initialText);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [editableText, setEditableText] = useState('');
   const [activeTab, setActiveTab] = useState<'input' | 'preview'>('input');
   
   // Sidebar State
@@ -112,6 +114,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
     if (isOpen) {
         setText(initialText);
         setResult(null);
+        setEditableText('');
         setActiveTab('input');
         // Reset to settings view on open
         setSidebarView('settings');
@@ -130,38 +133,58 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
         setMobileView('editor');
     }
 
-    const prompt = `
-      Act as an expert editor. Analyze and improve the following text based on these settings:
-      - Tone: ${settings.tone}
-      - Fix Grammar/Spelling: ${settings.checkGrammar}
-      - Improve Style/Flow: ${settings.checkStyle}
-      - Fix Punctuation: ${settings.checkPunctuation}
-      - Fix Passive Voice: ${settings.fixPassive}
-      - Language: ${settings.language}
+    const localKey = localStorage.getItem('gemini_api_key');
+    const apiKey = localKey || process.env.API_KEY;
 
-      INPUT TEXT:
-      "${text}"
+    if (!apiKey) {
+        alert("API Key is missing. Please configure it in the AI Assistant tab.");
+        setIsAnalyzing(false);
+        setActiveTab('input');
+        return;
+    }
 
-      Return a JSON object with this EXACT structure (no markdown formatting, no code blocks):
-      {
-        "correctedText": "The fully corrected text string",
-        "readabilityScore": 0-100 (integer, 100 is best),
-        "readabilityLevel": "String (e.g. '8th Grade', 'College')",
-        "passiveVoiceCount": integer,
-        "improvements": ["List of 3-5 concise, specific improvements made"]
-      }
+    const systemInstruction = `You are an expert editor and writing coach.
+    Analyze the user input text and provide a corrected version along with readability metrics.
+    
+    SETTINGS:
+    - Tone: ${settings.tone}
+    - Fix Grammar/Spelling: ${settings.checkGrammar}
+    - Improve Style/Flow: ${settings.checkStyle}
+    - Fix Punctuation: ${settings.checkPunctuation}
+    - Fix Passive Voice: ${settings.fixPassive}
+    - Language: ${settings.language}
+
+    OUTPUT FORMAT:
+    Return valid JSON only. Follow this schema exactly:
+    {
+      "correctedText": "The fully corrected text string",
+      "readabilityScore": 0-100 (integer, 100 is best),
+      "readabilityLevel": "String (e.g. '8th Grade', 'College')",
+      "passiveVoiceCount": integer,
+      "improvements": ["List of 3-5 concise specific improvements made"]
+    }
     `;
 
     try {
-      const response = await generateAIContent('generate_content', '', prompt);
+      const client = new GoogleGenAI({ apiKey });
+      const response = await client.models.generateContent({
+          model: 'gemini-3-pro-preview',
+          contents: [{ role: "user", parts: [{ text: text }] }],
+          config: {
+              systemInstruction: systemInstruction,
+              responseMimeType: "application/json"
+          }
+      });
       
-      let cleanJson = response.trim();
+      let cleanJson = response.text || "{}";
+      // Ensure no markdown code blocks remain
       if (cleanJson.startsWith('```')) {
-          cleanJson = cleanJson.replace(/^```(?:json)?/, '').replace(/```$/, '');
+          cleanJson = cleanJson.replace(/^```(?:json)?\s*/, '').replace(/```\s*$/, '');
       }
       
       const data = JSON.parse(cleanJson);
       setResult(data);
+      setEditableText(data.correctedText || '');
 
       // Add to history
       const newItem: HistoryItem = {
@@ -185,6 +208,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   const restoreHistoryItem = (item: HistoryItem) => {
       setText(item.originalText);
       setResult(item.result);
+      setEditableText(item.result.correctedText || '');
       setSettings(item.settingsSnapshot);
       setActiveTab('preview');
       // On mobile, if restoring from history (sidebar), go to editor
@@ -342,7 +366,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                                     >
                                         <div className="flex justify-between items-start mb-1">
                                             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 px-1.5 py-0.5 rounded">
-                                                Score: {item.result.readabilityScore}
+                                                Score: {item.result?.readabilityScore || 0}
                                             </span>
                                             <span className="text-[10px] text-slate-400 flex items-center gap-1">
                                                 <Clock size={10} /> {item.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -448,43 +472,46 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                             </div>
                         </div>
                     ) : result ? (
-                        <div className="flex-1 flex flex-col h-full overflow-hidden">
+                        <div className="flex-1 flex flex-col h-full overflow-hidden animate-in slide-in-from-top-4 fade-in duration-500">
                             {/* Scrollable Container */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
                                 {/* Dashboard Stats */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-6 md:p-8 pb-4">
-                                    <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-5 hover:border-indigo-200 transition-colors">
-                                        <ScoreGauge score={result.readabilityScore} />
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-6 md:p-8 pb-4 shrink-0">
+                                    <div className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-5 hover:border-indigo-200 transition-colors ${(!result.improvements || result.improvements.length === 0) ? 'md:col-span-3' : ''}`}>
+                                        <ScoreGauge score={result.readabilityScore || 0} />
                                         <div>
                                             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Readability</div>
-                                            <div className="text-xl font-bold text-slate-800 dark:text-white">{result.readabilityLevel}</div>
+                                            <div className="text-xl font-bold text-slate-800 dark:text-white">{result.readabilityLevel || "Standard"}</div>
                                             <div className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1"><Check size={10} strokeWidth={3}/> Optimized</div>
                                         </div>
                                     </div>
 
-                                    <div className="md:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-center hover:border-indigo-200 transition-colors">
-                                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                                            <ThumbsUp size={14} className="text-indigo-500" /> Key Improvements
+                                    {result.improvements && result.improvements.length > 0 && (
+                                        <div className="md:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-center hover:border-indigo-200 transition-colors">
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                                <ThumbsUp size={14} className="text-indigo-500" /> Key Improvements
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
+                                                {result.improvements.map((imp, i) => (
+                                                    <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-300">
+                                                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
+                                                        <span className="leading-snug">{imp}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
-                                            {result.improvements.map((imp, i) => (
-                                                <div key={i} className="flex items-start gap-2.5 text-sm text-slate-600 dark:text-slate-300">
-                                                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></div>
-                                                    <span className="leading-snug">{imp}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
 
                                 {/* Result Text */}
-                                <div className="px-6 md:px-8 pb-8">
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
-                                        <div className="max-w-3xl mx-auto prose dark:prose-invert">
-                                            <p className="text-base md:text-lg leading-loose text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-serif">
-                                                {result.correctedText}
-                                            </p>
-                                        </div>
+                                <div className="px-6 md:px-8 pb-8 flex-1 flex flex-col min-h-[400px]">
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 flex-1 flex flex-col transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500/50">
+                                        <textarea
+                                            value={editableText}
+                                            onChange={(e) => setEditableText(e.target.value)}
+                                            className="flex-1 w-full resize-none outline-none border-none text-base md:text-lg leading-loose text-slate-800 dark:text-slate-200 bg-transparent font-serif p-0 placeholder:text-slate-300 focus:ring-0"
+                                            spellCheck={false}
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -500,10 +527,10 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                                         onClick={() => setActiveTab('input')}
                                         className="flex-1 sm:flex-none px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
                                     >
-                                        Edit
+                                        Edit Original
                                     </button>
                                     <button 
-                                        onClick={() => { onApply(result.correctedText); onClose(); }}
+                                        onClick={() => { onApply(editableText); onClose(); }}
                                         className="flex-1 sm:flex-none px-8 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2"
                                     >
                                         <Check size={18} /> Apply
