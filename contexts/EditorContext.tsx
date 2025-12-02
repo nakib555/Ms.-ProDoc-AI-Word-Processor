@@ -67,6 +67,10 @@ interface EditorContextType {
   setHeaderContent: React.Dispatch<React.SetStateAction<string>>;
   footerContent: string;
   setFooterContent: React.Dispatch<React.SetStateAction<string>>;
+
+  // Keyboard Lock
+  isKeyboardLocked: boolean;
+  setIsKeyboardLocked: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -100,6 +104,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [headerContent, setHeaderContent] = useState('<div style="color: #94a3b8;">[Header]</div>');
   const [footerContent, setFooterContent] = useState('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
   
+  // Keyboard Lock
+  const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
+
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
     orientation: 'portrait',
@@ -513,7 +520,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     headerContent,
     setHeaderContent,
     footerContent,
-    setFooterContent
+    setFooterContent,
+    isKeyboardLocked,
+    setIsKeyboardLocked
   }), [
     content,
     wordCount,
@@ -548,7 +557,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsAIProcessing,
     activeEditingArea,
     headerContent,
-    footerContent
+    footerContent,
+    isKeyboardLocked
   ]);
 
   return (

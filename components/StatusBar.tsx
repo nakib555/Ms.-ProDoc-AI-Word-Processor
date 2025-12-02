@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
-import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Loader2 } from 'lucide-react';
+import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Loader2, Lock, Unlock } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getDocumentStats } from '../utils/textUtils';
@@ -8,7 +8,7 @@ import { getDocumentStats } from '../utils/textUtils';
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
-  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom } = useEditor();
+  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom, isKeyboardLocked, setIsKeyboardLocked } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
@@ -74,6 +74,17 @@ const StatusBar: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-auto pl-2">
+            
+            {/* Keyboard Lock */}
+            <button 
+                onClick={() => setIsKeyboardLocked(!isKeyboardLocked)}
+                className={`p-1.5 rounded transition-all flex items-center gap-1 ${isKeyboardLocked ? 'text-red-400 bg-red-900/20' : 'text-slate-400 hover:text-white'}`}
+                title={isKeyboardLocked ? "Unlock Keyboard" : "Lock Keyboard (Prevent Typing)"}
+            >
+                {isKeyboardLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                {isKeyboardLocked && <span className="hidden sm:inline text-[10px] font-bold uppercase">Locked</span>}
+            </button>
+
             <button 
                 onClick={toggleTheme}
                 className="text-slate-400 hover:text-yellow-400 transition-colors p-1"

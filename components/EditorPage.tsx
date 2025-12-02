@@ -3,6 +3,7 @@ import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { PageConfig, EditingArea } from '../types';
 import { PAGE_SIZES } from '../constants';
 import { useMathLive } from '../hooks/useMathLive';
+import { useEditor } from '../contexts/EditorContext';
 
 interface EditorPageProps {
   content: string;
@@ -57,6 +58,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
+  const { isKeyboardLocked } = useEditor();
 
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
   const MIN_BODY_GAP = 192; // 2 inches minimum body gap @ 96 DPI
@@ -449,7 +451,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const onHeaderDoubleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (setActiveEditingArea) {
+      if (setActiveEditingArea && !isKeyboardLocked) {
           setActiveEditingArea('header');
           setTimeout(() => {
               if (headerRef.current) {
@@ -473,7 +475,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const onFooterDoubleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (setActiveEditingArea) {
+      if (setActiveEditingArea && !isKeyboardLocked) {
           setActiveEditingArea('footer');
           setTimeout(() => {
               if (footerRef.current) {
@@ -495,7 +497,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   };
 
   const onBodyDoubleClick = (e: React.MouseEvent) => {
-      if (activeEditingArea !== 'body' && setActiveEditingArea) {
+      if (activeEditingArea !== 'body' && setActiveEditingArea && !isKeyboardLocked) {
           e.stopPropagation();
           setActiveEditingArea('body');
           setTimeout(() => {
@@ -514,6 +516,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const bodyWidth = width - margins.left - margins.right;
   const bodyHeight = height - margins.top - margins.bottom - gutterTop;
 
+  // Determine effective contentEditable state
+  const isBodyEditable = !readOnly && !isHeaderFooterMode && !isKeyboardLocked;
+  const isHeaderFooterEditable = isHeaderFooterMode && !isKeyboardLocked;
+
   return (
     <div 
         className="relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] mx-auto origin-top"
@@ -523,7 +529,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }}
     >
         <div 
-            className="absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] cursor-text"
+            className={`absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${isKeyboardLocked ? 'cursor-default' : 'cursor-text'}`}
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
@@ -554,8 +560,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     )}
                     <div 
                         ref={headerRef}
-                        className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterMode ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
-                        contentEditable={isHeaderFooterMode}
+                        className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
+                        contentEditable={isHeaderFooterEditable}
                         suppressContentEditableWarning
                         onInput={handleHeaderInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
@@ -590,7 +596,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     id={`prodoc-editor-${pageNumber}`}
                     ref={editorRef}
                     className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
-                    contentEditable={!readOnly && !isHeaderFooterMode}
+                    contentEditable={isBodyEditable}
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
                     onFocus={onFocus}
@@ -624,8 +630,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     )}
                     <div 
                         ref={footerRef}
-                        className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterMode ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
-                        contentEditable={isHeaderFooterMode}
+                        className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
+                        contentEditable={isHeaderFooterEditable}
                         suppressContentEditableWarning
                         onInput={handleFooterInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
