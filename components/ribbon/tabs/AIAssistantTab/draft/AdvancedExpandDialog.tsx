@@ -105,7 +105,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[85vh] md:h-[80vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full max-w-6xl h-[70vh] md:h-[80vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Left Panel: Configuration */}
