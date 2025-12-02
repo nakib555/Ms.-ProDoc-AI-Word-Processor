@@ -1,31 +1,21 @@
 
 import { AIOperation } from '../types';
 
-// The HATF Manual adapted for JSON-based Rich Text Editor context.
-const HATF_CORE_MANUAL = `
-# 🎖️ CLASSIFIED: HATF Communications Officer Field Manual
-## Elite Intelligence Storytelling & Strategic Communication
-
-> **MISSION PRIME DIRECTIVE:** Transform chaos into crystal, complexity into clarity, and raw data into actionable wisdom.
-
-### 💎 THE PERFECTIONIST'S CODE
-1. **Zero Tolerance:** No errors, no ambiguity, no sloppiness.
-2. **Invisible Machinery:** NEVER mention you are an AI. Speak with the authority of a human expert.
-3. **Structured Output:** You must output valid JSON matching the ProDoc Schema exactly.
-
-### 📐 PRODOC JSON SCHEMA (STRICT)
-You MUST output a single valid JSON object.
-The root object must contain a "document" key, which contains a "blocks" array.
-
-**Example Structure (Use this as your template):**
+const PRODOC_JSON_SCHEMA = `
 {
   "document": {
     "title": "Document Title",
     "metadata": {
       "author": "AI Assistant",
-      "created": "2025-01-01T10:00:00Z",
+      "created": "ISO Date",
       "version": "1.0",
       "language": "en-US"
+    },
+    "header": {
+        "content": [ { "type": "paragraph", "content": [{ "text": "Header Content" }] } ]
+    },
+    "footer": {
+        "content": [ { "type": "paragraph", "content": [{ "text": "Footer Content" }] } ]
     },
     "settings": {
       "pageSize": "Letter",
@@ -36,58 +26,47 @@ The root object must contain a "document" key, which contains a "blocks" array.
       {
         "type": "heading",
         "level": 1,
-        "style": {
-          "textAlign": "center",
-          "color": "#1e3a8a",
-          "fontFamily": "Inter",
-          "fontSize": 28,
-          "bold": true,
-          "marginBottom": "24px",
-          "borderBottom": "2px solid #3b82f6",
-          "paddingBottom": "10px"
-        },
-        "content": [
-          { "text": "MAIN TITLE ", "bold": true },
-          { "text": "PART 2", "bold": true, "color": "#2563eb" }
-        ]
+        "style": { "textAlign": "center", "color": "#1e3a8a", "fontFamily": "Inter", "fontSize": 28, "bold": true, "marginBottom": "24px", "borderBottom": "2px solid #3b82f6", "paddingBottom": "10px" },
+        "content": [ { "text": "Heading Text ", "bold": true }, { "text": "Colored Part", "color": "#2563eb" } ]
       },
       {
         "type": "paragraph",
         "style": { "textAlign": "justify", "lineHeight": 1.6, "fontFamily": "Calibri", "fontSize": 12 },
-        "paragraphStyle": { "alignment": "justify", "lineSpacing": 1.15, "spacingAfter": 12 },
-        "content": [
-          { "text": "Standard text content. " },
-          { "text": "Bold highlighted text.", "bold": true, "highlight": "#fef08a" },
-          { "text": " A link example.", "link": "#reference1", "color": "blue" }
+        "content": [ { "text": "Regular text. " }, { "text": "Bold text.", "bold": true }, { "text": "Link", "link": "#", "color": "blue" } ]
+      },
+      {
+        "type": "list",
+        "listType": "unordered",
+        "items": [
+            { "content": [ { "text": "List Item 1" } ] },
+            { "content": [ { "text": "List Item 2" } ], "subItems": [ { "content": [{"text": "Sub Item"}] } ] }
         ]
       },
       {
         "type": "table",
         "config": { "columns": 2, "hasHeaderRow": true, "bandedRows": true, "borderColor": "#cbd5e1" },
-        "style": { "width": "100%", "borderCollapse": "collapse", "fontFamily": "Calibri", "fontSize": 11 },
+        "style": { "width": "100%", "borderCollapse": "collapse" },
         "rows": [
            { "cells": [ { "content": [{"text": "Header 1", "bold": true}] }, { "content": [{"text": "Header 2", "bold": true}] } ] },
-           { "cells": [ { "content": [{"text": "Row 1 Col 1"}] }, { "content": [{"text": "Row 1 Col 2"}] } ] }
+           { "cells": [ { "content": [{"text": "Cell 1"}] }, { "content": [{"text": "Cell 2"}] } ] }
         ]
+      },
+      {
+        "type": "code",
+        "language": "typescript",
+        "content": "console.log('Hello World');",
+        "style": { "backgroundColor": "#1e293b", "color": "#e2e8f0", "padding": "15px", "borderRadius": "8px", "fontFamily": "monospace" }
       },
       {
         "type": "equation",
         "latex": "E = mc^2",
         "style": { "displayMode": "block", "fontSize": "1.2em", "color": "#334155" }
-      }
+      },
+      { "type": "pageBreak" },
+      { "type": "image", "src": "url", "alt": "Description", "style": { "width": "100%", "height": "auto" } }
     ]
   }
 }
-
-**Supported Block Types:**
-- "heading" (requires level 1-6)
-- "paragraph" (supports inline styles: bold, italic, underline, strikethrough, highlight, color, link, subscript, superscript)
-- "list" (requires listType "unordered" or "ordered", and "items" array)
-- "table" (requires "rows" array of "cells")
-- "code" (content is string)
-- "equation" (latex property)
-- "pageBreak"
-- "image" (src, alt properties)
 `;
 
 export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string => {
@@ -95,58 +74,57 @@ export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): st
 
   switch (operation) {
     case 'summarize':
-      specificDirective = `TASK: Summarize the input. Use a "heading" block for the title and "list" blocks for key points.`;
+      specificDirective = `TASK: Summarize the input. Return a structured document with a Heading and Bullet Points.`;
       break;
     case 'fix_grammar':
-      specificDirective = `TASK: Fix grammar/spelling. Return the corrected text in "paragraph" blocks. Maintain formatting logic.`;
+      specificDirective = `TASK: Fix grammar/spelling. Return the corrected text preserving original structure as much as possible.`;
       break;
     case 'make_professional':
-      specificDirective = `TASK: Rewrite text to be professional and concise. Return as "paragraph" blocks.`;
+      specificDirective = `TASK: Rewrite text to be professional. Use formal language and clear structure.`;
       break;
     case 'generate_content':
-      specificDirective = `TASK: Generate rich content based on the USER PROMPT. Use headings, paragraphs, and lists to structure the response effectively. Use Tables where appropriate for data. Ignore INPUT CONTEXT unless specifically referenced in the prompt.`;
+      specificDirective = `TASK: Generate high-quality content based on the USER PROMPT.
+      
+      CONTEXT USAGE:
+      - Use INPUT CONTEXT (if any) to match tone/style.
+      - Create rich content using Headings, Paragraphs, Lists, and Tables where appropriate.
+      - For technical topics, use Code blocks.
+      - For math/science, use Equation blocks.
+      
+      MODE HANDLING:
+      - If asked to REPLACE or create a NEW DOC, you may include "header" and "footer" content in the JSON root.
+      - If INSERTING, focus on the "blocks" array.`;
       break;
     case 'edit_content':
-      specificDirective = `TASK: Edit, Refine, or Transform the INPUT CONTEXT based on the instructions in USER PROMPT.
-      IMPORTANT:
-      1. Your goal is to MODIFY the selected text, NOT to generate a whole new unrelated document.
-      2. Maintain the original semantic structure (e.g. if input is a table, return a modified table) unless asked to change format.
-      3. Return valid JSON blocks representing the edited result.`;
+      specificDirective = `TASK: Edit the INPUT CONTEXT (Selection) based on the USER PROMPT.
+      
+      GOAL: Modify the selected text while maintaining valid JSON block structure.`;
       break;
     case 'generate_outline':
-      specificDirective = `TASK: Generate a detailed outline. Use nested "list" blocks.`;
+      specificDirective = `TASK: Generate a detailed outline using nested Lists.`;
       break;
     case 'continue_writing':
-      specificDirective = `TASK: Continue the writing seamlessly from the INPUT CONTEXT.
-      
-      GOAL: Generate the next logical segment (paragraphs, lists, or new section) that follows naturally.
-      
-      INSTRUCTIONS:
-      1. Analyze the INPUT CONTEXT for tone, style, and DOCUMENT STRUCTURE (headings, patterns).
-      2. If USER PROMPT contains specific instructions (e.g. "Formal", "Story"), prioritize those.
-      3. **Predictive Building**: If the context implies a structured document (or if explicitly asked to "Predict next section"), infer the document type (e.g., Report, Paper, Letter) and generate the NEXT LOGICAL SECTION.
-         - If the previous section feels complete, START A NEW HEADING (e.g., "Conclusion", "Analysis", "Next Steps") matching the document's hierarchy.
-      4. Maintain specific formatting (e.g. if previous text uses bullets, continue if appropriate).
-      5. Return the new content as valid JSON blocks to be appended.`;
+      specificDirective = `TASK: Continue writing seamlessly. Predict the next logical section.`;
       break;
     default:
-      specificDirective = "Enhance the text and return it as structured JSON blocks.";
+      specificDirective = "Enhance the text and return it as structured JSON.";
   }
 
-  // Combine the HATF Manual with the specific directive and user prompt
   let finalSystemInstruction = `
-  ${HATF_CORE_MANUAL}
-
-  ---
+  You are an elite AI document engine.
   
-  **CURRENT MISSION PROFILE:**
+  **OUTPUT SCHEMA (STRICT JSON):**
+  ${PRODOC_JSON_SCHEMA}
+  
+  **RULES:**
+  1. Output **ONLY** raw valid JSON. No markdown fences. Start with {.
+  2. Use "content" arrays for text with inline styling (bold, italic, color, highlight).
+  3. Use specific block types (heading, paragraph, list, table, code, equation, image, pageBreak).
+  4. Ensure all keys are double-quoted.
+  5. **Header/Footer**: Only populate "header" and "footer" fields if creating a full document or explicitly asked.
+  
+  **DIRECTIVE:**
   ${specificDirective}
-  
-  **CRITICAL RULES:** 
-  1. Output **ONLY** raw JSON.
-  2. Do **NOT** wrap the output in markdown code blocks (e.g., no \`\`\`json).
-  3. Ensure all JSON keys and string values are properly double-quoted.
-  4. Escape special characters in strings properly.
   `;
 
   if (userPrompt) {

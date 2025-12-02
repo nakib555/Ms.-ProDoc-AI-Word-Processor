@@ -10,7 +10,17 @@ export interface AIOptions {
 }
 
 export const useAI = () => {
-  const { executeCommand, editorRef, setContent, isAIProcessing, setIsAIProcessing, setAiState } = useEditor();
+  const { 
+      executeCommand, 
+      editorRef, 
+      setContent, 
+      isAIProcessing, 
+      setIsAIProcessing, 
+      setAiState, 
+      content,
+      setHeaderContent,
+      setFooterContent
+  } = useEditor();
 
   const performAIAction = async (
     operation: string, 
@@ -18,20 +28,34 @@ export const useAI = () => {
     options: AIOptions = { mode: 'insert' },
     restoreRange?: Range | null
   ) => {
-    // 1. Restore Selection or Focus
-    if (restoreRange) {
-        try {
-            const sel = window.getSelection();
-            if (sel) {
-                sel.removeAllRanges();
-                sel.addRange(restoreRange);
-            }
-        } catch (e) {
-            console.warn("Could not restore selection range", e);
+    console.log(`[useAI] performAIAction started. Operation: ${operation}, Mode: ${options.mode}`);
+    
+    // 1. Capture valid range to restore later (either passed in or current)
+    let activeRange: Range | null = restoreRange || null;
+
+    if (!activeRange && options.mode !== 'replace') {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            activeRange = sel.getRangeAt(0).cloneRange();
         }
-    } else {
-        if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
-             editorRef.current.focus();
+    }
+
+    // 2. Restore Selection/Focus temporarily to extract text context (only if not replacing)
+    if (options.mode !== 'replace') {
+        if (activeRange) {
+            try {
+                const sel = window.getSelection();
+                if (sel) {
+                    sel.removeAllRanges();
+                    sel.addRange(activeRange);
+                }
+            } catch (e) {
+                console.warn("[useAI] Could not restore selection range", e);
+            }
+        } else {
+            if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
+                 editorRef.current.focus();
+            }
         }
     }
 
@@ -42,7 +66,7 @@ export const useAI = () => {
     if (operation === 'continue_writing' && !textToProcess) {
         if (editorRef.current) {
             const allText = editorRef.current.innerText;
-            textToProcess = allText.slice(-2000);
+            textToProcess = allText.slice(-5000); // Use last 5k chars for context
         }
     }
 
@@ -52,11 +76,14 @@ export const useAI = () => {
             alert("Please provide a prompt.");
             return;
         }
-        // If we are generating content (Inserting/Replacing Document), we generally ignore selection
-        // unless specific 'useSelection' was passed (which usually implies Edit mode, but we use edit_content for that now)
-        if (options.useSelection && !hasSelection) {
-             textToProcess = ""; 
-        } else if (!options.useSelection) {
+        
+        if (options.useSelection) {
+             // Edit mode on specific selection - textToProcess is already set
+        } else if (options.mode === 'insert') {
+             // Insert mode - Provide document context so AI knows what it's contributing to
+             textToProcess = content || "";
+        } else if (options.mode === 'replace') {
+             // Replace mode (New Doc) - Fresh start, no context needed
              textToProcess = "";
         }
     } 
@@ -76,7 +103,6 @@ export const useAI = () => {
     }
 
     // Determine if we should treat the response as JSON (Structured Document)
-    // Most generation tasks now use the JSON format defined in prompts.ts
     const expectsJson = 
         operation === 'generate_content' || 
         operation === 'edit_content' ||
@@ -89,37 +115,51 @@ export const useAI = () => {
         operation === 'generate_outline' ||
         operation.startsWith('tone_');
 
+    console.log(`[useAI] Text to process length: ${textToProcess.length}, Expects JSON: ${expectsJson}`);
     setAiState('thinking');
 
     try {
         // If we expect JSON, we don't stream visualization because we need the full valid JSON to parse
-        // We use generateAIContent which waits for the full response and forces JSON mode
         if (expectsJson) {
+            console.log("[useAI] Calling generateAIContent...");
             let jsonString = await generateAIContent(operation as AIOperation, textToProcess, customInput);
+            console.log("[useAI] Response received. Raw length:", jsonString.length);
             
             // Brief "writing" state before insertion to update UI
             setAiState('writing');
 
             // Clean Markdown code blocks if present (common issue with LLM output)
-            // Use regex to find the first JSON object structure
             jsonString = jsonString.trim();
-            const match = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-            if (match) {
-                jsonString = match[1];
-            } else if (jsonString.startsWith('```')) {
-                // Fallback for unclosed code blocks or other variations
-                jsonString = jsonString.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
+            
+            // 1. Try regex to extract code block content
+            const codeBlockMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (codeBlockMatch) {
+                jsonString = codeBlockMatch[1];
+            } else {
+                // 2. Fallback: Find outer JSON object braces
+                const startIdx = jsonString.indexOf('{');
+                const endIdx = jsonString.lastIndexOf('}');
+                if (startIdx !== -1 && endIdx !== -1) {
+                    jsonString = jsonString.substring(startIdx, endIdx + 1);
+                }
             }
 
             let parsedData;
             try {
                 parsedData = JSON.parse(jsonString);
+                console.log("[useAI] JSON parsed successfully");
             } catch (jsonError) {
-                console.error("JSON Parse Error:", jsonError, "Raw Output:", jsonString);
+                console.error("[useAI] JSON Parse Error:", jsonError, "Raw Output:", jsonString);
                 // Fallback: If it's not JSON, it might be an error message or plain text. 
-                // We'll try to insert it as text if it's short, otherwise show error.
                 if (jsonString.length < 500 && !jsonString.trim().startsWith('{')) {
-                     executeCommand('insertText', jsonString);
+                     // Ensure focus before fallback text insertion
+                     if (editorRef.current && options.mode !== 'replace') editorRef.current.focus();
+                     
+                     if (options.mode === 'replace') {
+                        setContent(jsonString);
+                     } else {
+                        executeCommand('insertText', jsonString);
+                     }
                 } else {
                      alert("The AI response was not in the expected format. Please try again.");
                 }
@@ -133,48 +173,107 @@ export const useAI = () => {
                 return;
             }
 
-            // Convert structured JSON to HTML
-            const generatedHtml = jsonToHtml(parsedData);
-
+            // Logic to handle full document replacement including Header/Footer
             if (options.mode === 'replace') {
-                if (editorRef.current) {
-                    // Safe replacement
-                    executeCommand('selectAll');
-                    executeCommand('insertHTML', generatedHtml);
-                    // Clear selection
-                    const sel = window.getSelection();
-                    if(sel) sel.removeAllRanges();
+                console.log("[useAI] Executing REPLACE mode");
+                
+                if (parsedData.document) {
+                    // Handle Header
+                    if (parsedData.document.header) {
+                        const headerHtml = jsonToHtml(parsedData.document.header);
+                        setHeaderContent(headerHtml);
+                    } else {
+                        // Reset header if replacing document and no header provided
+                        setHeaderContent('<div style="color: #94a3b8;">[Header]</div>');
+                    }
+
+                    // Handle Footer
+                    if (parsedData.document.footer) {
+                        const footerHtml = jsonToHtml(parsedData.document.footer);
+                        setFooterContent(footerHtml);
+                    } else {
+                        // Reset footer if replacing document and no footer provided
+                        setFooterContent('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
+                    }
+
+                    // Handle Body Content
+                    const bodyBlocks = parsedData.document.blocks || parsedData.document.content || [];
+                    const generatedHtml = jsonToHtml({ blocks: bodyBlocks }); // wrap to match converter expectation
+                    
+                    // Use setContent directly for full replacement to ensure consistency across pages
+                    setContent(generatedHtml);
+                    
+                } else {
+                    // Legacy format or simple content
+                    const generatedHtml = jsonToHtml(parsedData);
+                    setContent(generatedHtml);
                 }
+                
+                // Reset scroll position
+                if (editorRef.current) {
+                    editorRef.current.scrollTop = 0;
+                }
+                
             } else {
+                // Insert / Edit Mode
+                console.log("[useAI] Executing INSERT/EDIT mode");
+                const generatedHtml = jsonToHtml(parsedData);
+
+                if (activeRange) {
+                    try {
+                        const sel = window.getSelection();
+                        if (sel) {
+                            sel.removeAllRanges();
+                            sel.addRange(activeRange);
+                        }
+                    } catch(e) {
+                        console.warn("[useAI] Failed to restore range for insertion", e);
+                        // Fallback focus
+                        if(editorRef.current) editorRef.current.focus();
+                    }
+                } else if (editorRef.current) {
+                    editorRef.current.focus();
+                }
+
                 if (generatedHtml) {
                     executeCommand('insertHTML', generatedHtml);
                 }
             }
 
         } else {
-            // Legacy/Simple streaming for other tasks (like translate if not converted yet)
+            // Legacy/Simple streaming for other tasks
+            console.log("[useAI] Starting Stream Mode");
+            
+            // For streaming, we also need to ensure focus is on editor initially
+            if (activeRange) {
+                 const sel = window.getSelection();
+                 if (sel) {
+                     sel.removeAllRanges();
+                     sel.addRange(activeRange);
+                 }
+            }
+
             const stream = streamAIContent(operation as AIOperation, textToProcess, customInput);
-            let accumulatedContent = "";
             let isFirstChunk = true;
             
             for await (const chunk of stream) {
                 if (isFirstChunk) {
                     setAiState('writing');
-                    // Simple text insertion logic for non-JSON stream
                     document.execCommand('insertText', false, chunk);
                     isFirstChunk = false;
                 } else {
                     document.execCommand('insertText', false, chunk);
                 }
-                accumulatedContent += chunk;
             }
+            console.log("[useAI] Streaming complete");
         }
 
     } catch (e) {
-        console.error(e);
+        console.error("[useAI] Error performing AI action:", e);
         alert("AI processing failed. Please check your API key and network connection.");
     } finally {
         setAiState('idle');
+        console.log("[useAI] Action finished. State reset to IDLE.");
     }
   };
 

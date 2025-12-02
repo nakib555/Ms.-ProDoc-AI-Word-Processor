@@ -22,30 +22,47 @@ const SpinningLoader = (props: any) => <Loader2 {...props} className="animate-sp
 
 export const WriteWithAITool: React.FC = () => {
   const { performAIAction } = useAI();
-  const { aiState } = useEditor();
+  const { aiState, editorRef } = useEditor();
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<GenMode>('insert');
   const [tone, setTone] = useState<ToneType>('Professional');
   const [hasSelection, setHasSelection] = useState(false);
+  const [canInsert, setCanInsert] = useState(false);
   const [savedRange, setSavedRange] = useState<Range | null>(null);
 
   useEffect(() => {
     if (isOpen) {
         const selection = window.getSelection();
+        
+        // Check for active selection (for Edit mode)
         const hasSel = !!(selection && selection.rangeCount > 0 && !selection.isCollapsed);
         setHasSelection(hasSel);
         
-        // Capture range to restore later
-        if (selection && selection.rangeCount > 0) {
-            setSavedRange(selection.getRangeAt(0).cloneRange());
+        // Check for cursor presence (for Insert mode)
+        // We consider insert allowed if selection exists OR cursor is placed within editor
+        let isCursorInEditor = false;
+        if (selection && selection.rangeCount > 0 && editorRef.current) {
+            const range = selection.getRangeAt(0);
+            isCursorInEditor = editorRef.current.contains(range.startContainer);
+            if (isCursorInEditor) {
+                setSavedRange(range.cloneRange());
+            }
         }
+        setCanInsert(isCursorInEditor);
 
-        // Default to 'edit' mode if there's a selection, otherwise 'insert'
-        setMode(hasSel ? 'edit' : 'insert');
+        // Default mode logic
+        if (hasSel) {
+            setMode('edit');
+        } else if (isCursorInEditor) {
+            setMode('insert');
+        } else {
+            setMode('replace'); // Fallback if no context
+        }
+        
         setPrompt('');
     }
-  }, [isOpen]);
+  }, [isOpen, editorRef]);
 
   const handleGenerate = () => {
     if (prompt.trim()) {
@@ -108,7 +125,7 @@ export const WriteWithAITool: React.FC = () => {
                                 <Wand2 size={24} className="text-yellow-300"/> 
                                 Magic Editor
                             </h3>
-                            <p className="text-indigo-100 text-xs mt-1 font-medium opacity-90 tracking-wide">HATF-Class Intelligence • Powered by Gemini 3.0 Pro</p>
+                            <p className="text-indigo-100 text-xs mt-1 font-medium opacity-90 tracking-wide">Intelligent Document Generation</p>
                         </div>
                         <button 
                             onClick={() => setIsOpen(false)} 
@@ -129,7 +146,7 @@ export const WriteWithAITool: React.FC = () => {
                                 <textarea 
                                     value={prompt}
                                     onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder={mode === 'edit' ? "e.g., 'Make this text more concise', 'Convert these bullet points to a paragraph'" : "e.g., 'Write a blog post about React hooks', 'Draft a meeting agenda', 'Create a table of Q1 sales'"}
+                                    placeholder={mode === 'edit' ? "e.g., 'Make this text more concise', 'Convert these bullet points to a paragraph'" : "e.g., 'Write a quarterly report', 'Create a table of sales figures', 'Draft a formal letter'"}
                                     className="w-full h-32 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl p-4 text-base text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none resize-none shadow-inner transition-all placeholder:text-slate-400"
                                     autoFocus
                                     onKeyDown={(e) => {
@@ -175,17 +192,18 @@ export const WriteWithAITool: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <button 
                                 onClick={() => setMode('insert')}
+                                disabled={!canInsert}
                                 className={`relative flex flex-col items-center p-4 rounded-xl border-2 text-center transition-all duration-200 ${
                                     mode === 'insert' 
                                     ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-indigo-700 dark:text-indigo-300 shadow-md' 
                                     : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-slate-50 dark:hover:bg-slate-750'
-                                }`}
+                                } ${!canInsert ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
                             >
                                 <div className={`p-2 rounded-full mb-2 ${mode === 'insert' ? 'bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
                                     <ArrowRight size={20} />
                                 </div>
                                 <span className="text-sm font-bold">Insert</span>
-                                <span className="text-[10px] opacity-70 mt-1">Add at cursor position</span>
+                                <span className="text-[10px] opacity-70 mt-1">{canInsert ? 'Add at cursor position' : 'No cursor position detected'}</span>
                             </button>
                             
                             <button 
@@ -235,7 +253,7 @@ export const WriteWithAITool: React.FC = () => {
                             className="px-6 py-2.5 text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none hover:shadow-indigo-300 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 transform active:scale-[0.98]"
                         >
                             <PenLine size={18} /> 
-                            {mode === 'insert' ? 'Generate Content' : mode === 'edit' ? 'Update Selection' : 'Rewrite Document'}
+                            {mode === 'insert' ? 'Generate Content' : mode === 'edit' ? 'Update Selection' : 'Create Document'}
                         </button>
                     </div>
                 </div>

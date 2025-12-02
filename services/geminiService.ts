@@ -39,14 +39,18 @@ export const generateAIContent = async (
   userPrompt?: string,
   model: string = "gemini-3-pro-preview"
 ): Promise<string> => {
+  console.log(`[Gemini Service] generateAIContent called. Operation: ${operation}, Model: ${model}`);
   const client = getClient();
   if (!client) {
+    console.warn("[Gemini Service] Client not initialized (Missing API Key)");
     return JSON.stringify({ error: "API Key not configured. Please use the API Key tool in the AI Assistant tab." });
   }
 
   const systemPrompt = getSystemPrompt(operation, userPrompt);
+  console.log(`[Gemini Service] System Prompt length: ${systemPrompt.length}, User Context length: ${text.length}`);
 
   try {
+    console.log("[Gemini Service] Sending request...");
     const response = await client.models.generateContent({
       model: model,
       contents: [
@@ -59,12 +63,14 @@ export const generateAIContent = async (
     
     // Safety check for empty responses
     if (!response.text) {
+        console.error("[Gemini Service] Received empty response text from model.");
         throw new Error("Empty response from AI model.");
     }
 
+    console.log(`[Gemini Service] Response received. Length: ${response.text.length}`);
     return response.text;
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
+    console.error("[Gemini Service] generateAIContent Error:", error);
     return JSON.stringify({ error: formatGeminiError(error) });
   }
 };
@@ -75,12 +81,14 @@ export const streamAIContent = async function* (
   userPrompt?: string,
   model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
+  console.log(`[Gemini Service] streamAIContent called. Operation: ${operation}`);
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
 
   const systemPrompt = getSystemPrompt(operation, userPrompt);
 
   try {
+    console.log("[Gemini Service] Starting stream request...");
     const responseStream = await client.models.generateContentStream({
       model: model,
       contents: [
@@ -91,11 +99,13 @@ export const streamAIContent = async function* (
     for await (const chunk of responseStream) {
       const c = chunk as GenerateContentResponse;
       if (c.text) {
+        console.debug(`[Gemini Service] Stream chunk received: ${c.text.length} chars`);
         yield c.text;
       }
     }
+    console.log("[Gemini Service] Stream complete.");
   } catch (error) {
-    console.error("Gemini Stream Error:", error);
+    console.error("[Gemini Service] streamAIContent Error:", error);
     throw new Error(formatGeminiError(error));
   }
 };
@@ -106,6 +116,7 @@ export const chatWithDocumentStream = async function* (
   documentContent: string,
   model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
+  console.log(`[Gemini Service] chatWithDocumentStream called. History length: ${history.length}`);
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
 
@@ -123,6 +134,7 @@ export const chatWithDocumentStream = async function* (
       history: historyContent
     });
 
+    console.log("[Gemini Service] Sending chat message stream...");
     const responseStream = await chat.sendMessageStream({ message: lastMessage });
 
     for await (const chunk of responseStream) {
@@ -131,19 +143,22 @@ export const chatWithDocumentStream = async function* (
             yield c.text;
         }
     }
+    console.log("[Gemini Service] Chat stream complete.");
   } catch (error) {
-    console.error("Gemini Chat Error:", error);
+    console.error("[Gemini Service] chatWithDocumentStream Error:", error);
     throw new Error(formatGeminiError(error));
   }
 };
 
 export const generateAIImage = async (prompt: string): Promise<string | null> => {
+  console.log(`[Gemini Service] generateAIImage called. Prompt: "${prompt}"`);
   const client = getClient();
   if (!client) {
     throw new Error("API Key not configured.");
   }
 
   try {
+    console.log("[Gemini Service] Requesting image generation...");
     const response = await client.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -154,14 +169,16 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
     if (response.candidates && response.candidates.length > 0) {
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+          console.log("[Gemini Service] Image generation successful.");
           return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
         }
       }
     }
     
+    console.warn("[Gemini Service] No image data found in response candidates.");
     return null;
   } catch (error: any) {
-    console.error("Gemini Image Gen Error:", error);
+    console.error("[Gemini Service] generateAIImage Error:", error);
     throw new Error(formatGeminiError(error));
   }
 };

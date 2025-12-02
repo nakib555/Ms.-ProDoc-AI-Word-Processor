@@ -8,7 +8,7 @@ const styleToString = (style: any): string => {
     // Convert camelCase to kebab-case
     const key = k.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
     // Add units if missing for common numeric properties
-    const val = (typeof v === 'number' && ['width', 'height', 'font-size', 'margin', 'padding', 'border-width'].some(p => key.includes(p))) 
+    const val = (typeof v === 'number' && ['width', 'height', 'font-size', 'margin', 'padding', 'border-width', 'top', 'bottom', 'left', 'right'].some(p => key.includes(p))) 
       ? `${v}px` 
       : v;
     return `${key}: ${val}`;
@@ -31,30 +31,43 @@ const renderInlineContent = (contentItems: any): string => {
     if (typeof item === 'string') return item;
 
     let text = item.text || '';
-    if (!text && !item.type) return ''; // Skip empty text
+    
+    // Skip empty text unless it has styles (like a spacer)
+    if (!text && !item.type) return '';
 
     // Apply inline styles wrapper if needed
     const styles: string[] = [];
     if (item.bold) styles.push('font-weight: bold');
     if (item.italic) styles.push('font-style: italic');
-    if (item.underline && item.underline !== 'none') styles.push(`text-decoration: underline ${item.underlineColor || ''}`);
-    if (item.strikethrough) styles.push('text-decoration: line-through');
+    
+    let textDecorations = [];
+    if (item.underline && item.underline !== 'none') textDecorations.push('underline');
+    if (item.strikethrough) textDecorations.push('line-through');
+    if (textDecorations.length > 0) {
+        styles.push(`text-decoration: ${textDecorations.join(' ')}`);
+        if (item.underlineColor) styles.push(`text-decoration-color: ${item.underlineColor}`);
+    }
+
     if (item.color) styles.push(`color: ${item.color}`);
     if (item.highlight) styles.push(`background-color: ${item.highlight}`);
     if (item.fontFamily) styles.push(`font-family: ${item.fontFamily}`);
     if (item.fontSize) styles.push(`font-size: ${item.fontSize}px`);
+    
+    if (item.textShadow) styles.push(`text-shadow: ${item.textShadow}`);
+    
     if (item.subscript) return `<sub>${text}</sub>`;
     if (item.superscript) return `<sup>${text}</sup>`;
+    
+    // Merge explicit style object
     if (item.style) styles.push(styleToString(item.style));
 
     let contentHtml = text;
-    if (styles.length > 0) {
-      contentHtml = `<span style="${styles.join('; ')}">${text}</span>`;
-    }
-
-    // Handle Links
+    
+    // Handle links
     if (item.link) {
-      return `<a href="${item.link}" style="color: #2563eb; text-decoration: underline;">${contentHtml}</a>`;
+       contentHtml = `<a href="${item.link}" style="color: ${item.color || '#2563eb'}; text-decoration: underline;">${contentHtml}</a>`;
+    } else if (styles.length > 0) {
+       contentHtml = `<span style="${styles.join('; ')}">${contentHtml}</span>`;
     }
 
     return contentHtml;
@@ -77,15 +90,22 @@ export const jsonToHtml = (jsonData: any): string => {
       blocks = jsonData.blocks;
   } else if (Array.isArray(jsonData)) {
       blocks = jsonData;
-  } else if (jsonData.type && jsonData.content) {
+  } else if (jsonData.type && (jsonData.content || jsonData.items || jsonData.rows)) {
       // Single block object treated as root
       blocks = [jsonData];
+  } else if (jsonData.content && Array.isArray(jsonData.content)) {
+      // Sometimes AI returns content array directly
+      blocks = jsonData.content;
   } else {
       // Fallback: If object keys look like content, try to render
-      if (jsonData.title) blocks.push({type: 'heading', level: 1, content: jsonData.title});
-      if (jsonData.summary) blocks.push({type: 'paragraph', content: jsonData.summary});
-      // If we still have nothing, stringify it safely
-      if (blocks.length === 0) return `<p>${JSON.stringify(jsonData)}</p>`;
+      if (jsonData.title) blocks.push({type: 'heading', level: 1, content: [{text: jsonData.title}]});
+      if (jsonData.summary) blocks.push({type: 'paragraph', content: [{text: jsonData.summary}]});
+      
+      // If we still have nothing but it's an object, maybe stringify it safely or return empty
+      if (blocks.length === 0 && Object.keys(jsonData).length > 0) {
+           // Attempt to just stringify values
+           return `<p>${Object.values(jsonData).filter(v => typeof v === 'string').join(' ')}</p>`;
+      }
   }
 
   let html = '';
@@ -96,11 +116,12 @@ export const jsonToHtml = (jsonData: any): string => {
       ...(block.style || {}),
       ...(block.paragraphStyle ? {
         textAlign: block.paragraphStyle.alignment,
-        marginTop: block.paragraphStyle.spacingBefore ? `${block.paragraphStyle.spacingBefore}pt` : undefined,
-        marginBottom: block.paragraphStyle.spacingAfter ? `${block.paragraphStyle.spacingAfter}pt` : undefined,
+        marginTop: block.paragraphStyle.spacingBefore,
+        marginBottom: block.paragraphStyle.spacingAfter,
         lineHeight: block.paragraphStyle.lineSpacing,
-        textIndent: block.paragraphStyle.indent?.firstLine ? (typeof block.paragraphStyle.indent.firstLine === 'number' ? `${block.paragraphStyle.indent.firstLine}in` : block.paragraphStyle.indent.firstLine) : undefined,
-        marginLeft: block.paragraphStyle.indent?.left ? (typeof block.paragraphStyle.indent.left === 'number' ? `${block.paragraphStyle.indent.left}in` : block.paragraphStyle.indent.left) : undefined,
+        textIndent: block.paragraphStyle.indent?.firstLine,
+        marginLeft: block.paragraphStyle.indent?.left,
+        marginRight: block.paragraphStyle.indent?.right,
       } : {})
     };
 
@@ -123,7 +144,7 @@ export const jsonToHtml = (jsonData: any): string => {
         break;
 
       case 'code':
-        html += `<pre style="background-color: #1e1e1e; color: #d4d4d4; padding: 1em; border-radius: 4px; overflow-x: auto; ${styleStr}"><code>${typeof block.content === 'string' ? block.content : renderInlineContent(block.content)}</code></pre>`;
+        html += `<pre style="background-color: #1e293b; color: #e2e8f0; padding: 1em; border-radius: 4px; overflow-x: auto; font-family: monospace; ${styleStr}"><code>${typeof block.content === 'string' ? block.content : renderInlineContent(block.content)}</code></pre>`;
         break;
 
       case 'equation':
@@ -147,6 +168,7 @@ export const jsonToHtml = (jsonData: any): string => {
                   border: `1px solid ${block.config?.borderColor || '#cbd5e1'}`,
                   textAlign: 'left',
                   backgroundColor: isHeader ? '#f1f5f9' : (block.config?.bandedRows && rIndex % 2 === 0 ? '#f8fafc' : 'transparent'),
+                  fontWeight: isHeader ? 'bold' : 'normal',
                   ...(cell.style || {})
                 };
                 tableHtml += `<${cellTag} style="${styleToString(cellStyle)}">${renderInlineContent(cell.content)}</${cellTag}>`;
@@ -164,9 +186,11 @@ export const jsonToHtml = (jsonData: any): string => {
         html += `<${tag} style="${styleStr}">`;
         if (block.items) {
           block.items.forEach((item: any) => {
-            html += `<li>${renderInlineContent(item.content || item)}`; // Robust handle if item is direct text
+            const itemContent = item.content || item;
+            html += `<li>${renderInlineContent(itemContent)}`; 
+            
             if (item.subItems) {
-               html += `<${tag}>`;
+               html += `<${tag} style="margin-left: 20px;">`;
                item.subItems.forEach((sub: any) => {
                    html += `<li>${renderInlineContent(sub.content || sub)}</li>`;
                });
