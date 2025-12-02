@@ -124,6 +124,7 @@ export const useAI = () => {
             console.log("[useAI] Calling generateAIContent...");
             let jsonString = await generateAIContent(operation as AIOperation, textToProcess, customInput);
             console.log("[useAI] Response received. Raw length:", jsonString.length);
+            console.log("[useAI] Raw Response Snippet:", jsonString.substring(0, 200));
             
             // Brief "writing" state before insertion to update UI
             setAiState('writing');
@@ -200,12 +201,15 @@ export const useAI = () => {
                     const bodyBlocks = parsedData.document.blocks || parsedData.document.content || [];
                     const generatedHtml = jsonToHtml({ blocks: bodyBlocks }); // wrap to match converter expectation
                     
+                    console.log("[useAI] Generated HTML for REPLACE:", generatedHtml);
+                    
                     // Use setContent directly for full replacement to ensure consistency across pages
                     setContent(generatedHtml);
                     
                 } else {
                     // Legacy format or simple content
                     const generatedHtml = jsonToHtml(parsedData);
+                    console.log("[useAI] Generated HTML for REPLACE (Legacy):", generatedHtml);
                     setContent(generatedHtml);
                 }
                 
@@ -218,9 +222,12 @@ export const useAI = () => {
                 // Insert / Edit Mode
                 console.log("[useAI] Executing INSERT/EDIT mode");
                 const generatedHtml = jsonToHtml(parsedData);
+                
+                console.log("[useAI] Generated HTML for INSERT:", generatedHtml);
 
                 if (activeRange) {
                     try {
+                        console.log("[useAI] Restoring active range for insertion");
                         const sel = window.getSelection();
                         if (sel) {
                             sel.removeAllRanges();
@@ -232,11 +239,16 @@ export const useAI = () => {
                         if(editorRef.current) editorRef.current.focus();
                     }
                 } else if (editorRef.current) {
+                    console.log("[useAI] No range found, focusing editor as fallback");
                     editorRef.current.focus();
                 }
 
                 if (generatedHtml) {
+                    console.log("[useAI] executing insertHTML command. Length: " + generatedHtml.length);
                     executeCommand('insertHTML', generatedHtml);
+                    console.log("[useAI] insertHTML executed.");
+                } else {
+                    console.warn("[useAI] Generated HTML is empty, skipping insertion");
                 }
             }
 

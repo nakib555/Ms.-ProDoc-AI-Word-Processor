@@ -1,9 +1,16 @@
 
-import { PageConfig, PaginatorResult } from '../types';
+import { PageConfig } from '../types';
 import { PAGE_SIZES } from '../constants';
 
 // Standard print DPI
 const DPI = 96;
+
+// Result now includes config per page
+export interface PaginatorResult {
+    pages: { html: string, config: PageConfig }[];
+    pageHeight: number; // Kept for compatibility, represents first page
+    pageWidth: number; // Kept for compatibility, represents first page
+}
 
 /**
  * PageFrame: Defines the constraints of a page layout.
@@ -25,12 +32,20 @@ class PageFrame {
   constructor(config: PageConfig) {
     const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
     
+    // Handle custom sizes or presets
+    let baseW = base.width;
+    let baseH = base.height;
+    if (config.size === 'Custom' && config.customWidth && config.customHeight) {
+        baseW = config.customWidth * DPI;
+        baseH = config.customHeight * DPI;
+    }
+
     if (config.orientation === 'portrait') {
-        this.width = config.size === 'Custom' && config.customWidth ? config.customWidth * DPI : base.width;
-        this.height = config.size === 'Custom' && config.customHeight ? config.customHeight * DPI : base.height;
+        this.width = baseW;
+        this.height = baseH;
     } else {
-        this.width = config.size === 'Custom' && config.customHeight ? config.customHeight * DPI : base.height;
-        this.height = config.size === 'Custom' && config.customWidth ? config.customWidth * DPI : base.width;
+        this.width = baseH;
+        this.height = baseW;
     }
 
     const headerDistPx = (config.headerDistance || 0) * DPI;
@@ -60,12 +75,11 @@ class PageFrame {
 class LayoutSandbox {
   el: HTMLElement;
 
-  constructor(width: number) {
+  constructor() {
     this.el = document.createElement('div');
     this.el.className = 'prodoc-editor text-lg leading-loose text-slate-900'; 
     this.el.style.position = 'absolute';
     this.el.style.visibility = 'hidden';
-    this.el.style.width = `${width}px`;
     this.el.style.height = 'auto';
     this.el.style.top = '-10000px';
     this.el.style.left = '-10000px';
@@ -77,6 +91,10 @@ class LayoutSandbox {
     this.el.style.whiteSpace = 'pre-wrap';
     
     document.body.appendChild(this.el);
+  }
+
+  setWidth(width: number) {
+      this.el.style.width = `${width}px`;
   }
 
   measure(node: Node): number {
@@ -92,40 +110,30 @@ class LayoutSandbox {
   }
 }
 
-// Helper to check if node is atomic (should not be split)
 const isAtomic = (node: Node): boolean => {
     if (node.nodeType !== Node.ELEMENT_NODE) return false;
     const el = node as HTMLElement;
     return ['IMG', 'VIDEO', 'TABLE', 'IFRAME', 'HR', 'MATH-FIELD'].includes(el.tagName) ||
            el.classList.contains('equation-wrapper') ||
-           el.classList.contains('prodoc-page-break');
+           el.classList.contains('prodoc-page-break') ||
+           el.classList.contains('prodoc-section-break');
 };
 
-/**
- * Recursively splits a node to fit within remainingHeight.
- * Uses binary search for text nodes and recursion for element nodes.
- */
 const splitBlock = (
     originalNode: HTMLElement, 
     remainingHeight: number, 
     sandbox: LayoutSandbox
 ): { keep: HTMLElement | null, move: HTMLElement | null } => {
     
-    // 1. Check Atomic
     if (isAtomic(originalNode)) {
         return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
     }
 
-    // 2. Prepare Sandbox
     sandbox.el.innerHTML = '';
-    // Create the root container for 'keep' part
     const keepNode = originalNode.cloneNode(false) as HTMLElement;
     sandbox.el.appendChild(keepNode);
-    
-    // Create the root container for 'move' part
     const moveNode = originalNode.cloneNode(false) as HTMLElement;
 
-    // Helper: Binary Search for Text Node Split
     const findBinarySplitIndex = (text: string, parent: HTMLElement): number => {
         let low = 0;
         let high = text.length;
@@ -133,14 +141,10 @@ const splitBlock = (
         
         while (low <= high) {
             const mid = Math.floor((low + high) / 2);
-            // Try substring
             const sub = text.substring(0, mid);
-            // We temporarily add text to measure
             const tempNode = document.createTextNode(sub);
             parent.appendChild(tempNode);
             
-            // Measure the WHOLE block from the sandbox root
-            // This accounts for all wrapping context
             const h = keepNode.getBoundingClientRect().height;
             parent.removeChild(tempNode);
             
@@ -154,53 +158,40 @@ const splitBlock = (
         return best;
     };
 
-    // Helper: Move remaining siblings to moveNode
     const moveSiblings = (nodes: Node[], startIdx: number, target: HTMLElement) => {
         for (let i = startIdx; i < nodes.length; i++) {
             target.appendChild(nodes[i].cloneNode(true));
         }
     };
 
-    // Recursive processor
     const processNodes = (nodes: Node[], parentKeep: HTMLElement, parentMove: HTMLElement): boolean => {
         for (let i = 0; i < nodes.length; i++) {
             const child = nodes[i];
-            
-            // A. Try adding the whole child to Keep
             const childClone = child.cloneNode(true);
             parentKeep.appendChild(childClone);
             
-            // Measure
             const currentHeight = keepNode.getBoundingClientRect().height;
             
             if (currentHeight <= remainingHeight) {
-                // Fits!
                 continue;
             }
             
-            // B. Overflow Detected
-            parentKeep.removeChild(childClone); // Backtrack
+            parentKeep.removeChild(childClone);
             
-            // If atomic, it must move entirely
             if (isAtomic(child)) {
                 parentMove.appendChild(child.cloneNode(true));
                 moveSiblings(nodes, i + 1, parentMove);
-                return true; // Split occurred
+                return true;
             }
             
-            // If Text, binary search split
             if (child.nodeType === Node.TEXT_NODE) {
                 const text = child.textContent || '';
                 const splitIndex = findBinarySplitIndex(text, parentKeep);
                 
-                // Add fitting part
                 if (splitIndex > 0) {
                     parentKeep.appendChild(document.createTextNode(text.substring(0, splitIndex)));
                 }
-                
-                // Add moving part
                 const remainder = text.substring(splitIndex);
-                // Even if empty string (unlikely if loop correct), good to be safe
                 if (remainder || splitIndex === 0) {
                     parentMove.appendChild(document.createTextNode(remainder));
                 }
@@ -209,7 +200,6 @@ const splitBlock = (
                 return true;
             }
             
-            // If Element, recurse
             if (child.nodeType === Node.ELEMENT_NODE) {
                 const el = child as HTMLElement;
                 const childKeep = el.cloneNode(false) as HTMLElement;
@@ -217,7 +207,6 @@ const splitBlock = (
                 
                 parentKeep.appendChild(childKeep);
                 
-                // Quick check: does empty container overflow? (e.g. padding/border)
                 if (keepNode.getBoundingClientRect().height > remainingHeight) {
                     parentKeep.removeChild(childKeep);
                     parentMove.appendChild(el.cloneNode(true));
@@ -228,18 +217,12 @@ const splitBlock = (
                 const childNodes = Array.from(el.childNodes);
                 const didSplitInside = processNodes(childNodes, childKeep, childMove);
                 
-                // Always add the move structure if we entered recursion
                 parentMove.appendChild(childMove);
                 
                 if (didSplitInside) {
                     moveSiblings(nodes, i + 1, parentMove);
                     return true;
                 }
-                
-                // If we reach here, processNodes returned false, meaning all children fit?
-                // But we established earlier that `childClone` (whole) DID NOT fit.
-                // This implies wrapping overhead or inline complexity.
-                // Logic dictates `processNodes` will eventually hit a text node or atomic that overflows.
             }
         }
         return false;
@@ -248,8 +231,6 @@ const splitBlock = (
     const originalChildren = Array.from(originalNode.childNodes);
     processNodes(originalChildren, keepNode, moveNode);
 
-    // If keepNode is empty but moveNode isn't, it means NOTHING fit.
-    // Return null to indicate the whole block should move to next page
     if (!keepNode.hasChildNodes() && moveNode.hasChildNodes()) {
         return { keep: null, move: moveNode };
     }
@@ -257,24 +238,20 @@ const splitBlock = (
     return { keep: keepNode, move: moveNode };
 };
 
-/**
- * Main Pagination Function
- */
-export const paginateContent = (html: string, config: PageConfig): PaginatorResult => {
+export const paginateContent = (html: string, initialConfig: PageConfig): PaginatorResult => {
+  const initialFrame = new PageFrame(initialConfig);
+
   if (typeof document === 'undefined') {
-    const frame = new PageFrame(config);
-    return { pages: [html], pageHeight: frame.height, pageWidth: frame.width };
+    return { pages: [{ html, config: initialConfig }], pageHeight: initialFrame.height, pageWidth: initialFrame.width };
   }
 
-  const frame = new PageFrame(config);
-  const sandbox = new LayoutSandbox(frame.bodyWidth);
-  const pages: string[] = [];
+  const sandbox = new LayoutSandbox();
+  const pages: { html: string, config: PageConfig }[] = [];
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const body = doc.body;
 
-  // Normalize nodes
   const nodes: HTMLElement[] = [];
   Array.from(body.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -288,13 +265,17 @@ export const paginateContent = (html: string, config: PageConfig): PaginatorResu
       }
   });
 
+  let currentConfig = { ...initialConfig };
+  let currentFrame = new PageFrame(currentConfig);
+  sandbox.setWidth(currentFrame.bodyWidth);
+
   let currentPageNodes: HTMLElement[] = [];
   let currentH = 0;
 
   const flushPage = () => {
       const div = document.createElement('div');
       currentPageNodes.forEach(n => div.appendChild(n));
-      pages.push(div.innerHTML);
+      pages.push({ html: div.innerHTML, config: { ...currentConfig } });
       currentPageNodes = [];
       currentH = 0;
   };
@@ -302,55 +283,64 @@ export const paginateContent = (html: string, config: PageConfig): PaginatorResu
   for (let i = 0; i < nodes.length; i++) {
       let node = nodes[i];
 
-      // Explicit Breaks
-      const isBreak = node.classList?.contains('prodoc-page-break') || 
-                      node.style?.pageBreakAfter === 'always' ||
-                      node.style?.breakAfter === 'page';
+      // Handle Section Break (Changes Layout)
+      if (node.classList?.contains('prodoc-section-break')) {
+          const configData = node.getAttribute('data-config');
+          if (configData) {
+              try {
+                  const newSettings = JSON.parse(decodeURIComponent(configData));
+                  // Update config
+                  currentConfig = { ...currentConfig, ...newSettings };
+                  // Recalculate frame
+                  currentFrame = new PageFrame(currentConfig);
+                  sandbox.setWidth(currentFrame.bodyWidth);
+              } catch (e) {
+                  console.error("Failed to parse section break config", e);
+              }
+          }
+          
+          currentPageNodes.push(node);
+          flushPage(); // Force new page for section break
+          continue;
+      }
 
-      if (isBreak) {
+      // Handle Page Break
+      const isPageBreak = node.classList?.contains('prodoc-page-break') || 
+                          node.style?.pageBreakAfter === 'always' ||
+                          node.style?.breakAfter === 'page';
+
+      if (isPageBreak) {
           currentPageNodes.push(node);
           flushPage(); 
           continue; 
       }
 
-      // Measure entire node first
+      // Measure
       const nodeH = sandbox.measure(node);
 
-      // Check if it fits
-      // Using a small tolerance (0.5) to handle sub-pixel differences
-      if (currentH + nodeH > frame.bodyHeight + 0.5) {
-          // It overflows. Try to split it.
-          const remainingSpace = Math.max(0, frame.bodyHeight - currentH);
+      if (currentH + nodeH > currentFrame.bodyHeight + 0.5) {
+          const remainingSpace = Math.max(0, currentFrame.bodyHeight - currentH);
           
           const split = splitBlock(node, remainingSpace, sandbox);
 
           if (split.keep && split.keep.hasChildNodes()) {
-              // We successfully fit a piece on this page
               currentPageNodes.push(split.keep);
-              flushPage(); // Close this page
+              flushPage(); 
               
-              // Process the remainder on the next page
               if (split.move && split.move.hasChildNodes()) {
-                  // We update the current node in iteration to be the remainder
-                  // and decrement i to re-process it for the next page (in case it needs splitting again!)
                   nodes[i] = split.move;
                   i--; 
               }
           } else {
-              // Could not split or nothing fit.
               if (currentPageNodes.length > 0) {
-                  // Flush current page and push whole node to next
                   flushPage();
                   i--; 
               } else {
-                  // If page is empty and it still doesn't fit, it's just too big (huge image?)
-                  // Place it anyway to avoid infinite loop
                   currentPageNodes.push(node);
                   flushPage();
               }
           }
       } else {
-          // Fits
           currentPageNodes.push(node);
           currentH += nodeH;
       }
@@ -361,14 +351,14 @@ export const paginateContent = (html: string, config: PageConfig): PaginatorResu
   }
 
   if (pages.length === 0) {
-      pages.push('<p><br></p>');
+      pages.push({ html: '<p><br></p>', config: initialConfig });
   }
 
   sandbox.destroy();
 
   return {
       pages,
-      pageHeight: frame.height,
-      pageWidth: frame.width
+      pageHeight: initialFrame.height, // Initial height reference
+      pageWidth: initialFrame.width    // Initial width reference
   };
 };

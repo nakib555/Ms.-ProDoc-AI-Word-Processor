@@ -1,58 +1,124 @@
 
-import React from 'react';
+import { PageConfig } from '../types';
+
+// Helper to convert camelCase to kebab-case
+const camelToKebab = (str: string) => str.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
+
+// Helper to resolve units (numbers become px, strings stay as is)
+const resolveUnit = (val: string | number): string => {
+    if (val === undefined || val === null) return '';
+    if (typeof val === 'number') return `${val}px`;
+    return val;
+};
 
 // Helper to convert style objects to CSS string
 const styleToString = (style: any): string => {
   if (!style) return '';
   return Object.entries(style).map(([k, v]) => {
-    // Convert camelCase to kebab-case
-    const key = k.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+    const key = camelToKebab(k);
     // Add units if missing for common numeric properties
-    const val = (typeof v === 'number' && ['width', 'height', 'font-size', 'margin', 'padding', 'border-width', 'top', 'bottom', 'left', 'right'].some(p => key.includes(p))) 
+    const val = (typeof v === 'number' && ['width', 'height', 'font-size', 'margin', 'padding', 'border-width', 'top', 'bottom', 'left', 'right', 'spacing', 'letter-spacing', 'indent'].some(p => key.includes(p))) 
       ? `${v}px` 
       : v;
+    
+    // Handle boolean styles
+    if (v === true) {
+        if (key === 'bold') return 'font-weight: bold';
+        if (key === 'italic') return 'font-style: italic';
+    }
+    
     return `${key}: ${val}`;
   }).join('; ');
+};
+
+const resolveBorders = (borders: any): string => {
+  if (!borders) return '';
+  const css: string[] = [];
+  ['top', 'bottom', 'left', 'right'].forEach(side => {
+    const b = borders[side];
+    if (b) {
+      const width = resolveUnit(b.width || 1);
+      const style = b.style || 'solid';
+      const color = b.color || '#000000';
+      css.push(`border-${side}: ${width} ${style} ${color}`);
+    }
+  });
+  return css.join('; ');
+};
+
+const resolvePadding = (padding: any): string => {
+    if (!padding) return '';
+    if (typeof padding === 'number' || typeof padding === 'string') return `padding: ${resolveUnit(padding)}`;
+    const top = resolveUnit(padding.top || 0);
+    const right = resolveUnit(padding.right || 0);
+    const bottom = resolveUnit(padding.bottom || 0);
+    const left = resolveUnit(padding.left || 0);
+    return `padding: ${top} ${right} ${bottom} ${left}`;
+};
+
+const resolveIndent = (indent: any): string => {
+    if (!indent) return '';
+    const css: string[] = [];
+    if (indent.left) css.push(`margin-left: ${resolveUnit(indent.left)}`);
+    if (indent.right) css.push(`margin-right: ${resolveUnit(indent.right)}`);
+    if (indent.firstLine) css.push(`text-indent: ${resolveUnit(indent.firstLine)}`);
+    return css.join('; ');
 };
 
 const renderInlineContent = (contentItems: any): string => {
   if (!contentItems) return '';
   
-  // Handle if content is just a string
   if (typeof contentItems === 'string') return contentItems;
 
-  // Handle if content is not an array (single object)
   if (!Array.isArray(contentItems)) {
       contentItems = [contentItems];
   }
   
   return contentItems.map((item: any) => {
-    // Handle if item is just a string
     if (typeof item === 'string') return item;
+
+    if (item.type === 'field') {
+       const text = item.code === 'PAGE_NUMBER' ? '#' : 
+                    item.code === 'TOTAL_PAGES' ? '##' : 
+                    item.code === 'CURRENT_DATE' ? new Date().toLocaleDateString() : 
+                    `[${item.code}]`;
+       return `<span class="prodoc-field" data-field-code="${item.code}" style="background:#f1f5f9; border-radius:2px; padding:0 2px; color:#64748b; font-size:0.9em;">${text}</span>`;
+    }
+
+    if (item.type === 'image') {
+        return `<img src="${item.src}" alt="${item.alt || ''}" style="display:inline-block; vertical-align:middle; ${styleToString(item.style)}" />`;
+    }
 
     let text = item.text || '';
     
     // Skip empty text unless it has styles (like a spacer)
     if (!text && !item.type) return '';
 
-    // Apply inline styles wrapper if needed
+    // Apply inline styles
     const styles: string[] = [];
     if (item.bold) styles.push('font-weight: bold');
     if (item.italic) styles.push('font-style: italic');
     
-    let textDecorations = [];
-    if (item.underline && item.underline !== 'none') textDecorations.push('underline');
-    if (item.strikethrough) textDecorations.push('line-through');
-    if (textDecorations.length > 0) {
-        styles.push(`text-decoration: ${textDecorations.join(' ')}`);
-        if (item.underlineColor) styles.push(`text-decoration-color: ${item.underlineColor}`);
+    const decorations = [];
+    if (item.underline) {
+        if (item.underline === 'wavy') styles.push('text-decoration-style: wavy');
+        decorations.push('underline');
     }
+    if (item.strikethrough) {
+        if (item.strikethrough === 'double') {
+             styles.push('text-decoration-style: double');
+        }
+        decorations.push('line-through');
+    }
+    
+    if (decorations.length > 0) styles.push(`text-decoration-line: ${decorations.join(' ')}`);
+    if (item.underlineColor) styles.push(`text-decoration-color: ${item.underlineColor}`);
 
     if (item.color) styles.push(`color: ${item.color}`);
     if (item.highlight) styles.push(`background-color: ${item.highlight}`);
-    if (item.fontFamily) styles.push(`font-family: ${item.fontFamily}`);
-    if (item.fontSize) styles.push(`font-size: ${item.fontSize}px`);
-    
+    if (item.fontFamily) styles.push(`font-family: "${item.fontFamily}"`);
+    if (item.fontSize) styles.push(`font-size: ${resolveUnit(item.fontSize)}`);
+    if (item.letterSpacing) styles.push(`letter-spacing: ${resolveUnit(item.letterSpacing)}`);
     if (item.textShadow) styles.push(`text-shadow: ${item.textShadow}`);
     
     if (item.subscript) return `<sub>${text}</sub>`;
@@ -63,7 +129,6 @@ const renderInlineContent = (contentItems: any): string => {
 
     let contentHtml = text;
     
-    // Handle links
     if (item.link) {
        contentHtml = `<a href="${item.link}" style="color: ${item.color || '#2563eb'}; text-decoration: underline;">${contentHtml}</a>`;
     } else if (styles.length > 0) {
@@ -74,16 +139,149 @@ const renderInlineContent = (contentItems: any): string => {
   }).join('');
 };
 
+export const renderBlock = (block: any): string => {
+    const baseStyle = block.style || {};
+    let cssStr = styleToString(baseStyle);
+    
+    // Advanced Paragraph Styling
+    if (block.paragraphStyle) {
+        const ps = block.paragraphStyle;
+        const paraCss = [];
+        if (ps.alignment) paraCss.push(`text-align: ${ps.alignment}`);
+        if (ps.spacingBefore) paraCss.push(`margin-top: ${resolveUnit(ps.spacingBefore)}`);
+        if (ps.spacingAfter) paraCss.push(`margin-bottom: ${resolveUnit(ps.spacingAfter)}`);
+        if (ps.lineSpacing) paraCss.push(`line-height: ${ps.lineSpacing}`);
+        if (ps.indent) paraCss.push(resolveIndent(ps.indent));
+        if (ps.padding) paraCss.push(resolvePadding(ps.padding));
+        if (ps.borders) paraCss.push(resolveBorders(ps.borders));
+        if (ps.backgroundColor) paraCss.push(`background-color: ${ps.backgroundColor}`);
+        
+        cssStr += '; ' + paraCss.join('; ');
+    }
+
+    // Sanitize positioning
+    if (['heading', 'paragraph', 'list', 'code', 'equation', 'blockquote'].includes(block.type)) {
+        if (cssStr.includes('position: absolute') || cssStr.includes('position: fixed')) {
+            cssStr = cssStr.replace(/position:\s*(absolute|fixed);?/g, '');
+            cssStr = cssStr.replace(/(top|left|right|bottom):\s*[^;]+;?/g, '');
+        }
+    }
+
+    switch (block.type) {
+        case 'heading':
+            const level = Math.min(Math.max(block.level || 1, 1), 6);
+            return `<h${level} id="${block.id || ''}" style="${cssStr}">${renderInlineContent(block.content)}</h${level}>`;
+        
+        case 'paragraph':
+            return `<p style="${cssStr}">${renderInlineContent(block.content)}</p>`;
+            
+        case 'image':
+            return `<div style="text-align: center; margin: 1em 0;">
+                <img src="${block.src}" alt="${block.alt || ''}" style="${styleToString(block.style)}" />
+            </div>`;
+            
+        case 'code':
+            return `<pre style="background-color: #1e293b; color: #e2e8f0; padding: 1em; border-radius: 4px; overflow-x: auto; font-family: monospace; ${cssStr}"><code class="language-${block.language || 'text'}">${typeof block.content === 'string' ? block.content : renderInlineContent(block.content)}</code></pre>`;
+            
+        case 'equation':
+             return `<div style="text-align: center; ${cssStr}"><span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field>${block.latex}</math-field><span class="equation-dropdown">▼</span></span></div>`;
+             
+        case 'list':
+            const tag = block.listType === 'ordered' ? 'ol' : 'ul';
+            let listStyle = cssStr;
+            if (block.markerStyle) {
+                listStyle += `; list-style-type: ${block.markerStyle}`;
+            }
+            
+            let itemsHtml = '';
+            if (block.items && Array.isArray(block.items)) {
+                itemsHtml = block.items.map((item: any) => {
+                    let content = '';
+                    let subItems = '';
+                    
+                    if (typeof item === 'string') {
+                        content = item;
+                    } else {
+                        content = renderInlineContent(item.content || item);
+                        if (item.subItems) {
+                             if (item.subItems.type === 'list') {
+                                 subItems = renderBlock(item.subItems);
+                             } else if (Array.isArray(item.subItems)) {
+                                 subItems = renderBlock({ type: 'list', listType: block.listType, items: item.subItems });
+                             }
+                        }
+                    }
+                    return `<li>${content}${subItems}</li>`;
+                }).join('');
+            }
+            return `<${tag} style="${listStyle}">${itemsHtml}</${tag}>`;
+            
+        case 'table':
+            let colGroup = '';
+            if (block.config && block.config.columnWidths) {
+                colGroup = `<colgroup>${block.config.columnWidths.map((w: string) => `<col style="width:${w}">`).join('')}</colgroup>`;
+            }
+            
+            let rowsHtml = '';
+            if (block.rows) {
+                block.rows.forEach((row: any, rIndex: number) => {
+                    let cellsHtml = '';
+                    if (row.cells) {
+                        row.cells.forEach((cell: any) => {
+                            // Merge specific cell styles
+                            const cellStyleObj = {
+                                padding: '8px',
+                                border: `1px solid ${block.config?.borderColor || '#cbd5e1'}`,
+                                textAlign: 'left',
+                                verticalAlign: 'top',
+                                backgroundColor: block.config?.hasHeaderRow && rIndex === 0 ? '#f1f5f9' : (block.config?.bandedRows && rIndex % 2 === 0 ? '#f8fafc' : 'transparent'),
+                                ...(cell.style || {})
+                            };
+                            
+                            const cellStyle = styleToString(cellStyleObj);
+                            const content = renderInlineContent(cell.content);
+                            const attrs = [];
+                            if (cell.colSpan) attrs.push(`colspan="${cell.colSpan}"`);
+                            if (cell.rowSpan) attrs.push(`rowspan="${cell.rowSpan}"`);
+                            
+                            const cellTag = (block.config?.hasHeaderRow && rIndex === 0) ? 'th' : 'td';
+                            
+                            cellsHtml += `<${cellTag} ${attrs.join(' ')} style="${cellStyle}">${content}</${cellTag}>`;
+                        });
+                    }
+                    rowsHtml += `<tr>${cellsHtml}</tr>`;
+                });
+            }
+            
+            if (!cssStr.includes('border-collapse')) cssStr += '; border-collapse: collapse';
+            if (!cssStr.includes('width')) cssStr += '; width: 100%';
+            if (!cssStr.includes('margin')) cssStr += '; margin: 1em 0';
+            
+            return `<table style="${cssStr}">${colGroup}${rowsHtml}</table>`;
+            
+        case 'sectionBreak':
+            const configJson = block.config ? encodeURIComponent(JSON.stringify(block.config)) : '';
+            const breakLabel = block.config?.orientation ? `${block.config.orientation.toUpperCase()} Section` : 'Section Break';
+            return `<div class="prodoc-section-break" data-config="${configJson}" style="page-break-before: always; border-top: 2px dashed #94a3b8; margin: 20px 0; padding-top: 5px; text-align: center; color: #64748b; font-size: 10px; user-select: none; font-family: sans-serif; background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px); opacity: 0.7;">--- ${breakLabel} ---</div>`;
+        
+        case 'pageBreak':
+            return `<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div>`;
+
+        default:
+             if (block.content) {
+                 return `<div style="${cssStr}">${renderInlineContent(block.content)}</div>`;
+             }
+             return '';
+    }
+};
+
 export const jsonToHtml = (jsonData: any): string => {
   if (!jsonData) return '';
+  if (typeof jsonData === 'string') return `<p>${jsonData}</p>`;
 
-  // If it's a raw string response, assume it's just a paragraph
-  if (typeof jsonData === 'string') {
-      return `<p>${jsonData}</p>`;
-  }
-
-  // Robustness: Handle different root structures
-  let blocks = [];
+  let blocks: any[] = [];
+  
+  // Handle various root shapes
   if (jsonData.document && Array.isArray(jsonData.document.blocks)) {
       blocks = jsonData.document.blocks;
   } else if (jsonData.blocks && Array.isArray(jsonData.blocks)) {
@@ -91,129 +289,23 @@ export const jsonToHtml = (jsonData: any): string => {
   } else if (Array.isArray(jsonData)) {
       blocks = jsonData;
   } else if (jsonData.type && (jsonData.content || jsonData.items || jsonData.rows)) {
-      // Single block object treated as root
       blocks = [jsonData];
   } else if (jsonData.content && Array.isArray(jsonData.content)) {
-      // Sometimes AI returns content array directly
       blocks = jsonData.content;
   } else {
-      // Fallback: If object keys look like content, try to render
-      if (jsonData.title) blocks.push({type: 'heading', level: 1, content: [{text: jsonData.title}]});
-      if (jsonData.summary) blocks.push({type: 'paragraph', content: [{text: jsonData.summary}]});
-      
-      // If we still have nothing but it's an object, maybe stringify it safely or return empty
-      if (blocks.length === 0 && Object.keys(jsonData).length > 0) {
-           // Attempt to just stringify values
-           return `<p>${Object.values(jsonData).filter(v => typeof v === 'string').join(' ')}</p>`;
+      // Best effort fallback
+      if (Object.keys(jsonData).length > 0) {
+          if (jsonData.title || jsonData.summary) {
+              const fallbackBlocks = [];
+              if (jsonData.title) fallbackBlocks.push({type: 'heading', level: 1, content: [{text: jsonData.title}]});
+              if (jsonData.summary) fallbackBlocks.push({type: 'paragraph', content: [{text: jsonData.summary}]});
+              return fallbackBlocks.map(renderBlock).join('');
+          }
+          const textValues = Object.values(jsonData).filter(v => typeof v === 'string');
+          if (textValues.length > 0) return `<p>${textValues.join(' ')}</p>`;
       }
+      return '';
   }
 
-  let html = '';
-
-  blocks.forEach((block: any) => {
-    // Combine explicit style object with paragraphStyle properties
-    const combinedStyle = {
-      ...(block.style || {}),
-      ...(block.paragraphStyle ? {
-        textAlign: block.paragraphStyle.alignment,
-        marginTop: block.paragraphStyle.spacingBefore,
-        marginBottom: block.paragraphStyle.spacingAfter,
-        lineHeight: block.paragraphStyle.lineSpacing,
-        textIndent: block.paragraphStyle.indent?.firstLine,
-        marginLeft: block.paragraphStyle.indent?.left,
-        marginRight: block.paragraphStyle.indent?.right,
-      } : {})
-    };
-
-    const styleStr = styleToString(combinedStyle);
-
-    switch (block.type) {
-      case 'heading':
-        const level = Math.min(Math.max(block.level || 1, 1), 6);
-        html += `<h${level} style="${styleStr}">${renderInlineContent(block.content)}</h${level}>`;
-        break;
-
-      case 'paragraph':
-        html += `<p style="${styleStr}">${renderInlineContent(block.content)}</p>`;
-        break;
-
-      case 'image':
-        html += `<div style="text-align: center; margin: 1em 0;">
-                  <img src="${block.src}" alt="${block.alt || ''}" style="${styleStr}" />
-                 </div>`;
-        break;
-
-      case 'code':
-        html += `<pre style="background-color: #1e293b; color: #e2e8f0; padding: 1em; border-radius: 4px; overflow-x: auto; font-family: monospace; ${styleStr}"><code>${typeof block.content === 'string' ? block.content : renderInlineContent(block.content)}</code></pre>`;
-        break;
-
-      case 'equation':
-        // Render as the editor's equation wrapper
-        const latex = block.latex || '';
-        html += `<p style="text-align: center;"><span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field>${latex}</math-field><span class="equation-dropdown">▼</span></span></p>`;
-        break;
-
-      case 'table':
-        let tableHtml = `<table style="width: 100%; border-collapse: collapse; margin: 1em 0; ${styleStr}">`;
-        if (block.rows) {
-          block.rows.forEach((row: any, rIndex: number) => {
-            tableHtml += '<tr>';
-            const isHeader = block.config?.hasHeaderRow && rIndex === 0;
-            const cellTag = isHeader ? 'th' : 'td';
-            
-            if (row.cells) {
-              row.cells.forEach((cell: any) => {
-                const cellStyle = {
-                  padding: '8px',
-                  border: `1px solid ${block.config?.borderColor || '#cbd5e1'}`,
-                  textAlign: 'left',
-                  backgroundColor: isHeader ? '#f1f5f9' : (block.config?.bandedRows && rIndex % 2 === 0 ? '#f8fafc' : 'transparent'),
-                  fontWeight: isHeader ? 'bold' : 'normal',
-                  ...(cell.style || {})
-                };
-                tableHtml += `<${cellTag} style="${styleToString(cellStyle)}">${renderInlineContent(cell.content)}</${cellTag}>`;
-              });
-            }
-            tableHtml += '</tr>';
-          });
-        }
-        tableHtml += '</table>';
-        html += tableHtml;
-        break;
-
-      case 'list':
-        const tag = block.listType === 'ordered' ? 'ol' : 'ul';
-        html += `<${tag} style="${styleStr}">`;
-        if (block.items) {
-          block.items.forEach((item: any) => {
-            const itemContent = item.content || item;
-            html += `<li>${renderInlineContent(itemContent)}`; 
-            
-            if (item.subItems) {
-               html += `<${tag} style="margin-left: 20px;">`;
-               item.subItems.forEach((sub: any) => {
-                   html += `<li>${renderInlineContent(sub.content || sub)}</li>`;
-               });
-               html += `</${tag}>`;
-            }
-            html += `</li>`;
-          });
-        }
-        html += `</${tag}>`;
-        break;
-
-      case 'pageBreak':
-        html += `<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div>`;
-        break;
-
-      default:
-        // Try generic fallback if content exists
-        if (block.content) {
-             html += `<div style="${styleStr}">${renderInlineContent(block.content)}</div>`;
-        }
-        break;
-    }
-  });
-
-  return html;
+  return blocks.map(renderBlock).join('');
 };

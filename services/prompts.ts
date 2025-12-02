@@ -27,16 +27,25 @@ const PRODOC_JSON_SCHEMA = `
         "type": "heading",
         "level": 1,
         "style": { "textAlign": "center", "color": "#1e3a8a", "fontFamily": "Inter", "fontSize": 28, "bold": true, "marginBottom": "24px", "borderBottom": "2px solid #3b82f6", "paddingBottom": "10px" },
+        "paragraphStyle": { "spacingAfter": 24 },
         "content": [ { "text": "Heading Text ", "bold": true }, { "text": "Colored Part", "color": "#2563eb" } ]
       },
       {
         "type": "paragraph",
-        "style": { "textAlign": "justify", "lineHeight": 1.6, "fontFamily": "Calibri", "fontSize": 12 },
+        "style": { "fontSize": 12, "fontFamily": "Calibri" },
+        "paragraphStyle": { 
+            "alignment": "justify", 
+            "lineSpacing": 1.6,
+            "spacingBefore": 12,
+            "spacingAfter": 12,
+            "indent": { "firstLine": "0.5in" }
+        },
         "content": [ { "text": "Regular text. " }, { "text": "Bold text.", "bold": true }, { "text": "Link", "link": "#", "color": "blue" } ]
       },
       {
         "type": "list",
         "listType": "unordered",
+        "markerStyle": "disc",
         "items": [
             { "content": [ { "text": "List Item 1" } ] },
             { "content": [ { "text": "List Item 2" } ], "subItems": [ { "content": [{"text": "Sub Item"}] } ] }
@@ -44,11 +53,11 @@ const PRODOC_JSON_SCHEMA = `
       },
       {
         "type": "table",
-        "config": { "columns": 2, "hasHeaderRow": true, "bandedRows": true, "borderColor": "#cbd5e1" },
+        "config": { "columns": 2, "columnWidths": ["30%", "70%"], "hasHeaderRow": true, "bandedRows": true, "borderColor": "#cbd5e1" },
         "style": { "width": "100%", "borderCollapse": "collapse" },
         "rows": [
-           { "cells": [ { "content": [{"text": "Header 1", "bold": true}] }, { "content": [{"text": "Header 2", "bold": true}] } ] },
-           { "cells": [ { "content": [{"text": "Cell 1"}] }, { "content": [{"text": "Cell 2"}] } ] }
+           { "cells": [ { "content": [{"text": "Header 1", "bold": true}], "style": { "backgroundColor": "#f1f5f9" } }, { "content": [{"text": "Header 2", "bold": true}], "style": { "backgroundColor": "#f1f5f9" } } ] },
+           { "cells": [ { "content": [{"text": "Cell 1"}] }, { "content": [{"text": "Cell 2"}], "colSpan": 1 } ] }
         ]
       },
       {
@@ -60,7 +69,11 @@ const PRODOC_JSON_SCHEMA = `
       {
         "type": "equation",
         "latex": "E = mc^2",
-        "style": { "displayMode": "block", "fontSize": "1.2em", "color": "#334155" }
+        "style": { "displayMode": "block", "fontSize": "1.2em", "color": "#334155", "textAlign": "center" }
+      },
+      { 
+        "type": "sectionBreak",
+        "config": { "type": "nextPage", "orientation": "landscape" }
       },
       { "type": "pageBreak" },
       { "type": "image", "src": "url", "alt": "Description", "style": { "width": "100%", "height": "auto" } }
@@ -88,6 +101,7 @@ export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): st
       CONTEXT USAGE:
       - Use INPUT CONTEXT (if any) to match tone/style.
       - Create rich content using Headings, Paragraphs, Lists, and Tables where appropriate.
+      - Use "paragraphStyle" for indentation, spacing, and alignment.
       - For technical topics, use Code blocks.
       - For math/science, use Equation blocks.
       
@@ -119,9 +133,10 @@ export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): st
   **RULES:**
   1. Output **ONLY** raw valid JSON. No markdown fences. Start with {.
   2. Use "content" arrays for text with inline styling (bold, italic, color, highlight).
-  3. Use specific block types (heading, paragraph, list, table, code, equation, image, pageBreak).
+  3. Use specific block types (heading, paragraph, list, table, code, equation, image, pageBreak, sectionBreak).
   4. Ensure all keys are double-quoted.
   5. **Header/Footer**: Only populate "header" and "footer" fields if creating a full document or explicitly asked.
+  6. Use 'paragraphStyle' object for block-level styling (indentation, spacingBefore/After, padding, borders). Use 'style' object for inline text styling or generic container styles.
   
   **DIRECTIVE:**
   ${specificDirective}

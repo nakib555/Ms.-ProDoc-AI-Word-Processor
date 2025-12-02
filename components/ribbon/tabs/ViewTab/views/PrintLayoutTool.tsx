@@ -312,7 +312,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setFooterContent,
   } = useEditor();
   
-  const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
+  const [pages, setPages] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   
@@ -357,9 +357,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPages(currentPages => {
         const updatedPages = [...currentPages];
-        if (updatedPages[pageIndex] !== newHtml) {
-            updatedPages[pageIndex] = newHtml;
-            const fullContent = updatedPages.join('');
+        if (updatedPages[pageIndex].html !== newHtml) {
+            updatedPages[pageIndex] = { ...updatedPages[pageIndex], html: newHtml };
+            const fullContent = updatedPages.map(p => p.html).join('');
             // Defer setContent to next tick to let React render current changes
             setTimeout(() => setContent(fullContent), 0);
             return updatedPages;
@@ -459,7 +459,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                 className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center justify-start py-8 gap-8' : 'flex-row flex-wrap justify-center content-start py-8 gap-8'}`}
                 onClick={handleBackgroundClick}
            >
-                {pages.map((pageContent, index) => (
+                {pages.map((pageData, index) => (
                     <div 
                         key={index} 
                         className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
@@ -468,8 +468,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                         <EditorPage
                             pageNumber={index + 1}
                             totalPages={pages.length}
-                            content={pageContent}
-                            config={pageConfig}
+                            content={pageData.html}
+                            config={pageData.config}
                             zoom={zoom}
                             showFormattingMarks={showFormattingMarks}
                             onContentChange={handlePageUpdate}

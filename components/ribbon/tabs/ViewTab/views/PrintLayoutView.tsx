@@ -1,13 +1,13 @@
 
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { FileText } from 'lucide-react';
-import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import { FixedSizeList as List, ListChildComponentProps, VariableSizeList } from 'react-window';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { PageConfig } from '../../../../../types';
 import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
-import { paginateContent } from '../../../../../utils/layoutEngine';
+import { paginateContent, PaginatorResult } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
 
 export const PrintLayoutTool: React.FC = () => {
@@ -34,8 +34,6 @@ interface PrintLayoutViewProps {
   containerRef: (node: HTMLDivElement | null) => void;
 }
 
-// --- Robust Global Cursor Tracking Helpers ---
-
 const BLOCK_TAGS = ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TR', 'BLOCKQUOTE', 'UL', 'OL', 'TABLE'];
 
 const isBlock = (el: HTMLElement) => {
@@ -49,7 +47,7 @@ const getNodeTextLength = (node: Node): number => {
     
     if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
-        if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break')) {
+        if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.classList.contains('prodoc-section-break')) {
             return 1;
         }
         if (el.tagName === 'BR') {
@@ -130,7 +128,7 @@ const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number
             offset += (node.nodeValue || "").length;
         } else if (node.nodeType === Node.ELEMENT_NODE) {
              const el = node as HTMLElement;
-             if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR') {
+             if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR' || el.classList.contains('prodoc-section-break')) {
                  offset += 1;
              } else {
                  for (let i = 0; i < node.childNodes.length; i++) {
@@ -203,7 +201,7 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
             currentCount += len;
         } else if (node.nodeType === Node.ELEMENT_NODE) {
             const el = node as HTMLElement;
-            if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR') {
+            if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR' || el.classList.contains('prodoc-section-break')) {
                 if (currentCount + 1 >= offset) {
                     range.setStartAfter(node);
                     range.collapse(true);
@@ -266,7 +264,6 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
 const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
     const { 
         pages, 
-        config, 
         zoom, 
         showFormattingMarks, 
         handlePageUpdate, 
@@ -279,11 +276,12 @@ const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
         setFooterContent 
     } = data;
 
-    const pageContent = pages[index];
+    const pageData = pages[index];
+    const pageContent = pageData.html;
+    const pageConfig = pageData.config;
 
     return (
         <div style={style} className="w-full flex justify-center">
-            {/* Added padding wrapper to handle the gap logic visually */}
             <div className="pt-8">
                 <div 
                     className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
@@ -293,7 +291,7 @@ const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => 
                         pageNumber={index + 1}
                         totalPages={pages.length}
                         content={pageContent}
-                        config={config}
+                        config={pageConfig}
                         zoom={zoom}
                         showFormattingMarks={showFormattingMarks}
                         onContentChange={handlePageUpdate}
@@ -336,13 +334,13 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     editorRef
   } = useEditor();
   
-  const [pages, setPages] = useState<string[]>(() => paginateContent(content, pageConfig).pages);
+  const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<List>(null);
+  // We use VariableSizeList to handle varying page sizes (like Legal or Landscape mix)
+  const listRef = useRef<VariableSizeList>(null);
   
   const cursorRestorationRef = useRef<number | null>(null);
 
-  // Pagination Effect
   useEffect(() => {
     let isMounted = true;
     
@@ -352,8 +350,13 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         const currentCursor = getGlobalCursorPosition();
         const result = paginateContent(content, pageConfig);
         
-        setPages(result.pages);
+        setPagesData(result.pages);
         setTotalPages(result.pages.length);
+        
+        // Reset cache if sizes changed
+        if (listRef.current) {
+            listRef.current.resetAfterIndex(0);
+        }
         
         if (currentCursor !== null) {
             cursorRestorationRef.current = currentCursor;
@@ -367,27 +370,26 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     };
   }, [content, pageConfig, setTotalPages]);
 
-  // Restore Cursor AFTER Render
   useLayoutEffect(() => {
       if (cursorRestorationRef.current !== null) {
           restoreGlobalCursor(cursorRestorationRef.current);
           cursorRestorationRef.current = null;
       }
-  }, [pages]);
+  }, [pagesData]);
 
   useEffect(() => {
       const activePageEl = document.getElementById(`prodoc-editor-${currentPage}`);
       if (activePageEl && editorRef) {
           (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = activePageEl as HTMLDivElement;
       }
-  }, [currentPage, editorRef, pages]);
+  }, [currentPage, editorRef, pagesData]);
 
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
-    setPages(currentPages => {
+    setPagesData(currentPages => {
         const updatedPages = [...currentPages];
-        if (updatedPages[pageIndex] !== newHtml) {
-            updatedPages[pageIndex] = newHtml;
-            const fullContent = updatedPages.join('');
+        if (updatedPages[pageIndex].html !== newHtml) {
+            updatedPages[pageIndex] = { ...updatedPages[pageIndex], html: newHtml };
+            const fullContent = updatedPages.map(p => p.html).join('');
             setTimeout(() => setContent(fullContent), 0);
             return updatedPages;
         }
@@ -402,10 +404,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, [setCurrentPage, editorRef]);
 
-  // Virtualization Items Props
   const itemData = useMemo(() => ({
-      pages,
-      config: pageConfig,
+      pages: pagesData,
       zoom,
       showFormattingMarks,
       handlePageUpdate,
@@ -416,42 +416,49 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       setHeaderContent,
       footerContent,
       setFooterContent
-  }), [pages, pageConfig, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, activeEditingArea, setActiveEditingArea, headerContent, setHeaderContent, footerContent, setFooterContent]);
+  }), [pagesData, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, activeEditingArea, setActiveEditingArea, headerContent, setHeaderContent, footerContent, setFooterContent]);
 
-  // Calculate Page Size for Virtualization
-  const itemSize = useMemo(() => {
+  // Dynamic Item Size Calculation
+  const getItemSize = (index: number) => {
+      const config = pagesData[index]?.config || pageConfig;
       let baseH = 0;
-      if (pageConfig.size === 'Custom' && pageConfig.customHeight) {
-          baseH = pageConfig.customHeight * 96;
+      
+      if (config.size === 'Custom' && config.customHeight) {
+          baseH = config.customHeight * 96;
       } else {
-          const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
-          baseH = pageConfig.orientation === 'portrait' ? base.height : base.width;
+          const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
+          baseH = config.orientation === 'portrait' ? base.height : base.width;
       }
       
       const scaledHeight = baseH * (zoom / 100);
-      const GAP_SIZE = 32; // py-8 equivalent
+      const GAP_SIZE = 32;
       return scaledHeight + GAP_SIZE;
-  }, [pageConfig.size, pageConfig.orientation, pageConfig.customHeight, zoom]);
+  };
 
   const handleItemsRendered = useCallback(({ visibleStartIndex }: { visibleStartIndex: number }) => {
       setCurrentPage(visibleStartIndex + 1);
   }, [setCurrentPage]);
 
-  // Compute actual content width for horizontal scrolling support
+  // Calculate max width for scrolling
   const contentWidth = useMemo(() => {
-      let baseW = 0;
-      if (pageConfig.size === 'Custom' && pageConfig.customWidth) {
-          baseW = pageConfig.customWidth * 96;
-      } else {
-          const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
-          baseW = pageConfig.orientation === 'portrait' ? base.width : base.height;
-      }
-      return baseW * (zoom / 100) + 64; // + padding
-  }, [pageConfig, zoom]);
+      let maxW = 0;
+      pagesData.forEach(p => {
+          const config = p.config;
+          let baseW = 0;
+          if (config.size === 'Custom' && config.customWidth) {
+              baseW = config.customWidth * 96;
+          } else {
+              const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
+              baseW = config.orientation === 'portrait' ? base.width : base.height;
+          }
+          const scaledW = baseW * (zoom / 100);
+          if (scaledW > maxW) maxW = scaledW;
+      });
+      return maxW + 64; 
+  }, [pagesData, zoom, pageConfig]);
 
   const listWidth = Math.max(width, contentWidth);
 
-  // Sync horizontal scroll for ruler
   const handleOuterScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
       const scrollLeft = e.currentTarget.scrollLeft;
       if (rulerContainerRef.current) {
@@ -460,6 +467,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   }, []);
 
   const isVertical = pageMovement === 'vertical';
+
+  // Get config for current page for ruler
+  const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
 
   return (
     <div className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900 transition-colors duration-300">
@@ -472,25 +482,25 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
          >
              <div style={{ width: listWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
                  <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
-                    <Ruler pageConfig={pageConfig} zoom={zoom} />
+                    <Ruler pageConfig={activePageConfig} zoom={zoom} />
                  </div>
              </div>
          </div>
        )}
 
        {isVertical ? (
-           <List
+           <VariableSizeList
                 ref={listRef}
                 height={height - (showRuler ? 25 : 0)}
-                itemCount={pages.length}
-                itemSize={itemSize}
+                itemCount={pagesData.length}
+                itemSize={getItemSize}
                 width={width}
                 className="scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
                 itemData={itemData}
                 outerRef={containerRef}
                 onItemsRendered={handleItemsRendered}
-                outerElementType={React.forwardRef((props, ref: any) => (
-                    <div {...props} ref={ref} onScroll={(e) => {
+                outerElementType={React.forwardRef((props: any, ref: any) => (
+                    <div {...props} ref={ref} onScroll={(e: React.UIEvent<HTMLDivElement>) => {
                         props.onScroll && props.onScroll(e);
                         handleOuterScroll(e);
                     }} style={{ ...props.style, overflowX: 'auto', overflowY: 'auto' }} />
@@ -500,7 +510,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                         ref={ref}
                         style={{
                             ...style,
-                            width: listWidth, // Force inner width to allow horizontal scroll
+                            width: listWidth, 
                             position: 'relative'
                         }}
                         {...rest}
@@ -508,9 +518,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                 ))}
            >
                {PageRow}
-           </List>
+           </VariableSizeList>
        ) : (
-           /* Fallback for Side-to-Side (non-virtualized for grid complexity) */
            <div 
               ref={containerRef}
               className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
@@ -525,7 +534,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                         }
                     }}
                >
-                    {pages.map((pageContent, index) => (
+                    {pagesData.map((pageData, index) => (
                         <div 
                             key={index} 
                             className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
@@ -533,9 +542,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                         >
                             <EditorPage
                                 pageNumber={index + 1}
-                                totalPages={pages.length}
-                                content={pageContent}
-                                config={pageConfig}
+                                totalPages={pagesData.length}
+                                content={pageData.html}
+                                config={pageData.config}
                                 zoom={zoom}
                                 showFormattingMarks={showFormattingMarks}
                                 onContentChange={handlePageUpdate}
