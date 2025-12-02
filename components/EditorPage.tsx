@@ -447,12 +447,12 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           if (navigator.vibrate) navigator.vibrate(50);
       }, 2000);
 
-      // 4s Timer: Select Page
+      // 3s Timer: Select Page
       superLongPressTimerRef.current = setTimeout(() => {
           selectPage();
           smartSelectionTriggeredRef.current = true;
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-      }, 4000);
+      }, 3000);
   };
 
   const handleSmartPointerMove = (e: React.PointerEvent) => {
