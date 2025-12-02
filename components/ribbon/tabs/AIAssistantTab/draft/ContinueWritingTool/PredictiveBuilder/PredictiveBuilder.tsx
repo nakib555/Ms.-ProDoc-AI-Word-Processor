@@ -257,11 +257,13 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
     const results: { l: string, f: string, category: string }[] = [];
     
     Object.entries(PREDICTIVE_CATEGORIES).forEach(([category, items]) => {
-      items.forEach(item => {
-        if (item.l.toLowerCase().includes(lowerSearch)) {
-          results.push({ ...item, category });
-        }
-      });
+      if (items && Array.isArray(items)) {
+          items.forEach(item => {
+            if (item.l.toLowerCase().includes(lowerSearch)) {
+              results.push({ ...item, category });
+            }
+          });
+      }
     });
     return results;
   }, [searchTerm]);
@@ -274,7 +276,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                      <LayoutTemplate size={10}/> Predictive Builder
                  </div>
                  <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
-                    {Object.values(PREDICTIVE_CATEGORIES).reduce((acc, curr) => acc + curr.length, 0)}+
+                    {Object.values(PREDICTIVE_CATEGORIES).reduce((acc, curr) => acc + (curr ? curr.length : 0), 0)}+
                  </span>
              </div>
              <div className="relative group">
@@ -325,6 +327,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
              ) : (
                  <div className="space-y-1">
                      {Object.entries(PREDICTIVE_CATEGORIES).map(([category, items]) => {
+                         if (!items) return null;
                          const isExpanded = expandedCategory === category;
                          return (
                              <div key={category} className="rounded-lg overflow-hidden border border-slate-100 bg-white">
