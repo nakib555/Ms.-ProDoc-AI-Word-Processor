@@ -79,7 +79,7 @@ const StatusBar: React.FC = () => {
             <button 
                 onClick={() => setSelectionMode(!selectionMode)}
                 className={`p-1.5 rounded transition-all flex items-center gap-1 ${selectionMode ? 'text-indigo-400 bg-indigo-900/20 ring-1 ring-indigo-500/50' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-                title={selectionMode ? "Disable Smart Select Mode" : "Enable Smart Select Mode (Tap paragraphs to select)"}
+                title={selectionMode ? "Disable Smart Select Mode" : "Enable Smart Select Mode (Tap to Extend Selection)"}
             >
                 <ScanText size={14} />
                 <span className="hidden sm:inline text-[10px] font-medium">{selectionMode ? 'Selecting' : 'Select'}</span>

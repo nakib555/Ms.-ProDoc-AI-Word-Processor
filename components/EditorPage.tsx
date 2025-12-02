@@ -324,35 +324,49 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const handleEditorClick = (e: React.MouseEvent) => {
       // Smart Select Mode Logic
       if (selectionMode && editorRef.current) {
-          e.preventDefault();
-          e.stopPropagation();
+          // Standardize coordinate getting
+          let range: Range | null = null;
           
-          const target = e.target as Node;
-          
-          // Helper to find the closest block-level parent within the editor
-          const findBlockParent = (node: Node): Node | null => {
-              let curr: Node | null = node;
-              while (curr && curr !== editorRef.current) {
-                  if (curr.nodeType === Node.ELEMENT_NODE) {
-                      const el = curr as HTMLElement;
-                      // Common block elements in rich text
-                      if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'TR', 'BLOCKQUOTE'].includes(el.tagName)) {
-                          return el;
-                      }
-                  }
-                  curr = curr.parentNode;
+          // @ts-ignore
+          if (document.caretPositionFromPoint) {
+              // Firefox
+              // @ts-ignore
+              const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+              if (pos) {
+                  range = document.createRange();
+                  range.setStart(pos.offsetNode, pos.offset);
+                  range.collapse(true);
               }
-              return null; // Fallback if direct text node in root or similar
-          };
+          } else if (document.caretRangeFromPoint) {
+              // WebKit
+              range = document.caretRangeFromPoint(e.clientX, e.clientY);
+          }
 
-          const block = findBlockParent(target);
-          if (block) {
-              const range = document.createRange();
-              range.selectNodeContents(block);
+          if (range) {
               const sel = window.getSelection();
               if (sel) {
-                  sel.removeAllRanges();
-                  sel.addRange(range);
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  // If we already have a selection, extend it to the new click point
+                  if (sel.rangeCount > 0 && !sel.isCollapsed && sel.extend) {
+                      try {
+                          sel.extend(range.startContainer, range.startOffset);
+                      } catch (err) {
+                          // Fallback if extend fails (cross-boundary issues sometimes)
+                          const newRange = document.createRange();
+                          newRange.setStart(sel.anchorNode!, sel.anchorOffset);
+                          newRange.setEnd(range.startContainer, range.startOffset);
+                          sel.removeAllRanges();
+                          sel.addRange(newRange);
+                      }
+                  } else {
+                      // If no selection or collapsed cursor, just set the cursor (start point)
+                      // Or if we want "click to select word/paragraph", we could do that here
+                      // But "Click-Click" range selection is more powerful for the "single letter" requirement
+                      sel.removeAllRanges();
+                      sel.addRange(range);
+                  }
               }
           }
       }
@@ -568,7 +582,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   // Cursor style logic
   let cursorStyle = 'cursor-text';
-  if (selectionMode) cursorStyle = 'cursor-pointer'; // or cursor-cell / cursor-context-menu
+  if (selectionMode) cursorStyle = 'cursor-cell'; 
   else if (isKeyboardLocked) cursorStyle = 'cursor-default';
 
   return (
