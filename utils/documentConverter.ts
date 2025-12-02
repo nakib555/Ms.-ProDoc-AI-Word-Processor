@@ -5,7 +5,7 @@ import { PageConfig } from '../types';
 const camelToKebab = (str: string) => str.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`);
 
 // Helper to resolve units (numbers become px, strings stay as is)
-const resolveUnit = (val: string | number): string => {
+const resolveUnit = (val: string | number | undefined | null): string => {
     if (val === undefined || val === null) return '';
     if (typeof val === 'number') return `${val}px`;
     return val;
@@ -91,7 +91,7 @@ const renderInlineContent = (contentItems: any): string => {
 
     let text = item.text || '';
     
-    // Skip empty text unless it has styles (like a spacer)
+    // Skip empty text unless it has styles (like a spacer) or is a specific type
     if (!text && !item.type) return '';
 
     // Apply inline styles
@@ -121,16 +121,16 @@ const renderInlineContent = (contentItems: any): string => {
     if (item.letterSpacing) styles.push(`letter-spacing: ${resolveUnit(item.letterSpacing)}`);
     if (item.textShadow) styles.push(`text-shadow: ${item.textShadow}`);
     
-    if (item.subscript) return `<sub>${text}</sub>`;
-    if (item.superscript) return `<sup>${text}</sup>`;
-    
     // Merge explicit style object
     if (item.style) styles.push(styleToString(item.style));
 
     let contentHtml = text;
+
+    if (item.subscript) return `<sub style="${styles.join('; ')}">${text}</sub>`;
+    if (item.superscript) return `<sup style="${styles.join('; ')}">${text}</sup>`;
     
     if (item.link) {
-       contentHtml = `<a href="${item.link}" style="color: ${item.color || '#2563eb'}; text-decoration: underline;">${contentHtml}</a>`;
+       contentHtml = `<a href="${item.link}" style="color: ${item.color || '#2563eb'}; text-decoration: underline; ${styles.join('; ')}">${contentHtml}</a>`;
     } else if (styles.length > 0) {
        contentHtml = `<span style="${styles.join('; ')}">${contentHtml}</span>`;
     }
@@ -159,7 +159,7 @@ export const renderBlock = (block: any): string => {
         cssStr += '; ' + paraCss.join('; ');
     }
 
-    // Sanitize positioning
+    // Sanitize positioning to avoid layout breaks in editor flow
     if (['heading', 'paragraph', 'list', 'code', 'equation', 'blockquote'].includes(block.type)) {
         if (cssStr.includes('position: absolute') || cssStr.includes('position: fixed')) {
             cssStr = cssStr.replace(/position:\s*(absolute|fixed);?/g, '');
@@ -181,16 +181,26 @@ export const renderBlock = (block: any): string => {
             </div>`;
             
         case 'code':
+            // Using pre/code structure for syntax highlighting compatibility
             return `<pre style="background-color: #1e293b; color: #e2e8f0; padding: 1em; border-radius: 4px; overflow-x: auto; font-family: monospace; ${cssStr}"><code class="language-${block.language || 'text'}">${typeof block.content === 'string' ? block.content : renderInlineContent(block.content)}</code></pre>`;
             
         case 'equation':
+             // Editor uses MathLive components
              return `<div style="text-align: center; ${cssStr}"><span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field>${block.latex}</math-field><span class="equation-dropdown">▼</span></span></div>`;
              
         case 'list':
             const tag = block.listType === 'ordered' ? 'ol' : 'ul';
             let listStyle = cssStr;
+            
+            // Support for custom marker styles (e.g., decimal, upper-roman, square)
             if (block.markerStyle) {
+                // If markerStyle is explicitly provided, use it. 
+                // If it's ordered and no style provided, default to decimal. 
                 listStyle += `; list-style-type: ${block.markerStyle}`;
+            } else if (block.listType === 'ordered') {
+                listStyle += `; list-style-type: decimal`;
+            } else {
+                listStyle += `; list-style-type: disc`;
             }
             
             let itemsHtml = '';
@@ -204,9 +214,11 @@ export const renderBlock = (block: any): string => {
                     } else {
                         content = renderInlineContent(item.content || item);
                         if (item.subItems) {
+                             // Recursive rendering for nested lists
                              if (item.subItems.type === 'list') {
                                  subItems = renderBlock(item.subItems);
                              } else if (Array.isArray(item.subItems)) {
+                                 // If subItems is just an array of items, wrap it in a list of same type (or default)
                                  subItems = renderBlock({ type: 'list', listType: block.listType, items: item.subItems });
                              }
                         }
@@ -228,7 +240,7 @@ export const renderBlock = (block: any): string => {
                     let cellsHtml = '';
                     if (row.cells) {
                         row.cells.forEach((cell: any) => {
-                            // Merge specific cell styles
+                            // Merge specific cell styles with table defaults
                             const cellStyleObj = {
                                 padding: '8px',
                                 border: `1px solid ${block.config?.borderColor || '#cbd5e1'}`,
@@ -253,6 +265,7 @@ export const renderBlock = (block: any): string => {
                 });
             }
             
+            // Default table styles if not overridden
             if (!cssStr.includes('border-collapse')) cssStr += '; border-collapse: collapse';
             if (!cssStr.includes('width')) cssStr += '; width: 100%';
             if (!cssStr.includes('margin')) cssStr += '; margin: 1em 0';
@@ -269,6 +282,7 @@ export const renderBlock = (block: any): string => {
 
         default:
              if (block.content) {
+                 // Fallback for generic or unknown blocks
                  return `<div style="${cssStr}">${renderInlineContent(block.content)}</div>`;
              }
              return '';
@@ -281,7 +295,7 @@ export const jsonToHtml = (jsonData: any): string => {
 
   let blocks: any[] = [];
   
-  // Handle various root shapes
+  // Handle various root shapes that the AI might return
   if (jsonData.document && Array.isArray(jsonData.document.blocks)) {
       blocks = jsonData.document.blocks;
   } else if (jsonData.blocks && Array.isArray(jsonData.blocks)) {
@@ -289,18 +303,23 @@ export const jsonToHtml = (jsonData: any): string => {
   } else if (Array.isArray(jsonData)) {
       blocks = jsonData;
   } else if (jsonData.type && (jsonData.content || jsonData.items || jsonData.rows)) {
+      // Single block object
       blocks = [jsonData];
   } else if (jsonData.content && Array.isArray(jsonData.content)) {
+      // Legacy format
       blocks = jsonData.content;
   } else {
-      // Best effort fallback
+      // Best effort fallback for flat data
       if (Object.keys(jsonData).length > 0) {
-          if (jsonData.title || jsonData.summary) {
-              const fallbackBlocks = [];
-              if (jsonData.title) fallbackBlocks.push({type: 'heading', level: 1, content: [{text: jsonData.title}]});
-              if (jsonData.summary) fallbackBlocks.push({type: 'paragraph', content: [{text: jsonData.summary}]});
+          const fallbackBlocks = [];
+          if (jsonData.title) fallbackBlocks.push({type: 'heading', level: 1, content: [{text: jsonData.title}]});
+          if (jsonData.summary) fallbackBlocks.push({type: 'paragraph', content: [{text: jsonData.summary}]});
+          
+          // If we found something structure-like, use it. Otherwise dump values.
+          if (fallbackBlocks.length > 0) {
               return fallbackBlocks.map(renderBlock).join('');
           }
+          
           const textValues = Object.values(jsonData).filter(v => typeof v === 'string');
           if (textValues.length > 0) return `<p>${textValues.join(' ')}</p>`;
       }

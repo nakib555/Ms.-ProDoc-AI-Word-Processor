@@ -39,7 +39,11 @@ export const generateAIContent = async (
   userPrompt?: string,
   model: string = "gemini-3-pro-preview"
 ): Promise<string> => {
-  console.log(`[Gemini Service] generateAIContent called. Operation: ${operation}, Model: ${model}`);
+  // Prioritize user selected model from settings if available, fallback to passed model or default
+  const storedModel = localStorage.getItem('gemini_model');
+  const effectiveModel = storedModel || model;
+
+  console.log(`[Gemini Service] generateAIContent called. Operation: ${operation}, Model: ${effectiveModel}`);
   const client = getClient();
   if (!client) {
     console.warn("[Gemini Service] Client not initialized (Missing API Key)");
@@ -52,7 +56,7 @@ export const generateAIContent = async (
   try {
     console.log("[Gemini Service] Sending request...");
     const response = await client.models.generateContent({
-      model: model,
+      model: effectiveModel,
       contents: [
         { role: "user", parts: [{ text: `SYSTEM DIRECTIVE: ${systemPrompt}\n\nINPUT CONTEXT:\n${text}` }] }
       ],
@@ -81,7 +85,11 @@ export const streamAIContent = async function* (
   userPrompt?: string,
   model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
-  console.log(`[Gemini Service] streamAIContent called. Operation: ${operation}`);
+  // Prioritize user selected model
+  const storedModel = localStorage.getItem('gemini_model');
+  const effectiveModel = storedModel || model;
+
+  console.log(`[Gemini Service] streamAIContent called. Operation: ${operation}, Model: ${effectiveModel}`);
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
 
@@ -90,7 +98,7 @@ export const streamAIContent = async function* (
   try {
     console.log("[Gemini Service] Starting stream request...");
     const responseStream = await client.models.generateContentStream({
-      model: model,
+      model: effectiveModel,
       contents: [
         { role: "user", parts: [{ text: `SYSTEM DIRECTIVE: ${systemPrompt}\n\nINPUT CONTEXT:\n${text}` }] }
       ],
@@ -116,7 +124,11 @@ export const chatWithDocumentStream = async function* (
   documentContent: string,
   model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
-  console.log(`[Gemini Service] chatWithDocumentStream called. History length: ${history.length}`);
+  // Prioritize user selected model
+  const storedModel = localStorage.getItem('gemini_model');
+  const effectiveModel = storedModel || model;
+
+  console.log(`[Gemini Service] chatWithDocumentStream called. History length: ${history.length}, Model: ${effectiveModel}`);
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
 
@@ -129,7 +141,7 @@ export const chatWithDocumentStream = async function* (
 
   try {
     const chat = client.chats.create({
-      model: model,
+      model: effectiveModel,
       config: { systemInstruction },
       history: historyContent
     });
@@ -159,6 +171,7 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
 
   try {
     console.log("[Gemini Service] Requesting image generation...");
+    // Image generation uses specific model, do not use text model override
     const response = await client.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {

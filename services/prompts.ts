@@ -1,6 +1,12 @@
 
+
 import { AIOperation } from '../types';
 
+/**
+ * PRODOC_JSON_SCHEMA:
+ * This schema defines the full structure of documents that the AI must generate.
+ * Every field is explicitly described for robust AI understanding.
+ */
 const PRODOC_JSON_SCHEMA = `
 {
   "document": {
@@ -12,150 +18,295 @@ const PRODOC_JSON_SCHEMA = `
       "language": "en-US"
     },
     "header": {
-        "content": [ { "type": "paragraph", "content": [{ "text": "Header Content" }] } ]
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "text": "Header Content",
+              "style": {
+                "bold": true,
+                "fontFamily": "Arial",
+                "fontSize": 12,
+                "color": "#000000"
+              }
+            }
+          ],
+          "paragraphStyle": {
+            "alignment": "center",
+            "spacingAfter": 4
+          }
+        }
+      ]
     },
     "footer": {
-        "content": [ { "type": "paragraph", "content": [{ "text": "Footer Content" }] } ]
+      "content": [
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "text": "Footer Content",
+              "style": {
+                "italic": true,
+                "fontFamily": "Arial",
+                "fontSize": 10,
+                "color": "#555555"
+              }
+            }
+          ],
+          "paragraphStyle": {
+            "alignment": "center",
+            "spacingBefore": 4
+          }
+        }
+      ]
     },
     "settings": {
       "pageSize": "Letter",
       "orientation": "portrait",
-      "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
+      "margins": {
+        "top": 1,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "columns": 1,
+      "backgroundColor": "#FFFFFF"
     },
     "blocks": [
       {
         "type": "heading",
         "level": 1,
-        "style": { "textAlign": "center", "color": "#1e3a8a", "fontFamily": "Inter", "fontSize": 28, "bold": true, "marginBottom": "24px", "borderBottom": "2px solid #3b82f6", "paddingBottom": "10px" },
-        "paragraphStyle": { "spacingAfter": 24 },
-        "content": [ { "text": "Heading Text ", "bold": true }, { "text": "Colored Part", "color": "#2563eb" } ]
+        "style": {
+          "fontFamily": "Arial",
+          "fontSize": 24,
+          "color": "#000000",
+          "bold": true,
+          "marginTop": 0,
+          "marginBottom": 12,
+          "textAlign": "center"
+        },
+        "paragraphStyle": {
+          "lineSpacing": 1.15,
+          "spacingBefore": 0,
+          "spacingAfter": 12
+        },
+        "content": [
+          { "text": "Main Title", "bold": true }
+        ]
       },
       {
         "type": "paragraph",
-        "style": { "fontSize": 12, "fontFamily": "Calibri" },
-        "paragraphStyle": { 
-            "alignment": "justify", 
-            "lineSpacing": 1.6,
-            "spacingBefore": 12,
-            "spacingAfter": 12,
-            "indent": { "firstLine": "0.5in" }
+        "style": {
+          "fontFamily": "Calibri",
+          "fontSize": 11,
+          "color": "#000000"
         },
-        "content": [ { "text": "Regular text. " }, { "text": "Bold text.", "bold": true }, { "text": "Link", "link": "#", "color": "blue" } ]
+        "paragraphStyle": {
+          "alignment": "left",
+          "lineSpacing": 1.15,
+          "spacingBefore": 0,
+          "spacingAfter": 8,
+          "indentation": 0
+        },
+        "content": [
+          { "text": "Standard body text follows universal formatting rules. " },
+          { "text": "Bold text for emphasis.", "bold": true },
+          { "text": " Italic text for nuance.", "italic": true },
+          { "text": " Underlined text can be used sparingly.", "underline": true }
+        ]
       },
       {
         "type": "list",
         "listType": "unordered",
         "markerStyle": "disc",
+        "style": { "fontFamily": "Calibri", "fontSize": 11, "color": "#000000" },
+        "paragraphStyle": { "lineSpacing": 1.15, "spacingAfter": 8, "spacingBefore": 0 },
         "items": [
-            { "content": [ { "text": "List Item 1" } ] },
-            { "content": [ { "text": "List Item 2" } ], "subItems": [ { "content": [{"text": "Sub Item"}] } ] }
+          { "content": [ { "text": "First bullet item" } ] },
+          { "content": [ { "text": "Second bullet item with bold text", "bold": true } ] }
+        ]
+      },
+      {
+        "type": "list",
+        "listType": "ordered",
+        "markerStyle": "decimal",
+        "style": { "fontFamily": "Calibri", "fontSize": 11, "color": "#000000" },
+        "paragraphStyle": { "lineSpacing": 1.15, "spacingAfter": 8, "spacingBefore": 0 },
+        "items": [
+          { "content": [ { "text": "First numbered item" } ] },
+          { "content": [ { "text": "Second numbered item" } ] }
         ]
       },
       {
         "type": "table",
-        "config": { "columns": 2, "columnWidths": ["30%", "70%"], "hasHeaderRow": true, "bandedRows": true, "borderColor": "#cbd5e1" },
-        "style": { "width": "100%", "borderCollapse": "collapse" },
+        "config": {
+          "columns": 3,
+          "columnWidths": ["20%", "40%", "40%"],
+          "hasHeaderRow": true,
+          "bandedRows": true,
+          "bandedColumns": false,
+          "borderColor": "#cbd5e1",
+          "autoFit": "contents",
+          "textWrapping": "none"
+        },
+        "style": {
+          "width": "100%",
+          "borderCollapse": "collapse",
+          "fontFamily": "Calibri",
+          "fontSize": 11,
+          "color": "#000000"
+        },
         "rows": [
-           { "cells": [ { "content": [{"text": "Header 1", "bold": true}], "style": { "backgroundColor": "#f1f5f9" } }, { "content": [{"text": "Header 2", "bold": true}], "style": { "backgroundColor": "#f1f5f9" } } ] },
-           { "cells": [ { "content": [{"text": "Cell 1"}] }, { "content": [{"text": "Cell 2"}], "colSpan": 1 } ] }
+          {
+            "cells": [
+              { "content": [ { "text": "Header 1", "bold": true } ], "style": { "backgroundColor": "#f1f5f9", "padding": "8px" } },
+              { "content": [ { "text": "Header 2", "bold": true } ], "style": { "backgroundColor": "#f1f5f9", "padding": "8px" } },
+              { "content": [ { "text": "Header 3", "bold": true } ], "style": { "backgroundColor": "#f1f5f9", "padding": "8px" } }
+            ]
+          },
+          {
+            "cells": [
+              { "content": [ { "text": "Row1 Cell1" } ] },
+              { "content": [ { "text": "Row1 Cell2" } ] },
+              { "content": [ { "text": "Row1 Cell3" } ] }
+            ]
+          }
         ]
-      },
-      {
-        "type": "code",
-        "language": "typescript",
-        "content": "console.log('Hello World');",
-        "style": { "backgroundColor": "#1e293b", "color": "#e2e8f0", "padding": "15px", "borderRadius": "8px", "fontFamily": "monospace" }
-      },
-      {
-        "type": "equation",
-        "latex": "E = mc^2",
-        "style": { "displayMode": "block", "fontSize": "1.2em", "color": "#334155", "textAlign": "center" }
-      },
-      { 
-        "type": "sectionBreak",
-        "config": { "type": "nextPage", "orientation": "landscape" }
-      },
-      { "type": "pageBreak" },
-      { "type": "image", "src": "url", "alt": "Description", "style": { "width": "100%", "height": "auto" } }
+      }
     ]
   }
 }
 `;
 
+/**
+ * Returns the system prompt with deep operational instructions for AI.
+ */
 export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string => {
-  let specificDirective = "";
+  let directive = "";
 
   switch (operation) {
-    case 'summarize':
-      specificDirective = `TASK: Summarize the input. Return a structured document with a Heading and Bullet Points.`;
+    case "summarize":
+      directive = `
+TASK: Summarize the input while preserving structure.
+- Use headings to represent sections.
+- Use bullet points for key details.
+- Maintain JSON block structure strictly.
+`;
       break;
-    case 'fix_grammar':
-      specificDirective = `TASK: Fix grammar/spelling. Return the corrected text preserving original structure as much as possible.`;
+
+    case "fix_grammar":
+      directive = `
+TASK: Correct grammar and spelling.
+- Preserve meaning and formatting.
+- Maintain block types, headings, and list structures.
+`;
       break;
-    case 'make_professional':
-      specificDirective = `TASK: Rewrite text to be professional. Use formal language and clear structure.`;
+
+    case "make_professional":
+      directive = `
+TASK: Rewrite in a professional, formal tone.
+- Ensure clarity and conciseness.
+- Use proper headings and paragraphs.
+- Apply consistent formatting.
+`;
       break;
-    case 'generate_content':
-      specificDirective = `TASK: Generate high-quality content based on the USER PROMPT.
-      
-      CONTEXT USAGE:
-      - Use INPUT CONTEXT (if any) to match tone/style.
-      - Create rich content using Headings, Paragraphs, Lists, and Tables where appropriate.
-      - Use "paragraphStyle" for indentation, spacing, and alignment.
-      - For technical topics, use Code blocks.
-      - For math/science, use Equation blocks.
-      
-      MODE HANDLING:
-      - If asked to REPLACE or create a NEW DOC, you may include "header" and "footer" content in the JSON root.
-      - If INSERTING, focus on the "blocks" array.`;
+
+    case "generate_content":
+      directive = `
+TASK: Generate content from the user prompt.
+- Use headings, paragraphs, lists, tables, and images if needed.
+- For new documents: include header/footer.
+- For insertion: modify only the 'blocks' array.
+- Apply proper spacing, alignment, font styles, and sizes.
+- Include inline styling (bold, italic, underline, color) appropriately.
+`;
       break;
-    case 'edit_content':
-      specificDirective = `TASK: Edit the INPUT CONTEXT (Selection) based on the USER PROMPT.
-      
-      GOAL: Modify the selected text while maintaining valid JSON block structure.`;
+
+    case "edit_content":
+      directive = `
+TASK: Edit the selected portion according to the prompt.
+- Keep JSON structure valid.
+- Preserve original styles where possible.
+- Update content, inline formatting, or paragraph-level styling as requested.
+`;
       break;
-    case 'generate_outline':
-      specificDirective = `TASK: Generate a detailed outline using nested Lists.`;
+
+    case "generate_outline":
+      directive = `
+TASK: Generate a hierarchical outline.
+- Use nested lists for subsections.
+- Maintain numeric or bullet style consistency.
+`;
       break;
-    case 'continue_writing':
-      specificDirective = `TASK: Continue writing seamlessly. Predict the next logical section.`;
+
+    case "continue_writing":
+      directive = `
+TASK: Continue writing seamlessly.
+- Predict next logical sections.
+- Maintain consistent style, formatting, and block structure.
+`;
       break;
+
     default:
-      specificDirective = "Enhance the text and return it as structured JSON.";
+      directive = "Enhance input text and return fully valid JSON.";
   }
 
-  let finalSystemInstruction = `
-  You are an elite AI document engine.
-  
-  **OUTPUT SCHEMA (STRICT JSON):**
-  ${PRODOC_JSON_SCHEMA}
-  
-  **RULES:**
-  1. Output **ONLY** raw valid JSON. No markdown fences. Start with {.
-  2. Use "content" arrays for text with inline styling (bold, italic, color, highlight).
-  3. Use specific block types (heading, paragraph, list, table, code, equation, image, pageBreak, sectionBreak).
-  4. Ensure all keys are double-quoted.
-  5. **Header/Footer**: Only populate "header" and "footer" fields if creating a full document or explicitly asked.
-  6. Use 'paragraphStyle' object for block-level styling (indentation, spacingBefore/After, padding, borders). Use 'style' object for inline text styling or generic container styles.
-  
-  **DIRECTIVE:**
-  ${specificDirective}
-  `;
+  let systemPrompt = `
+You are a **highly advanced AI document engine**.
 
-  if (userPrompt) {
-    finalSystemInstruction += `\n\n**USER PROMPT / CONTEXT:** ${userPrompt}`;
-  }
+========================
+UNIVERSAL FORMATTING STANDARDS (STRICTLY ADHERE):
+========================
+1. Fonts: 'Calibri' (default), 'Arial', 'Times New Roman'
+2. Font Sizes:
+   - Body Text: 11 or 12 (number, not string).
+   - Headings: 14-18 (Level 2/3), 24+ (Title).
+3. Line Spacing: 1.15 or 1.5
+4. Paragraph Spacing: spacingBefore: 0, spacingAfter: 8
+5. Colors: Body text #000000 or dark gray #1e293b
+6. Alignment: left, right, center, justified
+7. Margins: 1" default, configurable per page
+8. Inline Styles: bold, italic, underline, highlight, color
 
-  return finalSystemInstruction;
+========================
+OUTPUT SCHEMA (STRICT JSON):
+========================
+${PRODOC_JSON_SCHEMA}
+
+========================
+RULES
+========================
+1. Output ONLY raw valid JSON, no markdown fences. Start with {.
+2. Use "content" arrays for text with inline styling.
+3. Maintain 'blocks' array for main content.
+4. Use 'paragraphStyle' for block-level properties.
+5. Use 'style' for inline or container styling.
+6. Include 'header' and 'footer' only for full documents.
+7. Apply universal formatting rules consistently.
+
+========================
+DIRECTIVE
+========================
+${directive}
+`;
+
+  if (userPrompt) systemPrompt += `\nUSER PROMPT: ${userPrompt}`;
+
+  return systemPrompt;
 };
 
+/**
+ * System prompt for chat (non-JSON) context.
+ */
 export const getChatSystemPrompt = (documentContext: string): string => {
-    return `
-    You are a helpful Copilot. 
-    Use the provided document context to answer questions.
-    If asked to write content, output it as simple text or HTML, do not use the JSON schema for chat unless explicitly requested.
-    
-    CONTEXT:
-    ${documentContext.slice(0, 50000)}
-    `;
+  return `
+You are an expert AI assistant.
+- Use document context to answer questions.
+- Return text or HTML unless JSON output is explicitly requested.
+- Maintain clarity, structure, and proper formatting.
+
+DOCUMENT CONTEXT:
+${documentContext.slice(0, 50000)}
+`;
 };
