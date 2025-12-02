@@ -65,6 +65,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const superLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pointerStartRef = useRef<{ x: number, y: number, time: number } | null>(null);
+  const smartSelectionTriggeredRef = useRef(false);
 
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
   const MIN_BODY_GAP = 192; // 2 inches minimum body gap @ 96 DPI
@@ -394,6 +395,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const handleSmartPointerDown = (e: React.PointerEvent) => {
       if (!selectionMode) return;
       
+      // Reset trigger flag on new touch
+      smartSelectionTriggeredRef.current = false;
+      
       // Force cursor placement at touch point to ensure selection starts correctly
       if (!isHeaderFooterMode) {
           if (document.caretRangeFromPoint) {
@@ -432,18 +436,21 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       // 1s Timer: Select Word
       wordPressTimerRef.current = setTimeout(() => {
           selectWord();
+          smartSelectionTriggeredRef.current = true;
           if (navigator.vibrate) navigator.vibrate(20);
       }, 1000);
 
       // 2s Timer: Select Paragraph
       longPressTimerRef.current = setTimeout(() => {
           selectParagraph(target);
+          smartSelectionTriggeredRef.current = true;
           if (navigator.vibrate) navigator.vibrate(50);
       }, 2000);
 
       // 4s Timer: Select Page
       superLongPressTimerRef.current = setTimeout(() => {
           selectPage();
+          smartSelectionTriggeredRef.current = true;
           if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
       }, 4000);
   };
@@ -474,9 +481,19 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const handleSmartClick = (e: React.MouseEvent) => {
       if (!selectionMode) return;
       
+      // If a smart selection (timer based) occurred, stop the click from resetting it
+      if (smartSelectionTriggeredRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+      }
+
       if (e.detail === 2) {
           // Double Click: Select Sentence
           selectSentence();
+          // Prevent native double-click word selection
+          e.preventDefault();
+          e.stopPropagation();
       }
   };
 
