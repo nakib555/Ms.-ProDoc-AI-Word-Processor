@@ -102,8 +102,8 @@ const StatusBar: React.FC = () => {
                 {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
 
-            {/* View Modes */}
-            <div className="flex items-center bg-slate-800 dark:bg-slate-900 rounded-md p-0.5 border border-slate-700 dark:border-slate-800">
+            {/* View Modes - Desktop (Grouped) */}
+            <div className="hidden sm:flex items-center bg-slate-800 dark:bg-slate-900 rounded-md p-0.5 border border-slate-700 dark:border-slate-800">
                  <button 
                     onClick={() => !isAIProcessing && setViewMode('print')} 
                     disabled={isAIProcessing}
@@ -121,6 +121,16 @@ const StatusBar: React.FC = () => {
                     <Globe size={14} />
                  </button>
             </div>
+
+            {/* View Mode Toggle - Mobile (Single Button) */}
+            <button 
+                onClick={() => !isAIProcessing && setViewMode(prev => prev === 'print' ? 'web' : 'print')}
+                disabled={isAIProcessing}
+                className={`sm:hidden p-1.5 rounded transition-all flex items-center justify-center ${isAIProcessing ? 'opacity-50' : ''} ${viewMode === 'web' ? 'text-blue-400 bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                title={viewMode === 'print' ? "Switch to Web Layout" : "Switch to Print Layout"}
+            >
+                {viewMode === 'print' ? <FileText size={14} /> : <Globe size={14} />}
+            </button>
 
             {/* Zoom Controls - Optimized for Mobile */}
             <div 
