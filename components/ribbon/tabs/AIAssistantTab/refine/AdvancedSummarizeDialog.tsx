@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, FileText, List, AlignLeft, Hash, Zap, Globe, 
   Sparkles, Check, Copy, ArrowRight, Settings2, Sliders, 
@@ -42,6 +42,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   initialText,
   onInsert
 }) => {
+  const [inputText, setInputText] = useState(initialText);
   const [config, setConfig] = useState({
     type: 'bullet',
     focus: 'general',
@@ -51,17 +52,29 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
     highlightInsights: false
   });
 
-  const [mobileTab, setMobileTab] = useState<'settings' | 'preview'>('settings');
+  const [activeTab, setActiveTab] = useState<'input' | 'preview'>('input');
+  const [mobileView, setMobileView] = useState<'editor' | 'sidebar'>('editor');
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
   
   const { } = useEditor();
 
+  useEffect(() => {
+    if (isOpen) {
+      setInputText(initialText);
+      setResult('');
+      setActiveTab('input');
+      setMobileView('editor');
+    }
+  }, [isOpen, initialText]);
+
   const handleGenerate = async () => {
+    if (!inputText.trim()) return;
+
     setIsGenerating(true);
     setResult('');
-    // Auto-switch to preview on mobile when generating
-    setMobileTab('preview');
+    setActiveTab('preview');
+    setMobileView('editor');
 
     // Construct the prompt based on UI state
     let lengthDesc = "medium length";
@@ -82,7 +95,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
       ${config.highlightInsights ? '- KEY INSIGHTS: Identify the top 3 critical takeaways in a separate section.' : ''}
       
       INPUT TEXT:
-      "${initialText.replace(/"/g, '\\"')}"
+      "${inputText.replace(/"/g, '\\"')}"
       
       OUTPUT FORMAT (STRICT):
       You MUST return ONLY a VALID JSON object matching the ProDoc schema.
@@ -165,31 +178,39 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[75vh] md:h-[80vh] rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full h-[75vh] md:h-[85vh] md:max-w-5xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Left Sidebar: Controls */}
         <div className={`
-            flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 shrink-0 transition-all duration-300
-            md:w-80 md:flex
-            ${mobileTab === 'settings' ? 'flex w-full h-full' : 'hidden'}
+            flex-col bg-slate-50/90 dark:bg-slate-950/90 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl shrink-0 transition-all duration-300
+            md:w-[360px] md:flex
+            ${mobileView === 'sidebar' ? 'flex w-full h-full' : 'hidden'}
         `}>
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-                <div>
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 shrink-0">
+                <div className="flex items-center justify-between">
                     <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                         {/* Mobile Back Button */}
+                        <button 
+                            onClick={() => setMobileView('editor')}
+                            className="md:hidden p-1 -ml-2 mr-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+
                         <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg text-violet-600 dark:text-violet-400">
                             <Zap size={18} />
                         </div>
                         Summarizer
                     </h2>
-                    <p className="text-xs text-slate-500 mt-1">Distill content into clarity.</p>
+                    {/* Mobile Close */}
+                    <button onClick={onClose} className="md:hidden text-slate-400">
+                        <X size={20} />
+                    </button>
                 </div>
-                {/* Mobile Close */}
-                <button onClick={onClose} className="md:hidden p-2 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
-                    <X size={20} />
-                </button>
+                <p className="text-xs text-slate-500 mt-1 ml-9 md:ml-0">Distill content into clarity.</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
@@ -224,7 +245,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         <select 
                             value={config.focus}
                             onChange={(e) => setConfig(c => ({...c, focus: e.target.value}))}
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm cursor-pointer"
                         >
                             {FOCUS_MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
                         </select>
@@ -235,7 +256,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         <select 
                             value={config.language}
                             onChange={(e) => setConfig(c => ({...c, language: e.target.value}))}
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm"
+                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm cursor-pointer"
                         >
                             {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
@@ -243,12 +264,12 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 </div>
 
                 {/* 3. Length Slider */}
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Sliders size={12}/> Length
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div className="flex justify-between items-center mb-3">
+                        <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                            <Sliders size={12}/> Summary Length
                         </label>
-                        <span className="text-[10px] font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500">
+                        <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-200 font-bold">
                             {config.length}%
                         </span>
                     </div>
@@ -261,37 +282,42 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         onChange={(e) => setConfig(c => ({...c, length: parseInt(e.target.value)}))}
                         className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-600"
                     />
-                    <div className="flex justify-between text-[10px] text-slate-400 font-medium">
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-2 font-medium uppercase tracking-wide">
                         <span>Concise</span>
                         <span>Detailed</span>
                     </div>
                 </div>
 
                 {/* 4. Advanced Toggles */}
-                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
-                    <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${config.extractData ? 'bg-violet-600 border-violet-600' : 'bg-white border-slate-300'}`}>
-                            {config.extractData && <Check size={10} className="text-white" strokeWidth={4} />}
+                <div className="space-y-2 pt-1">
+                    <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-1.5 rounded-lg transition-colors ${config.extractData ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-500'}`}>
+                                <List size={16} />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Extract Key Data</span>
                         </div>
                         <input 
                             type="checkbox" 
                             checked={config.extractData}
                             onChange={(e) => setConfig(c => ({...c, extractData: e.target.checked}))}
-                            className="hidden"
+                            className="accent-violet-600 w-4 h-4"
                         />
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex-1">Extract Key Data</span>
                     </label>
-                    <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors">
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${config.highlightInsights ? 'bg-violet-600 border-violet-600' : 'bg-white border-slate-300'}`}>
-                            {config.highlightInsights && <Check size={10} className="text-white" strokeWidth={4} />}
+
+                    <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-1.5 rounded-lg transition-colors ${config.highlightInsights ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-500'}`}>
+                                <Lightbulb size={16} />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Highlight Insights</span>
                         </div>
                         <input 
                             type="checkbox" 
                             checked={config.highlightInsights}
                             onChange={(e) => setConfig(c => ({...c, highlightInsights: e.target.checked}))}
-                            className="hidden"
+                            className="accent-violet-600 w-4 h-4"
                         />
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 flex-1">Highlight Insights</span>
                     </label>
                 </div>
             </div>
@@ -299,10 +325,10 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky bottom-0">
                 <button 
                     onClick={handleGenerate}
-                    disabled={isGenerating}
-                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
+                    disabled={isGenerating || !inputText.trim()}
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
-                    {isGenerating ? <RefreshCw className="animate-spin" size={16}/> : <Sparkles size={16} />}
+                    {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
                     {isGenerating ? 'Summarizing...' : 'Generate Summary'}
                 </button>
             </div>
@@ -310,79 +336,112 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
 
         {/* Right Panel: Content */}
         <div className={`
-            flex-col bg-white dark:bg-slate-950 min-w-0 flex-1
+            flex-col bg-[#f8fafc] dark:bg-slate-950 min-w-0 relative flex-1
             md:flex
-            ${mobileTab === 'preview' ? 'flex w-full h-full' : 'hidden'}
+            ${mobileView === 'editor' ? 'flex w-full h-full' : 'hidden'}
         `}>
             {/* Header */}
             <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
-                <div className="flex items-center gap-3">
+                {/* Mobile Sidebar Toggle */}
+                <button 
+                    onClick={() => setMobileView('sidebar')}
+                    className="md:hidden p-2 -ml-2 mr-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1.5 transition-colors"
+                >
+                    <Settings2 size={20} />
+                    <span className="text-xs font-bold">Settings</span>
+                </button>
+
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                     <button 
-                        onClick={() => setMobileTab('settings')}
-                        className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1"
+                        onClick={() => setActiveTab('input')}
+                        className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all ${activeTab === 'input' ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                     >
-                        <ArrowLeft size={18} /> 
-                        <span className="text-xs font-bold">Settings</span>
+                        Original
                     </button>
-                    
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Result Preview</span>
-                        {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
-                    </div>
+                    <button 
+                        onClick={() => { if(result || isGenerating) setActiveTab('preview'); }}
+                        disabled={!result && !isGenerating}
+                        className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all flex items-center gap-2 ${activeTab === 'preview' ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                    >
+                        Summary {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
+                    </button>
                 </div>
                 
-                <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
                     <X size={20} />
                 </button>
             </div>
 
             {/* Viewport */}
             <div className="flex-1 overflow-hidden relative">
-                {result ? (
-                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
-                        <div 
-                            className="prose dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-6 md:p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800"
-                            dangerouslySetInnerHTML={{ __html: result }}
-                        />
+                {/* Input View */}
+                <div className={`absolute inset-0 flex flex-col transition-all duration-300 ${activeTab === 'input' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                    <textarea 
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        className="flex-1 w-full p-6 md:p-8 resize-none outline-none text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
+                        placeholder="Paste or type text to summarize..."
+                    />
+                    <div className="px-6 md:px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium shrink-0">
+                        <span>{inputText.split(/\s+/).filter(w => w.length > 0).length} words</span>
+                        <span>{inputText.length} characters</span>
                     </div>
-                ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-70">
-                        {isGenerating ? (
-                            <div className="space-y-4">
-                                <div className="w-16 h-16 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mx-auto"></div>
-                                <p className="text-sm font-medium animate-pulse text-violet-600">Analyzing text structure...</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4 max-w-md">
-                                <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
-                                    <MessageSquare size={32} className="text-slate-300"/>
+                </div>
+
+                {/* Preview View */}
+                <div className={`absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
+                    {result ? (
+                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                            <div 
+                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800"
+                                dangerouslySetInnerHTML={{ __html: result }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                            {isGenerating ? (
+                                <div className="space-y-4">
+                                    <div className="relative mx-auto w-16 h-16">
+                                        <div className="absolute inset-0 border-4 border-violet-100 dark:border-slate-800 rounded-full"></div>
+                                        <div className="absolute inset-0 border-4 border-violet-600 rounded-full border-t-transparent animate-spin"></div>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Analyzing text structure...</p>
+                                        <p className="text-xs mt-1 opacity-70">Extracting key points and insights.</p>
+                                    </div>
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Summarize</h3>
-                                <p className="text-sm leading-relaxed text-slate-400">
-                                    Configure your summary options {window.innerWidth >= 768 ? 'on the left' : 'in Settings'} and click <strong>Generate</strong>.
-                                    The AI will analyze your text and extract the key information.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            ) : (
+                                <div className="space-y-4 max-w-sm opacity-60">
+                                    <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <MessageSquare size={32} className="text-violet-300"/>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Summarize</h3>
+                                    <p className="text-sm leading-relaxed">
+                                        Configure your summary options in Settings and click Generate.
+                                        The AI will analyze your text and extract the key information.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Footer Actions */}
             <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
-                {result && (
+                {result && activeTab === 'preview' && (
                     <>
                         <button 
                             onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
-                            className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-2 transition-colors"
+                            className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-colors"
                         >
-                            <Copy size={16} /> <span className="hidden sm:inline">Copy</span>
+                            <Copy size={18} /> <span className="hidden sm:inline">Copy</span>
                         </button>
                         <button 
                             onClick={() => { onInsert(result); onClose(); }}
-                            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-lg shadow-md transition-all flex items-center gap-2 active:scale-95"
+                            className="px-8 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center gap-2 active:scale-95"
                         >
-                            <Check size={18} /> Insert
+                            <Check size={20} /> Insert
                         </button>
                     </>
                 )}
@@ -392,3 +451,6 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
     </div>
   );
 };
+
+// Helper Component for toggles (reused if needed locally)
+const Lightbulb = (props: any) => <Zap {...props} />;

@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  X, Scissors, Minus, List, AlignLeft, Hash, 
+  X, Scissors, Minus, List, AlignLeft, 
   Zap, MessageSquare, Check, RefreshCw, Copy, ArrowRight, 
-  ArrowLeft, Sliders, Trash2, ShieldCheck, Smile,
-  ThumbsUp, Lock, Brain
+  ArrowLeft, Sliders, Trash2, ShieldCheck, Lock, Brain, Settings2
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
@@ -51,11 +50,14 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
   onInsert
 }) => {
   const [inputText, setInputText] = useState(initialText);
+  const [activeTab, setActiveTab] = useState<'input' | 'preview'>('input');
+  const [mobileView, setMobileView] = useState<'editor' | 'sidebar'>('editor');
+
+  // Settings State
   const [strategy, setStrategy] = useState('percent');
   const [intensity, setIntensity] = useState(50);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
-  const [mobileTab, setMobileTab] = useState<'settings' | 'preview'>('settings');
 
   // Advanced Options
   const [constraintType, setConstraintType] = useState<'none' | 'chars' | 'words'>('none');
@@ -65,12 +67,22 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
   const [removeFillers, setRemoveFillers] = useState(false);
   const [toneMode, setToneMode] = useState<'preserve' | 'neutral' | 'emotional'>('preserve');
 
+  useEffect(() => {
+      if (isOpen) {
+          setInputText(initialText);
+          setResult('');
+          setActiveTab('input');
+          setMobileView('editor');
+      }
+  }, [isOpen, initialText]);
+
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
     
     setIsGenerating(true);
     setResult('');
-    setMobileTab('preview');
+    setActiveTab('preview');
+    setMobileView('editor'); // Switch back to main view on mobile to show result
 
     let instruction = "";
     
@@ -152,42 +164,40 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full h-[85vh] md:h-[85vh] md:max-w-5xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full h-[75vh] md:h-[85vh] md:max-w-5xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
-        {/* Settings Panel */}
+        {/* Sidebar: Settings Panel */}
         <div className={`
-            flex-col bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 shrink-0 transition-all duration-300
+            flex-col bg-slate-50/90 dark:bg-slate-950/90 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl shrink-0 transition-all duration-300
             md:w-[360px] md:flex
-            ${mobileTab === 'settings' ? 'flex w-full h-full' : 'hidden'}
+            ${mobileView === 'sidebar' ? 'flex w-full h-full' : 'hidden'}
         `}>
-            <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center shrink-0">
-                <div>
+            <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 shrink-0">
+                <div className="flex items-center justify-between">
                     <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        {/* Mobile Back Button */}
+                        <button 
+                            onClick={() => setMobileView('editor')}
+                            className="md:hidden p-1 -ml-2 mr-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+
                         <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
                             <Scissors size={18} />
                         </div>
                         Smart Shorten
                     </h2>
-                    <p className="text-xs text-slate-500 mt-1">Condense content intelligently.</p>
+                    {/* Mobile Close */}
+                    <button onClick={onClose} className="md:hidden text-slate-400">
+                        <X size={20} />
+                    </button>
                 </div>
-                <button onClick={onClose} className="md:hidden p-2 text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full">
-                    <X size={20} />
-                </button>
+                <p className="text-xs text-slate-500 mt-1 ml-9 md:ml-0">Condense content intelligently.</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-6">
-                {/* Source Input */}
-                <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Source Text</label>
-                    <textarea 
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        className="w-full h-20 p-3 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl resize-none focus:ring-2 focus:ring-orange-500 outline-none transition-all text-slate-700 dark:text-slate-300 shadow-sm placeholder:text-slate-400"
-                        placeholder="Text to shorten..."
-                    />
-                </div>
-
                 {/* Strategy Selection */}
                 <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Reduction Strategy</label>
@@ -316,46 +326,63 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
             </div>
         </div>
 
-        {/* Preview Panel */}
+        {/* Main: Editor/Preview Panel */}
         <div className={`
-            flex-col bg-slate-100 dark:bg-slate-950 min-w-0 relative flex-1
+            flex-col bg-[#f8fafc] dark:bg-slate-950 min-w-0 relative flex-1
             md:flex
-            ${mobileTab === 'preview' ? 'flex w-full h-full' : 'hidden'}
+            ${mobileView === 'editor' ? 'flex w-full h-full' : 'hidden'}
         `}>
+            {/* Header */}
             <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
-                 <div className="flex items-center gap-3">
+                {/* Mobile Sidebar Toggle */}
+                <button 
+                    onClick={() => setMobileView('sidebar')}
+                    className="md:hidden p-2 -ml-2 mr-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg flex items-center gap-1.5 transition-colors"
+                >
+                    <Settings2 size={20} />
+                    <span className="text-xs font-bold">Settings</span>
+                </button>
+
+                 <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                     <button 
-                        onClick={() => setMobileTab('settings')}
-                        className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-1.5"
+                        onClick={() => setActiveTab('input')}
+                        className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all ${activeTab === 'input' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
                     >
-                        <ArrowLeft size={18} /> 
-                        <span className="text-xs font-bold">Settings</span>
+                        Original
                     </button>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-2">
-                        Preview
-                        {result && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>}
-                    </span>
+                    <button 
+                        onClick={() => { if(result || isGenerating) setActiveTab('preview'); }}
+                        disabled={!result && !isGenerating}
+                        className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all flex items-center gap-2 ${activeTab === 'preview' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                    >
+                        Shortened {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
+                    </button>
                  </div>
                  <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
                     <X size={20} />
                 </button>
             </div>
 
+            {/* Content View */}
             <div className="flex-1 overflow-hidden relative">
-                {result ? (
-                    <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-10 animate-in slide-in-from-top-4 fade-in duration-500">
-                         <div 
-                            className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800"
-                            dangerouslySetInnerHTML={{ __html: result }}
-                        />
-                        <div className="max-w-3xl mx-auto mt-6 flex justify-between text-xs text-slate-400 font-medium px-4 py-3 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg">
-                            <span>Original: <span className="font-mono text-slate-600 dark:text-slate-300">{inputText.length}</span> chars</span>
-                            <span className="text-orange-600 dark:text-orange-400">New: <span className="font-mono font-bold">{result.replace(/<[^>]*>?/gm, '').length}</span> chars</span>
-                        </div>
+                {/* Input View */}
+                <div className={`absolute inset-0 flex flex-col transition-all duration-300 ${activeTab === 'input' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                    <textarea 
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        className="flex-1 w-full p-6 md:p-8 resize-none outline-none text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
+                        placeholder="Paste or type text to shorten..."
+                    />
+                    <div className="px-6 md:px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium shrink-0">
+                        <span>{inputText.split(/\s+/).filter(w => w.length > 0).length} words</span>
+                        <span>{inputText.length} characters</span>
                     </div>
-                ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-60">
-                        {isGenerating ? (
+                </div>
+
+                {/* Preview View */}
+                <div className={`absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
+                     {isGenerating ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
                             <div className="space-y-6">
                                 <div className="relative mx-auto w-20 h-20">
                                     <div className="absolute inset-0 border-4 border-orange-100 dark:border-slate-800 rounded-full"></div>
@@ -364,26 +391,40 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Compressing content...</p>
-                                    <p className="text-xs mt-1">Applying smart filters and tone adjustments.</p>
+                                    <p className="text-xs mt-1 opacity-70">Applying smart filters and tone adjustments.</p>
                                 </div>
                             </div>
-                        ) : (
+                        </div>
+                    ) : result ? (
+                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-10 animate-in slide-in-from-top-4 fade-in duration-500">
+                             <div 
+                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800"
+                                dangerouslySetInnerHTML={{ __html: result }}
+                            />
+                            <div className="max-w-3xl mx-auto mt-6 flex justify-between text-xs text-slate-400 font-medium px-4 py-3 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg">
+                                <span>Original: <span className="font-mono text-slate-600 dark:text-slate-300">{inputText.length}</span> chars</span>
+                                <span className="text-orange-600 dark:text-orange-400">New: <span className="font-mono font-bold">{result.replace(/<[^>]*>?/gm, '').length}</span> chars</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-60">
                             <div className="space-y-4 max-w-sm">
                                 <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-200 dark:border-slate-700 shadow-sm rotate-3 transition-transform hover:rotate-0 duration-500">
                                     <MessageSquare size={40} className="text-orange-300"/>
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-600 dark:text-slate-300">Ready to Shorten</h3>
                                 <p className="text-sm leading-relaxed">
-                                    Configure your reduction strategy on the left and click Generate to see the magic happen.
+                                    Configure your reduction strategy in Settings and click Generate.
                                 </p>
                             </div>
-                        )}
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <div className="h-20 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-4 shrink-0">
-                {result && (
+            {/* Result Actions */}
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-4 shrink-0">
+                {result && activeTab === 'preview' && (
                     <>
                         <button 
                             onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
