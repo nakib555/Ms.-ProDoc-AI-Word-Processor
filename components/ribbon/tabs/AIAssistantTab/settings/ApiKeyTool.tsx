@@ -11,9 +11,9 @@ import { GoogleGenAI } from "@google/genai";
 
 const DEFAULT_MODELS = [
     { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro (Preview)' },
-    { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-    { id: 'gemini-2.0-flash-lite-preview-02-05', name: 'Gemini 2.0 Flash Lite' },
+    { id: 'gemini-flash-latest', name: 'Gemini Flash (Latest)' },
+    { id: 'gemini-flash-lite-latest', name: 'Gemini Flash Lite' },
 ];
 
 const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'experimental' }) => {
@@ -123,7 +123,7 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                             top: position.top, 
                             left: position.left, 
                             width: position.width,
-                            maxHeight: 'min(300px, 50vh)',
+                            maxHeight: '30vh', // Restrict height for mobile friendliness
                             opacity: position.top === 0 ? 0 : 1 // Prevent flash at 0,0
                         }}
                     >
