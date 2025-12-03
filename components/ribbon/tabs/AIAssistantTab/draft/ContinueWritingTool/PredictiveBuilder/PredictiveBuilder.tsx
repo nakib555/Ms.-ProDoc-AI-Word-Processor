@@ -242,8 +242,6 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
     if (deferredSearchTerm && deferredSearchTerm.length > 1) {
        // If searching, assume user wants to see all matching options.
        // We must load all data to filter it.
-       // Note: This might be slightly heavy but ensures search works.
-       // To optimize, we only load if not already loaded.
        const loadAll = async () => {
            const pending = CATEGORY_NAMES.filter(name => !loadedData[name] && !loadingStates[name]);
            if (pending.length === 0) return;
@@ -265,11 +263,6 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                if (res.status === 'fulfilled') {
                    newLoadedData[res.value.name] = res.value.data;
                    newLoadingStates[res.value.name] = false;
-               } else {
-                   // reset loading state on fail so we can retry later if needed
-                   // but realistically just mark false
-                   // We don't have the name easily here if rejected, so let's iterate pending
-                   // Simplify: Just iterate pending and update state.
                }
            });
            
@@ -406,13 +399,12 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                  >
                                      {category}
                                      <div className="flex items-center gap-2">
-                                         {isLoading ? (
-                                             <Loader2 size={10} className="animate-spin text-slate-400"/>
-                                         ) : (
-                                             <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>
-                                                 {CATEGORY_COUNTS[category]}
-                                             </span>
-                                         )}
+                                         {/* Always show count */}
+                                         <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>
+                                             {CATEGORY_COUNTS[category]}
+                                         </span>
+                                         {/* Optional loader next to count if loading */}
+                                         {isLoading && <Loader2 size={10} className="animate-spin text-slate-400"/>}
                                          <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}/>
                                      </div>
                                  </button>
