@@ -156,7 +156,7 @@ const StatusBar: React.FC = () => {
                         title="Zoom Level"
                     />
                 </div>
-                <span className="w-8 sm:w-12 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs">{zoom}%</span>
+                <span className="w-8 sm:w-12 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs">{Number(zoom).toFixed(1)}%</span>
                 
                 <button onClick={() => setZoom(z => Math.min(500, z + 10))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom In"><Plus size={14} /></button>
             </div>
