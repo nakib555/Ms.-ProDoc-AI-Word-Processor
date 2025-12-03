@@ -53,38 +53,38 @@ const CATEGORY_NAMES = Object.keys(CATEGORY_LOADERS).sort();
 
 // Hardcoded counts to display before loading
 const CATEGORY_COUNTS: Record<string, number> = {
-    "Technology & Innovation": 66,
+    "Technology & Innovation": 90,
     "Cultural Studies & Humanities": 65,
     "Research & Academic": 40,
-    "Science & Research Documentation": 65,
+    "Science & Research Documentation": 70,
     "Historical Research": 65,
     "Technical & Engineering": 50,
-    "Business & Management": 153,
-    "Business & Entrepreneurship": 64,
-    "Creative & Media": 100,
-    "Media & Journalism": 64,
-    "Science Fiction & Fantasy": 65,
-    "Arts & Performing Arts": 65,
+    "Business & Management": 160,
+    "Business & Entrepreneurship": 75,
+    "Creative & Media": 120,
+    "Media & Journalism": 70,
+    "Science Fiction & Fantasy": 70,
+    "Arts & Performing Arts": 75,
     "Education & Teaching": 65,
-    "Legal & Regulatory": 64,
+    "Legal & Regulatory": 60,
     "Legal & Compliance": 65,
-    "Healthcare & Medical": 65,
-    "Health & Wellness": 65,
+    "Healthcare & Medical": 85,
+    "Health & Wellness": 70,
     "Finance & Accounting": 65,
-    "Government & Policy": 65,
-    "Philanthropy & NGOs": 65,
+    "Government & Policy": 60,
+    "Philanthropy & NGOs": 70,
     "Architecture & Construction": 65,
-    "Travel & Tourism": 65,
-    "Travel & Tourism Innovations": 64,
-    "Environmental Science & Sustainability": 65,
-    "Food & Recipe": 66,
+    "Travel & Tourism": 75,
+    "Travel & Tourism Innovations": 70,
+    "Environmental Science & Sustainability": 70,
+    "Food & Recipe": 80,
     "Fashion & Lifestyle": 65,
-    "Sports & Fitness": 64,
+    "Sports & Fitness": 65,
     "Sports & Recreation": 65,
-    "Entertainment & Media": 66,
-    "Psychology & Mental Health": 65,
-    "DIY & How-To": 66,
-    "Gaming & eSports": 62
+    "Entertainment & Media": 65,
+    "Psychology & Mental Health": 60,
+    "DIY & How-To": 70,
+    "Gaming & eSports": 70
 };
 
 const getIconForOption = (label: string) => {
@@ -403,8 +403,6 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                          <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>
                                              {CATEGORY_COUNTS[category]}
                                          </span>
-                                         {/* Optional loader next to count if loading */}
-                                         {isLoading && <Loader2 size={10} className="animate-spin text-slate-400"/>}
                                          <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}/>
                                      </div>
                                  </button>

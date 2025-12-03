@@ -1,10 +1,14 @@
 
-import React from 'react';
+import React, { useState, Suspense } from 'react';
 import { PenTool, Sparkles, FileText, Feather, Activity, BookOpen, Loader2, ChevronDown } from 'lucide-react';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
-import { PredictiveBuilder } from './PredictiveBuilder/PredictiveBuilder';
+
+// Lazy load the PredictiveBuilder to reduce initial bundle size
+const PredictiveBuilder = React.lazy(() => 
+  import('./PredictiveBuilder/PredictiveBuilder').then(module => ({ default: module.PredictiveBuilder }))
+);
 
 export const ContinueWritingTool: React.FC = () => {
   const { performAIAction } = useAI();
@@ -83,7 +87,14 @@ export const ContinueWritingTool: React.FC = () => {
                  </div>
 
                  {/* Predictive Builder Section */}
-                 <PredictiveBuilder onSelect={handlePredictiveSelect} />
+                 <Suspense fallback={
+                    <div className="flex-1 flex items-center justify-center p-8 text-slate-400 gap-2 text-xs">
+                        <Loader2 className="animate-spin" size={16} />
+                        <span>Loading suggestions...</span>
+                    </div>
+                 }>
+                    <PredictiveBuilder onSelect={handlePredictiveSelect} />
+                 </Suspense>
              </div>
         </MenuPortal>
     </>
