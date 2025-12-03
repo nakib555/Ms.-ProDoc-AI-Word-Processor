@@ -330,7 +330,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                          if (!items) return null;
                          const isExpanded = expandedCategory === category;
                          return (
-                             <div key={category} className="rounded-lg overflow-hidden border border-slate-100 bg-white">
+                             <div key={category} className="rounded-lg overflow-hidden border border-slate-100 bg-white transition-all duration-200">
                                  <button 
                                     onClick={() => setExpandedCategory(isExpanded ? null : category)}
                                     className={`w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors ${isExpanded ? 'bg-slate-50 border-b border-slate-100' : ''}`}
@@ -338,30 +338,34 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                      {category}
                                      <div className="flex items-center gap-2">
                                          <span className="text-[9px] text-slate-400 bg-slate-100 px-1.5 rounded">{items.length}</span>
-                                         <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}/>
+                                         <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}/>
                                      </div>
                                  </button>
                                  
-                                 {isExpanded && (
-                                     <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
-                                         {items.map((item, idx) => {
-                                             const Icon = getIconForOption(item.l);
-                                             return (
-                                                 <button 
-                                                    key={idx} 
-                                                    onClick={() => onSelect(item)}
-                                                    className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group"
-                                                 >
-                                                     <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
-                                                        <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0" />
-                                                        {item.l}
-                                                     </div>
-                                                     <div className="text-[10px] text-slate-400 truncate pl-5">{item.f}</div>
-                                                 </button>
-                                             );
-                                         })}
+                                 <div 
+                                    className={`grid transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                                 >
+                                     <div className="overflow-hidden min-h-0">
+                                        <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+                                            {items.map((item, idx) => {
+                                                const Icon = getIconForOption(item.l);
+                                                return (
+                                                    <button 
+                                                        key={idx} 
+                                                        onClick={() => onSelect(item)}
+                                                        className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group"
+                                                    >
+                                                        <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
+                                                            <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0" />
+                                                            {item.l}
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 truncate pl-5">{item.f}</div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                      </div>
-                                 )}
+                                 </div>
                              </div>
                          );
                      })}

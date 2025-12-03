@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Scissors, Minus, List, AlignLeft, 
   Zap, MessageSquare, Check, RefreshCw, Copy, ArrowRight, 
-  ArrowLeft, Sliders, Trash2, ShieldCheck, Lock, Brain, Settings2
+  ArrowLeft, Sliders, Trash2, ShieldCheck, Lock, Settings2, Sparkles
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
@@ -52,6 +52,9 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
   const [inputText, setInputText] = useState(initialText);
   const [activeTab, setActiveTab] = useState<'input' | 'preview'>('input');
   const [mobileView, setMobileView] = useState<'editor' | 'sidebar'>('editor');
+  
+  const resultRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Settings State
   const [strategy, setStrategy] = useState('percent');
@@ -76,13 +79,22 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
       }
   }, [isOpen, initialText]);
 
+  // Sync result state to editable div when result changes
+  useEffect(() => {
+    if (resultRef.current && result) {
+        if (resultRef.current.innerHTML !== result) {
+            resultRef.current.innerHTML = result;
+        }
+    }
+  }, [result, activeTab]);
+
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
     
     setIsGenerating(true);
     setResult('');
     setActiveTab('preview');
-    setMobileView('editor'); // Switch back to main view on mobile to show result
+    setMobileView('editor'); 
 
     let instruction = "";
     
@@ -137,8 +149,8 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
       const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
       if (codeBlockMatch) cleanJson = codeBlockMatch[1].trim();
       
-      if (cleanJson.indexOf('{') > 0) cleanJson = cleanJson.substring(cleanJson.indexOf('{'));
-      if (cleanJson.lastIndexOf('}') < cleanJson.length - 1) cleanJson = cleanJson.substring(0, cleanJson.lastIndexOf('}') + 1);
+      if (cleanJson.indexOf('{') >= 0) cleanJson = cleanJson.substring(cleanJson.indexOf('{'));
+      if (cleanJson.lastIndexOf('}') !== -1) cleanJson = cleanJson.substring(0, cleanJson.lastIndexOf('}') + 1);
 
       try {
           const parsed = JSON.parse(cleanJson);
@@ -164,7 +176,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div 
-          className="absolute inset-0 bg-slate-900/50 backdrop-blur-[4px] transition-opacity animate-in fade-in duration-300"
+          className="absolute inset-0 bg-slate-900/50 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
           onClick={onClose}
       />
       
@@ -172,8 +184,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
         className={`
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
-            /* Unified Floating Styles */
-            min-h-[75vh] h-auto max-h-[85vh] md:min-h-0 md:h-[85vh] 
+            h-[75vh] md:h-[85vh]
             rounded-2xl md:rounded-3xl 
             border border-white/20 dark:border-slate-700 
             ring-1 ring-black/5 dark:ring-white/5
@@ -201,7 +212,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                             <ArrowLeft size={20} />
                         </button>
 
-                        <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
+                        <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400 shadow-sm">
                             <Scissors size={18} />
                         </div>
                         Smart Shorten
@@ -211,29 +222,30 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                         <X size={20} />
                     </button>
                 </div>
-                <p className="text-xs text-slate-500 mt-1 ml-9 md:ml-0">Condense content intelligently.</p>
+                <p className="text-xs text-slate-500 mt-1 ml-9 md:ml-0">Intelligently condense your text.</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-6 min-h-0">
                 {/* Strategy Selection */}
                 <div>
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Reduction Strategy</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Reduction Strategy</label>
                     <div className="grid grid-cols-2 gap-2">
                         {SHORTEN_STRATEGIES.map((s) => (
                             <button
                                 key={s.id}
                                 onClick={() => setStrategy(s.id)}
-                                className={`flex flex-col p-2.5 rounded-xl border text-left transition-all group relative overflow-hidden ${
+                                className={`flex flex-col p-3 rounded-xl border text-left transition-all group relative overflow-hidden ${
                                     strategy === s.id 
-                                    ? 'bg-orange-600 border-orange-600 text-white shadow-md' 
+                                    ? 'bg-orange-600 border-orange-600 text-white shadow-md ring-1 ring-orange-600/20' 
                                     : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300 dark:hover:border-slate-500'
                                 }`}
                             >
-                                <div className="flex items-center justify-between mb-1">
-                                    <s.icon size={16} className={strategy === s.id ? 'text-white' : 'text-orange-600 dark:text-orange-400'} />
-                                    {strategy === s.id && <Check size={12} className="text-white" strokeWidth={3} />}
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <s.icon size={18} className={strategy === s.id ? 'text-white' : 'text-orange-600 dark:text-orange-400'} />
+                                    {strategy === s.id && <Check size={14} className="text-white" strokeWidth={3} />}
                                 </div>
                                 <div className="text-xs font-bold">{s.label}</div>
+                                <div className={`text-[9px] mt-0.5 leading-tight ${strategy === s.id ? 'text-orange-100' : 'text-slate-400'}`}>{s.desc}</div>
                             </button>
                         ))}
                     </div>
@@ -244,7 +256,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                     <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm animate-in fade-in slide-in-from-top-2">
                          <div className="flex justify-between items-center mb-3">
                             <label className="text-xs font-bold text-slate-500">Reduction Amount</label>
-                            <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-200 font-bold">{intensity}%</span>
+                            <span className="text-xs font-mono bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-md font-bold border border-orange-100 dark:border-orange-900/30">{intensity}%</span>
                         </div>
                         <input 
                             type="range" min="10" max="90" step="10" value={intensity}
@@ -260,7 +272,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
 
                 {/* Smart Toggles */}
                 <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Refinements</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Refinements</label>
                     
                     <SettingToggle 
                         label="Smart Compression" 
@@ -290,13 +302,13 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                 {/* Tone & Constraints */}
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Tone</label>
-                         <div className="flex flex-col gap-1">
+                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tone</label>
+                         <div className="flex flex-col gap-1.5">
                              {['preserve', 'neutral', 'emotional'].map(t => (
                                  <button 
                                     key={t}
                                     onClick={() => setToneMode(t as any)}
-                                    className={`px-3 py-2 rounded-lg text-[10px] font-bold border text-left transition-all ${toneMode === t ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700 dark:border-slate-600' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500'}`}
+                                    className={`px-3 py-2 rounded-lg text-[10px] font-bold border text-left transition-all ${toneMode === t ? 'bg-slate-800 text-white border-slate-800 dark:bg-slate-700 dark:border-slate-600' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300'}`}
                                  >
                                      {t.charAt(0).toUpperCase() + t.slice(1)}
                                  </button>
@@ -305,7 +317,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Max Limit</label>
+                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Max Limit</label>
                          <div className="flex flex-col gap-2">
                              <div className="flex rounded-lg bg-slate-100 dark:bg-slate-800 p-1">
                                  {['none', 'chars', 'words'].map(c => (
@@ -323,7 +335,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                                     type="number" 
                                     value={constraintValue}
                                     onChange={(e) => setConstraintValue(parseInt(e.target.value))}
-                                    className="w-full p-2 text-xs border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 outline-none focus:border-orange-500 text-center font-mono"
+                                    className="w-full p-2 text-xs border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 outline-none focus:border-orange-500 text-center font-mono transition-colors"
                                  />
                              )}
                          </div>
@@ -331,14 +343,14 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                 </div>
             </div>
 
-            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 md:hidden">
                 <button 
                     onClick={handleGenerate}
                     disabled={isGenerating || !inputText.trim()}
                     className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
                     {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Zap size={18} className="fill-orange-200 text-orange-100" />}
-                    {isGenerating ? 'Shortening...' : 'Shorten Text'}
+                    {isGenerating ? 'Shortening...' : 'Shorten'}
                 </button>
             </div>
         </div>
@@ -372,7 +384,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                         disabled={!result && !isGenerating}
                         className={`px-4 md:px-6 py-1.5 text-xs font-bold uppercase tracking-wide rounded-md transition-all flex items-center gap-2 ${activeTab === 'preview' ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed'}`}
                     >
-                        Shortened {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
+                        Result {result && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>}
                     </button>
                  </div>
                  <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
@@ -383,26 +395,35 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
             {/* Content View */}
             <div className="flex-1 overflow-hidden relative">
                 {/* Input View */}
-                <div className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                <div 
+                    className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}
+                    onClick={() => inputRef.current?.focus()}
+                >
                     <textarea 
+                        ref={inputRef}
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         className="flex-1 w-full p-6 md:p-8 resize-none outline-none text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
                         placeholder="Paste or type text to shorten..."
                     />
-                    <div className="px-6 md:px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium shrink-0">
-                        <span>{inputText.split(/\s+/).filter(w => w.length > 0).length} words</span>
-                        <span>{inputText.length} characters</span>
-                    </div>
                 </div>
 
                 {/* Preview View */}
                 <div className={`flex flex-col w-full h-full transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
                     {result ? (
-                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                        <div 
+                            className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) {
+                                    resultRef.current?.focus();
+                                }
+                            }}
+                        >
                             <div 
-                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800"
-                                dangerouslySetInnerHTML={{ __html: result }}
+                                ref={resultRef}
+                                contentEditable
+                                suppressContentEditableWarning
+                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 transition-all min-h-full"
                             />
                         </div>
                     ) : (
@@ -410,23 +431,23 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                             {isGenerating ? (
                                 <div className="space-y-4">
                                     <div className="relative mx-auto w-16 h-16">
-                                        <div className="absolute inset-0 border-4 border-violet-100 dark:border-slate-800 rounded-full"></div>
-                                        <div className="absolute inset-0 border-4 border-violet-600 rounded-full border-t-transparent animate-spin"></div>
+                                        <div className="absolute inset-0 border-4 border-orange-100 dark:border-slate-800 rounded-full"></div>
+                                        <div className="absolute inset-0 border-4 border-orange-500 rounded-full border-t-transparent animate-spin"></div>
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Analyzing text structure...</p>
-                                        <p className="text-xs mt-1 opacity-70">Extracting key points and insights.</p>
+                                        <p className="text-xs mt-1 opacity-70">Removing redundancy and condensing content.</p>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="space-y-4 max-w-sm opacity-60">
                                     <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <MessageSquare size={32} className="text-violet-300"/>
+                                        <MessageSquare size={32} className="text-orange-300"/>
                                     </div>
                                     <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Shorten</h3>
                                     <p className="text-sm leading-relaxed">
-                                        Configure your summary options in Settings and click Generate.
-                                        The AI will analyze your text and extract the key information.
+                                        Configure your reduction strategy in Settings and click Shorten Text.
+                                        The AI will optimize your content while preserving key information.
                                     </p>
                                 </div>
                             )}
@@ -435,23 +456,42 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                 </div>
             </div>
 
-            {/* Result Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
-                {result && activeTab === 'preview' && (
-                    <>
+            {/* Footer Actions */}
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center px-4 md:px-6 shrink-0 z-20">
+                {(!result || activeTab === 'input') ? (
+                    <div className="w-full flex items-center justify-between gap-3">
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-left">
+                            {inputText.split(/\s+/).filter(w => w.length > 0).length} words
+                        </span>
+                        
                         <button 
-                            onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
+                            onClick={handleGenerate}
+                            disabled={isGenerating || !inputText.trim()}
+                            className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-orange-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        >
+                            {isGenerating ? <RefreshCw className="animate-spin" size={16}/> : <Zap size={16} />}
+                            <span>Shorten</span>
+                        </button>
+
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-right">
+                            {inputText.length} chars
+                        </span>
+                   </div>
+                ) : (
+                    <div className="w-full flex justify-end gap-3">
+                        <button 
+                            onClick={() => navigator.clipboard.writeText(resultRef.current?.innerText || result.replace(/<[^>]*>?/gm, ''))}
                             className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-colors"
                         >
                             <Copy size={18} /> <span className="hidden sm:inline">Copy</span>
                         </button>
                         <button 
-                            onClick={() => { onInsert(result); onClose(); }}
+                            onClick={() => { onInsert(resultRef.current?.innerHTML || result); onClose(); }}
                             className="px-8 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-orange-200/50 dark:shadow-none transition-all flex items-center gap-2 active:scale-95"
                         >
                             <ArrowRight size={20} /> Insert
                         </button>
-                    </>
+                    </div>
                 )}
             </div>
         </div>

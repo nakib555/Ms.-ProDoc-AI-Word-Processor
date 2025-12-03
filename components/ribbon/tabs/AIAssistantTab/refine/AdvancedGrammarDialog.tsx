@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Check, Activity, Wand2, RefreshCw, ArrowRight, 
   Sparkles, Type, AlignLeft, AlertCircle, Quote, Languages,
@@ -100,6 +100,8 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   const [sidebarView, setSidebarView] = useState<'settings' | 'history'>('settings');
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [mobileView, setMobileView] = useState<'editor' | 'sidebar'>('editor');
+
+  const resultTextAreaRef = useRef<HTMLTextAreaElement>(null);
 
   // Settings
   const [settings, setSettings] = useState({
@@ -236,7 +238,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full min-h-[75vh] h-auto max-h-[85vh] md:w-[95vw] md:min-h-0 md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full h-[75vh] md:w-[95vw] md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Sidebar Configuration */}
@@ -404,14 +406,14 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                 <button 
                     onClick={handleAnalyze}
                     disabled={isAnalyzing || !text}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
                     {isAnalyzing ? (
-                        <RefreshCw className="animate-spin" size={16}/>
+                        <RefreshCw className="animate-spin" size={18}/>
                     ) : (
-                        <Sparkles size={16} className="fill-indigo-200 text-indigo-100" />
+                        <Sparkles size={18} className="fill-indigo-200 text-indigo-100" />
                     )}
-                    {isAnalyzing ? 'Analyzing...' : result ? 'Re-Analyze' : 'Run Analysis'}
+                    {isAnalyzing ? 'Analyzing...' : result ? 'Re-Analyze' : 'Analyze'}
                 </button>
             </div>
         </div>
@@ -464,10 +466,6 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                         className="flex-1 w-full p-6 md:p-8 resize-none outline-none text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
                         placeholder="Paste or type your text here to let the AI refine it..."
                     />
-                    <div className="px-6 md:px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium shrink-0">
-                        <span>{text.split(/\s+/).filter(w => w.length > 0).length} words</span>
-                        <span>{text.length} characters</span>
-                    </div>
                 </div>
 
                 {/* Preview View */}
@@ -526,9 +524,17 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                                 </div>
 
                                 {/* Result Text */}
-                                <div className="px-6 md:px-8 pb-8 flex-1 flex flex-col min-h-[400px]">
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 flex-1 flex flex-col transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500/50">
+                                <div 
+                                    className="px-6 md:px-8 pb-8 flex-1 flex flex-col min-h-[400px] cursor-text"
+                                    onClick={(e) => {
+                                        if (e.target === e.currentTarget) {
+                                            resultTextAreaRef.current?.focus();
+                                        }
+                                    }}
+                                >
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 flex-1 flex flex-col transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500/50 h-full">
                                         <textarea
+                                            ref={resultTextAreaRef}
                                             value={editableText}
                                             onChange={(e) => setEditableText(e.target.value)}
                                             className="flex-1 w-full resize-none outline-none border-none text-base md:text-lg leading-loose text-slate-800 dark:text-slate-200 bg-transparent font-serif p-0 placeholder:text-slate-300 focus:ring-0"
@@ -562,6 +568,30 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                         </div>
                     ) : null}
                 </div>
+            </div>
+            
+            {/* Footer Actions - Enhanced for visibility */}
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center px-4 md:px-6 shrink-0 z-20">
+                {(!result || activeTab === 'input') ? (
+                   <div className="w-full flex items-center justify-between gap-3">
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-left">
+                            {text.split(/\s+/).filter(w => w.length > 0).length} words
+                        </span>
+                        
+                        <button 
+                            onClick={handleAnalyze}
+                            disabled={isAnalyzing || !text.trim()}
+                            className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        >
+                            {isAnalyzing ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                            <span>Analyze</span>
+                        </button>
+
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-right">
+                            {text.length} chars
+                        </span>
+                   </div>
+                ) : null}
             </div>
         </div>
       </div>

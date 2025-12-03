@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, FileText, List, AlignLeft, Hash, Zap, Globe, 
   Sparkles, Check, Copy, ArrowRight, Settings2, Sliders, 
@@ -57,6 +57,9 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState('');
   
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  
   const { } = useEditor();
 
   useEffect(() => {
@@ -67,6 +70,16 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
       setMobileView('editor');
     }
   }, [isOpen, initialText]);
+
+  // Sync result state to editable div when result changes (e.g. new generation)
+  useEffect(() => {
+    if (resultRef.current && result) {
+        // Only update if different to preserve cursor if we were to support live syncing (though we don't sync back to state here)
+        if (resultRef.current.innerHTML !== result) {
+            resultRef.current.innerHTML = result;
+        }
+    }
+  }, [result, activeTab]); // Trigger on tab switch to restore content
 
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
@@ -125,12 +138,10 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
       // Robust JSON Extraction
       let cleanJson = response.trim();
       
-      // 1. Try finding JSON within code blocks
       const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
       if (codeBlockMatch) {
           cleanJson = codeBlockMatch[1].trim();
       } else {
-          // 2. Try finding the outermost object manually
           const firstBrace = cleanJson.indexOf('{');
           const lastBrace = cleanJson.lastIndexOf('}');
           if (firstBrace !== -1 && lastBrace !== -1) {
@@ -146,25 +157,22 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
               return;
           }
 
-          // Convert the structured JSON response to HTML for display
           const html = jsonToHtml(parsed);
           if (!html) throw new Error("Empty HTML generated from JSON");
           setResult(html);
       } catch (parseError) {
           console.error("JSON Parse Error", parseError);
-          // Fallback: If JSON fails, treat the whole text as a paragraph unless it looks completely broken
+          // Fallback HTML handling
           let fallbackHtml = response
-              .replace(/#+\s+(.*)/g, '<h3>$1</h3>') // Headings
-              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-              .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-              .replace(/^- (.*)/gm, '<li>$1</li>') // List items
-              .replace(/\n/g, '<br/>'); // Newlines
+              .replace(/#+\s+(.*)/g, '<h3>$1</h3>') 
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+              .replace(/^- (.*)/gm, '<li>$1</li>')
+              .replace(/\n/g, '<br/>');
           
-          // Wrap list items if any
           if (fallbackHtml.includes('<li>')) {
               fallbackHtml = fallbackHtml.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
           }
-          
           setResult(`<div class="fallback-content">${fallbackHtml}</div>`);
       }
     } catch (e) {
@@ -180,7 +188,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div 
-          className="absolute inset-0 bg-slate-900/50 backdrop-blur-[4px] transition-opacity animate-in fade-in duration-300"
+          className="absolute inset-0 bg-slate-900/50 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
           onClick={onClose}
       />
 
@@ -188,12 +196,10 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
         className={`
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
-            /* Unified Floating Styles */
-            min-h-[75vh] h-auto max-h-[85vh] md:min-h-0 md:h-[85vh] 
+            h-[75vh] md:h-[85vh] md:max-w-6xl 
+            
             rounded-2xl md:rounded-3xl 
             border border-slate-200 dark:border-slate-700 
-            
-            md:max-w-5xl 
             
             animate-in zoom-in-95 ease-out
         `}
@@ -216,7 +222,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                             <ArrowLeft size={20} />
                         </button>
 
-                        <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg text-violet-600 dark:text-violet-400">
+                        <div className="p-1.5 bg-violet-100 dark:bg-violet-900/30 rounded-lg text-violet-600 dark:text-violet-400 shadow-sm">
                             <Zap size={18} />
                         </div>
                         Summarizer
@@ -233,7 +239,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 
                 {/* 1. Summary Type */}
                 <div className="space-y-3">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                         <Settings2 size={12}/> Format
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -243,7 +249,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                                 onClick={() => setConfig(c => ({...c, type: type.id}))}
                                 className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
                                     config.type === type.id 
-                                    ? 'bg-violet-600 border-violet-600 text-white shadow-md' 
+                                    ? 'bg-violet-600 border-violet-600 text-white shadow-md ring-1 ring-violet-600/20' 
                                     : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-violet-300 dark:hover:border-slate-600'
                                 }`}
                             >
@@ -257,35 +263,43 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 {/* 2. Focus & Language */}
                 <div className="space-y-4">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Focus</label>
-                        <select 
-                            value={config.focus}
-                            onChange={(e) => setConfig(c => ({...c, focus: e.target.value}))}
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm cursor-pointer"
-                        >
-                            {FOCUS_MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-                        </select>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Focus</label>
+                        <div className="relative">
+                            <select 
+                                value={config.focus}
+                                onChange={(e) => setConfig(c => ({...c, focus: e.target.value}))}
+                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm cursor-pointer appearance-none"
+                            >
+                                {FOCUS_MODES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <ArrowRight size={12} className="rotate-90"/>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Language</label>
-                        <select 
-                            value={config.language}
-                            onChange={(e) => setConfig(c => ({...c, language: e.target.value}))}
-                            className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm cursor-pointer"
-                        >
-                            {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
-                        </select>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Language</label>
+                        <div className="relative">
+                             <select 
+                                value={config.language}
+                                onChange={(e) => setConfig(c => ({...c, language: e.target.value}))}
+                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-violet-500 shadow-sm cursor-pointer appearance-none"
+                            >
+                                {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+                            </select>
+                            <Globe size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                        </div>
                     </div>
                 </div>
 
                 {/* 3. Length Slider */}
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                     <div className="flex justify-between items-center mb-3">
-                        <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-wider">
                             <Sliders size={12}/> Summary Length
                         </label>
-                        <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-700 dark:text-slate-200 font-bold">
+                        <span className="text-xs font-mono bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-md font-bold border border-violet-100 dark:border-violet-900/30">
                             {config.length}%
                         </span>
                     </div>
@@ -308,37 +322,43 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 <div className="space-y-2 pt-1">
                     <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300">
                         <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg transition-colors ${config.extractData ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <div className={`p-1.5 rounded-lg transition-colors ${config.extractData ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
                                 <List size={16} />
                             </div>
                             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Extract Key Data</span>
                         </div>
-                        <input 
+                        <div className={`w-9 h-5 rounded-full relative transition-colors ${config.extractData ? 'bg-violet-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                           <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform shadow-sm ${config.extractData ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                         <input 
                             type="checkbox" 
                             checked={config.extractData}
                             onChange={(e) => setConfig(c => ({...c, extractData: e.target.checked}))}
-                            className="accent-violet-600 w-4 h-4"
+                            className="hidden"
                         />
                     </label>
 
                     <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300">
                         <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg transition-colors ${config.highlightInsights ? 'bg-violet-100 text-violet-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <div className={`p-1.5 rounded-lg transition-colors ${config.highlightInsights ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
                                 <Zap size={16} />
                             </div>
                             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Highlight Insights</span>
+                        </div>
+                        <div className={`w-9 h-5 rounded-full relative transition-colors ${config.highlightInsights ? 'bg-violet-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                           <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform shadow-sm ${config.highlightInsights ? 'translate-x-4' : 'translate-x-0'}`} />
                         </div>
                         <input 
                             type="checkbox" 
                             checked={config.highlightInsights}
                             onChange={(e) => setConfig(c => ({...c, highlightInsights: e.target.checked}))}
-                            className="accent-violet-600 w-4 h-4"
+                            className="hidden"
                         />
                     </label>
                 </div>
             </div>
 
-            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 md:hidden">
                 <button 
                     onClick={handleGenerate}
                     disabled={isGenerating || !inputText.trim()}
@@ -391,26 +411,35 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             {/* Viewport */}
             <div className="flex-1 overflow-hidden relative">
                 {/* Input View */}
-                <div className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                <div 
+                    className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}
+                    onClick={() => inputRef.current?.focus()}
+                >
                     <textarea 
+                        ref={inputRef}
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         className="flex-1 w-full p-6 md:p-8 resize-none outline-none text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
                         placeholder="Paste or type text to summarize..."
                     />
-                    <div className="px-6 md:px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium shrink-0">
-                        <span>{inputText.split(/\s+/).filter(w => w.length > 0).length} words</span>
-                        <span>{inputText.length} characters</span>
-                    </div>
                 </div>
 
                 {/* Preview View */}
                 <div className={`flex flex-col w-full h-full transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
                     {result ? (
-                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                        <div 
+                            className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) {
+                                    resultRef.current?.focus();
+                                }
+                            }}
+                        >
                             <div 
-                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800"
-                                dangerouslySetInnerHTML={{ __html: result }}
+                                ref={resultRef}
+                                contentEditable
+                                suppressContentEditableWarning
+                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all min-h-full"
                             />
                         </div>
                     ) : (
@@ -443,23 +472,42 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 </div>
             </div>
 
-            {/* Footer Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
-                {result && activeTab === 'preview' && (
-                    <>
+            {/* Footer Actions - Enhanced for visibility */}
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center px-4 md:px-6 shrink-0 z-20">
+                {(!result || activeTab === 'input') ? (
+                   <div className="w-full flex items-center justify-between gap-3">
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-left">
+                            {inputText.split(/\s+/).filter(w => w.length > 0).length} words
+                        </span>
+                        
                         <button 
-                            onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
+                            onClick={handleGenerate}
+                            disabled={isGenerating || !inputText.trim()}
+                            className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        >
+                            {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                            <span>Generate</span>
+                        </button>
+
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-right">
+                            {inputText.length} chars
+                        </span>
+                   </div>
+                ) : (
+                   <div className="w-full flex justify-end gap-3">
+                        <button 
+                            onClick={() => navigator.clipboard.writeText(resultRef.current?.innerText || result.replace(/<[^>]*>?/gm, ''))}
                             className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-colors"
                         >
                             <Copy size={18} /> <span className="hidden sm:inline">Copy</span>
                         </button>
                         <button 
-                            onClick={() => { onInsert(result); onClose(); }}
+                            onClick={() => { onInsert(resultRef.current?.innerHTML || result); onClose(); }}
                             className="px-8 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center gap-2 active:scale-95"
                         >
                             <Check size={20} /> Insert
                         </button>
-                    </>
+                   </div>
                 )}
             </div>
         </div>

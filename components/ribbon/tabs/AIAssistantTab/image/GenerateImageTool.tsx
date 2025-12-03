@@ -66,7 +66,7 @@ export const GenerateImageTool: React.FC = () => {
           onClick={() => setIsOpen(false)}
         >
           <div 
-            className="bg-white w-full max-w-lg h-[85vh] md:h-auto md:max-h-[85vh] rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 m-4 flex flex-col"
+            className="bg-white w-full max-w-lg h-[75vh] md:h-auto md:max-h-[85vh] rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 m-4 flex flex-col"
             role="dialog"
             aria-modal="true"
             onClick={e => e.stopPropagation()}

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Maximize2, ListPlus, BookOpen, History, ListOrdered, 
   Lightbulb, TrendingUp, Book, BarChart, Feather, ArrowRight,
@@ -42,6 +42,9 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   
   const [activeTab, setActiveTab] = useState<'input' | 'preview'>('input');
   const [mobileView, setMobileView] = useState<'editor' | 'sidebar'>('editor');
+  
+  const resultRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -51,6 +54,15 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
       setMobileView('editor');
     }
   }, [isOpen, initialText]);
+
+  // Sync result state to editable div when result changes
+  useEffect(() => {
+    if (resultRef.current && result) {
+        if (resultRef.current.innerHTML !== result) {
+            resultRef.current.innerHTML = result;
+        }
+    }
+  }, [result, activeTab]);
 
   const handleGenerate = async () => {
     if (!inputText.trim()) return;
@@ -89,8 +101,8 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
       const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
       if (codeBlockMatch) cleanJson = codeBlockMatch[1].trim();
       
-      if (cleanJson.indexOf('{') > 0) cleanJson = cleanJson.substring(cleanJson.indexOf('{'));
-      if (cleanJson.lastIndexOf('}') < cleanJson.length - 1) cleanJson = cleanJson.substring(0, cleanJson.lastIndexOf('}') + 1);
+      if (cleanJson.indexOf('{') >= 0) cleanJson = cleanJson.substring(cleanJson.indexOf('{'));
+      if (cleanJson.lastIndexOf('}') !== -1) cleanJson = cleanJson.substring(0, cleanJson.lastIndexOf('}') + 1);
 
       try {
           const parsed = JSON.parse(cleanJson);
@@ -119,7 +131,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div 
-          className="absolute inset-0 bg-slate-900/50 backdrop-blur-[4px] transition-opacity animate-in fade-in duration-300"
+          className="absolute inset-0 bg-slate-900/50 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
           onClick={onClose}
       />
       
@@ -127,8 +139,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
         className={`
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
-            /* Unified Floating Styles */
-            min-h-[75vh] h-auto max-h-[85vh] md:min-h-0 md:h-[85vh] 
+            h-[75vh] md:h-[85vh]
             rounded-2xl md:rounded-3xl 
             border border-white/20 dark:border-slate-700 
             ring-1 ring-black/5 dark:ring-white/5
@@ -156,7 +167,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                             <ArrowLeft size={20} />
                         </button>
 
-                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400 shadow-sm">
                             <ZoomIn size={18} />
                         </div>
                         Smart Expander
@@ -172,7 +183,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar min-h-0">
                 <div className="space-y-4">
                     <div>
-                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">Expansion Mode</label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Expansion Mode</label>
                         <div className="grid grid-cols-1 gap-2">
                             {EXPAND_MODES.map((mode) => (
                                 <button
@@ -180,7 +191,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                                     onClick={() => setSelectedMode(mode.id)}
                                     className={`flex items-center p-3 rounded-xl border text-left transition-all group ${
                                         selectedMode === mode.id 
-                                        ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-md ring-1 ring-blue-600/20' 
                                         : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-slate-500'
                                     }`}
                                 >
@@ -189,7 +200,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                                     </div>
                                     <div>
                                         <div className="text-sm font-bold">{mode.label}</div>
-                                        <div className={`text-[10px] mt-0.5 ${selectedMode === mode.id ? 'text-blue-100' : 'text-slate-400'}`}>
+                                        <div className={`text-[10px] mt-0.5 leading-tight ${selectedMode === mode.id ? 'text-blue-100' : 'text-slate-400'}`}>
                                             {mode.desc}
                                         </div>
                                     </div>
@@ -208,7 +219,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
                     {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
-                    {isGenerating ? 'Expanding...' : 'Generate Expansion'}
+                    {isGenerating ? 'Expanding...' : 'Generate'}
                 </button>
             </div>
         </div>
@@ -251,26 +262,35 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
 
             <div className="flex-1 overflow-hidden relative">
                 {/* Input View */}
-                <div className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                <div 
+                    className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}
+                    onClick={() => inputRef.current?.focus()}
+                >
                     <textarea 
+                        ref={inputRef}
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         className="flex-1 w-full p-6 md:p-8 resize-none outline-none text-base md:text-lg leading-relaxed text-slate-700 dark:text-slate-300 bg-transparent placeholder:text-slate-400 font-serif"
                         placeholder="Paste or type text to expand..."
                     />
-                    <div className="px-6 md:px-8 py-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-400 flex justify-between font-medium shrink-0">
-                        <span>{inputText.split(/\s+/).filter(w => w.length > 0).length} words</span>
-                        <span>{inputText.length} characters</span>
-                    </div>
                 </div>
 
                 {/* Preview View */}
                 <div className={`flex flex-col w-full h-full transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
                     {result ? (
-                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                        <div 
+                            className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500"
+                            onClick={(e) => {
+                                if (e.target === e.currentTarget) {
+                                    resultRef.current?.focus();
+                                }
+                            }}
+                        >
                             <div 
-                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800"
-                                dangerouslySetInnerHTML={{ __html: result }}
+                                ref={resultRef}
+                                contentEditable
+                                suppressContentEditableWarning
+                                className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all min-h-full"
                             />
                         </div>
                     ) : (
@@ -287,12 +307,12 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-4 max-w-sm">
+                                <div className="space-y-4 max-w-sm opacity-60">
                                     <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700 shadow-sm">
                                         <MessageSquare size={32} className="text-blue-300"/>
                                     </div>
                                     <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Expand</h3>
-                                    <p className="text-sm leading-relaxed opacity-70">
+                                    <p className="text-sm leading-relaxed">
                                         Select a mode in Settings and click Generate to transform your text into something more comprehensive.
                                     </p>
                                 </div>
@@ -302,23 +322,42 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                 </div>
             </div>
 
-            {/* Result Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
-                {result && activeTab === 'preview' && (
-                    <>
+            {/* Footer Actions - Enhanced for visibility */}
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center px-4 md:px-6 shrink-0 z-20">
+                {(!result || activeTab === 'input') ? (
+                   <div className="w-full flex items-center justify-between gap-3">
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-left">
+                            {inputText.split(/\s+/).filter(w => w.length > 0).length} words
+                        </span>
+                        
                         <button 
-                            onClick={() => navigator.clipboard.writeText(result.replace(/<[^>]*>?/gm, ''))}
+                            onClick={handleGenerate}
+                            disabled={isGenerating || !inputText.trim()}
+                            className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                        >
+                            {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                            <span>Generate</span>
+                        </button>
+
+                        <span className="text-[10px] text-slate-400 font-medium tabular-nums w-20 text-right">
+                            {inputText.length} chars
+                        </span>
+                   </div>
+                ) : (
+                   <div className="w-full flex justify-end gap-3">
+                        <button 
+                            onClick={() => navigator.clipboard.writeText(resultRef.current?.innerText || result.replace(/<[^>]*>?/gm, ''))}
                             className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl flex items-center gap-2 transition-colors"
                         >
                             <Copy size={18} /> <span className="hidden sm:inline">Copy</span>
                         </button>
                         <button 
-                            onClick={() => { onInsert(result); onClose(); }}
+                            onClick={() => { onInsert(resultRef.current?.innerHTML || result); onClose(); }}
                             className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center gap-2 active:scale-95"
                         >
                             <ArrowRight size={20} /> Insert
                         </button>
-                    </>
+                   </div>
                 )}
             </div>
         </div>

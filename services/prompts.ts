@@ -181,10 +181,25 @@ const PRODOC_JSON_SCHEMA = `
 /**
  * Returns the system prompt with deep operational instructions for AI.
  */
-export const getSystemPrompt = (operation: AIOperation, userPrompt?: string): string => {
+export const getSystemPrompt = (operation: string, userPrompt?: string): string => {
   let directive = "";
 
   switch (operation) {
+    case "translate_content":
+      directive = `
+TASK: Translate the input text to the target language specified in the USER PROMPT.
+- **CRITICAL**: If the input is HTML, preserve ALL tags, attributes, structure, and inline styles exactly.
+- Only translate the human-readable text content between tags.
+- Do not add explanations, markdown code blocks, or conversational filler.
+- Return ONLY the translated content string (HTML or plain text matching input).
+- Handle large documents by maintaining continuity.
+`;
+      return `
+You are a professional translator engine.
+${directive}
+USER PROMPT: ${userPrompt}
+`;
+
     case "summarize":
       directive = `
 TASK: Summarize the input while preserving structure.
