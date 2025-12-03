@@ -83,42 +83,34 @@ const PREDICTIVE_CATEGORIES = {
 const getIconForOption = (label: string) => {
   const l = label.toLowerCase();
   
-  // Technology & Innovation
   if (l.includes('roadmap') || l.includes('timeline') || l.includes('milestone')) return GitBranch;
   if (l.includes('innovation') || l.includes('pitch') || l.includes('strategy') || l.includes('idea')) return Lightbulb;
   if (l.includes('prototype') || l.includes('demo')) return Box;
   if (l.includes('specification') || l.includes('spec') || l.includes('requirement')) return ClipboardList;
   if (l.includes('architecture') || l.includes('system') || l.includes('design')) return Settings;
   
-  // Cultural Studies & Humanities & History
   if (l.includes('history') || l.includes('historical') || l.includes('archive') || l.includes('past') || l.includes('chronology')) return History;
   if (l.includes('culture') || l.includes('society') || l.includes('ethnography') || l.includes('anthropology')) return Globe;
   if (l.includes('art') || l.includes('museum') || l.includes('exhibit') || l.includes('gallery')) return Palette;
   if (l.includes('literature') || l.includes('book') || l.includes('novel') || l.includes('poem')) return BookOpen;
   if (l.includes('research') || l.includes('study') || l.includes('paper') || l.includes('thesis')) return Library;
 
-  // Sci-Fi & Fantasy
   if (l.includes('magic') || l.includes('spell') || l.includes('fantasy') || l.includes('creature')) return Sparkles;
   if (l.includes('alien') || l.includes('space') || l.includes('planet') || l.includes('sci-fi') || l.includes('future')) return Rocket;
   if (l.includes('world') || l.includes('map') || l.includes('universe')) return Globe;
   if (l.includes('character') || l.includes('hero') || l.includes('villain')) return User;
 
-  // Gaming & eSports
   if (l.includes('game') || l.includes('level') || l.includes('player') || l.includes('match') || l.includes('tournament') || l.includes('esport') || l.includes('patch') || l.includes('bug') || l.includes('quest') || l.includes('streaming') || l.includes('leaderboard')) return Gamepad2;
 
-  // DIY & How-To
   if (l.includes('diy') || l.includes('repair') || l.includes('craft') || l.includes('paint') || l.includes('home improvement') || l.includes('assembly') || l.includes('project plan') || l.includes('renovation') || l.includes('woodworking')) return Hammer;
   
-  // Fashion & Lifestyle
   if (l.includes('fashion') || l.includes('style') || l.includes('outfit') || l.includes('wardrobe') || l.includes('collection') || l.includes('trend')) return ShoppingBag;
   if (l.includes('lifestyle') || l.includes('blog') || l.includes('living')) return Heart;
 
-  // Philanthropy & NGOs
   if (l.includes('grant') || l.includes('donation') || l.includes('fundraising') || l.includes('charity')) return HeartHandshake;
   if (l.includes('volunteer') || l.includes('community') || l.includes('outreach')) return User;
   if (l.includes('ngo') || l.includes('non-profit') || l.includes('impact')) return Globe;
 
-  // Entertainment & Media
   if (l.includes('tv') || l.includes('broadcast') || l.includes('show')) return Tv;
   if (l.includes('radio') || l.includes('podcast')) return Radio;
   if (l.includes('film') || l.includes('movie') || l.includes('cinema')) return Film;
@@ -126,20 +118,16 @@ const getIconForOption = (label: string) => {
   if (l.includes('music') || l.includes('album') || l.includes('song') || l.includes('lyrics')) return Music;
   if (l.includes('casting') || l.includes('actor') || l.includes('role')) return User;
   
-  // Psychology & Mental Health
   if (l.includes('therapy') || l.includes('counseling') || l.includes('psych') || l.includes('mental')) return Brain;
   if (l.includes('patient') || l.includes('client') || l.includes('support') || l.includes('care')) return HeartHandshake;
   if (l.includes('assessment') || l.includes('evaluation') || l.includes('test')) return ClipboardList;
   if (l.includes('mood') || l.includes('emotion') || l.includes('behavior')) return Activity;
 
-  // Food & Recipe
   if (l.includes('recipe') || l.includes('cook') || l.includes('food') || l.includes('meal') || l.includes('menu') || l.includes('chef') || l.includes('ingredient') || l.includes('dish') || l.includes('baking') || l.includes('culinary')) return Utensils;
 
-  // Sports & Fitness
   if (l.includes('fitness') || l.includes('workout') || l.includes('exercise') || l.includes('gym') || l.includes('strength') || l.includes('cardio') || l.includes('endurance')) return Dumbbell;
   if (l.includes('sport') || l.includes('game') || l.includes('match') || l.includes('tournament') || l.includes('league') || l.includes('competition') || l.includes('athlete') || l.includes('team') || l.includes('coach') || l.includes('award')) return Trophy;
 
-  // Architecture & Construction
   if (l.includes('blueprint') || l.includes('plan') || l.includes('architect') || l.includes('layout')) return Building2;
   if (l.includes('construction') || l.includes('build') || l.includes('contractor') || l.includes('site')) return Hammer;
   if (l.includes('design') || l.includes('interior') || l.includes('landscape')) return LayoutTemplate;
@@ -147,7 +135,6 @@ const getIconForOption = (label: string) => {
   if (l.includes('material') || l.includes('procurement') || l.includes('inventory')) return Factory;
   if (l.includes('maintenance') || l.includes('repair') || l.includes('work order')) return Wrench;
 
-  // Travel & Tourism
   if (l.includes('travel') || l.includes('tour') || l.includes('trip') || l.includes('itinerary')) return Map;
   if (l.includes('flight') || l.includes('airline') || l.includes('airport')) return Plane;
   if (l.includes('hotel') || l.includes('booking') || l.includes('accommodation')) return Briefcase;
@@ -156,27 +143,23 @@ const getIconForOption = (label: string) => {
   if (l.includes('photo') || l.includes('sightseeing')) return Camera;
   if (l.includes('cruise') || l.includes('sea')) return Video;
 
-  // Environmental
   if (l.includes('environment') || l.includes('ecology') || l.includes('nature') || l.includes('habitat')) return Leaf;
   if (l.includes('climate') || l.includes('weather') || l.includes('energy') || l.includes('carbon')) return Wind;
   if (l.includes('recycle') || l.includes('waste') || l.includes('sustainab')) return Recycle;
   if (l.includes('forest') || l.includes('wildlife') || l.includes('conservation') || l.includes('bio')) return TreeDeciduous;
   if (l.includes('pollution') || l.includes('air') || l.includes('water')) return FlaskConical;
 
-  // Tech
   if (l.includes('code') || l.includes('sdk') || l.includes('api') || l.includes('snippet')) return Code;
   if (l.includes('database') || l.includes('sql') || l.includes('schema')) return Database;
   if (l.includes('server') || l.includes('cloud') || l.includes('devops')) return Server;
   if (l.includes('hardware') || l.includes('iot') || l.includes('robotics')) return Cpu;
   if (l.includes('technical') || l.includes('spec') || l.includes('system')) return Settings;
   
-  // Science & Math
   if (l.includes('lab') || l.includes('experiment') || l.includes('microscope')) return Microscope;
   if (l.includes('science') || l.includes('chemical')) return FlaskConical;
   if (l.includes('research') || l.includes('study') || l.includes('analysis') || l.includes('thesis')) return FileSearch;
   if (l.includes('math') || l.includes('equation') || l.includes('formula')) return Sigma;
   
-  // Business & Finance
   if (l.includes('financial') || l.includes('budget') || l.includes('profit') || l.includes('revenue') || l.includes('cash') || l.includes('payroll')) return DollarSign;
   if (l.includes('market') || l.includes('sales') || l.includes('growth') || l.includes('trend')) return TrendingUp;
   if (l.includes('meeting') || l.includes('agenda') || l.includes('schedule')) return Calendar;
@@ -184,7 +167,6 @@ const getIconForOption = (label: string) => {
   if (l.includes('report') || l.includes('audit') || l.includes('log') || l.includes('review') || l.includes('summary')) return ClipboardList;
   if (l.includes('invoice') || l.includes('receipt') || l.includes('bill')) return Receipt;
   
-  // Legal & Government
   if (l.includes('legal') || l.includes('court') || l.includes('litigation') || l.includes('judgment')) return Gavel;
   if (l.includes('contract') || l.includes('agreement') || l.includes('policy') || l.includes('terms')) return FileSignature;
   if (l.includes('regulation') || l.includes('compliance') || l.includes('law')) return Scale;
@@ -192,23 +174,19 @@ const getIconForOption = (label: string) => {
   if (l.includes('infrastructure') || l.includes('urban') || l.includes('housing')) return Building2;
   if (l.includes('safety') || l.includes('security') || l.includes('risk') || l.includes('disaster')) return ShieldAlert;
 
-  // Medical
   if (l.includes('medical') || l.includes('patient') || l.includes('doctor') || l.includes('clinical') || l.includes('surgery') || l.includes('diagnosis')) return Stethoscope;
   if (l.includes('medication') || l.includes('drug') || l.includes('prescription') || l.includes('pharmacy') || l.includes('treatment')) return Pill;
   if (l.includes('health') || l.includes('nursing') || l.includes('vital') || l.includes('discharge')) return Activity;
 
-  // Creative
   if (l.includes('music') || l.includes('song') || l.includes('lyric')) return Music;
   if (l.includes('podcast') || l.includes('audio') || l.includes('speech')) return Mic;
   if (l.includes('video') || l.includes('animation')) return Video;
   if (l.includes('poem') || l.includes('poetry')) return Feather;
   if (l.includes('story') || l.includes('novel') || l.includes('fiction')) return BookOpen;
   
-  // Education
   if (l.includes('lesson') || l.includes('syllabus') || l.includes('curriculum') || l.includes('teaching')) return GraduationCap;
   if (l.includes('quiz') || l.includes('exam') || l.includes('test') || l.includes('grade')) return CheckSquare;
   
-  // General
   if (l.includes('resume') || l.includes('cv') || l.includes('profile')) return User;
   if (l.includes('email') || l.includes('letter')) return Mail;
   if (l.includes('presentation') || l.includes('slide')) return Projector;
@@ -218,7 +196,6 @@ const getIconForOption = (label: string) => {
   return FileText;
 };
 
-// Helper component for dynamic icons, e.g. Box
 const Box = (props: any) => (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 
@@ -238,7 +215,6 @@ const Box = (props: any) => (
     </svg>
 );
 
-// Helper for Sparkles icon usage in getIconForOption
 const Sparkles = (props: any) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={props.size || 24} height={props.size || 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 19v2"/><path d="M21 21h-2"/></svg>
 );
@@ -342,10 +318,8 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                      </div>
                                  </button>
                                  
-                                 <div 
-                                    className={`grid transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
-                                 >
-                                    <div className="overflow-hidden">
+                                 {isExpanded && (
+                                    <div className="animate-in slide-in-from-top-1 duration-200 overflow-hidden">
                                          <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
                                              {items.map((item, idx) => {
                                                  const Icon = getIconForOption(item.l);
@@ -353,8 +327,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                                      <button 
                                                         key={idx} 
                                                         onClick={() => onSelect(item)}
-                                                        className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group animate-in fade-in slide-in-from-top-1 duration-300 fill-mode-backwards"
-                                                        style={{ animationDelay: `${idx * 20}ms` }} 
+                                                        className="w-full text-left px-3 py-1.5 hover:bg-white hover:shadow-sm rounded border border-transparent hover:border-slate-100 transition-all group"
                                                      >
                                                          <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2">
                                                             <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
@@ -366,7 +339,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                              })}
                                          </div>
                                     </div>
-                                 </div>
+                                 )}
                              </div>
                          );
                      })}

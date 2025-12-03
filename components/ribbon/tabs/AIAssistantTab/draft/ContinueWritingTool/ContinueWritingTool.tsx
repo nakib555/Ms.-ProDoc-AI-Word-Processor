@@ -1,11 +1,16 @@
 
-import React from 'react';
-import { PenTool, Sparkles, FileText, Feather, Activity, BookOpen } from 'lucide-react';
+import React, { Suspense } from 'react';
+import { PenTool, Sparkles, FileText, Feather, Activity, BookOpen, Loader2 } from 'lucide-react';
 import { DropdownRibbonButton } from '../../common/AITools';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
-import { PredictiveBuilder } from './PredictiveBuilder/PredictiveBuilder';
+
+// Lazy load PredictiveBuilder
+const PredictiveBuilder = React.lazy(() => 
+  import('./PredictiveBuilder/PredictiveBuilder')
+    .then(m => ({ default: m.PredictiveBuilder }))
+);
 
 export const ContinueWritingTool: React.FC = () => {
   const { performAIAction } = useAI();
@@ -68,8 +73,15 @@ export const ContinueWritingTool: React.FC = () => {
                      </div>
                  </div>
 
-                 {/* Predictive Builder Section */}
-                 <PredictiveBuilder onSelect={handlePredictiveSelect} />
+                 {/* Predictive Builder Section with Suspense */}
+                 <Suspense fallback={
+                    <div className="flex flex-col items-center justify-center h-40 gap-2 text-slate-400">
+                        <Loader2 className="animate-spin" size={20} />
+                        <span className="text-xs">Loading templates...</span>
+                    </div>
+                 }>
+                    <PredictiveBuilder onSelect={handlePredictiveSelect} />
+                 </Suspense>
              </div>
         </MenuPortal>
     </>
