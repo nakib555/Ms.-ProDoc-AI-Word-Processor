@@ -318,11 +318,14 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                     </div>
                 </div>
 
-                {/* 4. Advanced Toggles */}
+                {/* 4. Advanced Toggles (Replaced with div based onClick for reliability) */}
                 <div className="space-y-2 pt-1">
-                    <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300">
+                    <div 
+                        className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300 select-none group"
+                        onClick={() => setConfig(c => ({...c, extractData: !c.extractData}))}
+                    >
                         <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg transition-colors ${config.extractData ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+                            <div className={`p-1.5 rounded-lg transition-colors ${config.extractData ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 group-hover:bg-slate-200'}`}>
                                 <List size={16} />
                             </div>
                             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Extract Key Data</span>
@@ -330,17 +333,14 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         <div className={`w-9 h-5 rounded-full relative transition-colors ${config.extractData ? 'bg-violet-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
                            <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform shadow-sm ${config.extractData ? 'translate-x-4' : 'translate-x-0'}`} />
                         </div>
-                         <input 
-                            type="checkbox" 
-                            checked={config.extractData}
-                            onChange={(e) => setConfig(c => ({...c, extractData: e.target.checked}))}
-                            className="hidden"
-                        />
-                    </label>
+                    </div>
 
-                    <label className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300">
+                    <div 
+                        className="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer transition-colors hover:border-violet-300 select-none group"
+                        onClick={() => setConfig(c => ({...c, highlightInsights: !c.highlightInsights}))}
+                    >
                         <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-lg transition-colors ${config.highlightInsights ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+                            <div className={`p-1.5 rounded-lg transition-colors ${config.highlightInsights ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 group-hover:bg-slate-200'}`}>
                                 <Zap size={16} />
                             </div>
                             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Highlight Insights</span>
@@ -348,13 +348,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                         <div className={`w-9 h-5 rounded-full relative transition-colors ${config.highlightInsights ? 'bg-violet-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
                            <div className={`absolute top-1 left-1 bg-white w-3 h-3 rounded-full transition-transform shadow-sm ${config.highlightInsights ? 'translate-x-4' : 'translate-x-0'}`} />
                         </div>
-                        <input 
-                            type="checkbox" 
-                            checked={config.highlightInsights}
-                            onChange={(e) => setConfig(c => ({...c, highlightInsights: e.target.checked}))}
-                            className="hidden"
-                        />
-                    </label>
+                    </div>
                 </div>
             </div>
 
