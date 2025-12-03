@@ -113,7 +113,7 @@ export const WriteWithAITool: React.FC = () => {
                         relative w-full max-w-[95vw] md:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 z-20
                         
                         /* Dimensions & Shape */
-                        h-[75vh] md:h-auto md:max-h-[85vh] rounded-2xl border border-slate-200 dark:border-slate-700 
+                        h-auto max-h-[85vh] md:max-h-[85vh] rounded-2xl border border-slate-200 dark:border-slate-700 
                         
                         /* Animation */
                         animate-in zoom-in-95 duration-200 ease-out

@@ -189,7 +189,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
             /* Unified Floating Styles */
-            h-[75vh] md:h-[85vh] 
+            h-auto max-h-[85vh] md:h-[85vh] 
             rounded-2xl md:rounded-3xl 
             border border-slate-200 dark:border-slate-700 
             
@@ -203,7 +203,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
         <div className={`
             flex-col bg-slate-50/90 dark:bg-slate-950/90 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl shrink-0 transition-all duration-300 z-20
             md:w-[360px] md:flex
-            ${mobileView === 'sidebar' ? 'flex w-full h-full pt-8 md:pt-0' : 'hidden'}
+            ${mobileView === 'sidebar' ? 'flex w-full h-full' : 'hidden'}
         `}>
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 shrink-0">
                 <div className="flex items-center justify-between">
@@ -354,7 +354,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
         <div className={`
             flex-col bg-[#f8fafc] dark:bg-slate-950 min-w-0 relative flex-1
             md:flex
-            ${mobileView === 'editor' ? 'flex w-full h-full pt-8 md:pt-0' : 'hidden'}
+            ${mobileView === 'editor' ? 'flex w-full h-full' : 'hidden'}
         `}>
             {/* Header */}
             <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
@@ -391,7 +391,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             {/* Viewport */}
             <div className="flex-1 overflow-hidden relative">
                 {/* Input View */}
-                <div className={`absolute inset-0 flex flex-col transition-all duration-300 ${activeTab === 'input' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                <div className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
                     <textarea 
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
@@ -405,7 +405,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 </div>
 
                 {/* Preview View */}
-                <div className={`absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
+                <div className={`flex flex-col w-full h-full transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
                     {result ? (
                         <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
                             <div 

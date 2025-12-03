@@ -173,7 +173,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
             /* Unified Floating Styles */
-            h-[75vh] md:h-[85vh] 
+            h-auto max-h-[85vh] md:h-[85vh] 
             rounded-2xl md:rounded-3xl 
             border border-white/20 dark:border-slate-700 
             ring-1 ring-black/5 dark:ring-white/5
@@ -188,7 +188,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
         <div className={`
             flex-col bg-slate-50/90 dark:bg-slate-950/90 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl shrink-0 transition-all duration-300 z-20
             md:w-[360px] md:flex
-            ${mobileView === 'sidebar' ? 'flex w-full h-full pt-8 md:pt-0' : 'hidden'}
+            ${mobileView === 'sidebar' ? 'flex w-full h-full' : 'hidden'}
         `}>
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 shrink-0">
                 <div className="flex items-center justify-between">
@@ -347,7 +347,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
         <div className={`
             flex-col bg-[#f8fafc] dark:bg-slate-950 min-w-0 relative flex-1
             md:flex
-            ${mobileView === 'editor' ? 'flex w-full h-full pt-8 md:pt-0' : 'hidden'}
+            ${mobileView === 'editor' ? 'flex w-full h-full' : 'hidden'}
         `}>
             {/* Header */}
             <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
@@ -383,7 +383,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
             {/* Content View */}
             <div className="flex-1 overflow-hidden relative">
                 {/* Input View */}
-                <div className={`absolute inset-0 flex flex-col transition-all duration-300 ${activeTab === 'input' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
+                <div className={`flex flex-col w-full h-full transition-all duration-300 ${activeTab === 'input' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 -translate-x-10 pointer-events-none'}`}>
                     <textarea 
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
@@ -397,50 +397,46 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                 </div>
 
                 {/* Preview View */}
-                <div className={`absolute inset-0 flex flex-col transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'opacity-100 z-10 translate-x-0' : 'opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
-                     {isGenerating ? (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
-                            <div className="space-y-6">
-                                <div className="relative mx-auto w-20 h-20">
-                                    <div className="absolute inset-0 border-4 border-orange-100 dark:border-slate-800 rounded-full"></div>
-                                    <div className="absolute inset-0 border-4 border-orange-500 rounded-full border-t-transparent animate-spin"></div>
-                                    <Brain size={32} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-orange-500 animate-pulse" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Compressing content...</p>
-                                    <p className="text-xs mt-1 opacity-70">Applying smart filters and tone adjustments.</p>
-                                </div>
-                            </div>
-                        </div>
-                    ) : result ? (
-                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-10 animate-in slide-in-from-top-4 fade-in duration-500">
-                             <div 
+                <div className={`flex flex-col w-full h-full transition-all duration-300 bg-slate-50 dark:bg-slate-950 ${activeTab === 'preview' ? 'relative opacity-100 z-10 translate-x-0' : 'absolute top-0 left-0 opacity-0 z-0 translate-x-10 pointer-events-none'}`}>
+                    {result ? (
+                        <div className="absolute inset-0 overflow-y-auto custom-scrollbar p-6 md:p-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                            <div 
                                 className="prose prose-sm md:prose-base dark:prose-invert max-w-3xl mx-auto bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800"
                                 dangerouslySetInnerHTML={{ __html: result }}
                             />
-                            <div className="max-w-3xl mx-auto mt-6 flex justify-between text-xs text-slate-400 font-medium px-4 py-3 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg">
-                                <span>Original: <span className="font-mono text-slate-600 dark:text-slate-300">{inputText.length}</span> chars</span>
-                                <span className="text-orange-600 dark:text-orange-400">New: <span className="font-mono font-bold">{result.replace(/<[^>]*>?/gm, '').length}</span> chars</span>
-                            </div>
                         </div>
                     ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center opacity-60">
-                            <div className="space-y-4 max-w-sm">
-                                <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-200 dark:border-slate-700 shadow-sm rotate-3 transition-transform hover:rotate-0 duration-500">
-                                    <MessageSquare size={40} className="text-orange-300"/>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                            {isGenerating ? (
+                                <div className="space-y-4">
+                                    <div className="relative mx-auto w-16 h-16">
+                                        <div className="absolute inset-0 border-4 border-violet-100 dark:border-slate-800 rounded-full"></div>
+                                        <div className="absolute inset-0 border-4 border-violet-600 rounded-full border-t-transparent animate-spin"></div>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Analyzing text structure...</p>
+                                        <p className="text-xs mt-1 opacity-70">Extracting key points and insights.</p>
+                                    </div>
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-600 dark:text-slate-300">Ready to Shorten</h3>
-                                <p className="text-sm leading-relaxed">
-                                    Configure your reduction strategy in Settings and click Generate.
-                                </p>
-                            </div>
+                            ) : (
+                                <div className="space-y-4 max-w-sm opacity-60">
+                                    <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <MessageSquare size={32} className="text-violet-300"/>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Summarize</h3>
+                                    <p className="text-sm leading-relaxed">
+                                        Configure your summary options in Settings and click Generate.
+                                        The AI will analyze your text and extract the key information.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
             </div>
 
             {/* Result Actions */}
-            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-4 shrink-0">
+            <div className="h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-6 gap-3 shrink-0">
                 {result && activeTab === 'preview' && (
                     <>
                         <button 
