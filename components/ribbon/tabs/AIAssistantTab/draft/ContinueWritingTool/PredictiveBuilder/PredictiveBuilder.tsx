@@ -51,6 +51,42 @@ const CATEGORY_LOADERS: Record<string, () => Promise<{l: string, f: string}[]>> 
 
 const CATEGORY_NAMES = Object.keys(CATEGORY_LOADERS).sort();
 
+// Hardcoded counts to display before loading
+const CATEGORY_COUNTS: Record<string, number> = {
+    "Technology & Innovation": 66,
+    "Cultural Studies & Humanities": 65,
+    "Research & Academic": 40,
+    "Science & Research Documentation": 65,
+    "Historical Research": 65,
+    "Technical & Engineering": 50,
+    "Business & Management": 153,
+    "Business & Entrepreneurship": 64,
+    "Creative & Media": 100,
+    "Media & Journalism": 64,
+    "Science Fiction & Fantasy": 65,
+    "Arts & Performing Arts": 65,
+    "Education & Teaching": 65,
+    "Legal & Regulatory": 64,
+    "Legal & Compliance": 65,
+    "Healthcare & Medical": 65,
+    "Health & Wellness": 65,
+    "Finance & Accounting": 65,
+    "Government & Policy": 65,
+    "Philanthropy & NGOs": 65,
+    "Architecture & Construction": 65,
+    "Travel & Tourism": 65,
+    "Travel & Tourism Innovations": 64,
+    "Environmental Science & Sustainability": 65,
+    "Food & Recipe": 66,
+    "Fashion & Lifestyle": 65,
+    "Sports & Fitness": 64,
+    "Sports & Recreation": 65,
+    "Entertainment & Media": 66,
+    "Psychology & Mental Health": 65,
+    "DIY & How-To": 66,
+    "Gaming & eSports": 62
+};
+
 const getIconForOption = (label: string) => {
   const l = label.toLowerCase();
   
@@ -289,10 +325,8 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
     return results.slice(0, 50);
   }, [deferredSearchTerm, loadedData]);
 
-  // Calculate total items (approximate based on loaded + estimate for unloaded)
-  // We'll just show loaded count or "+" if loading
-  const totalCount = Object.values(loadedData).reduce((acc, curr: any) => acc + curr.length, 0);
-  const hasUnloaded = CATEGORY_NAMES.length > Object.keys(loadedData).length;
+  // Calculate total items from hardcoded counts
+  const totalCount = Object.values(CATEGORY_COUNTS).reduce((acc, curr) => acc + curr, 0);
 
   return (
      <div className="flex flex-col flex-1 min-h-0 bg-slate-50/50">
@@ -302,7 +336,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                      <LayoutTemplate size={10}/> Predictive Builder
                  </div>
                  <span className="text-[9px] bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
-                    {totalCount}{hasUnloaded ? '+' : ''}
+                    {totalCount}
                  </span>
              </div>
              <div className="relative group">
@@ -376,7 +410,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                                              <Loader2 size={10} className="animate-spin text-slate-400"/>
                                          ) : (
                                              <span className={`text-[9px] px-1.5 rounded transition-colors ${isExpanded ? 'bg-blue-100 text-blue-600' : 'text-slate-400 bg-slate-100'}`}>
-                                                 {items ? items.length : '+'}
+                                                 {CATEGORY_COUNTS[category]}
                                              </span>
                                          )}
                                          <ChevronDown size={12} className={`text-slate-400 transition-transform duration-300 ease-in-out ${isExpanded ? 'rotate-180 text-blue-500' : ''}`}/>
