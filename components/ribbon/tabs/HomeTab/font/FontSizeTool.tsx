@@ -94,7 +94,7 @@ export const FontSizeTool: React.FC = () => {
     <>
         <div 
             ref={(el) => registerTrigger(menuId, el)}
-            className={`flex items-center border rounded-[2px] h-[22px] w-12 bg-white transition-colors group relative mr-1 ${activeMenu === menuId ? 'border-blue-400 ring-1 ring-blue-100' : 'border-slate-300 hover:border-blue-300'}`}
+            className={`flex items-center border rounded-md h-[26px] w-16 bg-white dark:bg-slate-800 transition-colors group relative mr-1 ${activeMenu === menuId ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-600'}`}
             title="Font Size (Points)"
         >
             <input 
@@ -105,26 +105,26 @@ export const FontSizeTool: React.FC = () => {
                 onKeyDown={handleKeyDown}
                 onFocus={() => inputRef.current?.select()}
                 onBlur={() => setInputValue(currentFontSize)}
-                className="w-full h-full px-1 text-[11px] outline-none text-slate-800 font-medium bg-transparent text-center leading-tight"
+                className="w-full h-full px-2 text-xs outline-none text-slate-700 dark:text-slate-200 font-medium bg-transparent text-center leading-tight rounded-l-md"
             />
             <button 
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => { e.stopPropagation(); toggleMenu(menuId); }}
-                className="h-full px-0.5 hover:bg-blue-50 border-l border-transparent group-hover:border-slate-200 flex items-center justify-center"
+                className="h-full px-1 hover:bg-slate-100 dark:hover:bg-slate-700 border-l border-transparent group-hover:border-slate-100 dark:group-hover:border-slate-700 flex items-center justify-center rounded-r-md transition-colors"
                 tabIndex={-1}
             >
-                <ChevronDown size={10} className="text-slate-500" strokeWidth={2.5} />
+                <ChevronDown size={12} className="text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-400" strokeWidth={2} />
             </button>
         </div>
 
-        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={60}>
+        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={70}>
             <div className="max-h-[300px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200">
                 {STD_SIZES.map(size => (
                     <button
                         key={size}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applySize(size)}
-                        className={`w-full text-center px-2 py-1 hover:bg-blue-50 hover:text-blue-700 text-xs transition-colors rounded-sm ${parseInt(currentFontSize) === size ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'}`}
+                        className={`w-full text-center px-2 py-1.5 hover:bg-blue-50 hover:text-blue-700 text-xs transition-colors rounded-md ${parseInt(currentFontSize) === size ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'}`}
                     >
                         {size}
                     </button>

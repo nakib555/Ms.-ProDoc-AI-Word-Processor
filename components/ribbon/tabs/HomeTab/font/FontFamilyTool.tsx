@@ -86,7 +86,7 @@ export const FontFamilyTool: React.FC = () => {
     <>
         <div 
             ref={(el) => registerTrigger(menuId, el)}
-            className={`flex items-center border rounded-[2px] h-[22px] w-32 bg-white transition-colors group relative mx-0.5 ${activeMenu === menuId ? 'border-blue-400 ring-1 ring-blue-100' : 'border-slate-300 hover:border-blue-300'}`}
+            className={`flex items-center border rounded-md h-[26px] w-36 bg-white dark:bg-slate-800 transition-colors group relative mx-0.5 ${activeMenu === menuId ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-600'}`}
             title="Font Family (Ctrl+Shift+F)"
         >
             <input 
@@ -100,15 +100,15 @@ export const FontFamilyTool: React.FC = () => {
                 onBlur={() => {
                     if (!isMixed) setInputValue(currentFont);
                 }}
-                className="w-full h-full px-1.5 text-[11px] outline-none text-slate-800 font-medium bg-transparent leading-tight"
+                className="w-full h-full px-2 text-xs outline-none text-slate-700 dark:text-slate-200 font-medium bg-transparent leading-tight rounded-l-md"
             />
             <button 
                 onMouseDown={(e) => e.preventDefault()} 
                 onClick={(e) => { e.stopPropagation(); toggleMenu(menuId); }}
-                className="h-full px-0.5 hover:bg-blue-50 border-l border-transparent group-hover:border-slate-200 flex items-center justify-center"
+                className="h-full px-1 hover:bg-slate-100 dark:hover:bg-slate-700 border-l border-transparent group-hover:border-slate-100 dark:group-hover:border-slate-700 flex items-center justify-center rounded-r-md transition-colors"
                 tabIndex={-1}
             >
-                <ChevronDown size={10} className="text-slate-500" strokeWidth={2.5} />
+                <ChevronDown size={12} className="text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-400" strokeWidth={2} />
             </button>
         </div>
 
@@ -120,7 +120,7 @@ export const FontFamilyTool: React.FC = () => {
                         key={font}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelect(font)}
-                        className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 text-xs transition-colors flex items-center group rounded-sm ${currentFont === font && !isMixed ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'}`}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-blue-50 hover:text-blue-700 text-xs transition-colors flex items-center group rounded-md ${currentFont === font && !isMixed ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-700'}`}
                         style={{ fontFamily: font }}
                     >
                         {font}
