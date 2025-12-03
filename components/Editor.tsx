@@ -58,6 +58,7 @@ const Editor: React.FC = () => {
   
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pendingScrollRef = useRef<{left: number, top: number} | null>(null);
+  const prevZoomRef = useRef<number>(zoom);
 
   // Stable callback for ref registration
   // We pass this to the specific view which will attach it to the scrollable element
@@ -121,11 +122,43 @@ const Editor: React.FC = () => {
 
   // Apply pending scroll adjustment after layout update
   useLayoutEffect(() => {
-      if (pendingScrollRef.current && containerRef.current) {
-          containerRef.current.scrollLeft = pendingScrollRef.current.left;
-          containerRef.current.scrollTop = pendingScrollRef.current.top;
-          pendingScrollRef.current = null;
+      const container = containerRef.current;
+      if (!container) {
+          prevZoomRef.current = zoom;
+          return;
       }
+
+      if (pendingScrollRef.current) {
+          // Case 1: Zoom to Cursor (initiated by Wheel)
+          container.scrollLeft = pendingScrollRef.current.left;
+          container.scrollTop = pendingScrollRef.current.top;
+          pendingScrollRef.current = null;
+      } else if (prevZoomRef.current !== zoom) {
+          // Case 2: Zoom to Center (initiated by UI/Keyboard)
+          const oldScale = prevZoomRef.current / 100;
+          const newScale = zoom / 100;
+          
+          // Get viewport dimensions
+          const { clientWidth, clientHeight, scrollLeft, scrollTop } = container;
+          
+          // Calculate center of viewport relative to content (unscaled) using PREVIOUS state assumptions
+          // We assume scrollTop/Left are currently at the "old" position relative to top-left anchor 
+          // because browser scroll anchoring typically preserves top-left or we haven't painted yet.
+          
+          const centerX = scrollLeft + (clientWidth / 2);
+          const centerY = scrollTop + (clientHeight / 2);
+
+          const contentCenterX = centerX / oldScale;
+          const contentCenterY = centerY / oldScale;
+
+          const newScrollLeft = (contentCenterX * newScale) - (clientWidth / 2);
+          const newScrollTop = (contentCenterY * newScale) - (clientHeight / 2);
+
+          container.scrollLeft = newScrollLeft;
+          container.scrollTop = newScrollTop;
+      }
+      
+      prevZoomRef.current = zoom;
   }, [zoom]);
 
   // Read Mode Route

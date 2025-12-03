@@ -89,7 +89,6 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
       const codeBlockMatch = cleanJson.match(/```(?:json)?([\s\S]*?)```/);
       if (codeBlockMatch) cleanJson = codeBlockMatch[1].trim();
       
-      // Fallback manual cleanup for common LLM JSON artifacts
       if (cleanJson.indexOf('{') > 0) cleanJson = cleanJson.substring(cleanJson.indexOf('{'));
       if (cleanJson.lastIndexOf('}') < cleanJson.length - 1) cleanJson = cleanJson.substring(0, cleanJson.lastIndexOf('}') + 1);
 
@@ -105,7 +104,6 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
           setResult(html);
       } catch (e) {
           console.error("JSON Parse Error", e);
-          // Fallback text render if parsing failed but it wasn't an explicit error message
           setResult(`<p>${response.replace(/\n/g, '<br/>')}</p>`);
       }
     } catch (e) {
@@ -119,16 +117,36 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200 p-2 md:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4">
       <div 
-        className="bg-white dark:bg-slate-900 w-full h-[75vh] md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-200 ring-1 ring-black/10"
+          className="absolute inset-0 bg-slate-900/50 backdrop-blur-[4px] transition-opacity animate-in fade-in duration-300"
+          onClick={onClose}
+      />
+      
+      <div 
+        className={`
+            relative w-full bg-white dark:bg-slate-900 shadow-[0_-12px_40px_-10px_rgba(0,0,0,0.4)] flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
+            
+            /* Mobile Styles: Floating Sheet (75vh) */
+            h-[75vh] rounded-t-[32px] border-t border-white/20 dark:border-slate-700 ring-1 ring-white/40 dark:ring-slate-800
+            
+            /* Desktop Styles: Centered Modal */
+            md:h-[85vh] md:max-w-6xl md:rounded-3xl md:shadow-2xl md:border md:border-white/20
+            
+            animate-in slide-in-from-bottom-full md:slide-in-from-bottom-12 zoom-in-95 ease-out
+        `}
         onClick={e => e.stopPropagation()}
       >
+        {/* Mobile Drag Handle */}
+        <div className="md:hidden w-full flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing bg-white/90 dark:bg-slate-900/90 absolute top-0 z-30 rounded-t-[32px]" onClick={onClose}>
+            <div className="w-14 h-1.5 bg-slate-300/80 dark:bg-slate-600/80 rounded-full shadow-sm"></div>
+        </div>
+
         {/* Left Panel: Configuration */}
         <div className={`
-            flex-col bg-slate-50/90 dark:bg-slate-950/90 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl shrink-0 transition-all duration-300
+            flex-col bg-slate-50/90 dark:bg-slate-950/90 border-r border-slate-200 dark:border-slate-800 backdrop-blur-xl shrink-0 transition-all duration-300 z-20
             md:w-[360px] md:flex
-            ${mobileView === 'sidebar' ? 'flex w-full h-full' : 'hidden'}
+            ${mobileView === 'sidebar' ? 'flex w-full h-full pt-8 md:pt-0' : 'hidden'}
         `}>
             <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 shrink-0">
                 <div className="flex items-center justify-between">
@@ -202,7 +220,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
         <div className={`
             flex-col bg-[#f8fafc] dark:bg-slate-950 min-w-0 relative flex-1
             md:flex
-            ${mobileView === 'editor' ? 'flex w-full h-full' : 'hidden'}
+            ${mobileView === 'editor' ? 'flex w-full h-full pt-8 md:pt-0' : 'hidden'}
         `}>
             <div className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-6 shrink-0">
                 {/* Mobile Sidebar Toggle */}

@@ -1,3 +1,4 @@
+
 {
   "name": "copy-of-prodoc-ai---modern-word-processor",
   "private": true,
@@ -13,7 +14,6 @@
     "react-dom": "^19.2.0",
     "@google/genai": "^1.30.0",
     "lucide-react": "^0.554.0",
-    "react-window": "^1.8.10",
     "react-virtualized-auto-sizer": "^1.0.24"
   },
   "devDependencies": {
@@ -21,7 +21,6 @@
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "@types/react-window": "^1.8.8",
     "@types/react-virtualized-auto-sizer": "^1.0.4"
   }
 }

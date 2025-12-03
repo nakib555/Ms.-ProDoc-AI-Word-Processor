@@ -11,7 +11,7 @@ interface Message {
   isStreaming?: boolean;
 }
 
-const CopilotSidebar: React.FC = () => {
+export const CopilotSidebar: React.FC = () => {
   const { showCopilot, setShowCopilot, content, executeCommand, viewMode } = useEditor();
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'model', text: "Hi! I'm Copilot. I can help you write, summarize, or edit this document. What would you like to do?" }
@@ -164,5 +164,3 @@ const CopilotSidebar: React.FC = () => {
     </div>
   );
 };
-
-export default CopilotSidebar;

@@ -1,13 +1,12 @@
 
-import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo, createContext, useContext } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { FileText } from 'lucide-react';
-import { FixedSizeList as List, ListChildComponentProps, VariableSizeList } from 'react-window';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { PageConfig } from '../../../../../types';
 import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
-import { paginateContent, PaginatorResult } from '../../../../../utils/layoutEngine';
+import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
 
 export const PrintLayoutTool: React.FC = () => {
@@ -33,50 +32,6 @@ interface PrintLayoutViewProps {
   showFormattingMarks: boolean;
   containerRef: (node: HTMLDivElement | null) => void;
 }
-
-// --- Layout Context for Virtual List Components ---
-const LayoutContext = createContext<{
-    listWidth: number;
-    rulerRef: React.RefObject<HTMLDivElement | null>;
-} | null>(null);
-
-// --- Static Inner Element ---
-const InnerElement = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ style, ...rest }, ref) => {
-    const ctx = useContext(LayoutContext);
-    const width = ctx ? ctx.listWidth : '100%';
-    return (
-        <div
-            ref={ref}
-            style={{
-                ...style,
-                width,
-                position: 'relative'
-            }}
-            {...rest}
-        />
-    );
-});
-
-// --- Static Outer Element ---
-const OuterElement = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => {
-    const ctx = useContext(LayoutContext);
-    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        props.onScroll && props.onScroll(e);
-        if (ctx && ctx.rulerRef.current) {
-            ctx.rulerRef.current.scrollLeft = e.currentTarget.scrollLeft;
-        }
-    };
-    
-    return (
-        <div 
-            {...props} 
-            ref={ref} 
-            onScroll={handleScroll} 
-            style={{ ...props.style, overflowX: 'auto', overflowY: 'auto' }} 
-        />
-    );
-});
-
 
 const BLOCK_TAGS = ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TR', 'BLOCKQUOTE', 'UL', 'OL', 'TABLE'];
 
@@ -304,55 +259,6 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
     }
 };
 
-// --- Virtualized Row Component ---
-const PageRow = React.memo(({ index, style, data }: ListChildComponentProps) => {
-    const { 
-        pages, 
-        zoom, 
-        showFormattingMarks, 
-        handlePageUpdate, 
-        handlePageFocus, 
-        activeEditingArea, 
-        setActiveEditingArea, 
-        headerContent, 
-        setHeaderContent, 
-        footerContent, 
-        setFooterContent 
-    } = data;
-
-    const pageData = pages[index];
-    const pageContent = pageData.html;
-    const pageConfig = pageData.config;
-
-    return (
-        <div style={style} className="w-full flex justify-center">
-            <div className="pt-8">
-                <div 
-                    className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
-                    data-page-index={index}
-                >
-                    <EditorPage
-                        pageNumber={index + 1}
-                        totalPages={pages.length}
-                        content={pageContent}
-                        config={pageConfig}
-                        zoom={zoom}
-                        showFormattingMarks={showFormattingMarks}
-                        onContentChange={handlePageUpdate}
-                        onFocus={(e) => handlePageFocus(index, e)}
-                        activeEditingArea={activeEditingArea}
-                        setActiveEditingArea={setActiveEditingArea}
-                        headerContent={headerContent}
-                        setHeaderContent={setHeaderContent}
-                        footerContent={footerContent}
-                        setFooterContent={setFooterContent}
-                    />
-                </div>
-            </div>
-        </div>
-    );
-});
-
 export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   width,
   height,
@@ -381,8 +287,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
-  // We use VariableSizeList to handle varying page sizes (like Legal or Landscape mix)
-  const listRef = useRef<VariableSizeList>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   
   const cursorRestorationRef = useRef<number | null>(null);
 
@@ -401,11 +306,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         
         setPagesData(result.pages);
         setTotalPages(result.pages.length);
-        
-        // Reset cache if sizes changed
-        if (listRef.current) {
-            listRef.current.resetAfterIndex(0);
-        }
         
         if (currentCursor !== null) {
             cursorRestorationRef.current = currentCursor;
@@ -433,13 +333,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, [currentPage, editorRef, pagesData]);
 
-  // Recalculate item sizes when zoom changes
-  useEffect(() => {
-      if (listRef.current) {
-          listRef.current.resetAfterIndex(0);
-      }
-  }, [zoom]);
-
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPagesData(currentPages => {
         const updatedPages = [...currentPages];
@@ -460,69 +353,49 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, [setCurrentPage, editorRef]);
 
-  const itemData = useMemo(() => ({
-      pages: pagesData,
-      zoom,
-      showFormattingMarks,
-      handlePageUpdate,
-      handlePageFocus,
-      activeEditingArea,
-      setActiveEditingArea,
-      headerContent,
-      setHeaderContent,
-      footerContent,
-      setFooterContent
-  }), [pagesData, zoom, showFormattingMarks, handlePageUpdate, handlePageFocus, activeEditingArea, setActiveEditingArea, headerContent, setHeaderContent, footerContent, setFooterContent]);
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    
+    // Sync Ruler
+    if (rulerContainerRef.current) {
+        rulerContainerRef.current.scrollLeft = container.scrollLeft;
+    }
 
-  // Dynamic Item Size Calculation
-  const getItemSize = (index: number) => {
-      const config = pagesData[index]?.config || pageConfig;
-      let baseH = 0;
-      
-      if (config.size === 'Custom' && config.customHeight) {
-          baseH = config.customHeight * 96;
-      } else {
-          const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
-          baseH = config.orientation === 'portrait' ? base.height : base.width;
-      }
-      
-      const scaledHeight = baseH * (zoom / 100);
-      const GAP_SIZE = 32;
-      return scaledHeight + GAP_SIZE;
-  };
+    // Determine active page based on center point
+    const containerRect = container.getBoundingClientRect();
+    const centerY = containerRect.top + containerRect.height / 2;
+    const centerX = containerRect.left + containerRect.width / 2;
 
-  const handleItemsRendered = useCallback(({ visibleStartIndex }: { visibleStartIndex: number }) => {
-      setCurrentPage(visibleStartIndex + 1);
-  }, [setCurrentPage]);
+    const pageWrappers = Array.from(container.getElementsByClassName('prodoc-page-wrapper')) as HTMLElement[];
+    
+    let closestPage = 1;
+    let minDistance = Infinity;
 
-  // Calculate max width for scrolling
-  const contentWidth = useMemo(() => {
-      let maxW = 0;
-      pagesData.forEach(p => {
-          const config = p.config;
-          let baseW = 0;
-          if (config.size === 'Custom' && config.customWidth) {
-              baseW = config.customWidth * 96;
-          } else {
-              const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
-              baseW = config.orientation === 'portrait' ? base.width : base.height;
-          }
-          const scaledW = baseW * (zoom / 100);
-          if (scaledW > maxW) maxW = scaledW;
-      });
-      return maxW + 64; 
-  }, [pagesData, zoom, pageConfig]);
+    for (const wrapper of pageWrappers) {
+        const rect = wrapper.getBoundingClientRect();
+        const wrapperCenterX = rect.left + rect.width / 2;
+        const wrapperCenterY = rect.top + rect.height / 2;
+        
+        // Distance from viewport center to page center
+        const dist = Math.hypot(wrapperCenterX - centerX, wrapperCenterY - centerY);
+        
+        if (dist < minDistance) {
+            minDistance = dist;
+            const pageIndex = Number(wrapper.getAttribute('data-page-index'));
+            if (!isNaN(pageIndex)) closestPage = pageIndex + 1;
+        }
+    }
+    
+    if (closestPage !== currentPage) {
+        setCurrentPage(closestPage);
+    }
+  }, [currentPage, setCurrentPage]);
 
-  const listWidth = Math.max(width, contentWidth);
+  const setRefs = useCallback((node: HTMLDivElement | null) => {
+      scrollContainerRef.current = node;
+      containerRef(node);
+  }, [containerRef]);
 
-  const handleOuterScroll = useCallback((e: React.UIEvent<HTMLElement>) => {
-      const scrollLeft = e.currentTarget.scrollLeft;
-      if (rulerContainerRef.current) {
-          rulerContainerRef.current.scrollLeft = scrollLeft;
-      }
-  }, []);
-
-  // --- Pinch to Zoom Handlers ---
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
         const dist = Math.hypot(
@@ -536,7 +409,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-        e.preventDefault(); // Prevent native browser zoom/scroll
+        e.preventDefault();
         const dist = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
             e.touches[0].clientY - e.touches[1].clientY
@@ -551,15 +424,23 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   };
 
   const isVertical = pageMovement === 'vertical';
-
-  // Get config for current page for ruler
   const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
 
-  // Use Context to pass data to static components
-  const layoutContextValue = useMemo(() => ({
-      listWidth,
-      rulerRef: rulerContainerRef
-  }), [listWidth]);
+  // Calculate content width for horizontal scroll support in ruler sync
+  const maxPageWidth = useMemo(() => {
+      let max = 0;
+      pagesData.forEach(p => {
+          const cfg = p.config;
+          let w = 0;
+          if (cfg.size === 'Custom' && cfg.customWidth) w = cfg.customWidth * 96;
+          else {
+             const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
+             w = cfg.orientation === 'portrait' ? base.width : base.height;
+          }
+          if (w > max) max = w;
+      });
+      return Math.max(width, (max * (zoom / 100)) + 64);
+  }, [pagesData, zoom, width]);
 
   return (
     <div 
@@ -574,7 +455,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
-             <div style={{ width: listWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
+             <div style={{ width: maxPageWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
                  <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
                     <Ruler pageConfig={activePageConfig} zoom={zoom} />
                  </div>
@@ -582,44 +463,40 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
          </div>
        )}
 
-       {isVertical ? (
-           <LayoutContext.Provider value={layoutContextValue}>
-                <VariableSizeList
-                        ref={listRef}
-                        height={height - (showRuler ? 25 : 0)}
-                        itemCount={pagesData.length}
-                        itemSize={getItemSize}
-                        width={width}
-                        className="scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
-                        itemData={itemData}
-                        outerRef={containerRef}
-                        onItemsRendered={handleItemsRendered}
-                        outerElementType={OuterElement}
-                        innerElementType={InnerElement}
-                >
-                    {PageRow}
-                </VariableSizeList>
-           </LayoutContext.Provider>
-       ) : (
+       <div 
+          ref={setRefs}
+          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+          onScroll={handleScroll}
+          onDoubleClick={() => setActiveEditingArea('body')}
+       >
            <div 
-              ref={containerRef}
-              className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
-              onScroll={(e) => handleOuterScroll(e)}
-              onDoubleClick={() => setActiveEditingArea('body')}
+                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} py-8 gap-8`}
+                onClick={(e) => {
+                    if (e.target === e.currentTarget && activeEditingArea !== 'body') {
+                        setActiveEditingArea('body');
+                    }
+                }}
            >
-               <div 
-                    className="min-w-full min-h-full w-fit flex flex-row flex-wrap justify-center content-start py-8 gap-8"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget && activeEditingArea !== 'body') {
-                            setActiveEditingArea('body');
-                        }
-                    }}
-               >
-                    {pagesData.map((pageData, index) => (
+                {pagesData.map((pageData, index) => {
+                    // Calculate estimated height for content-visibility to prevent scroll jumps
+                    const config = pageData.config;
+                    let baseH = 0;
+                    if (config.size === 'Custom' && config.customHeight) baseH = config.customHeight * 96;
+                    else {
+                        const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
+                        baseH = config.orientation === 'portrait' ? base.height : base.width;
+                    }
+                    const scaledHeight = baseH * (zoom / 100);
+
+                    return (
                         <div 
                             key={index} 
                             className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
                             data-page-index={index}
+                            style={{ 
+                                contentVisibility: 'auto', 
+                                containIntrinsicSize: `0 ${scaledHeight}px` // Optimization for long docs
+                            }}
                         >
                             <EditorPage
                                 pageNumber={index + 1}
@@ -638,10 +515,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                                 setFooterContent={setFooterContent}
                             />
                         </div>
-                    ))}
-               </div>
+                    );
+                })}
            </div>
-       )}
+       </div>
     </div>
   );
 });
