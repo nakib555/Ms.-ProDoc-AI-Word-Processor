@@ -113,7 +113,7 @@ export const WriteWithAITool: React.FC = () => {
                         relative w-full max-w-[95vw] md:max-w-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 z-20
                         
                         /* Dimensions & Shape */
-                        h-auto max-h-[85vh] md:max-h-[85vh] rounded-2xl border border-slate-200 dark:border-slate-700 
+                        min-h-[75vh] h-auto max-h-[85vh] md:min-h-0 md:h-auto md:max-h-[85vh] rounded-2xl border border-slate-200 dark:border-slate-700 
                         
                         /* Animation */
                         animate-in zoom-in-95 duration-200 ease-out
@@ -126,7 +126,7 @@ export const WriteWithAITool: React.FC = () => {
                     onClick={e => e.stopPropagation()}
                 >
                     {/* Header */}
-                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm sticky top-0 z-20 flex justify-between items-center shrink-0">
+                    <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm shrink-0 flex justify-between items-center">
                         <div className="flex items-center gap-3.5">
                             <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl shadow-lg shadow-indigo-500/30 dark:shadow-indigo-900/20 text-white ring-2 ring-white dark:ring-slate-800">
                                 <Wand2 size={22} strokeWidth={2.5} />
@@ -147,7 +147,7 @@ export const WriteWithAITool: React.FC = () => {
                     </div>
                     
                     {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-8 bg-[#fcfcfd] dark:bg-slate-950">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-8 bg-[#fcfcfd] dark:bg-slate-950 min-h-0">
                         
                         {/* Prompt Input Section */}
                         <div className="space-y-3">
@@ -269,7 +269,7 @@ export const WriteWithAITool: React.FC = () => {
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0 flex gap-3 sticky bottom-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <div className="p-4 sm:p-5 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0 flex gap-3 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                         <button 
                             onClick={() => setIsOpen(false)}
                             className="flex-1 px-4 py-3.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all"

@@ -128,7 +128,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
             /* Unified Floating Styles */
-            h-auto max-h-[85vh] md:h-[85vh] 
+            min-h-[75vh] h-auto max-h-[85vh] md:min-h-0 md:h-[85vh] 
             rounded-2xl md:rounded-3xl 
             border border-white/20 dark:border-slate-700 
             ring-1 ring-black/5 dark:ring-white/5
@@ -169,7 +169,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                 <p className="text-xs text-slate-500 mt-1 ml-9 md:ml-0">Enrich content with depth and context.</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar min-h-0">
                 <div className="space-y-4">
                     <div>
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">Expansion Mode</label>

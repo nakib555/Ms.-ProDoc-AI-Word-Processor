@@ -189,7 +189,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
             /* Unified Floating Styles */
-            h-auto max-h-[85vh] md:h-[85vh] 
+            min-h-[75vh] h-auto max-h-[85vh] md:min-h-0 md:h-[85vh] 
             rounded-2xl md:rounded-3xl 
             border border-slate-200 dark:border-slate-700 
             
@@ -229,7 +229,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                 <p className="text-xs text-slate-500 mt-1 ml-9 md:ml-0">Distill content into clarity.</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar min-h-0">
                 
                 {/* 1. Summary Type */}
                 <div className="space-y-3">

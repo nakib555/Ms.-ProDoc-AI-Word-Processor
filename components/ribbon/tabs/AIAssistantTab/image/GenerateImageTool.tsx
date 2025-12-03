@@ -66,7 +66,7 @@ export const GenerateImageTool: React.FC = () => {
           onClick={() => setIsOpen(false)}
         >
           <div 
-            className="bg-white w-full max-w-lg rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 m-4 flex flex-col"
+            className="bg-white w-full max-w-lg h-[85vh] md:h-auto md:max-h-[85vh] rounded-xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 m-4 flex flex-col"
             role="dialog"
             aria-modal="true"
             onClick={e => e.stopPropagation()}
@@ -86,9 +86,9 @@ export const GenerateImageTool: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="p-6 flex flex-col gap-4">
+            <div className="p-6 flex flex-col gap-4 flex-1 overflow-y-auto min-h-0">
                 {/* Image Preview Area */}
-                <div className="w-full aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative group shadow-inner">
+                <div className="w-full aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative group shadow-inner shrink-0">
                     {isGenerating ? (
                         <div className="flex flex-col items-center gap-3 text-slate-400 animate-pulse">
                             <Loader2 size={48} className="animate-spin text-purple-500"/>
@@ -122,7 +122,7 @@ export const GenerateImageTool: React.FC = () => {
                 </div>
 
                 {/* Controls */}
-                <div className="space-y-3">
+                <div className="space-y-3 shrink-0">
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">Description</label>
                     <div className="relative">
                         <textarea
@@ -130,7 +130,7 @@ export const GenerateImageTool: React.FC = () => {
                             onChange={(e) => setPrompt(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="A futuristic city with flying cars, neon lights, cyberpunk style..."
-                            className="w-full h-20 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none shadow-sm pr-12"
+                            className="w-full h-24 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none shadow-sm pr-12"
                             disabled={isGenerating}
                             autoFocus
                         />
@@ -143,10 +143,10 @@ export const GenerateImageTool: React.FC = () => {
 
             {/* Footer */}
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center shrink-0">
-                <div className="text-xs text-slate-500 italic">
+                <div className="text-xs text-slate-500 italic hidden sm:block">
                     Powered by Gemini
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto justify-end">
                     {generatedImage ? (
                         <>
                             <button 

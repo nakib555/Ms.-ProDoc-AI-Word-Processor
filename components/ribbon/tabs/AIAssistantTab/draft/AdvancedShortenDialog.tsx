@@ -173,7 +173,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
             relative w-full bg-white dark:bg-slate-900 shadow-2xl flex flex-col md:flex-row overflow-hidden transition-all duration-500 z-20
             
             /* Unified Floating Styles */
-            h-auto max-h-[85vh] md:h-[85vh] 
+            min-h-[75vh] h-auto max-h-[85vh] md:min-h-0 md:h-[85vh] 
             rounded-2xl md:rounded-3xl 
             border border-white/20 dark:border-slate-700 
             ring-1 ring-black/5 dark:ring-white/5
@@ -214,7 +214,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                 <p className="text-xs text-slate-500 mt-1 ml-9 md:ml-0">Condense content intelligently.</p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-6">
+            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-6 min-h-0">
                 {/* Strategy Selection */}
                 <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Reduction Strategy</label>
@@ -423,7 +423,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                                     <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700 shadow-sm">
                                         <MessageSquare size={32} className="text-violet-300"/>
                                     </div>
-                                    <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Summarize</h3>
+                                    <h3 className="text-lg font-bold text-slate-600 dark:text-slate-300">Ready to Shorten</h3>
                                     <p className="text-sm leading-relaxed">
                                         Configure your summary options in Settings and click Generate.
                                         The AI will analyze your text and extract the key information.

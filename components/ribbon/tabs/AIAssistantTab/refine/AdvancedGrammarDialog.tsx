@@ -236,7 +236,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300 p-2 md:p-4" onClick={onClose}>
       <div 
-        className="bg-white dark:bg-slate-900 w-full h-auto max-h-[85vh] md:w-[95vw] md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
+        className="bg-white dark:bg-slate-900 w-full min-h-[75vh] h-auto max-h-[85vh] md:w-[95vw] md:min-h-0 md:h-[85vh] md:max-w-6xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-300 ring-1 ring-black/10"
         onClick={e => e.stopPropagation()}
       >
         {/* Sidebar Configuration */}
@@ -286,7 +286,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                 </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+            <div className="flex-1 overflow-y-auto custom-scrollbar relative min-h-0">
                 {sidebarView === 'settings' ? (
                     <div className="p-5 space-y-6">
                         {/* Tone Selector */}
@@ -496,7 +496,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                     ) : result ? (
                         <div className="flex-1 flex flex-col h-full overflow-hidden animate-in slide-in-from-top-4 fade-in duration-500">
                             {/* Scrollable Container */}
-                            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col min-h-0">
                                 {/* Dashboard Stats */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 p-6 md:p-8 pb-4 shrink-0">
                                     <div className={`bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-5 hover:border-indigo-200 transition-colors ${(!result.improvements || result.improvements.length === 0) ? 'md:col-span-3' : ''}`}>
