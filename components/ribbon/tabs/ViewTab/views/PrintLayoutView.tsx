@@ -331,7 +331,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setHeaderContent,
     footerContent,
     setFooterContent,
-    editorRef
+    editorRef,
+    setZoom
   } = useEditor();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
@@ -340,6 +341,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const listRef = useRef<VariableSizeList>(null);
   
   const cursorRestorationRef = useRef<number | null>(null);
+
+  // Refs for Pinch-to-Zoom
+  const touchDistRef = useRef<number>(0);
+  const startZoomRef = useRef<number>(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -383,6 +388,13 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = activePageEl as HTMLDivElement;
       }
   }, [currentPage, editorRef, pagesData]);
+
+  // Recalculate item sizes when zoom changes
+  useEffect(() => {
+      if (listRef.current) {
+          listRef.current.resetAfterIndex(0);
+      }
+  }, [zoom]);
 
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPagesData(currentPages => {
@@ -466,13 +478,45 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, []);
 
+  // --- Pinch to Zoom Handlers ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+        const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        touchDistRef.current = dist;
+        startZoomRef.current = zoom;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+        e.preventDefault(); // Prevent native browser zoom/scroll
+        const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+
+        if (touchDistRef.current > 0) {
+            const ratio = dist / touchDistRef.current;
+            const newZoom = Math.min(500, Math.max(10, startZoomRef.current * ratio));
+            setZoom(newZoom);
+        }
+    }
+  };
+
   const isVertical = pageMovement === 'vertical';
 
   // Get config for current page for ruler
   const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
 
   return (
-    <div className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900 transition-colors duration-300">
+    <div 
+      className="w-full h-full flex flex-col relative bg-[#E3E5E8] dark:bg-slate-900 transition-colors duration-300 touch-pan-x touch-pan-y"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+    >
        {showRuler && (
          <div 
             ref={rulerContainerRef}

@@ -233,6 +233,15 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (readOnly) return;
+    
+    // Prevent typing if locked (for physical keyboards)
+    if (isKeyboardLocked && !selectionMode) {
+        // Allow navigation keys
+        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key) && !(e.ctrlKey || e.metaKey)) {
+             e.preventDefault();
+             return;
+        }
+    }
 
     // Explicit Undo/Redo Handling to prevent conflicts and ensure support
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
@@ -712,9 +721,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const bodyWidth = width - margins.left - margins.right;
   const bodyHeight = height - margins.top - margins.bottom - gutterTop;
 
-  // Determine effective contentEditable state
-  const isBodyEditable = (!readOnly && !isHeaderFooterMode && !isKeyboardLocked) || selectionMode;
-  const isHeaderFooterEditable = (isHeaderFooterMode && !isKeyboardLocked) || (isHeaderFooterMode && selectionMode);
+  // Determine effective contentEditable state - Keep true to allow selection, use inputMode="none" for read-only feel
+  const isBodyEditable = true; 
+  const isHeaderFooterEditable = true;
 
   // Cursor style logic
   let cursorStyle = 'cursor-text';
@@ -763,7 +772,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         ref={headerRef}
                         className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
                         contentEditable={isHeaderFooterEditable}
-                        inputMode={selectionMode ? "none" : undefined}
+                        inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
                         suppressContentEditableWarning
                         onInput={handleHeaderInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
@@ -799,7 +808,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     ref={editorRef}
                     className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
                     contentEditable={isBodyEditable}
-                    inputMode={selectionMode ? "none" : undefined}
+                    inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
                     
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
@@ -844,7 +853,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         ref={footerRef}
                         className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
                         contentEditable={isHeaderFooterEditable}
-                        inputMode={selectionMode ? "none" : undefined}
+                        inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
                         suppressContentEditableWarning
                         onInput={handleFooterInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}

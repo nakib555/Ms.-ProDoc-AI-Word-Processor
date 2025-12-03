@@ -1,5 +1,5 @@
 
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { Globe } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -44,7 +44,11 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
   backgroundStyle
 }) => {
   const scale = zoom / 100;
-  const { isKeyboardLocked, selectionMode } = useEditor();
+  const { isKeyboardLocked, selectionMode, setZoom } = useEditor();
+  
+  // Refs for Pinch-to-Zoom
+  const touchDistRef = useRef<number>(0);
+  const startZoomRef = useRef<number>(0);
   
   // Initialize MathLive for any equations
   useMathLive(content, editorRef);
@@ -77,20 +81,51 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
     }
   }, [content, editorRef]);
 
+  // --- Pinch to Zoom Logic ---
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+        // Calculate initial distance
+        const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        touchDistRef.current = dist;
+        startZoomRef.current = zoom;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+        e.preventDefault(); // Prevent native browser zoom/scroll
+        const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+
+        if (touchDistRef.current > 0) {
+            const ratio = dist / touchDistRef.current;
+            const newZoom = Math.min(500, Math.max(10, startZoomRef.current * ratio));
+            setZoom(newZoom);
+        }
+    }
+  };
+
   return (
     <div 
-        className="flex-1 w-full h-full relative"
+        className="flex-1 w-full h-full relative touch-pan-x touch-pan-y"
         onClick={onPageClick}
         onMouseDown={(e) => {
             // Prevent focus loss if clicking background (unless clicking specific interactive elements)
             if (e.target === e.currentTarget) {
                 e.preventDefault();
                 // If currently not focused, focus editor
-                if (document.activeElement !== editorRef.current && editorRef.current && !isKeyboardLocked) {
+                if (document.activeElement !== editorRef.current && editorRef.current) {
                     editorRef.current.focus();
                 }
             }
         }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
     >
          <style>{`
             /* Web Layout Specific Overrides for Responsiveness */
@@ -100,7 +135,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
          `}</style>
 
          {/* Fluid Container Wrapper */}
-         <div style={webLayoutStyle} className="relative transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left">
+         <div style={webLayoutStyle} className="relative transition-all duration-75 ease-linear origin-top-left">
              {/* Watermark Layer */}
              {pageConfig.watermark && (
                  <div className="fixed inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0 opacity-60">
@@ -114,11 +149,23 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = React.memo(({
                 key="editor-web"
                 ref={editorRef}
                 className={`prodoc-editor prodoc-editor-web w-full outline-none text-lg leading-loose text-slate-900 dark:text-slate-200 z-10 relative ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isKeyboardLocked && !selectionMode ? 'cursor-default' : 'cursor-text'}`}
-                contentEditable={!isKeyboardLocked || selectionMode}
-                inputMode={selectionMode ? "none" : undefined}
+                
+                // Key Change: Allow contentEditable so interactions work, but use inputMode="none" to suppress keyboard
+                contentEditable={true}
+                inputMode={isKeyboardLocked && !selectionMode ? "none" : "text"}
+                
                 onInput={onInput}
                 onPaste={onPaste}
                 onKeyDown={(e) => {
+                    // Prevent typing if locked (handles physical keyboards)
+                    if (isKeyboardLocked && !selectionMode) {
+                        // Allow navigation keys
+                        if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key) && !(e.ctrlKey || e.metaKey)) {
+                             e.preventDefault();
+                             return;
+                        }
+                    }
+
                     // Undo / Redo Shortcuts
                     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
                         if (e.key.toLowerCase() === 'z') {
