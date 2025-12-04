@@ -299,6 +299,7 @@ export const renderBlock = (block: any): string => {
             const breakLabel = block.config?.orientation ? `${block.config.orientation.toUpperCase()} Section` : 'Section Break';
             return `<div class="prodoc-section-break" data-config="${configJson}" style="page-break-before: always; border-top: 2px dashed #94a3b8; margin: 20px 0; padding-top: 5px; text-align: center; color: #64748b; font-size: 10px; user-select: none; font-family: sans-serif; background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 10px, #e2e8f0 10px, #e2e8f0 20px); opacity: 0.7;">--- ${breakLabel} ---</div>`;
         
+        case 'page_break':
         case 'pageBreak':
             return `<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div>`;
 

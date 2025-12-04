@@ -59,6 +59,7 @@ export const ContinueWritingTool: React.FC = () => {
         1. **Structure & Flow**: 
            - Create a document skeleton based on: ${item.f}.
            - Use a Main Title (H1) matching the request.
+           - Estimate page capacity and insert a "page_break" block where logical sections should split pages.
         
         2. **Content Strategy**:
            - Do NOT write a finished document. Write a TEMPLATE.
@@ -71,6 +72,7 @@ export const ContinueWritingTool: React.FC = () => {
            - Use Tables for data entry sections (e.g., Budget, Schedule).
            - Use Bullet lists for items needing enumeration.
            - Apply styling appropriate for ${selectedStyle} tone.
+           - Optionally include a "page_settings" block at the start to define margins/size if relevant to the template type.
         
         OUTPUT:
         Return a valid JSON object compatible with the ProDoc schema (document.blocks).
@@ -96,6 +98,7 @@ export const ContinueWritingTool: React.FC = () => {
         - **Content**: Pre-fill sections with high-quality, context-aware draft text (do not use lorem ipsum).
         - **Style**: Apply the "Professional" tone.
         - **Formatting**: Use bold for labels, lists for steps, and tables for data where appropriate.
+        - **Pagination**: Insert "page_break" blocks where major sections should start on a new page.
         
         OUTPUT:
         Return a JSON object strictly adhering to the ProDoc schema (document.blocks).

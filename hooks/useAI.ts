@@ -9,6 +9,24 @@ export interface AIOptions {
   useSelection?: boolean;
 }
 
+// Helper to convert units (cm, mm, in) to inches (number)
+const parseDimension = (val: string | number | undefined): number => {
+    if (val === undefined || val === null) return 1; // default
+    if (typeof val === 'number') return val;
+    
+    const str = val.toLowerCase().trim();
+    const num = parseFloat(str);
+    if (isNaN(num)) return 1;
+
+    if (str.endsWith('cm')) return num / 2.54;
+    if (str.endsWith('mm')) return num / 25.4;
+    if (str.endsWith('in') || str.endsWith('"')) return num;
+    if (str.endsWith('pt')) return num / 72;
+    if (str.endsWith('px')) return num / 96;
+
+    return num; // assume inches if no unit
+};
+
 export const useAI = () => {
   const { 
       executeCommand, 
@@ -216,19 +234,43 @@ export const useAI = () => {
             if (options.mode === 'replace') {
                 console.log("[useAI] Executing REPLACE mode");
                 
-                if (parsedData.document) {
-                    // Handle Settings (Page Setup)
-                    if (parsedData.document.settings) {
-                        const s = parsedData.document.settings;
-                        setPageConfig((prev: PageConfig) => ({
-                            ...prev,
-                            size: s.pageSize || prev.size,
-                            orientation: s.orientation || prev.orientation,
-                            margins: s.margins ? { ...prev.margins, ...s.margins } : prev.margins,
-                            pageColor: s.backgroundColor && s.backgroundColor !== '#FFFFFF' ? s.backgroundColor : undefined
-                        }));
-                    }
+                let blocks = parsedData.document?.blocks || parsedData.blocks || [];
+                // If extracted as single object from root, arrayify it
+                if (!Array.isArray(blocks)) blocks = [];
 
+                // Find and extract page settings from blocks if present (to override settings)
+                const settingsBlockIndex = blocks.findIndex((b: any) => b.type === 'page_settings');
+                let extractedSettings = null;
+                if (settingsBlockIndex !== -1) {
+                    extractedSettings = blocks[settingsBlockIndex];
+                    // Remove it from blocks so it doesn't render as an element
+                    blocks.splice(settingsBlockIndex, 1);
+                }
+
+                // Merge existing global doc settings with any block-level override
+                const s = { ...parsedData.document?.settings, ...extractedSettings };
+                
+                if (Object.keys(s).length > 0) {
+                    setPageConfig((prev: PageConfig) => {
+                        const newMargins = s.margins ? {
+                            ...prev.margins,
+                            top: parseDimension(s.margins.top),
+                            bottom: parseDimension(s.margins.bottom),
+                            left: parseDimension(s.margins.left),
+                            right: parseDimension(s.margins.right)
+                        } : prev.margins;
+
+                        return {
+                            ...prev,
+                            size: s.size || s.pageSize || prev.size,
+                            orientation: s.orientation || prev.orientation,
+                            margins: newMargins,
+                            pageColor: s.backgroundColor && s.backgroundColor !== '#FFFFFF' ? s.backgroundColor : undefined
+                        };
+                    });
+                }
+
+                if (parsedData.document) {
                     // Handle Header
                     if (parsedData.document.header) {
                         const headerHtml = jsonToHtml(parsedData.document.header);
@@ -248,8 +290,8 @@ export const useAI = () => {
                     }
 
                     // Handle Body Content
-                    const bodyBlocks = parsedData.document.blocks || parsedData.document.content || [];
-                    const generatedHtml = jsonToHtml({ blocks: bodyBlocks }); // wrap to match converter expectation
+                    // Use the modified blocks array (without page_settings)
+                    const generatedHtml = jsonToHtml({ blocks: blocks }); 
                     
                     console.log("[useAI] Generated HTML for REPLACE:", generatedHtml);
                     
@@ -288,7 +330,40 @@ export const useAI = () => {
             } else {
                 // Insert / Edit Mode
                 console.log("[useAI] Executing INSERT/EDIT mode");
-                const generatedHtml = jsonToHtml(parsedData);
+                
+                // Even in insert mode, check for page_settings block and apply if found (though rare for insertion)
+                // We need to do this before jsonToHtml
+                let contentData = parsedData;
+                
+                // Check if it's a complex object with blocks
+                if (contentData.blocks || contentData.document?.blocks) {
+                    let blocks = contentData.document?.blocks || contentData.blocks;
+                    const settingsBlockIndex = blocks.findIndex((b: any) => b.type === 'page_settings');
+                    if (settingsBlockIndex !== -1) {
+                        const s = blocks[settingsBlockIndex];
+                        // Apply settings
+                        setPageConfig((prev: PageConfig) => {
+                            const newMargins = s.margins ? {
+                                ...prev.margins,
+                                top: parseDimension(s.margins.top),
+                                bottom: parseDimension(s.margins.bottom),
+                                left: parseDimension(s.margins.left),
+                                right: parseDimension(s.margins.right)
+                            } : prev.margins;
+
+                            return {
+                                ...prev,
+                                size: s.size || prev.size,
+                                orientation: s.orientation || prev.orientation,
+                                margins: newMargins
+                            };
+                        });
+                        // Remove from array
+                        blocks.splice(settingsBlockIndex, 1);
+                    }
+                }
+
+                const generatedHtml = jsonToHtml(contentData);
                 
                 console.log("[useAI] Generated HTML for INSERT:", generatedHtml);
 

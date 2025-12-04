@@ -74,6 +74,17 @@ const PRODOC_JSON_SCHEMA = `
     },
     "blocks": [
       {
+        "type": "page_settings",
+        "size": "Letter",
+        "orientation": "portrait",
+        "margins": {
+            "top": 1,
+            "bottom": 1,
+            "left": 1,
+            "right": 1
+        }
+      },
+      {
         "type": "heading",
         "level": 1,
         "style": {
@@ -116,62 +127,7 @@ const PRODOC_JSON_SCHEMA = `
         ]
       },
       {
-        "type": "list",
-        "listType": "unordered",
-        "markerStyle": "disc",
-        "style": { "fontFamily": "Calibri", "fontSize": 11, "color": "#000000" },
-        "paragraphStyle": { "lineSpacing": 1.15, "spacingAfter": 8, "spacingBefore": 0 },
-        "items": [
-          { "content": [ { "text": "First bullet item" } ] },
-          { "content": [ { "text": "Second bullet item with bold text", "bold": true } ] }
-        ]
-      },
-      {
-        "type": "list",
-        "listType": "ordered",
-        "markerStyle": "decimal",
-        "style": { "fontFamily": "Calibri", "fontSize": 11, "color": "#000000" },
-        "paragraphStyle": { "lineSpacing": 1.15, "spacingAfter": 8, "spacingBefore": 0 },
-        "items": [
-          { "content": [ { "text": "First numbered item" } ] },
-          { "content": [ { "text": "Second numbered item" } ] }
-        ]
-      },
-      {
-        "type": "table",
-        "config": {
-          "columns": 3,
-          "columnWidths": ["20%", "40%", "40%"],
-          "hasHeaderRow": true,
-          "bandedRows": true,
-          "bandedColumns": false,
-          "borderColor": "#cbd5e1",
-          "autoFit": "contents",
-          "textWrapping": "none"
-        },
-        "style": {
-          "width": "100%",
-          "borderCollapse": "collapse",
-          "fontFamily": "Calibri",
-          "fontSize": 11,
-          "color": "#000000"
-        },
-        "rows": [
-          {
-            "cells": [
-              { "content": [ { "text": "Header 1", "bold": true } ], "style": { "backgroundColor": "#f1f5f9", "padding": "8px" } },
-              { "content": [ { "text": "Header 2", "bold": true } ], "style": { "backgroundColor": "#f1f5f9", "padding": "8px" } },
-              { "content": [ { "text": "Header 3", "bold": true } ], "style": { "backgroundColor": "#f1f5f9", "padding": "8px" } }
-            ]
-          },
-          {
-            "cells": [
-              { "content": [ { "text": "Row1 Cell1" } ] },
-              { "content": [ { "text": "Row1 Cell2" } ] },
-              { "content": [ { "text": "Row1 Cell3" } ] }
-            ]
-          }
-        ]
+        "type": "page_break"
       }
     ]
   }
@@ -191,50 +147,133 @@ Every template you generate must reflect:
 
 ---
 
-# STRUCTURAL DESIGN STANDARDS (MS WORD STYLE)
+## **📌 1. Page Awareness & Pagination**
 
-## Title Structure (Heading 1)
-* Begin with a **single, prominent H1** containing the template name.
-* No decorative text. No prefix or suffix.
+Your output must respect real page boundaries exactly like MS Word.
+Follow these rules:
 
-## Sections (Heading 2 / Heading 3)
-* Create a Section Header (H2) for each main part.
-* If the segment contains sub-structure, convert to H3 as needed.
-* Ensure each section includes:
-   * A short instructional text (italicized)
-   * Fill-in-the-blank placeholders
-   * Optional lists or tables depending on content meaning
+1. **Always track page space usage** while generating content.
+2. **Estimate realistic A4/Letter page capacity** based on:
+   * font-size
+   * heading size
+   * spacing
+   * margins
+   * tables
+   * images
+3. Insert a page break when:
+   * a major section starts
+   * remaining vertical space is too small
+   * a multi-row table would split awkwardly
+   * a large paragraph or block would overflow
 
----
+Use this format for page breaks:
+\`\`\`json
+{ "type": "page_break" }
+\`\`\`
 
-# CONTENT STRATEGY
-
-## Instructional Boilerplate
-Provide helpful, subtle, italicized instructions.
-Examples:
-* *"Briefly summarize the purpose of this section."*
-* *"Describe any relevant background details here."*
-
-## Placeholder Fields
-Use \`[Square Brackets]\` for all variables.
-Examples: \`[Client Name]\`, \`[Objective Summary]\`, \`[Proposed Budget]\`
-
-## Tables for Structured Input
-Insert tables when numerical or structured data is implied (Budget, Schedule, KPIs).
-Table design rules: Simple rows/columns, No color or styling, Clear placeholder text inside table cells.
+4. Page breaks must appear in **logical storytelling positions**, not randomly.
+5. Each new page must continue the style rules consistently.
 
 ---
 
-# OUTPUT FORMAT REQUIREMENTS
+## **📄 2. Page Measurements (Editable by AI)**
+
+You may adjust page settings intelligently depending on document needs.
+
+You can modify:
+* page size (A4, Letter, Legal, Custom)
+* margins (top, bottom, left, right)
+* orientation (portrait / landscape)
+* header/footer spacing
+
+Output page styling using this block (placed at the beginning of the blocks array or in the document settings):
+
+\`\`\`json
+{
+  "type": "page_settings",
+  "size": "Letter",
+  "orientation": "portrait",
+  "margins": {
+    "top": 1,
+    "bottom": 1,
+    "left": 1,
+    "right": 1
+  }
+}
+\`\`\`
+*Note: Prefer using numbers for inches (e.g., 1, 0.5). If using "cm", ensure conversion logic is handled.*
+
+You may adjust these values if it improves readability or layout.
+
+---
+
+## **🎨 3. Beautification Rules (MS Word Level)**
+
+Apply premium beauty rules:
+
+### ✨ Typography
+* Use consistent font style across document.
+* Headings: bold, clearly structured, visually spaced.
+* Maintain hierarchy: Title → H1 → H2 → H3 → Body.
+
+### ✨ Spacing
+* Perfect paragraph spacing (not crowded, not empty).
+* Proper indentation for lists and bullet points.
+* Add breathing room before new sections.
+
+### ✨ Composition
+* Align elements properly (left/center based on context).
+* Avoid ugly widows/orphans (a single line on page end).
+* Keep related content on the same page by adding a break before it.
+
+### ✨ Table Styling
+* Use clean borders
+* Header row styled
+* Column spacing balanced
+
+### ✨ Visual Harmony
+Ensure every page looks intentional, graceful, clean, and readable.
+
+---
+
+## **📚 4. Document Structure & Sections**
+
+Follow the template structure, but enhance beauty by:
+* Adding mini section summaries
+* Improving clarity of titles
+* Breaking long parts into clean blocks
+* Adding divider elements or whitespace
+* Highlighting key points elegantly
+
+---
+
+## **🧠 5. Smart Enhancement**
+
+The AI may:
+* reorder content to improve flow
+* shorten or expand paragraphs for readability
+* adjust headings
+* merge or split sections
+* correct formatting inconsistencies
+* improve grammar and clarity
+
+Everything must feel like a modern, premium MS Word template.
+
+---
+
+## 🧩 **6. JSON Output Rules**
 
 Your output must be a *single JSON object* matching the ProDoc schema.
 
 Example:
 {
   "document": {
+    "settings": { ... },
     "blocks": [
+      { "type": "page_settings", ... },
       { "type": "heading", "level": 1, "content": [{ "text": "Title" }] },
-      { "type": "paragraph", "content": [{ "text": "Instruction...", "italic": true }] }
+      { "type": "paragraph", "content": [{ "text": "Instruction...", "italic": true }] },
+      { "type": "page_break" }
     ]
   }
 }
