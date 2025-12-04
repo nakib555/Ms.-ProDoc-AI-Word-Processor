@@ -41,30 +41,6 @@ export const ContinueWritingTool: React.FC = () => {
       toggleMenu(menuId);
   };
 
-  const handleAutoDetect = () => {
-      const prompt = `
-        ACT AS A SMART DOCUMENT ARCHITECT.
-        
-        TASK: Auto-Detect Context & Generate Smart Template.
-        1. Analyze the request to determine the document type.
-        2. Generate a comprehensive "Fill-in-the-Blank" Template.
-        
-        TEMPLATE REQUIREMENTS:
-        - **Structure**: Use hierarchical headings (H1, H2, H3) for clear sections.
-        - **Placeholders**: Use **[Bracketed Text]** for user inputs (e.g., [Insert Name], [Date], [Specific Goal]) to clearly indicate where information is needed.
-        - **Boilerplate**: Pre-fill sections with professional standard text that serves as a starting point.
-        - **Instructions**: Include brief *italicized instructions* or tips for complex sections.
-        - **Formatting**: Use tables for data, lists for steps, and bold for labels.
-        - **Style**: Apply the "${selectedStyle}" tone.
-        
-        OUTPUT:
-        Return a JSON object strictly adhering to the ProDoc schema (document structure).
-      `;
-      // Use replace mode to ensure full document structure (headers, footers, margins) is applied
-      performAIAction('generate_content', prompt, { mode: 'replace' });
-      closeMenu();
-  };
-
   const handleStyleClick = (style: string) => {
       setSelectedStyle(style);
       setShowBuilder(true);
@@ -130,7 +106,7 @@ export const ContinueWritingTool: React.FC = () => {
              >
                  {/* Header */}
                  <div className="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shrink-0">
-                     <div className="flex items-center gap-2 mb-3 px-1">
+                     <div className="flex items-center gap-2 px-1">
                          <div className="p-1.5 bg-blue-600 rounded-lg shadow-sm">
                              <Wand2 size={14} className="text-white" />
                          </div>
@@ -139,19 +115,6 @@ export const ContinueWritingTool: React.FC = () => {
                              <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered document generation</p>
                          </div>
                      </div>
-
-                     <button 
-                        onClick={handleAutoDetect} 
-                        className="w-full text-left px-3 py-3 hover:bg-white dark:hover:bg-slate-800 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-3 group transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm hover:shadow-md"
-                     >
-                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
-                            <Sparkles size={16} className="fill-indigo-200 dark:fill-indigo-900" />
-                        </div>
-                        <div>
-                            <div className="leading-tight font-semibold text-indigo-900 dark:text-indigo-100">Auto-Generate</div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Detect context & create template</div>
-                        </div>
-                     </button>
                  </div>
 
                  {/* Style Selector */}
