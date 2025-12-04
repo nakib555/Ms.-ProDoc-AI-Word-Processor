@@ -81,6 +81,29 @@ export const ContinueWritingTool: React.FC = () => {
       closeMenu();
   };
 
+  const handleAutoDetect = () => {
+      const prompt = `
+        ACT AS A SMART DOCUMENT ARCHITECT.
+        
+        TASK: Auto-Detect Context & Generate Smart Template.
+        1. Analyze the document title and any existing content.
+        2. Determine the most likely document type (e.g., Project Proposal, Meeting Minutes, Technical Spec).
+        3. Generate a comprehensive "Smart Template" for this type.
+        
+        TEMPLATE REQUIREMENTS:
+        - **Structure**: Use hierarchical headings (H1, H2, H3) for clear sections.
+        - **Smart Fields**: Insert placeholders like [Date], [Client Name], [Project ID] where specific data is needed.
+        - **Content**: Pre-fill sections with high-quality, context-aware draft text (do not use lorem ipsum).
+        - **Style**: Apply the "Professional" tone.
+        - **Formatting**: Use bold for labels, lists for steps, and tables for data where appropriate.
+        
+        OUTPUT:
+        Return a JSON object strictly adhering to the ProDoc schema (document.blocks).
+      `;
+      performAIAction('generate_content', prompt, { mode: 'insert' });
+      closeMenu();
+  };
+
   return (
     <>
         <button
@@ -106,7 +129,7 @@ export const ContinueWritingTool: React.FC = () => {
              >
                  {/* Header */}
                  <div className="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shrink-0">
-                     <div className="flex items-center gap-2 px-1">
+                     <div className="flex items-center gap-2 px-1 mb-3">
                          <div className="p-1.5 bg-blue-600 rounded-lg shadow-sm">
                              <Wand2 size={14} className="text-white" />
                          </div>
@@ -115,6 +138,19 @@ export const ContinueWritingTool: React.FC = () => {
                              <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered document generation</p>
                          </div>
                      </div>
+
+                     <button 
+                        onClick={handleAutoDetect} 
+                        className="w-full text-left px-3 py-3 hover:bg-white dark:hover:bg-slate-800 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-3 group transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm hover:shadow-md"
+                     >
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                            <Sparkles size={16} className="fill-indigo-200 dark:fill-indigo-900" />
+                        </div>
+                        <div>
+                            <div className="leading-tight font-semibold text-indigo-900 dark:text-indigo-100">Auto-Generate</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Detect context & create template</div>
+                        </div>
+                     </button>
                  </div>
 
                  {/* Style Selector */}
@@ -147,6 +183,13 @@ export const ContinueWritingTool: React.FC = () => {
                                 <span>Loading smart templates...</span>
                             </div>
                         }>
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 px-3 py-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex justify-between items-center border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
+                                <span className="flex items-center gap-1.5">
+                                    <Zap size={12} className="text-amber-500 fill-amber-500"/> 
+                                    {selectedStyle} Gallery
+                                </span>
+                                <span className="font-normal opacity-70">Select to build</span>
+                            </div>
                             <PredictiveBuilder onSelect={handlePredictiveSelect} selectedTone={selectedStyle} />
                         </Suspense>
                     ) : (

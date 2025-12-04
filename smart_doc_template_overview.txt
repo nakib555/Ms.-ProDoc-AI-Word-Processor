@@ -1,0 +1,168 @@
+# ProDoc AI - Smart Doc Template Feature Overview
+
+## 1. What It Can Do
+The "Smart Doc Template" (also referred to as the "Template Architect") is a sophisticated AI-driven tool designed to jumpstart the writing process. Instead of giving users a blank page or a static, hard-coded template, it generates dynamic, context-aware document skeletons.
+
+### Key Capabilities:
+1.  **Predictive Template Library:**
+    -   Access to thousands of pre-defined document types across dozens of industries (Business, Medical, Legal, Creative, etc.).
+    -   Each template comes with a specific "Flow" (e.g., "Project Proposal: Scope → Deliverables").
+    -   Uses Lazy Loading to keep the application fast, loading specific categories only when requested.
+
+2.  **AI-Powered Search:**
+    -   If a user searches for a template not in the static database (e.g., "Intergalactic Peace Treaty"), the system seamlessly switches to AI mode to generate template suggestions and structure flows on the fly.
+
+3.  **Tone & Style Adaptation:**
+    -   Users can select a tone (Professional, Friendly, Persuasive, Instructional, Creative, Academic).
+    -   The generated template's boilerplate text is adjusted to match this specific voice.
+
+4.  **Intelligent Generation:**
+    -   It creates a "Fill-in-the-Blank" structure.
+    -   It uses logical HTML structures (Headings, Tables for budgets/schedules, Lists for requirements).
+    -   It inserts smart placeholders (e.g., `[Client Name]`, `[Date]`) so the user knows exactly what to fill in.
+
+5.  **Auto-Detect Context:**
+    -   If the user already has a title or some text, the "Auto-Generate" feature analyzes the existing context to determine the most likely document type needed and builds it.
+
+---
+
+## 2. How It Works (Technical Workflow)
+
+### Step 1: User Interface & Selection
+-   **Location:** Ribbon -> AI Assistant Tab -> Compose Group.
+-   **Component:** `SmartDocTemplate.tsx`.
+-   **Interaction:** The user clicks the button, opening a `MenuPortal`. They select a tone (e.g., "Professional") which triggers the `PredictiveBuilder`.
+
+### Step 2: Template Selection or Search
+-   **Component:** `TemplatesCollection.tsx`.
+-   **Data Handling:** 
+    -   It loads static arrays (like `BUSINESS_MANAGEMENT`) dynamically using `React.lazy`.
+    -   It performs a deferred search on these arrays.
+    -   If the search is complex or returns no results, it queries Gemini (via `generateAIContent`) to hallucinate valid template structures (`{ l: "Label", f: "Flow" }`).
+
+### Step 3: Prompt Construction
+-   Once a user clicks a template (e.g., "Grant Proposal"), `SmartDocTemplate.tsx` constructs a highly specific prompt.
+-   **The Prompt:** It instructs the AI to act as a "Document Architect". It passes the requested Template Name, the Structure Flow, and the selected Tone.
+-   **Constraint:** It explicitly asks for a JSON output compatible with the internal ProDoc schema (blocks of headings, paragraphs, lists, tables).
+
+### Step 4: AI Processing & Rendering
+-   **Service:** `hooks/useAI.ts` calls `services/geminiService.ts`.
+-   **API Call:** The prompt is sent to `gemini-3-pro-preview`.
+-   **Response:** The AI returns a JSON object representing the document structure.
+-   **Conversion:** `utils/documentConverter.ts` (specifically `jsonToHtml`) iterates through the JSON blocks and converts them into valid HTML strings.
+-   **Insertion:** The HTML is inserted into the editor via `document.execCommand` or direct DOM manipulation.
+
+---
+
+## 3. Core Code Implementation
+
+### A. The Prompt Logic (SmartDocTemplate.tsx)
+This function builds the instruction for Gemini. Note how it enforces structure and "fill-in-the-blank" behavior.
+
+```typescript
+const handlePredictiveSelect = (item: { l: string, f: string }) => {
+    const prompt = `
+      ACT AS A SMART DOCUMENT ARCHITECT.
+
+      TEMPLATE REQUEST: "${item.l}"
+      STRUCTURE FLOW: "${item.f}"
+      TONE/STYLE: "${selectedStyle}"
+      
+      TASK: Generate a professional "Fill-in-the-Blank" Document Template.
+      
+      1. **Structure & Flow**: 
+         - Create a document skeleton based on: ${item.f}.
+         - Use a Main Title (H1) matching the request.
+      
+      2. **Content Strategy**:
+         - Do NOT write a finished document. Write a TEMPLATE.
+         - Provide boilerplate text that is generic but high-quality.
+         - Use **[SQUARE BRACKETS]** for variable data (e.g., [Client Name]).
+         - Include brief *italicized instructions*.
+      
+      3. **Visuals & Formatting**:
+         - Use H2/H3 for clear section headers.
+         - Use Tables for data entry sections.
+         - Use Bullet lists for items needing enumeration.
+      
+      OUTPUT:
+      Return a valid JSON object compatible with the ProDoc schema (document.blocks).
+    `;
+    
+    // 'replace' mode clears the doc and sets up the new template
+    performAIAction('generate_content', prompt, { mode: 'replace' });
+    closeMenu();
+};
+```
+
+### B. The AI Search Fallback (TemplatesCollection.tsx)
+If the user searches for something weird, this effect triggers to ask AI for template ideas.
+
+```typescript
+useEffect(() => {
+  if (isAIMode && deferredSearchTerm.length > 2) {
+      setIsSearchingAI(true);
+      const timer = setTimeout(async () => {
+          try {
+              const prompt = `Generate 5 predictive document templates for the user query: "${deferredSearchTerm}". 
+              Format as a JSON array of objects with exactly these keys: 
+              "l" (label/title) and "f" (flow string like "Step -> Step"). 
+              Example: [{"l": "Project Plan", "f": "Init -> Exec"}]
+              Return ONLY JSON.`;
+              
+              const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');
+              // ... (JSON parsing logic) ...
+              setAiResults(parsed.map(x => ({...x, category: 'AI Suggestion'})));
+          } catch (err) {
+              console.error("AI Search failed", err);
+          }
+      }, 800);
+      return () => clearTimeout(timer);
+  }
+}, [deferredSearchTerm, isAIMode]);
+```
+
+### C. The JSON to HTML Converter (utils/documentConverter.ts)
+This translates the AI's abstract JSON response into the visual HTML the editor displays.
+
+```typescript
+export const jsonToHtml = (jsonData: any): string => {
+  // ... checks for valid data ...
+  let blocks = jsonData.document?.blocks || jsonData.blocks || [];
+
+  return blocks.map(block => {
+      // Styles are converted to CSS strings
+      const cssStr = styleToString(block.style || {});
+
+      switch (block.type) {
+          case 'heading':
+              return `<h${block.level} style="${cssStr}">${renderInlineContent(block.content)}</h${block.level}>`;
+          case 'paragraph':
+              return `<p style="${cssStr}">${renderInlineContent(block.content)}</p>`;
+          case 'table':
+              // Complex logic to render tables with rows/cells
+              let rowsHtml = '';
+              block.rows.forEach(row => {
+                  let cellsHtml = row.cells.map(cell => 
+                      `<td style="...">...</td>`
+                  ).join('');
+                  rowsHtml += `<tr>${cellsHtml}</tr>`;
+              });
+              return `<table style="${cssStr}">${rowsHtml}</table>`;
+          // ... handles lists, images, etc.
+      }
+  }).join('');
+};
+```
+
+### D. Data Structure (Example from TemplatesCollection)
+Static data is stored in optimized arrays to allow instant UI rendering before AI is even called.
+
+```typescript
+export const BUSINESS_MANAGEMENT = [
+    { l: "Business Plan", f: "Executive Summary → Strategy" },
+    { l: "Startup Pitch", f: "Problem → Value Proposition" },
+    { l: "SWOT Analysis", f: "Strengths → Weaknesses" },
+    // ... hundreds of items
+];
+```
