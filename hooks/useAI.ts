@@ -125,26 +125,58 @@ export const useAI = () => {
             console.log("[useAI] Calling generateAIContent...");
             let jsonString = await generateAIContent(operation as AIOperation, textToProcess, customInput);
             console.log("[useAI] Response received. Raw length:", jsonString.length);
-            console.log("[useAI] Raw Response Snippet:", jsonString.substring(0, 200));
             
             // Brief "writing" state before insertion to update UI
             setAiState('writing');
 
-            // Clean Markdown code blocks if present (common issue with LLM output)
+            // Robust JSON Extraction & Cleaning
+            // 1. Trim whitespace
             jsonString = jsonString.trim();
             
-            // 1. Try regex to extract code block content
+            // 2. Extract from markdown code blocks if present
             const codeBlockMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
             if (codeBlockMatch) {
-                jsonString = codeBlockMatch[1];
-            } else {
-                // 2. Fallback: Find outer JSON object braces
-                const startIdx = jsonString.indexOf('{');
-                const endIdx = jsonString.lastIndexOf('}');
-                if (startIdx !== -1 && endIdx !== -1) {
-                    jsonString = jsonString.substring(startIdx, endIdx + 1);
+                jsonString = codeBlockMatch[1].trim();
+            } 
+            
+            // 3. Find balanced JSON structure (Handling extra trailing characters)
+            const findBalancedJSON = (str: string): string => {
+                const start = str.indexOf('{');
+                if (start === -1) return str;
+                
+                let bracketCount = 0;
+                let inString = false;
+                let escape = false;
+                
+                for (let i = start; i < str.length; i++) {
+                    const char = str[i];
+                    
+                    if (!escape && char === '"') {
+                        inString = !inString;
+                    }
+                    
+                    if (!inString && !escape) {
+                        if (char === '{') bracketCount++;
+                        else if (char === '}') bracketCount--;
+                    }
+                    
+                    if (!escape && char === '\\') escape = true;
+                    else escape = false;
+                    
+                    // If we are balanced, we found the end of the object
+                    if (bracketCount === 0 && i > start) {
+                        return str.substring(start, i + 1);
+                    }
                 }
-            }
+                
+                // If not perfectly balanced, fallback to last '}' which might include garbage but is better than nothing
+                const end = str.lastIndexOf('}');
+                if (end !== -1 && end > start) return str.substring(start, end + 1);
+                
+                return str;
+            };
+            
+            jsonString = findBalancedJSON(jsonString);
 
             let parsedData;
             try {
@@ -154,11 +186,9 @@ export const useAI = () => {
                 console.error("[useAI] JSON Parse Error:", jsonError, "Raw Output:", jsonString);
                 // Fallback: If it's not JSON, it might be an error message or plain text. 
                 if (jsonString.length < 500 && !jsonString.trim().startsWith('{')) {
-                     // Ensure focus before fallback text insertion
                      if (editorRef.current && options.mode !== 'replace') editorRef.current.focus();
                      
                      if (options.mode === 'replace') {
-                        // Use execCommand to allow Undo
                         if (editorRef.current) {
                             editorRef.current.focus();
                             executeCommand('selectAll');

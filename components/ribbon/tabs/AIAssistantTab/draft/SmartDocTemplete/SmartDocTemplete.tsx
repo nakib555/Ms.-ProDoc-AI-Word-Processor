@@ -1,0 +1,191 @@
+
+import React, { useState, Suspense, useEffect } from 'react';
+import { LayoutTemplate, Sparkles, FileText, Feather, Activity, BookOpen, Loader2, ChevronDown, AlignLeft, Zap, Wand2 } from 'lucide-react';
+import { useAIAssistantTab } from '../../AIAssistantTabContext';
+import { useAI } from '../../../../../../hooks/useAI';
+import { MenuPortal } from '../../../../common/MenuPortal';
+
+// Lazy load the PredictiveBuilder
+const PredictiveBuilder = React.lazy(() => 
+  import('./TempletesCollection/TempletesCollection').then(module => ({ default: module.PredictiveBuilder }))
+);
+
+export const ContinueWritingTool: React.FC = () => {
+  const { performAIAction } = useAI();
+  const { activeMenu, menuPos, closeMenu, toggleMenu, registerTrigger } = useAIAssistantTab();
+  
+  const menuId = 'continue_writing_options';
+  const isActive = activeMenu === menuId;
+
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState('Professional');
+
+  useEffect(() => {
+      if (!isActive) {
+          setShowBuilder(false);
+          setSelectedStyle('Professional');
+      }
+  }, [isActive]);
+
+  const handleToggle = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      toggleMenu(menuId);
+  };
+
+  const handleAutoDetect = () => {
+      const prompt = `
+        ACT AS A SMART DOCUMENT ARCHITECT.
+        
+        TASK: Auto-Detect Context & Generate Smart Template.
+        1. Analyze the document title and any existing content.
+        2. Determine the most likely document type (e.g., Project Proposal, Meeting Minutes, Technical Spec).
+        3. Generate a comprehensive "Smart Template" for this type.
+        
+        TEMPLATE REQUIREMENTS:
+        - **Structure**: Use hierarchical headings (H1, H2, H3) for clear sections.
+        - **Smart Fields**: Insert placeholders like [Date], [Client Name], [Project ID] where specific data is needed.
+        - **Content**: Pre-fill sections with high-quality, context-aware draft text (do not use lorem ipsum).
+        - **Style**: Apply the "Professional" tone.
+        - **Formatting**: Use bold for labels, lists for steps, and tables for data where appropriate.
+        
+        OUTPUT:
+        Return a JSON object strictly adhering to the ProDoc schema (document.blocks).
+      `;
+      performAIAction('generate_content', prompt, { mode: 'insert' });
+      closeMenu();
+  };
+
+  const handleStyleClick = (style: string) => {
+      setSelectedStyle(style);
+      setShowBuilder(true);
+  };
+
+  const handlePredictiveSelect = (item: { l: string, f: string }) => {
+      const prompt = `
+        ACT AS A SMART DOCUMENT ARCHITECT.
+
+        TEMPLATE REQUEST: "${item.l}"
+        STRUCTURE FLOW: "${item.f}"
+        TONE/STYLE: "${selectedStyle}"
+        
+        TASK: Generate a "Smart Document Template" based on the requested type and flow.
+        
+        1. **Blueprint**: Follow the provided flow (${item.f}) to create logical sections.
+        2. **Smart Content**: 
+           - Write realistic, high-quality draft content for each section.
+           - Adapt the voice to be ${selectedStyle}.
+        3. **Intelligent Placeholders**:
+           - Use bracketed placeholders (e.g., [Insert Budget], [Stakeholder Name]) for user-specific data.
+        4. **Rich Formatting**:
+           - Use H1 for the Main Title (derived from "${item.l}").
+           - Use H2/H3 for flow steps.
+           - Use Tables for financial or scheduled data.
+           - Use Bullet lists for features or requirements.
+        
+        OUTPUT:
+        Return a valid JSON object compatible with the ProDoc schema (document.blocks).
+      `;
+      
+      // Using 'generate_content' creates a fresh structure or inserts complex blocks
+      performAIAction('generate_content', prompt, { mode: 'insert' });
+      closeMenu();
+  };
+
+  return (
+    <>
+        <button
+          ref={(el) => registerTrigger(menuId, el)}
+          className={`flex flex-col items-center justify-center px-1 py-1 min-w-[52px] md:min-w-[60px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 hover:text-blue-700 hover:bg-slate-50 flex-shrink-0 ${isActive ? 'bg-slate-100 text-blue-700 ring-1 ring-slate-200' : ''}`}
+          onClick={handleToggle}
+          onMouseDown={(e) => e.preventDefault()}
+          title="Smart Doc Template"
+        >
+          <div className="p-1 rounded-md group-hover:bg-white group-hover:shadow-sm transition-all mb-0.5">
+              <LayoutTemplate className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-blue-600'}`} strokeWidth={1.5} />
+          </div>
+          <div className="flex items-center justify-center w-full px-0.5">
+              <span className="text-[10px] font-medium leading-tight text-center text-slate-500 group-hover:text-blue-700">Smart Doc<br/>Template</span>
+              <ChevronDown size={8} className={`ml-0.5 text-slate-400 group-hover:text-blue-600 shrink-0 ${isActive ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={380}>
+             <div 
+                className="flex flex-col max-h-[70vh] md:max-h-[80vh] h-full overflow-hidden bg-white dark:bg-slate-900 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700"
+                onMouseDown={(e) => e.stopPropagation()}
+             >
+                 {/* Header */}
+                 <div className="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shrink-0">
+                     <div className="flex items-center gap-2 mb-3 px-1">
+                         <div className="p-1.5 bg-blue-600 rounded-lg shadow-sm">
+                             <Wand2 size={14} className="text-white" />
+                         </div>
+                         <div>
+                             <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Template Architect</h3>
+                             <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered document generation</p>
+                         </div>
+                     </div>
+
+                     <button 
+                        onClick={handleAutoDetect} 
+                        className="w-full text-left px-3 py-3 hover:bg-white dark:hover:bg-slate-800 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-3 group transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm hover:shadow-md"
+                     >
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                            <Sparkles size={16} className="fill-indigo-200 dark:fill-indigo-900" />
+                        </div>
+                        <div>
+                            <div className="leading-tight font-semibold text-indigo-900 dark:text-indigo-100">Auto-Generate</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Detect context & create template</div>
+                        </div>
+                     </button>
+                 </div>
+
+                 {/* Style Selector */}
+                 <div className="p-3 bg-white dark:bg-slate-900 shrink-0 space-y-2">
+                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Select Tone</div>
+                     <div className="grid grid-cols-2 gap-2">
+                         <button onClick={() => handleStyleClick("Formal")} className={`text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-all border ${selectedStyle === 'Formal' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200'}`}>
+                            <FileText size={14} className="text-blue-500"/> Professional
+                         </button>
+                         <button onClick={() => handleStyleClick("Creative")} className={`text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-all border ${selectedStyle === 'Creative' ? 'bg-pink-50 dark:bg-pink-900/20 border-pink-200 dark:border-pink-800 text-pink-700 dark:text-pink-300' : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200'}`}>
+                            <Feather size={14} className="text-pink-500"/> Creative
+                         </button>
+                         <button onClick={() => handleStyleClick("Technical")} className={`text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-all border ${selectedStyle === 'Technical' ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-300' : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200'}`}>
+                            <Activity size={14} className="text-cyan-500"/> Technical
+                         </button>
+                         <button onClick={() => handleStyleClick("Simple")} className={`text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 transition-all border ${selectedStyle === 'Simple' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300' : 'bg-slate-50 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300 hover:border-slate-200'}`}>
+                            <BookOpen size={14} className="text-green-500"/> Standard
+                         </button>
+                     </div>
+                 </div>
+
+                 {/* Predictive Builder Section */}
+                 <div className="flex-1 flex flex-col min-h-0 border-t border-slate-100 dark:border-slate-800">
+                    {showBuilder ? (
+                        <Suspense fallback={
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 gap-3 text-xs">
+                                <Loader2 className="animate-spin text-blue-500" size={24} />
+                                <span>Loading smart templates...</span>
+                            </div>
+                        }>
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 px-3 py-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex justify-between items-center border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
+                                <span className="flex items-center gap-1.5">
+                                    <Zap size={12} className="text-amber-500 fill-amber-500"/> 
+                                    {selectedStyle} Gallery
+                                </span>
+                                <span className="font-normal opacity-70">Select to build</span>
+                            </div>
+                            <PredictiveBuilder onSelect={handlePredictiveSelect} />
+                        </Suspense>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 dark:text-slate-500 text-center opacity-60">
+                            <LayoutTemplate size={32} className="mb-3 text-slate-300 dark:text-slate-600" />
+                            <p className="text-xs font-medium">Select a tone above to<br/>browse smart templates.</p>
+                        </div>
+                    )}
+                 </div>
+             </div>
+        </MenuPortal>
+    </>
+  );
+};

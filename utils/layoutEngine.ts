@@ -113,7 +113,7 @@ class LayoutSandbox {
 const isAtomic = (node: Node): boolean => {
     if (node.nodeType !== Node.ELEMENT_NODE) return false;
     const el = node as HTMLElement;
-    return ['IMG', 'VIDEO', 'TABLE', 'IFRAME', 'HR', 'MATH-FIELD'].includes(el.tagName) ||
+    return ['IMG', 'VIDEO', 'IFRAME', 'HR', 'MATH-FIELD', 'TR'].includes(el.tagName) ||
            el.classList.contains('equation-wrapper') ||
            el.classList.contains('prodoc-page-break') ||
            el.classList.contains('prodoc-section-break');
@@ -336,6 +336,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
                   flushPage();
                   i--; 
               } else {
+                  // If the element itself is larger than the page, put it here anyway to avoid infinite loop
                   currentPageNodes.push(node);
                   flushPage();
               }
