@@ -200,6 +200,7 @@ export const getSmartDocPrompt = (request: string, flow: string, tone: string) =
       OUTPUT: Return JSON compatible with ProDoc document schema (blocks with styles).
       
       ### ⚙️ OUTPUT SCHEMA
+      Your output must be JSON object and Only valid JSON is allowed. 
       ${PRODOC_JSON_SCHEMA}
     `;
 };
