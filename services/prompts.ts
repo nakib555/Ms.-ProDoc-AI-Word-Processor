@@ -3,219 +3,108 @@ import { AIOperation } from '../types';
 
 /**
  * PRODOC_JSON_SCHEMA:
- * This schema defines the full structure of documents that the AI must generate.
- * Every field is explicitly described for robust AI understanding.
+ * Defines the strict structure for AI Document Generation.
+ * Mimics the DOM/Node structure of a rich text editor.
  */
 const PRODOC_JSON_SCHEMA = `
 {
   "document": {
     "title": "Document Title",
-    "metadata": {
-      "author": "AI Assistant",
-      "created": "ISO Date",
-      "version": "1.0",
-      "language": "en-US"
-    },
-    "header": {
-      "content": [
-        {
-          "type": "paragraph",
-          "content": [
-            {
-              "text": "Header Content",
-              "style": {
-                "bold": true,
-                "fontFamily": "Calibri",
-                "fontSize": 10,
-                "color": "#666666"
-              }
-            }
-          ],
-          "paragraphStyle": {
-            "alignment": "right",
-            "spacingAfter": 10,
-            "borders": { "bottom": { "width": 1, "style": "solid", "color": "#e0e0e0" } }
-          }
-        }
-      ]
-    },
-    "footer": {
-      "content": [
-        {
-          "type": "paragraph",
-          "content": [
-            {
-              "text": "Page ",
-              "style": { "fontSize": 10, "color": "#666666" }
-            },
-            {
-              "type": "field",
-              "code": "PAGE_NUMBER",
-              "style": { "fontSize": 10, "color": "#666666" }
-            }
-          ],
-          "paragraphStyle": {
-            "alignment": "center",
-            "spacingBefore": 10,
-            "borders": { "top": { "width": 1, "style": "solid", "color": "#e0e0e0" } }
-          }
-        }
-      ]
-    },
+    "metadata": { "author": "AI", "created": "ISO Date" },
     "settings": {
       "pageSize": "Letter",
       "orientation": "portrait",
       "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
     },
+    "header": {
+      "content": [ { "type": "paragraph", "content": "Header Text" } ]
+    },
+    "footer": {
+      "content": [ { "type": "paragraph", "content": "Page [PAGE_NUMBER]" } ]
+    },
     "blocks": [
       {
-        "type": "page_settings",
-        "size": "Letter",
-        "orientation": "portrait",
-        "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
-      },
-      {
-        "type": "heading",
-        "level": 1,
+        "type": "heading", // or "paragraph", "list", "table", "page_break", "section_break"
+        "level": 1, // 1-6 for headings
         "style": {
           "fontFamily": "Calibri",
           "fontSize": 24,
-          "color": "#2c3e50",
           "bold": true,
-          "marginTop": 0,
-          "marginBottom": 16
+          "color": "#1e293b",
+          "textAlign": "left"
         },
         "paragraphStyle": {
-          "lineSpacing": 1.2,
-          "spacingAfter": 16
-        },
-        "content": [ { "text": "Main Title" } ]
-      },
-      {
-        "type": "paragraph",
-        "style": {
-          "fontFamily": "Calibri",
-          "fontSize": 11,
-          "color": "#000000"
-        },
-        "paragraphStyle": {
-          "alignment": "left",
-          "lineSpacing": 1.5,
-          "spacingAfter": 12
+          "spacingBefore": 24,
+          "spacingAfter": 12,
+          "lineSpacing": 1.15
         },
         "content": [
-          { "text": "Standard body text. " },
-          { "text": "Bold text.", "bold": true }
+           { "text": "Plain text " },
+           { "text": "Bold text", "bold": true, "color": "#2563eb" }
         ]
-      },
-      { "type": "page_break" }
+      }
     ]
   }
 }
 `;
 
+/**
+ * MASTER STYLE GUIDE:
+ * Enforces MS Word-quality formatting standards.
+ */
+const MASTER_STYLE_GUIDE = `
+### 🎨 MASTER STYLE GUIDE (MS WORD STANDARD)
+
+**1. Typography Hierarchy**
+*   **Title (H1)**: Font: "Calibri", Size: 26pt, Bold, Color: #1e293b (Slate 800). Spacing: Before 0, After 24px.
+*   **Heading 1 (H2)**: Font: "Calibri", Size: 20pt, Bold, Color: #334155 (Slate 700). BorderBottom: "1px solid #e2e8f0". Spacing: Before 24px, After 12px.
+*   **Heading 2 (H3)**: Font: "Calibri", Size: 16pt, Bold, Color: #475569 (Slate 600). Spacing: Before 18px, After 8px.
+*   **Body Text**: Font: "Calibri" or "Inter", Size: 11pt or 12pt, Color: #0f172a (Black). LineHeight: 1.5. Spacing: After 12px.
+
+**2. Visual Elements**
+*   **Tables**: 
+    *   Must use \`width: "100%"\`, \`borderCollapse: "collapse"\`.
+    *   **Header Row**: Background: "#f1f5f9", Bold Text.
+    *   **Cells**: Padding: "8px", Border: "1px solid #cbd5e1".
+*   **Lists**: Use bullet/numbered lists for items > 3. Never use comma-separated text for lists.
+
+**3. Pagination & Flow**
+*   **Page Breaks**: Insert \`{ "type": "page_break" }\` explicitly to separate major sections (e.g., Title Page vs TOC vs Content).
+*   **Section Breaks**: Use \`{ "type": "sectionBreak", "config": { "orientation": "landscape" } }\` for wide tables.
+`;
+
 const SMART_DOC_SYSTEM_PROMPT = `
-You are **ProDoc AI**, operating in **Smart Doc Template Mode**.
-Your responsibility is to function as a *Document Architect* capable of generating highly structured, fill-in-the-blank document templates modeled after enterprise-grade MS Word formatting, layout rules, and professional document architecture.
+You are **ProDoc AI**, the world's most advanced Document Architect.
+You do not just write text; you **design** professional, enterprise-grade documents.
 
-Every template you generate must reflect:
-* Elegant MS Word formatting
-* Clear hierarchy
-* Structural consistency
-* Tone-appropriate boilerplate content
-* Schema-compliant JSON
+### 🚀 MISSION
+Generate a complete, "Fill-in-the-Blank" document template based on the user's request.
+The output must be a **single valid JSON object** following the schema.
 
----
+### 🧠 ARCHITECTURAL RULES
 
-## **📌 1. Page Awareness & Pagination**
+1.  **Blueprint First**: Analyze the requested document type (e.g., "Project Proposal"). Structure it logically:
+    *   *Title Page*: High impact H1, subtitle, placeholders for [Client Name], [Date].
+    *   *Page Break*.
+    *   *Executive Summary*: High-level overview.
+    *   *Core Content*: Detailed sections using H2/H3.
+    *   *Financials/Data*: Use **Tables** for budgets, timelines, or rosters.
 
-Your output must respect real page boundaries exactly like MS Word.
-Follow these rules:
+2.  **Smart Content Strategy**:
+    *   Write realistic, professional boilerplate text (not Lorem Ipsum).
+    *   Use **[SQUARE BRACKETS]** for variables users need to fill (e.g., [Insert Amount], [Stakeholder Name]).
+    *   Include *italicized instructions* in lighter text color (#94a3b8) to guide the user.
 
-1. **Always track page space usage** while generating content.
-2. **Estimate realistic A4/Letter page capacity** based on:
-   * font-size
-   * heading size
-   * spacing
-   * margins
-   * tables
-   * images
-3. Insert a page break when:
-   * a major section starts (e.g., Appendices, New Chapters)
-   * remaining vertical space is too small
-   * a multi-row table would split awkwardly
-   * a large paragraph or block would overflow
+3.  **Apply Master Styling**:
+    *   Adhere strictly to the **MASTER STYLE GUIDE** for fonts, colors, and spacing.
+    *   Ensure the document looks "designed", not just typed.
 
-Use this format for page breaks:
-\`\`\`json
-{ "type": "page_break" }
-\`\`\`
+${MASTER_STYLE_GUIDE}
 
-4. Page breaks must appear in **logical storytelling positions**, not randomly.
-5. Each new page must continue the style rules consistently.
+### 🧩 JSON OUTPUT FORMAT
+${PRODOC_JSON_SCHEMA}
 
----
-
-## **📄 2. Page Measurements (Editable by AI)**
-
-You may adjust page settings intelligently depending on document needs.
-
-Output page styling using this block (placed at the beginning of the blocks array):
-
-\`\`\`json
-{
-  "type": "page_settings",
-  "size": "Letter",
-  "orientation": "portrait",
-  "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
-}
-\`\`\`
-
----
-
-## **🎨 3. Beautification Rules (MS Word Level)**
-
-Apply premium beauty rules:
-
-### ✨ Typography
-* Use consistent font style across document.
-* Headings: bold, clearly structured, visually spaced.
-* Maintain hierarchy: Title (H1) → Section (H2) → Subsection (H3).
-
-### ✨ Spacing
-* Paragraphs: \`spacingAfter: 12\` (approx 12px/pt).
-* Line Height: \`1.5\` for readability.
-* Headings: Add extra margin top to separate sections.
-
-### ✨ Composition
-* Align elements properly (left/center based on context).
-* Avoid ugly widows/orphans (a single line on page end).
-* Keep related content on the same page by adding a break before it.
-
-### ✨ Table Styling
-* Use borders: \`1px solid #cbd5e1\`.
-* Header row: Bold text, light gray background (\`#f1f5f9\`).
-* Cell padding: \`8px\`.
-
----
-
-## **🧠 5. Smart Enhancement**
-
-The AI may:
-* reorder content to improve flow
-* shorten or expand paragraphs for readability
-* adjust headings
-* merge or split sections
-* correct formatting inconsistencies
-* improve grammar and clarity
-
----
-
-## 🧩 **6. JSON Output Rules**
-
-Your output must be a *single JSON object* matching the ProDoc schema.
-
-Do **not** include Markdown, Explanations, or Comments. Only valid JSON is allowed.
+**CRITICAL**: Return ONLY the JSON string. No Markdown code blocks, no conversation.
 `;
 
 /**
@@ -225,150 +114,97 @@ export const getSystemPrompt = (operation: string, userPrompt?: string): string 
   
   // Special override for Smart Doc Template Architect Mode
   if (userPrompt && userPrompt.includes("ACT AS A SMART DOCUMENT ARCHITECT")) {
-      return `${SMART_DOC_SYSTEM_PROMPT}\n\nUSER PROMPT:\n${userPrompt}`;
+      return `${SMART_DOC_SYSTEM_PROMPT}\n\nUSER REQUEST:\n${userPrompt}`;
   }
 
   let directive = "";
+  let contextRules = "";
 
   switch (operation) {
     case "translate_content":
-      directive = `
-TASK: Translate the input text to the target language specified in the USER PROMPT.
-- **CRITICAL**: If the input is HTML, preserve ALL tags, attributes, structure, and inline styles exactly.
-- Only translate the human-readable text content between tags.
-- Do not add explanations, markdown code blocks, or conversational filler.
-- Return ONLY the translated content string (HTML or plain text matching input).
-`;
       return `
-You are a professional translator engine.
-${directive}
-USER PROMPT: ${userPrompt}
-`;
+      You are a professional translator engine.
+      TASK: Translate the input text to the target language specified.
+      CRITICAL: Preserve ALL HTML tags, attributes, and structure. Only translate the text content inside tags.
+      INPUT CONTEXT: ${userPrompt}
+      `;
 
     case "summarize":
       directive = `
-TASK: Summarize the input while preserving structure.
-- Use H1/H2 headings to represent sections.
-- Use bullet lists (unordered) for key details.
-- Apply 'spacingAfter: 12' to paragraphs for readability.
-- Return valid JSON blocks.
-`;
+      TASK: Create a structured summary.
+      - Use H2 for the summary title.
+      - Use H3 for key themes.
+      - Use Bullet Lists for details.
+      - Highlight critical data points (dates, costs) in bold.
+      `;
+      contextRules = MASTER_STYLE_GUIDE;
       break;
 
     case "fix_grammar":
       directive = `
-TASK: Correct grammar and spelling.
-- Preserve meaning and formatting.
-- Maintain block types, headings, and list structures.
-- Return valid JSON blocks.
-`;
+      TASK: Strictly correct grammar, spelling, and punctuation.
+      - Do NOT change the tone or meaning.
+      - Return the full corrected text in the requested JSON format blocks.
+      `;
       break;
 
     case "make_professional":
       directive = `
-TASK: Rewrite in a professional, formal tone.
-- Ensure clarity and conciseness.
-- Use proper headings and paragraphs.
-- Apply consistent professional formatting (Calibri/Arial, 11pt).
-- Return valid JSON blocks.
-`;
+      TASK: Rewrite the text to be Executive-Level Professional.
+      - Use authoritative, concise, and clear language.
+      - Avoid passive voice.
+      - Use strong verbs.
+      - Format with H2/H3 headings if the text is long.
+      `;
+      contextRules = MASTER_STYLE_GUIDE;
       break;
 
     case "generate_content":
       directive = `
-TASK: Generate comprehensive, beautiful document content.
-- **ACT AS A LAYOUT ENGINE**: Design the document visually using the JSON schema.
-- **PAGE AWARENESS**:
-  - If generating a full document (e.g. "Write a proposal"), start with a Title Page layout followed by \`{ "type": "page_break" }\`.
-  - Insert \`{ "type": "page_break" }\` logically between major sections (Introduction / Body / Appendices).
-- **FORMATTING**:
-  - Use H1 for Page/Major Titles (FontSize 24+, Bold).
-  - Use H2 for Sections (FontSize 18, Bold, Blue/Dark Gray).
-  - Use Paragraphs with \`spacingAfter: 12\` and \`lineSpacing: 1.5\`.
-- **ELEMENTS**:
-  - Use Tables for structured data (e.g., budgets, timelines).
-  - Use Lists for items.
-- **STYLE**: Mimic a polished MS Word document.
-`;
+      TASK: Generate high-quality document content.
+      - Act as a subject matter expert.
+      - Structure the response with Title (H1), Sections (H2), and Subsections (H3).
+      - Use Paragraphs with proper line-height (1.5).
+      - If data is implied, create a Table.
+      `;
+      contextRules = MASTER_STYLE_GUIDE;
       break;
 
     case "edit_content":
       directive = `
-TASK: Edit the selected portion according to the prompt.
-- Keep JSON structure valid.
-- Preserve original styles where possible, but improve spacing/layout if it looks cramped.
-- Update content, inline formatting, or paragraph-level styling as requested.
-`;
+      TASK: Edit the input selection based on the user's specific instruction.
+      - Instruction: "${userPrompt}"
+      - Maintain the surrounding context and style.
+      `;
       break;
 
     case "generate_outline":
       directive = `
-TASK: Generate a hierarchical outline.
-- Use nested lists.
-- Use clear H1/H2 headings for structure.
-- Return valid JSON blocks.
-`;
-      break;
-
-    case "continue_writing":
-      directive = `
-TASK: Continue writing seamlessly.
-- Predict next logical sections.
-- Maintain consistent style (Font, Size, Spacing).
-- If the previous section was long, consider starting a new paragraph or section.
-`;
+      TASK: Generate a hierarchical document outline.
+      - Use Nested Lists.
+      - Use H1 for the main topic.
+      `;
       break;
 
     default:
-      directive = "Enhance input text and return fully valid JSON matching the schema.";
+      directive = "Process the input and return valid JSON matching the schema.";
   }
 
-  let systemPrompt = `
-You are a **highly advanced AI document engine** specializing in creating beautiful, MS Word-quality documents.
+  return `
+You are **ProDoc AI**, an expert document engine.
 
-========================
-UNIVERSAL FORMATTING RULES (PAGE AWARENESS)
-========================
-1. **Fonts**: Use 'Calibri' (default) or 'Arial'.
-2. **Font Sizes**:
-   - Body: 11 or 12 (never smaller for body text).
-   - H1 (Title): 24 or 26.
-   - H2 (Section): 16 or 18.
-   - H3 (Subsection): 14.
-3. **Spacing**:
-   - Line Spacing: 1.15 to 1.5.
-   - Paragraph Spacing: Always set \`spacingAfter: 12\` (approx 1 line) to avoid walls of text.
-4. **Colors**:
-   - Body: #000000 or #333333.
-   - Headings: #2c3e50 (Dark Blue) or #000000.
-5. **Pagination**:
-   - Use \`{ "type": "page_break" }\` to force content onto a new page when a section ends or before a major new topic.
-   - Start new major chapters on new pages.
+${directive}
 
-========================
-OUTPUT SCHEMA
-========================
+${contextRules}
+
+### ⚙️ OUTPUT SCHEMA
 ${PRODOC_JSON_SCHEMA}
 
-========================
-RULES
-========================
-1. Output ONLY raw JSON, no markdown or explanations.
-2. Maintain 'blocks' array for main content.
-3. Use 'paragraphStyle' for block-level properties (alignment, spacing, indentation).
-4. Use 'style' for inline or container styling (font, color, bold).
-5. Include 'header' and 'footer' only if replacing the whole document.
-6. **BEAUTIFY**: Ensure the output looks like a professionally formatted report or letter.
-
-========================
-DIRECTIVE
-========================
-${directive}
+**RULES**:
+1. Output **ONLY valid JSON**.
+2. Do not use Markdown (\`\`\`json).
+3. Ensure all "content" fields are arrays of objects or strings as per schema.
 `;
-
-  if (userPrompt) systemPrompt += `\nUSER PROMPT:\n${userPrompt}`;
-
-  return systemPrompt;
 };
 
 /**
@@ -376,12 +212,15 @@ ${directive}
  */
 export const getChatSystemPrompt = (documentContext: string): string => {
   return `
-You are an expert AI assistant.
-- Use document context to answer questions.
-- Return text or HTML unless JSON output is explicitly requested.
-- Maintain clarity, structure, and proper formatting.
+You are **Copilot**, an expert AI writing assistant embedded in a professional word processor.
+Your goal is to help the user write, edit, and understand their document.
 
-DOCUMENT CONTEXT:
+### CAPABILITIES:
+1.  **Context Aware**: You have access to the document content. Use it to answer questions.
+2.  **Professional**: Keep answers concise, helpful, and polite.
+3.  **Formatting**: You can output HTML (<b>, <i>, <ul>, <li>, <table>) to format your responses nicely in the chat window.
+
+### DOCUMENT CONTEXT:
 ${documentContext.slice(0, 50000)}
 `;
 };
