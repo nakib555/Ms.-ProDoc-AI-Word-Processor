@@ -1,13 +1,24 @@
 
 import React, { useState, Suspense, useEffect } from 'react';
-import { LayoutTemplate, FileText, Feather, BookOpen, Loader2, ChevronDown, Zap, Smile, GraduationCap } from 'lucide-react';
+import { LayoutTemplate, FileText, Feather, BookOpen, Loader2, ChevronDown, Zap, Smile, GraduationCap, AlertTriangle } from 'lucide-react';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
+import { ErrorBoundary } from '../../../../ErrorBoundary';
 
 // Lazy load the PredictiveBuilder to reduce initial bundle size
 const PredictiveBuilder = React.lazy(() => 
-  import('./TemplatesCollection/TemplatesCollection').then(module => ({ default: module.PredictiveBuilder }))
+  import('./TemplatesCollection/TemplatesCollection')
+    .then(module => ({ default: module.PredictiveBuilder }))
+    .catch(err => {
+        console.error("Failed to load TemplatesCollection", err);
+        return { default: () => (
+            <div className="p-8 text-center text-red-500 flex flex-col items-center gap-2">
+                <AlertTriangle size={24} />
+                <p className="text-xs">Failed to load templates. Please reload.</p>
+            </div>
+        )};
+    })
 );
 
 const TONES = [
@@ -130,21 +141,28 @@ export const SmartDocTemplateTool: React.FC = () => {
                  {/* Predictive Builder Section */}
                  <div className="flex-1 flex flex-col min-h-0 border-t border-slate-100 dark:border-slate-800">
                     {showBuilder ? (
-                        <Suspense fallback={
-                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 gap-3 text-xs">
-                                <Loader2 className="animate-spin text-blue-500" size={24} />
-                                <span>Loading smart templates...</span>
+                        <ErrorBoundary fallback={
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-red-400 gap-3 text-xs">
+                                <AlertTriangle size={24} />
+                                <span>Error loading template engine.</span>
                             </div>
                         }>
-                            <div className="bg-slate-50/50 dark:bg-slate-900/50 px-3 py-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex justify-between items-center border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
-                                <span className="flex items-center gap-1.5">
-                                    <Zap size={12} className="text-amber-500 fill-amber-500"/> 
-                                    {selectedStyle} Gallery
-                                </span>
-                                <span className="font-normal opacity-70">Select to build</span>
-                            </div>
-                            <PredictiveBuilder onSelect={handlePredictiveSelect} selectedTone={selectedStyle} />
-                        </Suspense>
+                            <Suspense fallback={
+                                <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 gap-3 text-xs">
+                                    <Loader2 className="animate-spin text-blue-500" size={24} />
+                                    <span>Loading smart templates...</span>
+                                </div>
+                            }>
+                                <div className="bg-slate-50/50 dark:bg-slate-900/50 px-3 py-2 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex justify-between items-center border-b border-slate-100 dark:border-slate-800 backdrop-blur-sm sticky top-0 z-10">
+                                    <span className="flex items-center gap-1.5">
+                                        <Zap size={12} className="text-amber-500 fill-amber-500"/> 
+                                        {selectedStyle} Gallery
+                                    </span>
+                                    <span className="font-normal opacity-70">Select to build</span>
+                                </div>
+                                <PredictiveBuilder onSelect={handlePredictiveSelect} selectedTone={selectedStyle} />
+                            </Suspense>
+                        </ErrorBoundary>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 dark:text-slate-500 text-center opacity-60">
                             <LayoutTemplate size={32} className="mb-3 text-slate-300 dark:text-slate-600" />

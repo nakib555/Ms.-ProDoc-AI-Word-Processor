@@ -9,6 +9,7 @@ import { RibbonTab } from './types';
 import { Loader2 } from 'lucide-react';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Lazy load the sidebar as it's a secondary feature with safety check
 const CopilotSidebar = React.lazy(() => 
@@ -44,15 +45,19 @@ const AppContent: React.FC = () => {
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {!isReadMode && (
-            <Ribbon 
-                activeTab={activeTab} 
-                onTabChange={handleTabChange} 
-            />
+            <ErrorBoundary>
+                <Ribbon 
+                    activeTab={activeTab} 
+                    onTabChange={handleTabChange} 
+                />
+            </ErrorBoundary>
         )}
         
         <div className="flex-1 flex overflow-hidden relative z-0 w-full">
           <div className="flex-1 flex flex-col overflow-hidden relative bg-[#F8F9FA] dark:bg-slate-950 transition-colors duration-300">
-            <Editor />
+            <ErrorBoundary>
+                <Editor />
+            </ErrorBoundary>
             
             {/* AI Overlay Loading State - Only show when thinking, not when writing/streaming */}
             {aiState === 'thinking' && (
@@ -70,9 +75,11 @@ const AppContent: React.FC = () => {
           </div>
           
           {viewMode !== 'web' && (
-            <Suspense fallback={null}>
-              <CopilotSidebar />
-            </Suspense>
+            <ErrorBoundary>
+                <Suspense fallback={null}>
+                  <CopilotSidebar />
+                </Suspense>
+            </ErrorBoundary>
           )}
         </div>
       </div>
@@ -85,11 +92,13 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <EditorProvider>
-        <AppContent />
-      </EditorProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+        <ThemeProvider>
+          <EditorProvider>
+            <AppContent />
+          </EditorProvider>
+        </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 
