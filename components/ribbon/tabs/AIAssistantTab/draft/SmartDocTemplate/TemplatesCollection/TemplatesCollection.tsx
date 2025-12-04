@@ -13,6 +13,7 @@ import {
   Sparkles, Zap, Wand2
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../../../services/geminiService';
+import { AIOperation } from '../../../../../../../types';
 
 // Dynamic Import Map for Categories
 const CATEGORY_LOADERS: Record<string, () => Promise<{l: string, f: string}[]>> = {
@@ -296,13 +297,10 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
         const max = 100;
         const count = Math.floor(Math.random() * (max - min + 1)) + min;
         
-        const prompt = `Generate exactly ${count} unique predictive document templates related to the topic: "${deferredSearchTerm}". 
-        Format as a JSON array of objects with exactly these keys: 
-        "l" (label/title of the document) and "f" (structure flow string like "Step 1 → Step 2 → Step 3"). 
-        Example: [{"l": "Project Plan", "f": "Init → Exec → Close"}]
-        Return ONLY valid JSON. Do not include markdown code blocks.`;
+        const prompt = `Generate exactly ${count} unique predictive document templates related to the topic: "${deferredSearchTerm}".`;
 
-        const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');
+        // Use generate_template_list to get simple JSON array, bypassing complex doc structure schema
+        const response = await generateAIContent('generate_template_list' as AIOperation, '', prompt, 'gemini-3-pro-preview');
         
         let clean = response.replace(/```json/g, '').replace(/```/g, '').trim();
         const start = clean.indexOf('[');
@@ -371,7 +369,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
           });
       }
     });
-    return results.slice(0, 50); // Limit results for performance
+    return results.slice(0, 100); // Limit results for performance
   }, [deferredSearchTerm, loadedData, aiResults]);
 
   // Calculate total items from hardcoded counts

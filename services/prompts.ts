@@ -121,6 +121,30 @@ export const getSystemPrompt = (operation: string, userPrompt?: string): string 
   let contextRules = "";
 
   switch (operation) {
+    case "generate_template_list":
+      return `
+      You are a creative document architect and productivity expert.
+      TASK: Generate a list of predictive document template ideas based on the user's search term.
+      
+      INPUT CONTEXT: "${userPrompt}"
+
+      OUTPUT FORMAT:
+      Return a strictly valid JSON array of objects. Each object must have exactly two keys:
+      - "l": The Label/Title of the template.
+      - "f": The Structure Flow string (e.g., "Intro → Body → Conclusion").
+      
+      Example Output:
+      [
+        {"l": "Marketing Plan", "f": "Analysis → Strategy → Budget"},
+        {"l": "Meeting Minutes", "f": "Attendees → Agenda → Actions"}
+      ]
+      
+      RULES:
+      1. Return ONLY the JSON array. No markdown code blocks, no conversational text.
+      2. Generate between 20 to 100 diverse and relevant templates, prioritizing quantity and variety based on the input context.
+      3. Keep "f" (flow) concise, using "→" to separate sections.
+      `;
+
     case "translate_content":
       return `
       You are a professional translator engine.

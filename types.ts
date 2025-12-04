@@ -59,7 +59,9 @@ export type AIOperation =
   | 'translate_es'
   | 'translate_fr'
   | 'translate_de'
-  | 'generate_outline';
+  | 'generate_outline'
+  | 'generate_template_list'
+  | 'translate_content';
 
 export type ViewMode = 'print' | 'web' | 'read';
 export type PageMovement = 'vertical' | 'side-to-side';
