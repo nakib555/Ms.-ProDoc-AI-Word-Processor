@@ -25,15 +25,16 @@ const PRODOC_JSON_SCHEMA = `
               "text": "Header Content",
               "style": {
                 "bold": true,
-                "fontFamily": "Arial",
-                "fontSize": 12,
-                "color": "#000000"
+                "fontFamily": "Calibri",
+                "fontSize": 10,
+                "color": "#666666"
               }
             }
           ],
           "paragraphStyle": {
-            "alignment": "center",
-            "spacingAfter": 4
+            "alignment": "right",
+            "spacingAfter": 10,
+            "borders": { "bottom": { "width": 1, "style": "solid", "color": "#e0e0e0" } }
           }
         }
       ]
@@ -44,18 +45,19 @@ const PRODOC_JSON_SCHEMA = `
           "type": "paragraph",
           "content": [
             {
-              "text": "Footer Content",
-              "style": {
-                "italic": true,
-                "fontFamily": "Arial",
-                "fontSize": 10,
-                "color": "#555555"
-              }
+              "text": "Page ",
+              "style": { "fontSize": 10, "color": "#666666" }
+            },
+            {
+              "type": "field",
+              "code": "PAGE_NUMBER",
+              "style": { "fontSize": 10, "color": "#666666" }
             }
           ],
           "paragraphStyle": {
             "alignment": "center",
-            "spacingBefore": 4
+            "spacingBefore": 10,
+            "borders": { "top": { "width": 1, "style": "solid", "color": "#e0e0e0" } }
           }
         }
       ]
@@ -63,47 +65,31 @@ const PRODOC_JSON_SCHEMA = `
     "settings": {
       "pageSize": "Letter",
       "orientation": "portrait",
-      "margins": {
-        "top": 1,
-        "bottom": 1,
-        "left": 1,
-        "right": 1
-      },
-      "columns": 1,
-      "backgroundColor": "#FFFFFF"
+      "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
     },
     "blocks": [
       {
         "type": "page_settings",
         "size": "Letter",
         "orientation": "portrait",
-        "margins": {
-            "top": 1,
-            "bottom": 1,
-            "left": 1,
-            "right": 1
-        }
+        "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
       },
       {
         "type": "heading",
         "level": 1,
         "style": {
-          "fontFamily": "Arial",
+          "fontFamily": "Calibri",
           "fontSize": 24,
-          "color": "#000000",
+          "color": "#2c3e50",
           "bold": true,
           "marginTop": 0,
-          "marginBottom": 12,
-          "textAlign": "center"
+          "marginBottom": 16
         },
         "paragraphStyle": {
-          "lineSpacing": 1.15,
-          "spacingBefore": 0,
-          "spacingAfter": 12
+          "lineSpacing": 1.2,
+          "spacingAfter": 16
         },
-        "content": [
-          { "text": "Main Title", "bold": true }
-        ]
+        "content": [ { "text": "Main Title" } ]
       },
       {
         "type": "paragraph",
@@ -114,21 +100,15 @@ const PRODOC_JSON_SCHEMA = `
         },
         "paragraphStyle": {
           "alignment": "left",
-          "lineSpacing": 1.15,
-          "spacingBefore": 0,
-          "spacingAfter": 8,
-          "indentation": 0
+          "lineSpacing": 1.5,
+          "spacingAfter": 12
         },
         "content": [
-          { "text": "Standard body text follows universal formatting rules. " },
-          { "text": "Bold text for emphasis.", "bold": true },
-          { "text": " Italic text for nuance.", "italic": true },
-          { "text": " Underlined text can be used sparingly.", "underline": true }
+          { "text": "Standard body text. " },
+          { "text": "Bold text.", "bold": true }
         ]
       },
-      {
-        "type": "page_break"
-      }
+      { "type": "page_break" }
     ]
   }
 }
@@ -161,7 +141,7 @@ Follow these rules:
    * tables
    * images
 3. Insert a page break when:
-   * a major section starts
+   * a major section starts (e.g., Appendices, New Chapters)
    * remaining vertical space is too small
    * a multi-row table would split awkwardly
    * a large paragraph or block would overflow
@@ -180,30 +160,16 @@ Use this format for page breaks:
 
 You may adjust page settings intelligently depending on document needs.
 
-You can modify:
-* page size (A4, Letter, Legal, Custom)
-* margins (top, bottom, left, right)
-* orientation (portrait / landscape)
-* header/footer spacing
-
-Output page styling using this block (placed at the beginning of the blocks array or in the document settings):
+Output page styling using this block (placed at the beginning of the blocks array):
 
 \`\`\`json
 {
   "type": "page_settings",
   "size": "Letter",
   "orientation": "portrait",
-  "margins": {
-    "top": 1,
-    "bottom": 1,
-    "left": 1,
-    "right": 1
-  }
+  "margins": { "top": 1, "bottom": 1, "left": 1, "right": 1 }
 }
 \`\`\`
-*Note: Prefer using numbers for inches (e.g., 1, 0.5). If using "cm", ensure conversion logic is handled.*
-
-You may adjust these values if it improves readability or layout.
 
 ---
 
@@ -214,12 +180,12 @@ Apply premium beauty rules:
 ### ✨ Typography
 * Use consistent font style across document.
 * Headings: bold, clearly structured, visually spaced.
-* Maintain hierarchy: Title → H1 → H2 → H3 → Body.
+* Maintain hierarchy: Title (H1) → Section (H2) → Subsection (H3).
 
 ### ✨ Spacing
-* Perfect paragraph spacing (not crowded, not empty).
-* Proper indentation for lists and bullet points.
-* Add breathing room before new sections.
+* Paragraphs: \`spacingAfter: 12\` (approx 12px/pt).
+* Line Height: \`1.5\` for readability.
+* Headings: Add extra margin top to separate sections.
 
 ### ✨ Composition
 * Align elements properly (left/center based on context).
@@ -227,23 +193,9 @@ Apply premium beauty rules:
 * Keep related content on the same page by adding a break before it.
 
 ### ✨ Table Styling
-* Use clean borders
-* Header row styled
-* Column spacing balanced
-
-### ✨ Visual Harmony
-Ensure every page looks intentional, graceful, clean, and readable.
-
----
-
-## **📚 4. Document Structure & Sections**
-
-Follow the template structure, but enhance beauty by:
-* Adding mini section summaries
-* Improving clarity of titles
-* Breaking long parts into clean blocks
-* Adding divider elements or whitespace
-* Highlighting key points elegantly
+* Use borders: \`1px solid #cbd5e1\`.
+* Header row: Bold text, light gray background (\`#f1f5f9\`).
+* Cell padding: \`8px\`.
 
 ---
 
@@ -257,26 +209,11 @@ The AI may:
 * correct formatting inconsistencies
 * improve grammar and clarity
 
-Everything must feel like a modern, premium MS Word template.
-
 ---
 
 ## 🧩 **6. JSON Output Rules**
 
 Your output must be a *single JSON object* matching the ProDoc schema.
-
-Example:
-{
-  "document": {
-    "settings": { ... },
-    "blocks": [
-      { "type": "page_settings", ... },
-      { "type": "heading", "level": 1, "content": [{ "text": "Title" }] },
-      { "type": "paragraph", "content": [{ "text": "Instruction...", "italic": true }] },
-      { "type": "page_break" }
-    ]
-  }
-}
 
 Do **not** include Markdown, Explanations, or Comments. Only valid JSON is allowed.
 `;
@@ -301,7 +238,6 @@ TASK: Translate the input text to the target language specified in the USER PROM
 - Only translate the human-readable text content between tags.
 - Do not add explanations, markdown code blocks, or conversational filler.
 - Return ONLY the translated content string (HTML or plain text matching input).
-- Handle large documents by maintaining continuity.
 `;
       return `
 You are a professional translator engine.
@@ -312,9 +248,10 @@ USER PROMPT: ${userPrompt}
     case "summarize":
       directive = `
 TASK: Summarize the input while preserving structure.
-- Use headings to represent sections.
-- Use bullet points for key details.
-- Maintain JSON block structure strictly.
+- Use H1/H2 headings to represent sections.
+- Use bullet lists (unordered) for key details.
+- Apply 'spacingAfter: 12' to paragraphs for readability.
+- Return valid JSON blocks.
 `;
       break;
 
@@ -323,6 +260,7 @@ TASK: Summarize the input while preserving structure.
 TASK: Correct grammar and spelling.
 - Preserve meaning and formatting.
 - Maintain block types, headings, and list structures.
+- Return valid JSON blocks.
 `;
       break;
 
@@ -331,18 +269,26 @@ TASK: Correct grammar and spelling.
 TASK: Rewrite in a professional, formal tone.
 - Ensure clarity and conciseness.
 - Use proper headings and paragraphs.
-- Apply consistent formatting.
+- Apply consistent professional formatting (Calibri/Arial, 11pt).
+- Return valid JSON blocks.
 `;
       break;
 
     case "generate_content":
       directive = `
-TASK: Generate content from the user prompt.
-- Use headings, paragraphs, lists, tables, and images if needed.
-- For new documents: include header/footer.
-- For insertion: modify only the 'blocks' array.
-- Apply proper spacing, alignment, font styles, and sizes.
-- Include inline styling (bold, italic, underline, color) appropriately.
+TASK: Generate comprehensive, beautiful document content.
+- **ACT AS A LAYOUT ENGINE**: Design the document visually using the JSON schema.
+- **PAGE AWARENESS**:
+  - If generating a full document (e.g. "Write a proposal"), start with a Title Page layout followed by \`{ "type": "page_break" }\`.
+  - Insert \`{ "type": "page_break" }\` logically between major sections (Introduction / Body / Appendices).
+- **FORMATTING**:
+  - Use H1 for Page/Major Titles (FontSize 24+, Bold).
+  - Use H2 for Sections (FontSize 18, Bold, Blue/Dark Gray).
+  - Use Paragraphs with \`spacingAfter: 12\` and \`lineSpacing: 1.5\`.
+- **ELEMENTS**:
+  - Use Tables for structured data (e.g., budgets, timelines).
+  - Use Lists for items.
+- **STYLE**: Mimic a polished MS Word document.
 `;
       break;
 
@@ -350,7 +296,7 @@ TASK: Generate content from the user prompt.
       directive = `
 TASK: Edit the selected portion according to the prompt.
 - Keep JSON structure valid.
-- Preserve original styles where possible.
+- Preserve original styles where possible, but improve spacing/layout if it looks cramped.
 - Update content, inline formatting, or paragraph-level styling as requested.
 `;
       break;
@@ -358,8 +304,9 @@ TASK: Edit the selected portion according to the prompt.
     case "generate_outline":
       directive = `
 TASK: Generate a hierarchical outline.
-- Use nested lists for subsections.
-- Maintain numeric or bullet style consistency.
+- Use nested lists.
+- Use clear H1/H2 headings for structure.
+- Return valid JSON blocks.
 `;
       break;
 
@@ -367,31 +314,36 @@ TASK: Generate a hierarchical outline.
       directive = `
 TASK: Continue writing seamlessly.
 - Predict next logical sections.
-- Maintain consistent style, formatting, and block structure.
+- Maintain consistent style (Font, Size, Spacing).
+- If the previous section was long, consider starting a new paragraph or section.
 `;
       break;
 
     default:
-      directive = "Enhance input text and return fully valid JSON.";
+      directive = "Enhance input text and return fully valid JSON matching the schema.";
   }
 
   let systemPrompt = `
-You are a **highly advanced AI document engine**.
+You are a **highly advanced AI document engine** specializing in creating beautiful, MS Word-quality documents.
 
 ========================
-UNIVERSAL FORMATTING RULES
+UNIVERSAL FORMATTING RULES (PAGE AWARENESS)
 ========================
-1. Fonts: 'Calibri' (default), 'Arial', 'Times New Roman'
-2. Font Sizes:
-   - Body: 11–12
-   - Subheadings: 14–18
-   - Title: 24+
-3. Line Spacing: 1.15–1.5
-4. Paragraph Spacing: spacingBefore: 0, spacingAfter: 8
-5. Colors: Body text #000000, headings #000000 or #1e293b
-6. Alignment: left, right, center, justified
-7. Margins: 1" default, configurable per page
-8. Inline Styles: bold, italic, underline, highlight, color
+1. **Fonts**: Use 'Calibri' (default) or 'Arial'.
+2. **Font Sizes**:
+   - Body: 11 or 12 (never smaller for body text).
+   - H1 (Title): 24 or 26.
+   - H2 (Section): 16 or 18.
+   - H3 (Subsection): 14.
+3. **Spacing**:
+   - Line Spacing: 1.15 to 1.5.
+   - Paragraph Spacing: Always set \`spacingAfter: 12\` (approx 1 line) to avoid walls of text.
+4. **Colors**:
+   - Body: #000000 or #333333.
+   - Headings: #2c3e50 (Dark Blue) or #000000.
+5. **Pagination**:
+   - Use \`{ "type": "page_break" }\` to force content onto a new page when a section ends or before a major new topic.
+   - Start new major chapters on new pages.
 
 ========================
 OUTPUT SCHEMA
@@ -403,10 +355,10 @@ RULES
 ========================
 1. Output ONLY raw JSON, no markdown or explanations.
 2. Maintain 'blocks' array for main content.
-3. Use 'paragraphStyle' for block-level properties.
-4. Use 'style' for inline or container styling.
-5. Include 'header' and 'footer' only for full documents.
-6. Apply universal formatting rules consistently.
+3. Use 'paragraphStyle' for block-level properties (alignment, spacing, indentation).
+4. Use 'style' for inline or container styling (font, color, bold).
+5. Include 'header' and 'footer' only if replacing the whole document.
+6. **BEAUTIFY**: Ensure the output looks like a professionally formatted report or letter.
 
 ========================
 DIRECTIVE
@@ -414,7 +366,7 @@ DIRECTIVE
 ${directive}
 `;
 
-  if (userPrompt) systemPrompt += `\nUSER PROMPT: ${userPrompt}`;
+  if (userPrompt) systemPrompt += `\nUSER PROMPT:\n${userPrompt}`;
 
   return systemPrompt;
 };

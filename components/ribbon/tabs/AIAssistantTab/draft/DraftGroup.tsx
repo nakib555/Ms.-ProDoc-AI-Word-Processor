@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { RibbonSection } from '../../../common/RibbonSection';
-import { ContinueWritingTool } from './SmartDocTemplate/SmartDocTemplate';
+import { SmartDocTemplateTool } from './SmartDocTemplate/SmartDocTemplate';
 import { QuickPromptTool } from './QuickPromptTool';
 import { WriteWithAITool } from './WriteWithAITool';
 
@@ -18,7 +18,7 @@ export const DraftGroup: React.FC = () => {
        
        <div className="w-[1px] bg-slate-200 dark:bg-slate-700 h-4/5 my-auto mx-1"></div>
        
-       <ContinueWritingTool />
+       <SmartDocTemplateTool />
     </RibbonSection>
   );
 };

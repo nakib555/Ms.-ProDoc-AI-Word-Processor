@@ -1,0 +1,202 @@
+# ProDoc AI - "Write with AI" Feature Deep Dive
+
+## 1. Functional Capabilities (What It Can Do)
+
+The "Write with AI" tool allows users to interact with Google's Gemini model to manipulate the document in three distinct modes:
+
+1.  **Generate Content (Insert Mode):**
+    *   Takes a prompt (e.g., "Write a marketing plan for a coffee shop").
+    *   Generates headings, paragraphs, bullet points, and tables.
+    *   Inserts the result directly at the user's cursor position.
+
+2.  **Refine Selection (Edit Mode):**
+    *   Detects if the user has highlighted text.
+    *   Takes an instruction (e.g., "Make this more professional" or "Fix grammar").
+    *   Rewrites the specific selection while attempting to preserve context.
+
+3.  **Create Document (New/Replace Mode):**
+    *   Takes a broad topic.
+    *   Generates a complete document structure including Headers, Footers, and Page Settings (margins, orientation).
+    *   Replaces the entire current document.
+
+**Key Features:**
+*   **Tone Adjustment:** Users can select specific tones (Professional, Casual, Confident, Friendly, Creative, Concise) which modifies the system prompt.
+*   **Structured Output:** Unlike basic chatbots, this outputs rich HTML structure (Tables, H1-H6, Lists) via a strict JSON schema.
+*   **Streaming Feedback:** Provides "Thinking" and "Writing" visual states.
+
+---
+
+## 2. Technical Architecture (How It Works)
+
+The feature relies on a pipeline of 4 key components:
+
+1.  **UI Layer (`WriteWithAITool.tsx`):** Handles user input and state.
+2.  **Orchestrator (`useAI.ts`):** Manages the "glue" logic between UI, API, and Editor.
+3.  **Service Layer (`geminiService.ts` & `prompts.ts`):** Communicates with Google Gemini and enforces schema.
+4.  **Rendering Layer (`documentConverter.ts`):** Converts the AI's JSON response into Renderable HTML.
+
+---
+
+## 3. Implementation Details (Code Level)
+
+### Phase 1: The User Interface
+**File:** `components/ribbon/tabs/AIAssistantTab/draft/WriteWithAITool.tsx`
+
+This component renders the "Magic Editor" modal. It detects the user's context (Selection vs. Cursor) to automatically suggest the correct mode.
+
+**Key Logic:**
+```typescript
+// Determining Mode on Open
+useEffect(() => {
+    if (isOpen) {
+        const selection = window.getSelection();
+        const hasSel = !!(selection && selection.rangeCount > 0 && !selection.isCollapsed);
+        
+        if (hasSel) {
+            setMode('edit'); // Refine existing text
+        } else {
+            setMode('insert'); // Generate new text
+        }
+    }
+}, [isOpen]);
+
+// Triggering the Action
+const handleGenerate = () => {
+    const enhancedPrompt = `[Tone: ${tone}] ${prompt}`;
+    // Calls the custom hook
+    performAIAction(
+        mode === 'edit' ? 'edit_content' : 'generate_content', 
+        enhancedPrompt, 
+        { 
+            mode: mode === 'replace' ? 'replace' : 'insert',
+            useSelection: mode === 'edit'
+        }, 
+        savedRange // Passes the specific cursor position/selection range
+    ); 
+};
+```
+
+### Phase 2: The Orchestrator Hook
+**File:** `hooks/useAI.ts`
+
+This hook is the brain. It prepares the text context, calls the API, parses the result, and decides how to apply it to the DOM.
+
+**Key Logic (JSON Parsing & Application):**
+```typescript
+// 1. Context Extraction
+const selection = window.getSelection();
+let textToProcess = hasSelection ? selection.toString() : "";
+if (operation === 'generate_content' && options.mode === 'insert') {
+     // Provide surrounding context for better coherence
+     textToProcess = content || ""; 
+}
+
+// 2. API Call
+setAiState('thinking');
+let jsonString = await generateAIContent(operation, textToProcess, customInput);
+
+// 3. Robust JSON Cleaning (AI sometimes adds markdown fences)
+const codeBlockMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+if (codeBlockMatch) jsonString = codeBlockMatch[1].trim();
+
+// 4. Rendering Strategy
+const parsedData = JSON.parse(jsonString);
+
+if (options.mode === 'replace') {
+    // Special handling for full document replacement (includes Header/Footer)
+    if (parsedData.document.header) setHeaderContent(jsonToHtml(parsedData.document.header));
+    if (parsedData.document.footer) setFooterContent(jsonToHtml(parsedData.document.footer));
+    const bodyHtml = jsonToHtml(parsedData.document.blocks);
+    setContent(bodyHtml);
+} else {
+    // Standard Insertion
+    const generatedHtml = jsonToHtml(parsedData);
+    executeCommand('insertHTML', generatedHtml);
+}
+```
+
+### Phase 3: The Service & Prompt Engineering
+**File:** `services/geminiService.ts` & `services/prompts.ts`
+
+This is where we force the LLM to act as a "Document Engine" rather than a chatbot.
+
+**The Prompt Strategy (`prompts.ts`):**
+We provide a `PRODOC_JSON_SCHEMA`. This forces the AI to output JSON that describes the document structure (blocks of headings, paragraphs, tables) rather than raw text. This ensures we get styling (bold, alignment) that matches the editor's capabilities.
+
+```typescript
+// Simplified Schema Example passed to AI
+const PRODOC_JSON_SCHEMA = `
+{
+  "document": {
+    "blocks": [
+      {
+        "type": "heading",
+        "level": 1,
+        "content": [{ "text": "Title", "bold": true }]
+      },
+      {
+        "type": "paragraph",
+        "style": { "textAlign": "justify" },
+        "content": [{ "text": "Body text..." }]
+      }
+    ]
+  }
+}`;
+```
+
+**The API Call (`geminiService.ts`):**
+```typescript
+const client = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+const response = await client.models.generateContent({
+  model: "gemini-3-pro-preview", // Using the most capable model for complex reasoning
+  contents: [
+    { role: "user", parts: [{ text: `SYSTEM DIRECTIVE: ${systemPrompt}\n\nINPUT CONTEXT:\n${text}` }] }
+  ],
+  config: {
+    responseMimeType: "application/json", // Enforce JSON output
+  }
+});
+```
+
+### Phase 4: The Renderer
+**File:** `utils/documentConverter.ts`
+
+This file takes the abstract JSON returned by Gemini and converts it into the HTML required by the contenteditable div.
+
+**Key Logic (`jsonToHtml` & `renderBlock`):**
+```typescript
+export const renderBlock = (block: any): string => {
+    // Converts JSON style object to CSS string
+    let cssStr = styleToString(block.style || {}); 
+
+    switch (block.type) {
+        case 'heading':
+            return `<h${block.level} style="${cssStr}">${renderInlineContent(block.content)}</h${block.level}>`;
+        
+        case 'paragraph':
+            return `<p style="${cssStr}">${renderInlineContent(block.content)}</p>`;
+            
+        case 'table':
+            // Complex logic to render rows and cells
+            let rowsHtml = '';
+            block.rows.forEach(row => {
+                // ... generates <tr> and <td> tags with borders/padding
+            });
+            return `<table style="${cssStr}">${rowsHtml}</table>`;
+            
+        // ... handles lists, images, equations
+    }
+};
+```
+
+## Summary of Flow
+
+1.  User clicks "Write with AI".
+2.  `WriteWithAITool` opens, captures prompt ("Write a business letter").
+3.  `useAI` calls `geminiService`.
+4.  `geminiService` sends the Prompt + `PRODOC_JSON_SCHEMA` to Gemini.
+5.  Gemini generates structured JSON representing a business letter.
+6.  `useAI` receives JSON, passes it to `documentConverter`.
+7.  `documentConverter` turns JSON into `<p>...</p>`, `<h1>...</h1>`.
+8.  `useAI` calls `document.execCommand('insertHTML')` to place the result into the editor.

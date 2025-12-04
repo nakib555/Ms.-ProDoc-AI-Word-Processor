@@ -10,7 +10,7 @@ import {
   TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
   Brain, Tv, Radio, HeartHandshake, Film, Gamepad2, Scissors, Lightbulb, GitBranch,
   History, Palette, Globe, Library, Microscope, ShoppingBag, Heart, Rocket, Loader2,
-  Sparkles, Zap
+  Sparkles, Zap, Wand2
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../../../services/geminiService';
 
@@ -242,7 +242,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
 
   // --- Search Handling (Loads all on search interaction) ---
   useEffect(() => {
-    if (deferredSearchTerm && deferredSearchTerm.length > 1 && !isAIMode) {
+    if (deferredSearchTerm && deferredSearchTerm.length > 1) {
        // Standard search: load local data
        const loadAll = async () => {
            const pending = CATEGORY_NAMES.filter(name => !loadedData[name] && !loadingStates[name]);
@@ -277,61 +277,54 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
        
        loadAll();
     }
-  }, [deferredSearchTerm, loadedData, loadingStates, isAIMode]);
+  }, [deferredSearchTerm, loadedData, loadingStates]);
 
-  // --- AI Search Logic ---
+  // Reset AI results when user types new search term to force DB search or re-generation
   useEffect(() => {
-    if (isAIMode && deferredSearchTerm.length > 2) {
-        setIsSearchingAI(true);
-        const timer = setTimeout(async () => {
-            try {
-                const prompt = `Generate 5 predictive document templates for the user query: "${deferredSearchTerm}". 
-                Format as a JSON array of objects with exactly these keys: 
-                "l" (label/title) and "f" (flow string like "Step -> Step"). 
-                Example: [{"l": "Project Plan", "f": "Init -> Exec"}]
-                Return ONLY JSON.`;
-                
-                const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');
-                
-                let clean = response.replace(/```json/g, '').replace(/```/g, '').trim();
-                // Clean potential prefixes/suffixes
-                const start = clean.indexOf('[');
-                const end = clean.lastIndexOf(']');
-                if (start !== -1 && end !== -1) {
-                    clean = clean.substring(start, end + 1);
-                }
-                
-                try {
-                   const parsed = JSON.parse(clean);
-                   if (Array.isArray(parsed)) {
-                       setAiResults(parsed.map(x => ({...x, category: 'AI Suggestion'})));
-                   }
-                } catch (e) { 
-                    console.warn("AI JSON Parse Error", e);
-                    // Fallback for single object response
-                    if (clean.startsWith('{') && clean.endsWith('}')) {
-                         try {
-                             const obj = JSON.parse(clean);
-                             if (obj.l && obj.f) {
-                                 setAiResults([{...obj, category: 'AI Suggestion'}]);
-                             } else if (obj.templates && Array.isArray(obj.templates)) {
-                                 setAiResults(obj.templates.map((x: any) => ({...x, category: 'AI Suggestion'})));
-                             }
-                         } catch(e2) {}
-                    }
-                }
-            } catch (err) {
-                console.error("AI Search failed", err);
-            } finally {
-                setIsSearchingAI(false);
-            }
-        }, 800); // Debounce AI calls
-        return () => clearTimeout(timer);
-    } else if (!deferredSearchTerm) {
-        setAiResults([]);
+      setAiResults([]);
+  }, [deferredSearchTerm]);
+
+  // --- AI Generation Logic ---
+  const handleGenerateTemplates = async () => {
+    if (!deferredSearchTerm.trim()) return;
+    
+    setIsSearchingAI(true);
+    setAiResults([]); // Clear current view
+
+    try {
+        const min = 20;
+        const max = 100;
+        const count = Math.floor(Math.random() * (max - min + 1)) + min;
+        
+        const prompt = `Generate exactly ${count} unique predictive document templates related to the topic: "${deferredSearchTerm}". 
+        Format as a JSON array of objects with exactly these keys: 
+        "l" (label/title of the document) and "f" (structure flow string like "Step 1 → Step 2 → Step 3"). 
+        Example: [{"l": "Project Plan", "f": "Init → Exec → Close"}]
+        Return ONLY valid JSON. Do not include markdown code blocks.`;
+
+        const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');
+        
+        let clean = response.replace(/```json/g, '').replace(/```/g, '').trim();
+        const start = clean.indexOf('[');
+        const end = clean.lastIndexOf(']');
+        if (start !== -1 && end !== -1) {
+            clean = clean.substring(start, end + 1);
+        }
+        
+        try {
+           const parsed = JSON.parse(clean);
+           if (Array.isArray(parsed)) {
+               setAiResults(parsed.map(x => ({...x, category: 'AI Generated'})));
+           }
+        } catch (e) { 
+            console.warn("AI JSON Parse Error", e);
+        }
+    } catch (err) {
+        console.error("AI Generation failed", err);
+    } finally {
         setIsSearchingAI(false);
     }
-  }, [deferredSearchTerm, isAIMode]);
+  };
 
   // --- Expansion Handling (Lazy Load on Click) ---
   const handleToggleCategory = async (category: string) => {
@@ -359,12 +352,12 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
   const filteredItems = useMemo(() => {
     if (!deferredSearchTerm) return null;
     
-    // If AI mode and we have AI results, return those
-    if (isAIMode && aiResults.length > 0) {
+    // Priority 1: AI Results (if user clicked generate)
+    if (aiResults.length > 0) {
         return aiResults;
     }
     
-    // Fallback to local search (or if not AI mode)
+    // Priority 2: Local DB Search
     const lowerSearch = deferredSearchTerm.toLowerCase();
     const results: { l: string, f: string, category: string }[] = [];
     
@@ -378,8 +371,8 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
           });
       }
     });
-    return results.slice(0, 50);
-  }, [deferredSearchTerm, loadedData, isAIMode, aiResults]);
+    return results.slice(0, 50); // Limit results for performance
+  }, [deferredSearchTerm, loadedData, aiResults]);
 
   // Calculate total items from hardcoded counts
   const totalCount = Object.values(CATEGORY_COUNTS).reduce((acc, curr) => acc + curr, 0);
@@ -404,8 +397,11 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                      <button 
                         onClick={() => {
                             setIsAIMode(!isAIMode);
-                            setSearchTerm(''); // Clear on toggle to reset view
-                            setAiResults([]);
+                            if (!isAIMode) {
+                                // Focus input when enabling AI mode
+                                const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                                if(input) input.focus();
+                            }
                         }}
                         className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide transition-all ${
                             isAIMode 
@@ -431,18 +427,33 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                  
                  <input 
                     type="text" 
-                    placeholder={isAIMode ? "Describe what to find (e.g. 'Space Travel')..." : "Search document type..."} 
-                    className={`w-full pl-7 pr-2 py-1.5 text-xs border rounded-md outline-none transition-all ${
+                    placeholder={isAIMode ? "Describe what to find (e.g. 'Space Treaty')..." : "Search document type..."} 
+                    className={`w-full pl-7 ${isAIMode && deferredSearchTerm ? 'pr-14' : 'pr-2'} py-1.5 text-xs border rounded-md outline-none transition-all ${
                         isAIMode 
                         ? 'bg-indigo-50/30 border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 placeholder:text-indigo-400/70 text-indigo-900'
                         : 'bg-white border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100'
                     }`}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && isAIMode && handleGenerateTemplates()}
                  />
-                 {isSearchingAI && (
-                     <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                         <Loader2 size={12} className="animate-spin text-indigo-500"/>
+                 
+                 {/* Manual Generate Button for AI Mode */}
+                 {isAIMode && deferredSearchTerm && (
+                     <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
+                         {isSearchingAI ? (
+                             <div className="px-2">
+                                <Loader2 size={12} className="animate-spin text-indigo-500"/>
+                             </div>
+                         ) : (
+                             <button
+                                onClick={handleGenerateTemplates}
+                                className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-md p-1 transition-all shadow-sm active:scale-95"
+                                title="Generate Templates"
+                             >
+                                <Wand2 size={10} className="fill-white/20"/>
+                             </button>
+                         )}
                      </div>
                  )}
              </div>
@@ -454,7 +465,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                      {filteredItems && filteredItems.length > 0 ? (
                          filteredItems.map((item, idx) => {
                              const Icon = getIconForOption(item.l);
-                             const isAIItem = item.category === 'AI Suggestion';
+                             const isAIItem = item.category === 'AI Generated';
                              return (
                                  <button 
                                     key={idx} 
@@ -485,10 +496,20 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                              {(Object.values(loadingStates).some(Boolean) || isSearchingAI) ? (
                                  <>
                                     <Loader2 className="animate-spin" size={16}/>
-                                    <span>{isSearchingAI ? "AI is thinking..." : "Searching templates..."}</span>
+                                    <span>{isSearchingAI ? "AI is thinking..." : "Searching database..."}</span>
                                  </>
                              ) : (
-                                 <span>No templates found for "{deferredSearchTerm}"</span>
+                                 <div className="flex flex-col items-center gap-3">
+                                     <span>No templates found for "{deferredSearchTerm}"</span>
+                                     {isAIMode && (
+                                         <button 
+                                            onClick={handleGenerateTemplates}
+                                            className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5"
+                                         >
+                                             <Sparkles size={12}/> Generate with AI
+                                         </button>
+                                     )}
+                                 </div>
                              )}
                          </div>
                      )}
