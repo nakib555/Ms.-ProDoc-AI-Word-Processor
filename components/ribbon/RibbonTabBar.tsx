@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';

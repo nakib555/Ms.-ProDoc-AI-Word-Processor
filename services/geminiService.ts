@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { AIOperation } from '../types';
 import { getSystemPrompt, getChatSystemPrompt } from './prompts';

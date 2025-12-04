@@ -1,10 +1,11 @@
 
 import React, { useState, Suspense, useEffect } from 'react';
-import { LayoutTemplate, FileText, Feather, BookOpen, Loader2, ChevronDown, Zap, Smile, GraduationCap, AlertTriangle } from 'lucide-react';
+import { LayoutTemplate, FileText, Feather, BookOpen, Loader2, ChevronDown, Zap, Smile, GraduationCap, AlertTriangle, Wand2, Sparkles } from 'lucide-react';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { ErrorBoundary } from '../../../../../ErrorBoundary';
+import { getSmartDocPrompt, getAutoDetectTemplatePrompt } from '../../../../../../services/prompts/tools/draft';
 
 // Lazy load the PredictiveBuilder to reduce initial bundle size
 const PredictiveBuilder = React.lazy(() => 
@@ -58,39 +59,16 @@ export const SmartDocTemplateTool: React.FC = () => {
   };
 
   const handlePredictiveSelect = (item: { l: string, f: string }) => {
-      const prompt = `
-        ACT AS A SMART DOCUMENT ARCHITECT.
-
-        TEMPLATE REQUEST: "${item.l}"
-        STRUCTURE FLOW: "${item.f}"
-        TONE/STYLE: "${selectedStyle}"
-        
-        TASK: Generate a professional "Fill-in-the-Blank" Document Template.
-        
-        1. **Structure & Flow**: 
-           - Create a document skeleton based on: ${item.f}.
-           - Use a Main Title (H1) matching the request.
-           - Estimate page capacity and insert a "page_break" block where logical sections should split pages.
-        
-        2. **Content Strategy**:
-           - Do NOT write a finished document. Write a TEMPLATE.
-           - Provide boilerplate text that is generic but high-quality (e.g., "This agreement is made between...").
-           - Use **[SQUARE BRACKETS]** for all variable data (e.g., [Client Name], [Date], [Specific Goal]).
-           - Include brief *italicized instructions* where complex input is needed.
-        
-        3. **Visuals & Formatting**:
-           - Use H2/H3 for clear section headers.
-           - Use Tables for data entry sections (e.g., Budget, Schedule).
-           - Use Bullet lists for items needing enumeration.
-           - Apply styling appropriate for ${selectedStyle} tone.
-           - Optionally include a "page_settings" block at the start to define margins/size if relevant to the template type.
-        
-        OUTPUT:
-        Return a valid JSON object compatible with the ProDoc schema (document.blocks).
-      `;
+      const prompt = getSmartDocPrompt(item.l, item.f, selectedStyle);
       
       // Use replace mode to create a fresh document with headers/footers and page settings
       performAIAction('generate_content', prompt, { mode: 'replace' });
+      closeMenu();
+  };
+
+  const handleAutoDetect = () => {
+      const prompt = getAutoDetectTemplatePrompt();
+      performAIAction('generate_content', prompt, { mode: 'insert' });
       closeMenu();
   };
 
@@ -117,6 +95,32 @@ export const SmartDocTemplateTool: React.FC = () => {
                 className="flex flex-col max-h-[70vh] md:max-h-[80vh] h-full overflow-hidden bg-white dark:bg-slate-900 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-700"
                 onMouseDown={(e) => e.stopPropagation()}
              >
+                 {/* Header */}
+                 <div className="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 z-10 shrink-0">
+                     <div className="flex items-center gap-2 mb-3 px-1">
+                         <div className="p-1.5 bg-blue-600 rounded-lg shadow-sm">
+                             <Wand2 size={14} className="text-white" />
+                         </div>
+                         <div>
+                             <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide">Template Architect</h3>
+                             <p className="text-[10px] text-slate-500 dark:text-slate-400">AI-powered document generation</p>
+                         </div>
+                     </div>
+
+                     <button 
+                        onClick={handleAutoDetect} 
+                        className="w-full text-left px-3 py-3 hover:bg-white dark:hover:bg-slate-800 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 flex items-center gap-3 group transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm hover:shadow-md"
+                     >
+                        <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-md text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                            <Sparkles size={16} className="fill-indigo-200 dark:fill-indigo-900" />
+                        </div>
+                        <div>
+                            <div className="leading-tight font-semibold text-indigo-900 dark:text-indigo-100">Auto-Generate</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Detect context & create template</div>
+                        </div>
+                     </button>
+                 </div>
+
                  {/* Style Selector */}
                  <div className="p-3 bg-white dark:bg-slate-900 shrink-0 space-y-2">
                      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Select Tone</div>

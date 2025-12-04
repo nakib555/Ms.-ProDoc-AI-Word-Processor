@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';

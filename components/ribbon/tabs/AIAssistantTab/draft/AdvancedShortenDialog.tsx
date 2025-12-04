@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
+import { getAdvancedShortenPrompt } from '../../../../../services/prompts/tools/refine';
 
 interface AdvancedShortenDialogProps {
   isOpen: boolean;
@@ -128,19 +129,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
     if (constraintType === 'chars') instruction += `STRICT LIMIT: The output must be under ${constraintValue} characters. `;
     if (constraintType === 'words') instruction += `STRICT LIMIT: The output must be under ${constraintValue} words. `;
 
-    const prompt = `
-      TASK: Shorten and rewrite the input text based on these specific rules.
-      
-      RULES:
-      ${instruction}
-      
-      INPUT TEXT:
-      "${inputText}"
-      
-      OUTPUT FORMAT:
-      Return a VALID JSON object matching the ProDoc schema (document.blocks array).
-      Do not wrap in markdown code blocks.
-    `;
+    const prompt = getAdvancedShortenPrompt(inputText, instruction);
 
     try {
       const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');

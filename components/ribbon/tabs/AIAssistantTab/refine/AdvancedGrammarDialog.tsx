@@ -7,6 +7,7 @@ import {
   Menu, ArrowLeft
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { getGrammarSystemPrompt } from '../../../../../services/prompts/tools/grammar';
 
 interface AdvancedGrammarDialogProps {
   isOpen: boolean;
@@ -147,27 +148,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
         return;
     }
 
-    const systemInstruction = `You are an expert editor and writing coach.
-    Analyze the user input text and provide a corrected version along with readability metrics.
-    
-    SETTINGS:
-    - Tone: ${settings.tone}
-    - Fix Grammar/Spelling: ${settings.checkGrammar}
-    - Improve Style/Flow: ${settings.checkStyle}
-    - Fix Punctuation: ${settings.checkPunctuation}
-    - Fix Passive Voice: ${settings.fixPassive}
-    - Language: ${settings.language}
-
-    OUTPUT FORMAT:
-    Return valid JSON only. Follow this schema exactly:
-    {
-      "correctedText": "The fully corrected text string",
-      "readabilityScore": 0-100 (integer, 100 is best),
-      "readabilityLevel": "String (e.g. '8th Grade', 'College')",
-      "passiveVoiceCount": integer,
-      "improvements": ["List of 3-5 concise specific improvements made"]
-    }
-    `;
+    const systemInstruction = getGrammarSystemPrompt(settings);
 
     try {
       const client = new GoogleGenAI({ apiKey });

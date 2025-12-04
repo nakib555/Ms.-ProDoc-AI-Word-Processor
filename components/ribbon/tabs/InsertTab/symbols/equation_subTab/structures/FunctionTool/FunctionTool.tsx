@@ -50,7 +50,7 @@ export const FunctionTool: React.FC = () => {
         { label: "arcosh", latex: "\\cosh^{-1}\\placeholder{}", insertValue: "\\cosh^{-1}\\placeholder{}" },
         { label: "artanh", latex: "\\tanh^{-1}\\placeholder{}", insertValue: "\\tanh^{-1}\\placeholder{}" },
         { label: "arcsch", latex: "\\operatorname{csch}^{-1}\\placeholder{}", insertValue: "\\operatorname{csch}^{-1}\\placeholder{}" },
-        { label: "arsech", latex: "\\operatorname{sech}^{-1}\\placeholder{}", insertValue: "\\\operatorname{sech}^{-1}\\placeholder{}" },
+        { label: "arsech", latex: "\\operatorname{sech}^{-1}\\placeholder{}", insertValue: "\\operatorname{sech}^{-1}\\placeholder{}" },
         { label: "arcoth", latex: "\\coth^{-1}\\placeholder{}", insertValue: "\\coth^{-1}\\placeholder{}" }
       ]
     },

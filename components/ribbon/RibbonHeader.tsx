@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Menu, MoreHorizontal, Loader2, Cloud, Sparkles } from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';

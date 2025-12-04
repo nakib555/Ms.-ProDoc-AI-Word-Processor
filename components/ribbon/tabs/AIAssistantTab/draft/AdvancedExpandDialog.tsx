@@ -8,6 +8,7 @@ import {
 import { generateAIContent } from '../../../../../services/geminiService';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
+import { getAdvancedExpandPrompt } from '../../../../../services/prompts/tools/refine';
 
 interface AdvancedExpandDialogProps {
   isOpen: boolean;
@@ -73,26 +74,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
     setMobileView('editor');
 
     const modeConfig = EXPAND_MODES.find(m => m.id === selectedMode);
-    
-    const prompt = `
-      TASK: Expand the following text using the "${modeConfig?.label}" method.
-      
-      METHOD DESCRIPTION: ${modeConfig?.desc}
-      
-      INSTRUCTIONS:
-      1. Analyze the INPUT TEXT.
-      2. Elaborate significantly based on the selected method.
-      3. Maintain the original core meaning but add value.
-      4. If "Step-by-Step" is selected, format as a list.
-      5. If "Data" is selected, use plausible general statistics or placeholders if real data isn't known.
-      
-      INPUT TEXT:
-      "${inputText}"
-      
-      OUTPUT FORMAT:
-      Return a VALID JSON object matching the ProDoc schema (document.blocks array).
-      Do not wrap in markdown code blocks.
-    `;
+    const prompt = getAdvancedExpandPrompt(inputText, modeConfig);
 
     try {
       const response = await generateAIContent('generate_content', '', prompt, 'gemini-3-pro-preview');

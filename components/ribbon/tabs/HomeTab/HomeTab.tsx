@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RibbonSeparator } from '../../common/RibbonSeparator';
 import { HomeTabProvider } from './HomeTabContext';

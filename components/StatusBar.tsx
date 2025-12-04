@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Loader2, Lock, Unlock, ScanText } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';

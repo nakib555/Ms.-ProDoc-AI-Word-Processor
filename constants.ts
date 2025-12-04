@@ -1,4 +1,3 @@
-
 import { RibbonTab, MarginValues } from './types';
 
 export const FONTS = [
