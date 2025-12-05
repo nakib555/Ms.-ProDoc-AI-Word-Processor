@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export interface DocumentState {
@@ -67,7 +68,29 @@ export type PageMovement = 'vertical' | 'side-to-side';
 
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
 
-export type PageSize = 'Letter' | 'Legal' | 'Executive' | 'A3' | 'A4' | 'A5' | 'B4 (JIS)' | 'B5 (JIS)' | 'Statement' | 'Tabloid' | 'Note' | 'Envelope #10' | 'Envelope DL' | 'Custom';
+export type PageSize = 
+  // North American
+  | 'Letter' | 'Legal' | 'Half Letter' | 'Statement' | 'Junior Legal' | 'Tabloid' | 'Ledger' | 'Executive' 
+  | 'Government Letter' | 'Government Legal' | 'Folio' | 'Quarto' | 'Note'
+  // ISO A
+  | 'A0' | 'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'A7' | 'A8' | 'A9' | 'A10'
+  // ISO B
+  | 'B0' | 'B1' | 'B2' | 'B3' | 'B4' | 'B5' | 'B6' | 'B7' | 'B8' | 'B9' | 'B10'
+  // JIS B (Legacy)
+  | 'B4 (JIS)' | 'B5 (JIS)'
+  // Architectural
+  | 'Arch A' | 'Arch B' | 'Arch C' | 'Arch D' | 'Arch E' | 'Arch E1' | 'Arch E2' | 'Arch E3'
+  // Engineering
+  | 'ANSI C' | 'ANSI D' | 'ANSI E'
+  // Photo
+  | '2R' | '3R' | '4R' | '5R' | '6R' | '8R' | '10R' | '11x14' | '12x18' | '16x20' | '20x24'
+  // Envelopes
+  | 'Envelope #6 3/4' | 'Envelope #8' | 'Envelope #9' | 'Envelope #10' | 'Envelope #11' | 'Envelope #12' | 'Envelope #14'
+  | 'Envelope Monarch' | 'Envelope DL' | 'Envelope C4' | 'Envelope C5' | 'Envelope C6' | 'Envelope B4' | 'Envelope B5'
+  // Misc
+  | 'Index Card 3x5' | 'Index Card 4x6' | 'Index Card 5x8' | 'Postcard' | 'Square 5x5' | 'Square 6x6'
+  | 'Custom';
+
 export type PageOrientation = 'portrait' | 'landscape';
 export type PageBackground = 'none' | 'ruled' | 'grid';
 export type VerticalAlignment = 'top' | 'center' | 'justify' | 'bottom';
