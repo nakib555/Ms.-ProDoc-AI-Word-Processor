@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { CompactInput, CompactSelect, ApplyToSection, RenderSubTabs } from '../../../common/DialogHelpers';
 import { PageConfig, PageSize } from '../../../../../../../../types';
-import { PAGE_SIZES } from '../../../../../../../../constants';
+import { PAGE_SIZES, PAPER_FORMATS } from '../../../../../../../../constants';
 
 interface PaperTabProps {
     localConfig: PageConfig;
@@ -48,19 +48,10 @@ export const PaperTab: React.FC<PaperTabProps> = ({ localConfig, setLocalConfig 
                             value={localConfig.size} 
                             onChange={(e: any) => handlePaperSizeChange(e.target.value as PageSize)}
                             options={[
-                                { value: 'Letter', label: 'Letter (8.5" x 11")' },
-                                { value: 'Legal', label: 'Legal (8.5" x 14")' },
-                                { value: 'Executive', label: 'Executive (7.25" x 10.5")' },
-                                { value: 'A3', label: 'A3 (11.69" x 16.54")' },
-                                { value: 'A4', label: 'A4 (8.27" x 11.69")' },
-                                { value: 'A5', label: 'A5 (5.83" x 8.27")' },
-                                { value: 'B4 (JIS)', label: 'B4 JIS (9.84" x 13.90")' },
-                                { value: 'B5 (JIS)', label: 'B5 JIS (6.93" x 9.84")' },
-                                { value: 'Statement', label: 'Statement (5.5" x 8.5")' },
-                                { value: 'Tabloid', label: 'Tabloid (11" x 17")' },
-                                { value: 'Note', label: 'Note (8.5" x 11")' },
-                                { value: 'Envelope #10', label: 'Envelope #10 (4.125" x 9.5")' },
-                                { value: 'Envelope DL', label: 'Envelope DL (4.33" x 8.66")' },
+                                ...PAPER_FORMATS.map(f => ({ 
+                                    value: f.id, 
+                                    label: `${f.label} (${f.width} x ${f.height})` 
+                                })),
                                 { value: 'Custom', label: 'Custom Size' },
                             ]}
                         />

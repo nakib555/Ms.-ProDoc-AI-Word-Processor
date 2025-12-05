@@ -8,7 +8,7 @@ import {
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
 import { paginateContent } from '../../../../../utils/layoutEngine';
-import { PAGE_SIZES, MARGIN_PRESETS } from '../../../../../constants';
+import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
 import { PageConfig, MarginPreset } from '../../../../../types';
 
 // --- Shared UI Components ---
@@ -444,7 +444,10 @@ const PrintSettingsPanel: React.FC<{
                         label="Paper Size"
                         value={localConfig.size}
                         onChange={(v: any) => handleSettingChange('size', v)}
-                        options={Object.keys(PAGE_SIZES).map(s => ({ value: s, label: s }))}
+                        options={PAPER_FORMATS.map(f => ({ 
+                            value: f.id, 
+                            label: `${f.label} (${f.width} x ${f.height})` 
+                        }))}
                         icon={FileText}
                     />
 

@@ -1,3 +1,4 @@
+
 import { RibbonTab, MarginValues } from './types';
 
 export const FONTS = [
@@ -41,6 +42,22 @@ export const PAGE_SIZES: Record<string, { width: number, height: number }> = {
   'Envelope #10': { width: 396, height: 912 },
   'Envelope DL': { width: 416, height: 831 },
 };
+
+export const PAPER_FORMATS = [
+  { id: 'Letter', label: 'Letter', width: '8.5"', height: '11"' },
+  { id: 'Legal', label: 'Legal', width: '8.5"', height: '14"' },
+  { id: 'Executive', label: 'Executive', width: '7.25"', height: '10.5"' },
+  { id: 'A3', label: 'A3', width: '11.69"', height: '16.54"' },
+  { id: 'A4', label: 'A4', width: '8.27"', height: '11.69"' },
+  { id: 'A5', label: 'A5', width: '5.83"', height: '8.27"' },
+  { id: 'B4 (JIS)', label: 'B4 (JIS)', width: '9.84"', height: '13.90"' },
+  { id: 'B5 (JIS)', label: 'B5 (JIS)', width: '6.93"', height: '9.84"' },
+  { id: 'Statement', label: 'Statement', width: '5.5"', height: '8.5"' },
+  { id: 'Tabloid', label: 'Tabloid', width: '11"', height: '17"' },
+  { id: 'Note', label: 'Note', width: '8.5"', height: '11"' },
+  { id: 'Envelope #10', label: 'Envelope #10', width: '4.125"', height: '9.5"' },
+  { id: 'Envelope DL', label: 'Envelope DL', width: '4.33"', height: '8.66"' },
+];
 
 export const MARGIN_PRESETS: Record<string, MarginValues> = {
   normal: { top: 1, bottom: 1, left: 1, right: 1, gutter: 0 },
