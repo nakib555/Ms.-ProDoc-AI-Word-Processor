@@ -1,5 +1,5 @@
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useMemo } from 'react';
 import { LayoutTemplate, Columns, ArrowLeftRight, MoveVertical, ArrowRightLeft, Monitor, Settings2 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 import { useLayoutTab } from '../../LayoutTabContext';
@@ -39,14 +39,31 @@ export const MarginsTool: React.FC = () => {
       setShowCustomDialog(false);
   };
 
-  const marginOptions = [
-    { id: 'normal', label: 'Normal', desc: 'Top 1" Bottom 1" Left 1" Right 1"', icon: LayoutTemplate },
-    { id: 'narrow', label: 'Narrow', desc: 'Top 0.5" Bottom 0.5" Left 0.5" Right 0.5"', icon: Columns },
-    { id: 'moderate', label: 'Moderate', desc: 'Top 1" Bottom 1" Left 0.75" Right 0.75"', icon: MoveVertical },
-    { id: 'wide', label: 'Wide', desc: 'Top 1" Bottom 1" Left 2" Right 2"', icon: ArrowLeftRight },
-    { id: 'mirrored', label: 'Mirrored', desc: 'Top 1" Bottom 1" Inside 1.25" Outside 1"', icon: ArrowRightLeft },
-    { id: 'office2003', label: 'Office 2003 Default', desc: 'Top 1" Bottom 1" Left 1.25" Right 1.25"', icon: Monitor },
-  ];
+  const formatLabel = (key: string) => {
+      if (key === 'office2003') return 'Office 2003 Default';
+      if (key === 'apa') return 'APA';
+      if (key === 'mla') return 'MLA';
+      if (key === 'chicago') return 'Chicago';
+      
+      const result = key.replace(/([A-Z])/g, " $1");
+      return result.charAt(0).toUpperCase() + result.slice(1);
+  };
+
+  const marginOptions = useMemo(() => Object.entries(MARGIN_PRESETS).map(([key, val]) => {
+      let icon = LayoutTemplate;
+      if (key === 'narrow') icon = Columns;
+      if (key === 'moderate') icon = MoveVertical;
+      if (key === 'wide') icon = ArrowLeftRight;
+      if (key === 'mirrored') icon = ArrowRightLeft;
+      if (key === 'office2003') icon = Monitor;
+
+      return {
+        id: key,
+        label: formatLabel(key),
+        desc: `Top ${val.top}" Bottom ${val.bottom}" Left ${val.left}" Right ${val.right}"`,
+        icon
+      };
+  }), []);
 
   return (
     <>

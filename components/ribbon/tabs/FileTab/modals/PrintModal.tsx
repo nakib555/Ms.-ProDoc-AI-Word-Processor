@@ -383,6 +383,19 @@ const PrintSettingsPanel: React.FC<{
       });
     };
 
+    // Helper to format camelCase preset names to readable labels
+    const formatPresetLabel = (preset: string) => {
+        // Handle common acronyms or specific cases
+        if (preset === 'office2003') return 'Office 2003 Default';
+        if (preset === 'apa') return 'APA Style';
+        if (preset === 'mla') return 'MLA Style';
+        if (preset === 'chicago') return 'Chicago Style';
+        
+        // Convert camelCase to Title Case with spaces
+        const label = preset.replace(/([A-Z])/g, ' $1').trim();
+        return label.charAt(0).toUpperCase() + label.slice(1) + " Margins";
+    };
+
     return (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900">
             {/* Desktop Header */}
@@ -455,7 +468,10 @@ const PrintSettingsPanel: React.FC<{
                         label="Margins"
                         value={localConfig.marginPreset}
                         onChange={(v: any) => handleSettingChange('marginPreset', v)}
-                        options={Object.keys(MARGIN_PRESETS).map(m => ({ value: m, label: m.charAt(0).toUpperCase() + m.slice(1) + " Margins" }))}
+                        options={Object.keys(MARGIN_PRESETS).map(m => ({ 
+                            value: m, 
+                            label: formatPresetLabel(m) 
+                        }))}
                         icon={LayoutTemplate}
                     />
                 </div>

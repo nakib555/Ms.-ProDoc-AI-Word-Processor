@@ -98,7 +98,26 @@ export type MultiplePagesType = 'normal' | 'mirrorMargins' | 'twoPagesPerSheet' 
 export type ApplyToType = 'wholeDocument' | 'thisSection' | 'thisPointForward';
 export type SheetsPerBookletType = 'all' | '16' | '8' | '4' | '2';
 
-export type MarginPreset = 'normal' | 'narrow' | 'moderate' | 'wide' | 'mirrored' | 'office2003' | 'custom';
+export type MarginPreset = 
+  | 'normal' | 'narrow' | 'moderate' | 'wide' | 'mirrored' | 'office2003' 
+  | 'academicStandard' | 'apa' | 'mla' | 'chicago' | 'thesisTopHeavy' | 'thesisBalanced' 
+  | 'corporateClean' | 'executiveLetter' | 'novelBook' | 'magazineLayout' | 'heavyBinding' 
+  | 'narrowHeader' | 'wideBottom' | 'symmetricalWide' | 'legalFormat' | 'formDocument' 
+  | 'envelope' | 'labelSheet' | 'posterMinimal' | 'posterBalanced' | 'compactReport' 
+  | 'extendedReport' | 'letterhead' | 'newsletter' | 'flyer' | 'brochureFold' 
+  | 'doubleColumn' | 'photoLayout' | 'postcard' | 'greetingCard' | 'businessProposal' 
+  | 'marketingPlan' | 'resumeStandard' | 'resumeCompact' | 'coverLetter' | 'binderFriendly' 
+  | 'trainingManual' | 'projectPlan' | 'technicalReport' | 'financialReport' | 'invoice' 
+  | 'certificate' | 'invitation' | 'menuLayout' | 'newsletterCompact' | 'magazineWide' 
+  | 'annualReport' | 'slideNotes' | 'academicCompact' | 'academicWide' | 'conferencePaper' 
+  | 'whitepaper' | 'trainingHandout' | 'instructionManual' | 'labReport' | 'researchPaperNarrow' 
+  | 'researchPaperStandard' | 'dissertationTopHeavy' | 'dissertationBalanced' | 'bookManuscript' 
+  | 'childrenBook' | 'comicBook' | 'technicalManualWide' | 'artPortfolio' | 'photographyBook' 
+  | 'weddingProgram' | 'eventProgram' | 'festivalGuide' | 'realEstateFlyer' | 'propertyBrochure' 
+  | 'travelGuide' | 'productCatalog' | 'menuCompact' | 'menuWide' | 'recipeBook' | 'planner' 
+  | 'journal' | 'diary' | 'manualCompact' | 'manualWide' | 'technicalSpec' | 'engineeringDrawing' 
+  | 'blueprint' 
+  | 'custom';
 
 export interface MarginValues {
   top: number;    // inches
