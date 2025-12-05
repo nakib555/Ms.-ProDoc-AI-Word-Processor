@@ -58,7 +58,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
-  const { isKeyboardLocked, selectionMode } = useEditor();
+  const { isKeyboardLocked, selectionMode, undo, redo } = useEditor();
 
   // Smart Selection Refs
   const wordPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -243,20 +243,20 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }
     }
 
-    // Explicit Undo/Redo Handling to prevent conflicts and ensure support
+    // Custom History Handling for Undo/Redo
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
         if (e.key.toLowerCase() === 'z') {
             e.preventDefault();
             if (e.shiftKey) {
-                document.execCommand('redo');
+                redo();
             } else {
-                document.execCommand('undo');
+                undo();
             }
             return;
         }
         if (e.key.toLowerCase() === 'y') {
             e.preventDefault();
-            document.execCommand('redo');
+            redo();
             return;
         }
     }
