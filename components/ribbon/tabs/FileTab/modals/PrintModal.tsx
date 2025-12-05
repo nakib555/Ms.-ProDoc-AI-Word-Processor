@@ -1,160 +1,162 @@
 
-import React, { useState } from 'react';
-import { FileText, FileType, Printer, Settings2, ChevronDown, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { FileText, FileType, Printer, Settings2, ChevronDown, Loader2, ChevronLeft, ChevronRight, LayoutTemplate, Check } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
 import { paginateContent } from '../../../../../utils/layoutEngine';
-import { PAGE_SIZES } from '../../../../../constants';
+import { PAGE_SIZES, MARGIN_PRESETS } from '../../../../../constants';
+import { PageConfig, PageSize, PageOrientation, MarginPreset } from '../../../../../types';
 
 export const PrintModal: React.FC = () => {
-  const { content, pageConfig, headerContent, footerContent, documentTitle } = useEditor();
+  const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle } = useEditor();
   const { closeModal } = useFileTab();
-  const [isPreparing, setIsPreparing] = useState(false);
+  
+  // Local state for print settings (isolated from editor until printed/applied)
+  const [localConfig, setLocalConfig] = useState<PageConfig>({ ...globalConfig });
+  
+  // Pagination State
+  const [paginatedPages, setPaginatedPages] = useState<{ html: string, config: PageConfig }[]>([]);
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
+  const [isPaginationReady, setIsPaginationReady] = useState(false);
+  const [isPreparingPrint, setIsPreparingPrint] = useState(false);
+
+  // UI State for Dropdowns
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  // Pagination Effect: Re-run whenever config changes
+  useEffect(() => {
+    setIsPaginationReady(false);
+    const timer = setTimeout(() => {
+        const result = paginateContent(content, localConfig);
+        setPaginatedPages(result.pages);
+        setIsPaginationReady(true);
+        // Reset to page 1 if out of bounds (e.g. content flow changed)
+        if (currentPreviewIndex >= result.pages.length) {
+            setCurrentPreviewIndex(0);
+        }
+    }, 100); // Debounce layout calculation
+    return () => clearTimeout(timer);
+  }, [content, localConfig]); // Removed currentPreviewIndex from dependency to avoid loop
 
   const handlePrint = () => {
-    setIsPreparing(true);
+    setIsPreparingPrint(true);
 
-    // 1. Generate Pages based on layout engine
-    // Using a small timeout to allow UI to show "Preparing..." state
+    // Wait slightly to ensure UI updates before blocking thread
     setTimeout(() => {
-        const { pages } = paginateContent(content, pageConfig);
+        // Re-calculate one last time to be sure (or use existing state)
+        const pagesToPrint = paginatedPages.length > 0 ? paginatedPages : paginateContent(content, localConfig).pages;
 
-        // 2. Open Print Window
         const printWindow = window.open('', '_blank');
         if (!printWindow) {
             alert("Please allow popups to print");
-            setIsPreparing(false);
+            setIsPreparingPrint(false);
             return;
         }
 
-        // 3. Construct HTML
         const htmlContent = `
           <!DOCTYPE html>
           <html lang="en">
           <head>
             <meta charset="UTF-8">
-            <title>${documentTitle || 'Document'} - Print</title>
+            <title>${documentTitle || 'Document'}</title>
             <style>
-                /* Reset & Base */
                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&display=swap');
+                
+                @page { margin: 0; size: auto; }
                 
                 body { 
                     margin: 0; 
                     padding: 0; 
                     background: #eee; 
-                    font-family: 'Inter', sans-serif; 
+                    font-family: 'Calibri', 'Inter', sans-serif;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                 }
                 
-                /* Page Wrapper */
                 .print-page {
                     position: relative;
                     overflow: hidden;
-                    page-break-after: always;
                     margin: 0 auto;
                     background: white;
-                    box-sizing: border-box;
-                    box-shadow: none;
+                    page-break-after: always;
+                    break-after: page;
                 }
 
-                /* Header/Footer */
-                .print-header { position: absolute; top: 0; left: 0; right: 0; overflow: hidden; }
-                .print-footer { position: absolute; bottom: 0; left: 0; right: 0; overflow: hidden; }
-                .print-content { position: absolute; overflow: hidden; }
+                .print-header, .print-footer { 
+                    position: absolute; left: 0; right: 0; overflow: hidden; z-index: 10;
+                }
+                .print-header { top: 0; }
+                .print-footer { bottom: 0; }
+                
+                .print-content { 
+                    position: absolute; overflow: hidden; z-index: 5;
+                }
 
-                /* Editor Content Styles - Mirroring App.css/Index.css */
+                /* Editor Styles Replication */
                 .prodoc-editor { 
-                    font-size: 11pt; 
-                    line-height: 1.5;
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
-                    color: #000;
+                    font-size: 11pt; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; color: #000;
                 }
-                .prodoc-editor p { margin-bottom: 0.5em; }
-                .prodoc-editor h1 { font-size: 2em; font-weight: bold; margin-top: 0.67em; margin-bottom: 0.67em; }
-                .prodoc-editor h2 { font-size: 1.5em; font-weight: bold; margin-top: 0.83em; margin-bottom: 0.83em; }
-                .prodoc-editor ul, .prodoc-editor ol { padding-left: 2em; }
+                .prodoc-editor p { margin-bottom: 0.5em; margin-top: 0; }
+                .prodoc-editor h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
+                .prodoc-editor h2 { font-size: 1.5em; font-weight: bold; margin: 0.83em 0; }
+                .prodoc-editor ul, .prodoc-editor ol { padding-left: 2em; margin: 1em 0; }
                 
-                /* Tables */
-                table { border-collapse: collapse; width: 100%; }
-                td, th { border: 1px solid #000; padding: 4px; }
+                table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+                td, th { border: 1px solid #000; padding: 4px 8px; vertical-align: top; }
+                img { max-width: 100%; display: block; }
                 
-                /* Math & Images */
-                img { max-width: 100%; }
-                math-field { display: inline-block; border: none; background: transparent; }
-                .equation-wrapper { display: inline-flex; border: none; }
-                .equation-handle, .equation-dropdown { display: none; }
+                /* MathLive Static */
+                math-field { display: inline-block; border: none; background: transparent; font-size: 1.1em; color: black; }
+                math-field::part(menu-toggle), math-field::part(virtual-keyboard-toggle) { display: none; }
+                .equation-wrapper { display: inline-flex; vertical-align: middle; }
+                .equation-handle, .equation-dropdown { display: none !important; }
                 
-                /* Print Media Query */
                 @media print {
                     body { background: none; }
-                    .print-page { box-shadow: none; margin: 0; }
-                    @page { margin: 0; } /* Use zero margins and control via CSS dimensions */
                 }
             </style>
             <script defer src="//unpkg.com/mathlive"></script>
           </head>
           <body>
-            ${pages.map((page, index) => {
+            ${pagesToPrint.map((page, index) => {
                 const cfg = page.config;
                 const baseSize = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
                 
                 let widthPt = baseSize.width; 
                 let heightPt = baseSize.height;
 
-                if (cfg.size === 'Custom' && cfg.customWidth && cfg.customHeight) {
-                    widthPt = cfg.customWidth * 96;
-                    heightPt = cfg.customHeight * 96;
-                }
-
-                if (cfg.orientation === 'landscape' && cfg.size !== 'Custom') {
+                if (cfg.orientation === 'landscape') {
                      const temp = widthPt; widthPt = heightPt; heightPt = temp;
                 }
 
-                // Margins (convert inches to px)
-                const mt = (cfg.margins.top || 1) * 96;
-                const mb = (cfg.margins.bottom || 1) * 96;
-                const ml = (cfg.margins.left || 1) * 96;
-                const mr = (cfg.margins.right || 1) * 96;
-                
-                const gutter = (cfg.margins.gutter || 0) * 96;
-                const gutterLeft = cfg.gutterPosition === 'left' ? gutter : 0;
-                const gutterTop = cfg.gutterPosition === 'top' ? gutter : 0;
-
+                const mt = cfg.margins.top * 96;
+                const mb = cfg.margins.bottom * 96;
+                const ml = cfg.margins.left * 96;
+                const mr = cfg.margins.right * 96;
                 const hd = (cfg.headerDistance || 0.5) * 96;
                 const fd = (cfg.footerDistance || 0.5) * 96;
 
-                // Process placeholders
+                const safeHtml = page.html.replace(/<math-field/g, '<math-field read-only');
                 const currentHeader = (headerContent || '').replace(/<div/g, '<div style="height:100%; display:flex; align-items:flex-end;"');
                 const currentFooter = (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
                                                           .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
 
                 return `
                     <div class="print-page" style="width: ${widthPt}px; height: ${heightPt}px;">
-                        <!-- Header -->
-                        <div class="print-header" style="height: ${mt}px; padding-top: ${hd}px; padding-left: ${ml + gutterLeft}px; padding-right: ${mr}px;">
-                            <div style="width: 100%; height: 100%; position: relative;">${headerContent || ''}</div>
+                        <div class="print-header" style="height: ${mt}px; padding-top: ${hd}px; padding-left: ${ml}px; padding-right: ${mr}px;">
+                            <div style="width: 100%; height: 100%;">${headerContent ? currentHeader : ''}</div>
                         </div>
-                        
-                        <!-- Body Content -->
-                        <div class="print-content" style="top: ${mt + gutterTop}px; bottom: ${mb}px; left: ${ml + gutterLeft}px; right: ${mr}px;">
-                            <div class="prodoc-editor">${page.html}</div>
+                        <div class="print-content" style="top: ${mt}px; bottom: ${mb}px; left: ${ml}px; right: ${mr}px;">
+                            <div class="prodoc-editor">${safeHtml}</div>
                         </div>
-                        
-                        <!-- Footer -->
-                        <div class="print-footer" style="height: ${mb}px; padding-bottom: ${fd}px; padding-left: ${ml + gutterLeft}px; padding-right: ${mr}px; display: flex; flex-direction: column; justify-content: flex-end;">
+                        <div class="print-footer" style="height: ${mb}px; padding-bottom: ${fd}px; padding-left: ${ml}px; padding-right: ${mr}px; display: flex; flex-direction: column; justify-content: flex-end;">
                             <div style="width: 100%;">${currentFooter}</div>
                         </div>
                     </div>
                 `;
             }).join('')}
             <script>
-                window.onload = function() {
-                    // Allow images/fonts to load
-                    setTimeout(function() {
-                        window.print();
-                        // Auto-close behavior optional, usually better to leave open for user to verify
-                    }, 800);
-                };
+                window.onload = function() { setTimeout(() => { window.print(); }, 1000); };
             </script>
           </body>
           </html>
@@ -162,113 +164,269 @@ export const PrintModal: React.FC = () => {
 
         printWindow.document.write(htmlContent);
         printWindow.document.close();
-        setIsPreparing(false);
-        closeModal();
+        setIsPreparingPrint(false);
+        // Optional: closeModal() if you want to close after printing, 
+        // but usually print dialogs stay open in case user cancels and wants to adjust
     }, 100);
   };
 
+  // Setting Handlers
+  const setOrientation = (o: PageOrientation) => {
+      setLocalConfig(prev => ({ ...prev, orientation: o }));
+      setActiveDropdown(null);
+  };
+
+  const setSize = (s: PageSize) => {
+      setLocalConfig(prev => ({ ...prev, size: s }));
+      setActiveDropdown(null);
+  };
+
+  const setMargins = (preset: MarginPreset) => {
+      if (preset !== 'custom') {
+          setLocalConfig(prev => ({ 
+              ...prev, 
+              marginPreset: preset, 
+              margins: MARGIN_PRESETS[preset as string] 
+          }));
+      }
+      setActiveDropdown(null);
+  };
+
+  // Helpers for visual scaling in preview
+  const getPageDimensions = () => {
+      const base = PAGE_SIZES[localConfig.size as string] || PAGE_SIZES['Letter'];
+      return localConfig.orientation === 'portrait' 
+        ? { w: base.width, h: base.height } 
+        : { w: base.height, h: base.width };
+  };
+
+  const { w, h } = getPageDimensions();
+  const aspectRatio = w / h;
+
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 h-full lg:h-[70vh]">
+    <div className="flex flex-col lg:flex-row gap-0 lg:gap-0 h-full lg:h-[80vh] -m-4 md:-m-6 lg:-m-8">
       {/* Controls Column */}
-      <div className="w-full lg:w-[320px] space-y-6 flex flex-col order-2 lg:order-1">
+      <div className="w-full lg:w-[300px] bg-[#f8f9fa] border-r border-slate-200 p-6 flex flex-col gap-6 z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)] order-2 lg:order-1 overflow-y-auto">
         
-        {/* Print Button */}
-        <button 
-          onClick={handlePrint}
-          disabled={isPreparing}
-          className="w-full py-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-bold text-sm shadow-lg shadow-blue-200 hover:shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-3 group disabled:opacity-70 disabled:cursor-not-allowed"
-        >
-          {isPreparing ? (
-             <Loader2 size={20} className="text-white animate-spin" />
-          ) : (
-              <div className="p-1.5 bg-white/20 rounded-lg group-hover:bg-white/30 transition-colors">
-                 <Printer size={20} className="text-white" />
-              </div>
-          )}
-          <div className="flex flex-col items-start leading-tight">
-             <span>{isPreparing ? 'Preparing...' : 'Print'}</span>
-             <span className="text-[10px] font-normal opacity-80">Default Printer</span>
-          </div>
-        </button>
+        <div className="flex items-center gap-3 mb-2">
+            <button 
+                onClick={closeModal}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+            >
+                <ChevronLeft size={20} className="text-slate-500"/>
+            </button>
+            <h2 className="text-xl font-semibold text-slate-800">Print</h2>
+        </div>
 
-        {/* Settings Panel */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col">
-          <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Settings</span>
-             <Settings2 size={14} className="text-slate-400"/>
-          </div>
-          
-          <div className="p-4 space-y-4">
-             <div className="space-y-1">
-                 <label className="text-[11px] font-semibold text-slate-500">Printer</label>
-                 <button className="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors text-sm font-medium text-slate-700 shadow-sm">
-                     <div className="flex items-center gap-2">
-                         <Printer size={16} className="text-slate-400"/>
-                         <span>System Default</span>
-                     </div>
-                     <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Ready</span>
-                 </button>
-             </div>
+        {/* Print Button Block */}
+        <div className="space-y-4">
+            <button 
+            onClick={handlePrint}
+            disabled={!isPaginationReady || isPreparingPrint}
+            className="w-full py-3 bg-white border border-slate-200 hover:border-blue-500 hover:shadow-md text-slate-800 rounded-lg font-semibold text-base transition-all flex items-center justify-start px-4 gap-4 group relative overflow-hidden"
+            >
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600"></div>
+            {isPreparingPrint ? (
+                <Loader2 size={24} className="text-blue-600 animate-spin" />
+            ) : (
+                <Printer size={24} className="text-blue-600" />
+            )}
+            <div className="flex flex-col items-start">
+                <span>{isPreparingPrint ? 'Generating...' : 'Print'}</span>
+                <span className="text-xs text-slate-400 font-normal">Default Printer</span>
+            </div>
+            </button>
 
-             <div className="space-y-1">
-                 <label className="text-[11px] font-semibold text-slate-500">Pages</label>
-                 <button className="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors text-sm font-medium text-slate-700 shadow-sm group">
-                     <div className="flex items-center gap-2">
-                         <FileText size={16} className="text-slate-400"/>
-                         <span>Print All Pages</span>
-                     </div>
-                     <ChevronDown size={14} className="text-slate-300 group-hover:text-slate-500"/>
-                 </button>
-             </div>
+            <div className="flex items-center gap-3 px-1">
+                <span className="text-sm font-medium text-slate-600">Copies:</span>
+                <input 
+                    type="number" 
+                    min="1" 
+                    defaultValue="1" 
+                    className="w-20 px-3 py-1.5 border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500"
+                />
+            </div>
+        </div>
 
-             <div className="grid grid-cols-2 gap-3">
-                 <button className="flex flex-col items-start gap-1.5 px-3 py-2.5 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors text-sm font-medium text-slate-700 shadow-sm">
-                     <FileType size={16} className="text-slate-400"/>
-                     <span className="text-xs capitalize">{pageConfig.orientation}</span>
-                 </button>
-                 <button className="flex flex-col items-start gap-1.5 px-3 py-2.5 bg-white border border-slate-200 rounded-lg hover:border-blue-400 transition-colors text-sm font-medium text-slate-700 shadow-sm">
-                     <FileText size={16} className="text-slate-400"/>
-                     <span className="text-xs capitalize">{pageConfig.size}</span>
-                 </button>
-             </div>
-             
-             <div className="space-y-1 pt-2 border-t border-slate-100">
-                 <label className="text-[11px] font-semibold text-slate-500">Copies</label>
-                 <div className="flex items-center gap-2">
-                     <input type="number" defaultValue="1" min="1" className="w-20 px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"/>
-                     <span className="text-xs text-slate-400">copy</span>
-                 </div>
-             </div>
-          </div>
+        {/* Settings List */}
+        <div className="space-y-3">
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Settings</div>
+            
+            {/* Pages Range (Mock) */}
+            <button className="w-full text-left px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex flex-col gap-0.5">
+                 <span className="text-sm font-medium text-slate-700">Print All Pages</span>
+                 <span className="text-xs text-slate-400">The whole document</span>
+            </button>
+
+            {/* Orientation Dropdown */}
+            <div className="relative">
+                <button 
+                    onClick={() => setActiveDropdown(activeDropdown === 'orientation' ? null : 'orientation')}
+                    className="w-full text-left px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-between group"
+                >
+                    <div className="flex items-center gap-3">
+                        <FileType size={18} className="text-slate-500"/>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-slate-700 capitalize">{localConfig.orientation} Orientation</span>
+                        </div>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600"/>
+                </button>
+                
+                {activeDropdown === 'orientation' && (
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 animate-in fade-in zoom-in-95 duration-100">
+                        <button onClick={() => setOrientation('portrait')} className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-slate-700 flex items-center gap-2">
+                            {localConfig.orientation === 'portrait' && <Check size={14} className="text-blue-600"/>} <span className={localConfig.orientation === 'portrait' ? 'ml-0 font-medium text-blue-700' : 'ml-6'}>Portrait</span>
+                        </button>
+                        <button onClick={() => setOrientation('landscape')} className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-slate-700 flex items-center gap-2">
+                            {localConfig.orientation === 'landscape' && <Check size={14} className="text-blue-600"/>} <span className={localConfig.orientation === 'landscape' ? 'ml-0 font-medium text-blue-700' : 'ml-6'}>Landscape</span>
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* Size Dropdown */}
+            <div className="relative">
+                <button 
+                    onClick={() => setActiveDropdown(activeDropdown === 'size' ? null : 'size')}
+                    className="w-full text-left px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-between group"
+                >
+                    <div className="flex items-center gap-3">
+                        <FileText size={18} className="text-slate-500"/>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-slate-700 capitalize">{localConfig.size}</span>
+                            <span className="text-xs text-slate-400">{PAGE_SIZES[localConfig.size as string] ? `${PAGE_SIZES[localConfig.size as string].width / 96}" x ${PAGE_SIZES[localConfig.size as string].height / 96}"` : 'Custom'}</span>
+                        </div>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600"/>
+                </button>
+
+                {activeDropdown === 'size' && (
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 animate-in fade-in zoom-in-95 duration-100">
+                        {Object.keys(PAGE_SIZES).map(size => (
+                             <button key={size} onClick={() => setSize(size as PageSize)} className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-slate-700 flex items-center gap-2">
+                                {localConfig.size === size && <Check size={14} className="text-blue-600"/>} 
+                                <span className={localConfig.size === size ? 'ml-0 font-medium text-blue-700' : 'ml-6'}>{size}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Margins Dropdown */}
+            <div className="relative">
+                <button 
+                    onClick={() => setActiveDropdown(activeDropdown === 'margins' ? null : 'margins')}
+                    className="w-full text-left px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-between group"
+                >
+                    <div className="flex items-center gap-3">
+                        <LayoutTemplate size={18} className="text-slate-500"/>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-medium text-slate-700 capitalize">{localConfig.marginPreset === 'custom' ? 'Custom Margins' : `${localConfig.marginPreset} Margins`}</span>
+                        </div>
+                    </div>
+                    <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600"/>
+                </button>
+                
+                {activeDropdown === 'margins' && (
+                    <div className="absolute top-full bottom-0 left-0 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-100">
+                         {Object.keys(MARGIN_PRESETS).map(preset => (
+                             <button key={preset} onClick={() => setMargins(preset as MarginPreset)} className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-slate-700 flex items-center gap-2 capitalize">
+                                {localConfig.marginPreset === preset && <Check size={14} className="text-blue-600"/>} 
+                                <span className={localConfig.marginPreset === preset ? 'ml-0 font-medium text-blue-700' : 'ml-6'}>{preset}</span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <button className="w-full text-left px-4 py-3 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-3 text-sm font-medium text-slate-700">
+                 <Settings2 size={18} className="text-slate-500"/>
+                 Page Setup
+            </button>
         </div>
       </div>
 
-      {/* Preview Area - Premium Skeumorphic Look */}
-      <div className="flex-1 bg-[#525659] rounded-xl p-6 lg:p-10 flex items-center justify-center overflow-hidden relative shadow-inner order-1 lg:order-2 min-h-[400px] group perspective-1000 border border-[#404446]">
+      {/* Preview Area - Interactive */}
+      <div className="flex-1 bg-[#525659] flex flex-col items-center justify-center relative shadow-inner order-1 lg:order-2 min-h-[500px] overflow-hidden">
         {/* Background Texture */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-transparent pointer-events-none"></div>
+        <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
         
+        {/* Loading State */}
+        {!isPaginationReady && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-20 backdrop-blur-sm">
+                <div className="bg-white px-4 py-2 rounded-full flex items-center gap-3 shadow-lg">
+                    <Loader2 size={18} className="animate-spin text-blue-600"/>
+                    <span className="text-sm font-medium">Updating Preview...</span>
+                </div>
+            </div>
+        )}
+
         {/* Paper Preview */}
         <div 
-            className="bg-white shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(0,0,0,0.02)] flex flex-col overflow-hidden select-none pointer-events-none transition-all duration-500 origin-center group-hover:scale-[1.02] group-hover:-translate-y-2 relative"
+            className="relative bg-white shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] transition-all duration-500 ease-in-out origin-center"
             style={{
-                aspectRatio: pageConfig.orientation === 'portrait' ? '8.5/11' : '11/8.5',
-                width: pageConfig.orientation === 'portrait' ? '65%' : '85%',
-                maxWidth: '400px'
+                // Scale logic: fit within available space
+                height: '85%',
+                aspectRatio: `${aspectRatio}`,
             }}
         >
-          <div className="absolute inset-0 p-8 md:p-12 opacity-90 transform scale-[0.3] origin-top-left w-[333%] h-[333%]">
-             <div dangerouslySetInnerHTML={{ __html: content }} />
-          </div>
-          {/* Lighting Effects */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/5 pointer-events-none"></div>
-          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+            {paginatedPages.length > 0 ? (
+                <div className="w-full h-full relative overflow-hidden">
+                    {/* Mini Header */}
+                    <div className="absolute top-0 left-0 right-0 pointer-events-none" style={{ height: `${(localConfig.margins.top) * 100 / (h/96)}%`, padding: '4%' }}>
+                         <div className="opacity-50 scale-50 origin-top-left w-[200%] h-[200%]" dangerouslySetInnerHTML={{ __html: headerContent || '' }} />
+                    </div>
+
+                    {/* Mini Content - Scaled Down Body */}
+                    <div className="absolute inset-0 flex flex-col" style={{ padding: `${(localConfig.margins.top) * 100 / (h/96)}% ${(localConfig.margins.right) * 100 / (w/96)}% ${(localConfig.margins.bottom) * 100 / (h/96)}% ${(localConfig.margins.left) * 100 / (w/96)}%` }}>
+                         <div className="w-full h-full overflow-hidden relative">
+                             {/* We scale the HTML content to fit the preview box perfectly */}
+                             <div 
+                                className="origin-top-left transform"
+                                style={{ 
+                                    transform: 'scale(0.4)', // Fixed visual scale for preview to look like "print view"
+                                    width: '250%', // Compensate for scale
+                                    height: '250%'
+                                }}
+                                dangerouslySetInnerHTML={{ __html: paginatedPages[currentPreviewIndex]?.html || '' }}
+                             />
+                         </div>
+                    </div>
+
+                    {/* Mini Footer */}
+                    <div className="absolute bottom-0 left-0 right-0 pointer-events-none flex flex-col justify-end" style={{ height: `${(localConfig.margins.bottom) * 100 / (h/96)}%`, padding: '4%' }}>
+                         <div className="opacity-50 scale-50 origin-bottom-left w-[200%] h-[200%]" dangerouslySetInnerHTML={{ 
+                             __html: (footerContent || '').replace(/\[Page \d+\]/g, `[Page ${currentPreviewIndex + 1}]`) 
+                         }} />
+                    </div>
+                </div>
+            ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-300">
+                    Generating Preview...
+                </div>
+            )}
         </div>
 
-        {/* Page Indicator */}
-        <div className="absolute bottom-6 flex items-center gap-4 bg-black/60 backdrop-blur-md rounded-full px-4 py-2 text-white text-xs font-medium shadow-lg border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <span>Preview Mode</span>
+        {/* Page Navigation Controls */}
+        <div className="absolute bottom-6 flex items-center gap-4 bg-[#3a3d3f] rounded-lg px-2 py-1.5 shadow-lg border border-white/10 text-slate-200">
+            <button 
+                onClick={() => setCurrentPreviewIndex(Math.max(0, currentPreviewIndex - 1))}
+                disabled={currentPreviewIndex === 0}
+                className="p-1 hover:bg-white/10 rounded disabled:opacity-30 transition-colors"
+            >
+                <ChevronLeft size={16} />
+            </button>
+            <span className="text-xs font-medium min-w-[60px] text-center select-none">
+                {paginatedPages.length > 0 ? `${currentPreviewIndex + 1} of ${paginatedPages.length}` : '1 of 1'}
+            </span>
+            <button 
+                onClick={() => setCurrentPreviewIndex(Math.min(paginatedPages.length - 1, currentPreviewIndex + 1))}
+                disabled={currentPreviewIndex >= paginatedPages.length - 1}
+                className="p-1 hover:bg-white/10 rounded disabled:opacity-30 transition-colors"
+            >
+                <ChevronRight size={16} />
+            </button>
         </div>
       </div>
     </div>
