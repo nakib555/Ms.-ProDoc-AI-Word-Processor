@@ -5,6 +5,15 @@ import { PAGE_SIZES } from '../constants';
 // Standard print DPI
 const DPI = 96;
 
+// Safety buffer to prevent content from touching the exact pixel edge of the margin
+// helping to avoid "shived" (cut off) rendering at the bottom.
+// Increased to 15px to ensure clear separation and prevent table borders from being clipped.
+const SAFETY_BUFFER = 15; 
+
+// Minimum space required to attempt fitting content. 
+// If remaining space is less than this (approx one line), move to next page.
+const MIN_LINE_HEIGHT = 20;
+
 // Result now includes config per page
 export interface PaginatorResult {
     pages: { html: string, config: PageConfig }[];
@@ -64,7 +73,6 @@ class PageFrame {
       this.marginLeft += gutterPx;
     }
 
-    // Precision calculation for body dimensions
     this.bodyWidth = Math.max(0, this.width - (this.marginLeft + this.marginRight));
     this.bodyHeight = Math.max(0, this.height - (this.marginTop + this.marginBottom));
   }
@@ -78,8 +86,7 @@ class LayoutSandbox {
 
   constructor() {
     this.el = document.createElement('div');
-    this.el.className = 'prodoc-editor'; 
-    // EXACT match of editor CSS to ensure 1:1 measurement
+    this.el.className = 'prodoc-editor text-lg leading-loose text-slate-900'; 
     this.el.style.position = 'absolute';
     this.el.style.visibility = 'hidden';
     this.el.style.height = 'auto';
@@ -87,15 +94,10 @@ class LayoutSandbox {
     this.el.style.left = '-10000px';
     this.el.style.padding = '0';
     this.el.style.margin = '0';
-    // Font styles must match EditorPage styles
     this.el.style.fontFamily = 'Calibri, Inter, sans-serif';
-    this.el.style.fontSize = '11pt';
-    this.el.style.lineHeight = '1.5';
-    this.el.style.color = '#000000';
     this.el.style.wordWrap = 'break-word';
     this.el.style.overflowWrap = 'break-word';
     this.el.style.whiteSpace = 'pre-wrap';
-    this.el.style.boxSizing = 'border-box';
     
     document.body.appendChild(this.el);
   }
@@ -107,6 +109,7 @@ class LayoutSandbox {
   measure(node: Node): number {
     this.el.innerHTML = '';
     this.el.appendChild(node.cloneNode(true));
+    // Use offsetHeight to capture borders/padding accurately
     return this.el.getBoundingClientRect().height;
   }
 
@@ -120,7 +123,7 @@ class LayoutSandbox {
 const isAtomic = (node: Node): boolean => {
     if (node.nodeType !== Node.ELEMENT_NODE) return false;
     const el = node as HTMLElement;
-    return ['IMG', 'VIDEO', 'IFRAME', 'HR', 'MATH-FIELD', 'TR'].includes(el.tagName) ||
+    return ['IMG', 'VIDEO', 'IFRAME', 'HR', 'MATH-FIELD'].includes(el.tagName) ||
            el.classList.contains('equation-wrapper') ||
            el.classList.contains('prodoc-page-break') ||
            el.classList.contains('prodoc-section-break');
@@ -132,9 +135,76 @@ const splitBlock = (
     sandbox: LayoutSandbox
 ): { keep: HTMLElement | null, move: HTMLElement | null } => {
     
+    // Apply strict safety buffer to splitting logic
+    const effectiveLimit = Math.max(0, remainingHeight - SAFETY_BUFFER);
+
     if (isAtomic(originalNode)) {
         return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
     }
+
+    // --- MS WORD-LIKE TABLE SPLITTING LOGIC ---
+    if (originalNode.tagName === 'TABLE') {
+        const table = originalNode as HTMLTableElement;
+        const rows = Array.from(table.rows);
+
+        // Prepare Clone Containers
+        const keepTable = table.cloneNode(false) as HTMLTableElement;
+        const moveTable = table.cloneNode(false) as HTMLTableElement;
+
+        // Sandbox for incremental measurement
+        sandbox.el.innerHTML = '';
+        const measureTable = table.cloneNode(false) as HTMLTableElement;
+        sandbox.el.appendChild(measureTable);
+
+        let splitIndex = 0;
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i].cloneNode(true) as HTMLTableRowElement;
+            measureTable.appendChild(row);
+            
+            const newTotalHeight = measureTable.getBoundingClientRect().height;
+            
+            // Strict check: If adding this row exceeds the limit.
+            if (newTotalHeight > effectiveLimit) {
+                // This row causes overflow.
+                
+                // Rule 1: If it's the very first row, the whole table must move to next page.
+                if (i === 0) {
+                     return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
+                }
+                
+                // Split here: Previous rows stay, this row and subsequent go to moveTable
+                splitIndex = i;
+                break;
+            }
+            
+            // If we reached the end and it all fits
+            if (i === rows.length - 1) {
+                splitIndex = rows.length;
+            }
+        }
+
+        // If all fit
+        if (splitIndex === rows.length) {
+             return { keep: originalNode.cloneNode(true) as HTMLElement, move: null };
+        }
+
+        // Populate Keep Table
+        for (let i = 0; i < splitIndex; i++) {
+            keepTable.appendChild(rows[i].cloneNode(true));
+        }
+
+        // Populate Move Table
+        for (let i = splitIndex; i < rows.length; i++) {
+            moveTable.appendChild(rows[i].cloneNode(true));
+        }
+
+        // Mark the moveTable as a continuation caused by page break
+        moveTable.setAttribute('data-continuation', 'true');
+
+        return { keep: keepTable, move: moveTable };
+    }
+    // --- END TABLE LOGIC ---
 
     sandbox.el.innerHTML = '';
     const keepNode = originalNode.cloneNode(false) as HTMLElement;
@@ -155,7 +225,8 @@ const splitBlock = (
             const h = keepNode.getBoundingClientRect().height;
             parent.removeChild(tempNode);
             
-            if (h <= remainingHeight) {
+            // Strict check against effective limit
+            if (h <= effectiveLimit) {
                 best = mid;
                 low = mid + 1;
             } else {
@@ -179,7 +250,7 @@ const splitBlock = (
             
             const currentHeight = keepNode.getBoundingClientRect().height;
             
-            if (currentHeight <= remainingHeight) {
+            if (currentHeight <= effectiveLimit) {
                 continue;
             }
             
@@ -214,7 +285,7 @@ const splitBlock = (
                 
                 parentKeep.appendChild(childKeep);
                 
-                if (keepNode.getBoundingClientRect().height > remainingHeight) {
+                if (keepNode.getBoundingClientRect().height > effectiveLimit) {
                     parentKeep.removeChild(childKeep);
                     parentMove.appendChild(el.cloneNode(true));
                     moveSiblings(nodes, i + 1, parentMove);
@@ -259,6 +330,20 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
   const doc = parser.parseFromString(html, 'text/html');
   const body = doc.body;
 
+  // Dynamic Table Merging Logic
+  const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
+  splitTables.forEach(splitTable => {
+      const prev = splitTable.previousElementSibling;
+      if (prev && prev.tagName === 'TABLE') {
+          while (splitTable.firstChild) {
+              prev.appendChild(splitTable.firstChild);
+          }
+          splitTable.remove();
+      } else {
+          splitTable.removeAttribute('data-continuation');
+      }
+  });
+
   const nodes: HTMLElement[] = [];
   Array.from(body.childNodes).forEach(node => {
       if (node.nodeType === Node.TEXT_NODE) {
@@ -296,9 +381,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           if (configData) {
               try {
                   const newSettings = JSON.parse(decodeURIComponent(configData));
-                  // Update config
                   currentConfig = { ...currentConfig, ...newSettings };
-                  // Recalculate frame
                   currentFrame = new PageFrame(currentConfig);
                   sandbox.setWidth(currentFrame.bodyWidth);
               } catch (e) {
@@ -307,7 +390,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           }
           
           currentPageNodes.push(node);
-          flushPage(); // Force new page for section break
+          flushPage(); 
           continue;
       }
 
@@ -322,29 +405,39 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           continue; 
       }
 
+      // Check remaining space. If it's very small (tiny gap), force a page break 
+      // before we even measure the new node. This prevents trying to cram 
+      // content into a space smaller than SAFETY_BUFFER + MIN_LINE_HEIGHT.
+      const remainingForStart = Math.max(0, currentFrame.bodyHeight - currentH - SAFETY_BUFFER);
+      if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) {
+          flushPage();
+          i--; // Re-process node on new page
+          continue;
+      }
+
       // Measure
       const nodeH = sandbox.measure(node);
 
-      // Margin of error for float precision
-      if (currentH + nodeH > currentFrame.bodyHeight + 1) {
+      // Compare with safety buffer included to ensure bottom clearance
+      if (currentH + nodeH > currentFrame.bodyHeight - SAFETY_BUFFER) {
           const remainingSpace = Math.max(0, currentFrame.bodyHeight - currentH);
           
           const split = splitBlock(node, remainingSpace, sandbox);
 
-          if (split.keep && split.keep.hasChildNodes()) {
+          if (split.keep && (split.keep.hasChildNodes() || split.keep.tagName === 'IMG' || split.keep.tagName === 'TABLE')) {
               currentPageNodes.push(split.keep);
               flushPage(); 
               
-              if (split.move && split.move.hasChildNodes()) {
+              if (split.move && (split.move.hasChildNodes() || split.move.tagName === 'IMG' || split.move.tagName === 'TABLE')) {
                   nodes[i] = split.move;
-                  i--; 
+                  i--; // Re-process remainder
               }
           } else {
               if (currentPageNodes.length > 0) {
                   flushPage();
                   i--; 
               } else {
-                  // If the element itself is larger than the page, put it here anyway to avoid infinite loop
+                  // Fallback for oversized single elements that fit nowhere
                   currentPageNodes.push(node);
                   flushPage();
               }
@@ -367,7 +460,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
 
   return {
       pages,
-      pageHeight: initialFrame.height, // Initial height reference
-      pageWidth: initialFrame.width    // Initial width reference
+      pageHeight: initialFrame.height,
+      pageWidth: initialFrame.width
   };
 };

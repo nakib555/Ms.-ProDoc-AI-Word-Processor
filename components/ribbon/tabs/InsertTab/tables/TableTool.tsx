@@ -13,7 +13,9 @@ export const TableTool: React.FC = () => {
 
   const handleTableInsert = (rows: number, cols: number) => {
     if(rows > 0 && cols > 0) {
-        let html = '<table style="width: 100%; border-collapse: collapse; margin: 1em 0; border: 1px solid #cbd5e1;"><thead><tr>';
+        // Removed table-level border to prevent "shifted line" artifacts during zoom/scaling. 
+        // Cell borders define the grid.
+        let html = '<table style="width: 100%; border-collapse: collapse; margin: 1em 0;"><thead><tr>';
         for(let c=0; c<cols; c++) html += `<th style="border: 1px solid #cbd5e1; padding: 8px; background: #f1f5f9; text-align: left; font-weight: 600;">Header ${c+1}</th>`;
         html += '</tr></thead><tbody>';
         for(let r=0; r<rows; r++) {

@@ -51,7 +51,8 @@ const parseMarkdownToHtml = (text: string): string => {
             if (line.startsWith('|') && line.endsWith('|')) {
                 if (!inTable) {
                     inTable = true;
-                    tableHtml += '<table style="border-collapse:collapse; width:100%; margin:1em 0; border:1px solid #cbd5e1;">';
+                    // Removed border:1px solid #cbd5e1 from table style to prevent double border artifact
+                    tableHtml += '<table style="border-collapse:collapse; width:100%; margin:1em 0;">';
                 }
                 
                 // Check if it's the separator row

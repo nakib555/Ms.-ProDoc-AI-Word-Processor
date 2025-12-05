@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
@@ -165,19 +166,38 @@ const restoreGlobalCursor = (globalOffset: number) => {
         if (!el) continue;
         
         const pageLen = getNodeTextLength(el);
+        const contentLen = isBlock(el) ? pageLen - 1 : pageLen;
         
-        if (globalOffset < currentTotal + pageLen) {
+        // If cursor is strictly inside this page's content
+        if (globalOffset < currentTotal + contentLen) {
             const localOffset = Math.max(0, globalOffset - currentTotal);
             setCursorInNode(el, localOffset);
             return;
         }
+        
+        // If cursor is exactly at the end of this page's content (boundary)
+        if (globalOffset === currentTotal + contentLen) {
+             // If it's the last page, place it at the end here
+             if (i === totalPages) {
+                 setCursorInNode(el, contentLen);
+                 return;
+             }
+             // Otherwise, we assume it belongs to the start of the next page
+             // We bump the globalOffset by 1 to account for the skipped page container boundary
+             globalOffset += 1;
+        }
+        
         currentTotal += pageLen;
     }
     
-    const lastPage = document.getElementById(`prodoc-editor-${totalPages}`);
-    if (lastPage) {
-        const lastLen = getNodeTextLength(lastPage);
-        setCursorInNode(lastPage, lastLen);
+    // Fallback if something went wrong
+    if (totalPages > 0) {
+        const lastPage = document.getElementById(`prodoc-editor-${totalPages}`);
+        if (lastPage) {
+             const lastLen = getNodeTextLength(lastPage);
+             const contentLen = isBlock(lastPage) ? lastLen - 1 : lastLen;
+             setCursorInNode(lastPage, contentLen); 
+        }
     }
 };
 
@@ -471,6 +491,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
+          style={{ scrollBehavior: 'auto' }} // Explicitly auto to prevent lag when typing
        >
            <div 
                 className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} py-8 gap-8`}
@@ -494,11 +515,12 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                     return (
                         <div 
                             key={index} 
-                            className="prodoc-page-wrapper box-border shrink-0 transition-all duration-300 relative group"
+                            // The key is index, so when a new page is inserted, it mounts and triggers the animation defined in index.css
+                            className="prodoc-page-wrapper box-border shrink-0 relative group"
                             data-page-index={index}
                             style={{ 
                                 contentVisibility: 'auto', 
-                                containIntrinsicSize: `0 ${scaledHeight}px` // Optimization for long docs
+                                containIntrinsicSize: `0 ${scaledHeight}px`
                             }}
                         >
                             <EditorPage

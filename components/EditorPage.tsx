@@ -1,4 +1,5 @@
 
+
 import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { PageConfig, EditingArea } from '../types';
 import { PAGE_SIZES } from '../constants';
@@ -231,16 +232,104 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       if (setFooterContent) setFooterContent(e.currentTarget.innerHTML);
   };
 
+  // --- Table Navigation Helpers ---
+  const selectCellContent = (cell: HTMLTableCellElement) => {
+      const range = document.createRange();
+      range.selectNodeContents(cell);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+      cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  const handleTableNavigation = (e: React.KeyboardEvent): boolean => {
+      if (e.key !== 'Tab') return false;
+
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return false;
+
+      let node = sel.anchorNode;
+      let cell: HTMLTableCellElement | null = null;
+      
+      // Traverse up to find table cell
+      while (node && node !== editorRef.current) {
+          if (node.nodeName === 'TD' || node.nodeName === 'TH') {
+              cell = node as HTMLTableCellElement;
+              break;
+          }
+          node = node.parentNode;
+      }
+
+      if (!cell) return false;
+
+      e.preventDefault(); // Stop default tab behavior (focus loss)
+      
+      const row = cell.parentElement as HTMLTableRowElement;
+      const table = row.parentElement?.closest('table') as HTMLTableElement;
+      if (!table || !row) return true;
+
+      const allRows = Array.from(table.rows);
+      const currentRowIndex = allRows.indexOf(row);
+      const cells = Array.from(row.cells);
+      const currentCellIndex = cell.cellIndex;
+
+      if (!e.shiftKey) {
+          // TAB: Forward
+          if (currentCellIndex < cells.length - 1) {
+              // Next cell, same row
+              selectCellContent(cells[currentCellIndex + 1]);
+          } else if (currentRowIndex < allRows.length - 1) {
+              // First cell, next row
+              const nextRow = allRows[currentRowIndex + 1];
+              if (nextRow.cells.length > 0) selectCellContent(nextRow.cells[0]);
+          } else {
+              // End of table -> Add New Row (Word-like behavior)
+              const newRow = row.cloneNode(true) as HTMLTableRowElement;
+              // Clear content but keep styles
+              Array.from(newRow.cells).forEach(c => c.innerHTML = '<br>');
+              
+              // Append to the same parent (usually tbody)
+              row.parentElement?.appendChild(newRow);
+              
+              // Focus first cell of new row
+              selectCellContent(newRow.cells[0]);
+              
+              // Trigger change
+              if (onContentChange && editorRef.current) {
+                  onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+              }
+          }
+      } else {
+          // SHIFT+TAB: Backward
+          if (currentCellIndex > 0) {
+              selectCellContent(cells[currentCellIndex - 1]);
+          } else if (currentRowIndex > 0) {
+              const prevRow = allRows[currentRowIndex - 1];
+              if (prevRow.cells.length > 0) selectCellContent(prevRow.cells[prevRow.cells.length - 1]);
+          }
+      }
+      
+      return true;
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (readOnly) return;
+
+    // 1. Check for Table Navigation first
+    if (handleTableNavigation(e)) {
+        return;
+    }
     
+    // Prevent typing if locked (for physical keyboards)
     if (isKeyboardLocked && !selectionMode) {
+        // Allow navigation keys
         if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key) && !(e.ctrlKey || e.metaKey)) {
              e.preventDefault();
              return;
         }
     }
 
+    // Custom History Handling for Undo/Redo
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
         if (e.key.toLowerCase() === 'z') {
             e.preventDefault();
@@ -257,6 +346,321 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             return;
         }
     }
+
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount || !editorRef.current) return;
+    const range = selection.getRangeAt(0);
+
+    if (e.key === 'ArrowDown') {
+        const editorRect = editorRef.current.getBoundingClientRect();
+        const rangeRect = range.getBoundingClientRect();
+        
+        // Check if we are visually at the bottom area (within 40px of bottom)
+        const cursorBottom = rangeRect.bottom !== 0 ? rangeRect.bottom : editorRect.bottom;
+
+        if (editorRect.bottom - cursorBottom < 40) {
+            if (pageNumber < totalPages) {
+                e.preventDefault();
+                const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
+                if (nextPage) {
+                    nextPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(nextPage);
+                    r.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(r);
+                    nextPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+    }
+    
+    if (e.key === 'ArrowUp') {
+        const editorRect = editorRef.current.getBoundingClientRect();
+        const rangeRect = range.getBoundingClientRect();
+        const cursorTop = rangeRect.top !== 0 ? rangeRect.top : editorRect.top;
+        
+        // Check if we are visually at the top line
+        if (cursorTop - editorRect.top < 40) {
+            if (pageNumber > 1) {
+                e.preventDefault();
+                const prevPage = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
+                if (prevPage) {
+                    prevPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(prevPage);
+                    r.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(r);
+                }
+            }
+        }
+    }
+
+    if (e.key === 'ArrowRight') {
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(editorRef.current);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        
+        if (preCaretRange.toString().length === editorRef.current.innerText.length) {
+             if (pageNumber < totalPages) {
+                e.preventDefault();
+                const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
+                if (nextPage) {
+                    nextPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(nextPage);
+                    r.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(r);
+                    nextPage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+             }
+        }
+    }
+
+    if (e.key === 'ArrowLeft') {
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(editorRef.current);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        
+        if (preCaretRange.toString().length === 0) {
+             if (pageNumber > 1) {
+                e.preventDefault();
+                const prevPage = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
+                if (prevPage) {
+                    prevPage.focus();
+                    const r = document.createRange();
+                    r.selectNodeContents(prevPage);
+                    r.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(r);
+                }
+             }
+        }
+    }
+  };
+
+  // --- SMART SELECTION LOGIC ---
+
+  const selectWord = () => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && sel.modify) {
+          // Use 'modify' which handles word boundaries nicely across most browsers
+          // Move backward to start of word, then extend forward to end of word
+          sel.modify('move', 'backward', 'word');
+          sel.modify('extend', 'forward', 'word');
+      }
+  };
+
+  const selectSentence = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || !sel.modify) return;
+      
+      try {
+          sel.modify('move', 'backward', 'sentence');
+          sel.modify('extend', 'forward', 'sentence');
+      } catch (e) {
+          sel.modify('move', 'backward', 'line');
+          sel.modify('extend', 'forward', 'line');
+      }
+  };
+
+  const selectParagraph = (target: EventTarget | null) => {
+      const sel = window.getSelection();
+      if (!sel) return;
+      
+      // Try to find the block element (P, H1, DIV, etc.)
+      let node = target as Node | null;
+      
+      if (node && node.nodeType === Node.TEXT_NODE) {
+          node = node.parentNode;
+      }
+
+      while (node && node !== editorRef.current && (node as HTMLElement).tagName) {
+          const el = node as HTMLElement;
+          const display = window.getComputedStyle(el).display;
+          if (display === 'block' || display === 'flex' || ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'DIV', 'BLOCKQUOTE'].includes(el.tagName)) {
+              const range = document.createRange();
+              range.selectNodeContents(el);
+              sel.removeAllRanges();
+              sel.addRange(range);
+              return;
+          }
+          node = node.parentNode;
+      }
+      
+      if (sel.modify) {
+          sel.modify('move', 'backward', 'paragraph');
+          sel.modify('extend', 'forward', 'paragraph');
+      }
+  };
+
+  const selectPage = () => {
+      if (!editorRef.current) return;
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+  };
+
+  const handleSmartPointerDown = (e: React.PointerEvent) => {
+      if (!selectionMode) return;
+      
+      // Reset trigger flag on new touch
+      smartSelectionTriggeredRef.current = false;
+      
+      // Force cursor placement at touch point to ensure selection starts correctly
+      if (!isHeaderFooterMode) {
+          if (document.caretRangeFromPoint) {
+              const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+              if (range && editorRef.current?.contains(range.startContainer)) {
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          } else if ((document as any).caretPositionFromPoint) {
+              const pos = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
+              if (pos && editorRef.current?.contains(pos.offsetNode)) {
+                  const range = document.createRange();
+                  range.setStart(pos.offsetNode, pos.offset);
+                  range.collapse(true);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }
+      }
+      
+      pointerStartRef.current = {
+          x: e.clientX,
+          y: e.clientY,
+          time: Date.now()
+      };
+
+      // Clear existing timers
+      if (wordPressTimerRef.current) clearTimeout(wordPressTimerRef.current);
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      if (superLongPressTimerRef.current) clearTimeout(superLongPressTimerRef.current);
+
+      const target = e.target;
+
+      // 1s Timer: Select Word
+      wordPressTimerRef.current = setTimeout(() => {
+          selectWord();
+          smartSelectionTriggeredRef.current = true;
+          if (navigator.vibrate) navigator.vibrate(20);
+      }, 1000);
+
+      // 2s Timer: Select Paragraph
+      longPressTimerRef.current = setTimeout(() => {
+          selectParagraph(target);
+          smartSelectionTriggeredRef.current = true;
+          if (navigator.vibrate) navigator.vibrate(50);
+      }, 2000);
+
+      // 3s Timer: Select Page
+      superLongPressTimerRef.current = setTimeout(() => {
+          selectPage();
+          smartSelectionTriggeredRef.current = true;
+          if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+      }, 3000);
+  };
+
+  const handleSmartPointerMove = (e: React.PointerEvent) => {
+      if (!selectionMode || !pointerStartRef.current) return;
+
+      const dist = Math.hypot(e.clientX - pointerStartRef.current.x, e.clientY - pointerStartRef.current.y);
+      
+      // If moved more than 10px, assume scrolling and cancel timers
+      if (dist > 10) {
+          if (wordPressTimerRef.current) clearTimeout(wordPressTimerRef.current);
+          if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+          if (superLongPressTimerRef.current) clearTimeout(superLongPressTimerRef.current);
+          pointerStartRef.current = null;
+      }
+  };
+
+  const handleSmartPointerUp = (e: React.PointerEvent) => {
+      if (!selectionMode) return;
+
+      if (wordPressTimerRef.current) clearTimeout(wordPressTimerRef.current);
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      if (superLongPressTimerRef.current) clearTimeout(superLongPressTimerRef.current);
+      pointerStartRef.current = null;
+  };
+
+  const handleSmartClick = (e: React.MouseEvent) => {
+      if (!selectionMode) return;
+      
+      // If a smart selection (timer based) occurred, stop the click from resetting it
+      if (smartSelectionTriggeredRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+      }
+
+      if (e.detail === 2) {
+          // Double Click: Select Sentence
+          selectSentence();
+          // Prevent native double-click word selection
+          e.preventDefault();
+          e.stopPropagation();
+      }
+  };
+
+  const handleEditorClick = (e: React.MouseEvent) => {
+      if (selectionMode) {
+          handleSmartClick(e);
+      }
+  };
+
+  const handlePageClick = (e: React.MouseEvent) => {
+      if (selectionMode) return;
+
+      if (editorRef.current && !editorRef.current.contains(e.target as Node) && !isHeaderFooterMode) {
+          editorRef.current.focus();
+          
+          const editorRect = editorRef.current.getBoundingClientRect();
+          const clickY = e.clientY;
+          
+          if (clickY > editorRect.bottom) {
+              const range = document.createRange();
+              range.selectNodeContents(editorRef.current);
+              range.collapse(false);
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+          } 
+          else if (clickY < editorRect.top) {
+              const range = document.createRange();
+              range.selectNodeContents(editorRef.current);
+              range.collapse(true);
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+          }
+          else {
+              let range: Range | null = null;
+              if ((document as any).caretPositionFromPoint) {
+                  const pos = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
+                  if (pos) {
+                      range = document.createRange();
+                      range.setStart(pos.offsetNode, pos.offset);
+                      range.collapse(true);
+                  }
+              } else if (document.caretRangeFromPoint) {
+                  range = document.caretRangeFromPoint(e.clientX, e.clientY);
+              }
+              
+              if (range && editorRef.current.contains(range.startContainer)) {
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }
+      }
   };
 
   const getMargins = () => {
@@ -334,6 +738,67 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       return { ...style, justifyContent };
   };
 
+  const onHeaderDoubleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      // Ensure we don't enter header mode if keyboard/editing is locked
+      if (setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
+          setActiveEditingArea('header');
+          setTimeout(() => {
+              if (headerRef.current) {
+                  headerRef.current.focus();
+                  // Ensure cursor is at start (left)
+                  const range = document.createRange();
+                  const firstChild = headerRef.current.firstChild;
+                  if (firstChild) {
+                      range.setStart(firstChild, 0);
+                  } else {
+                      range.setStart(headerRef.current, 0);
+                  }
+                  range.collapse(true);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }, 10);
+      }
+  };
+
+  const onFooterDoubleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      // Ensure we don't enter footer mode if keyboard/editing is locked
+      if (setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
+          setActiveEditingArea('footer');
+          setTimeout(() => {
+              if (footerRef.current) {
+                  footerRef.current.focus();
+                  const range = document.createRange();
+                  const firstChild = footerRef.current.firstChild;
+                  if (firstChild) {
+                      range.setStart(firstChild, 0);
+                  } else {
+                      range.setStart(footerRef.current, 0);
+                  }
+                  range.collapse(true);
+                  const sel = window.getSelection();
+                  sel?.removeAllRanges();
+                  sel?.addRange(range);
+              }
+          }, 10);
+      }
+  };
+
+  const onBodyDoubleClick = (e: React.MouseEvent) => {
+      if (activeEditingArea !== 'body' && setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
+          e.stopPropagation();
+          setActiveEditingArea('body');
+          setTimeout(() => {
+              if (editorRef.current) {
+                  editorRef.current.focus();
+              }
+          }, 10);
+      }
+  };
+
   const visualHeaderDist = (config.headerDistance || 0.5) * 96;
   const visualFooterDist = (config.footerDistance || 0.5) * 96;
   const safeMaxHeaderHeight = (height - MIN_BODY_GAP) / 2;
@@ -342,10 +807,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const bodyWidth = width - margins.left - margins.right;
   const bodyHeight = height - margins.top - margins.bottom - gutterTop;
 
+  // Determine effective contentEditable state - Keep true to allow selection, use inputMode="none" for read-only feel
   const isBodyEditable = true; 
   const isHeaderFooterEditable = true;
+
+  // Cursor style logic
   let cursorStyle = 'cursor-text';
-  if (selectionMode) cursorStyle = 'cursor-crosshair';
+  if (selectionMode) cursorStyle = 'cursor-crosshair'; // Visual cue for selection mode
   else if (isKeyboardLocked) cursorStyle = 'cursor-default';
 
   return (
@@ -357,15 +825,19 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }}
     >
         <div 
-            className={`absolute inset-0 bg-white overflow-hidden transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
+            className={`
+                prodoc-page-sheet absolute inset-0 bg-white overflow-hidden 
+                ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}
+            `}
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: 'top left',
                 width: `${width}px`,
                 height: `${height}px`,
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)', 
                 ...getBackgroundStyle()
             }}
+            onMouseDown={handlePageClick}
         >
             {/* Header Area */}
             <div 
@@ -378,6 +850,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     paddingLeft: `${margins.left}px`,
                     paddingRight: `${margins.right}px`,
                 }}
+                onDoubleClick={onHeaderDoubleClick}
                 onMouseDown={(e) => e.stopPropagation()} 
             >
                 <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
@@ -392,7 +865,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         suppressContentEditableWarning
                         onInput={handleHeaderInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
-                        style={{ minHeight: '1em', fontFamily: 'Calibri, Inter, sans-serif', fontSize: '10pt' }}
+                        style={{ minHeight: '1em' }}
                     />
                 </div>
             </div>
@@ -416,27 +889,33 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     height: `${bodyHeight}px`,
                     ...getVerticalAlignStyle()
                 }}
+                onDoubleClick={onBodyDoubleClick}
                 onMouseDown={(e) => e.stopPropagation()} 
             >
                 <div
                     id={`prodoc-editor-${pageNumber}`}
                     ref={editorRef}
-                    className={`prodoc-editor w-full outline-none leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
+                    className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
                     contentEditable={isBodyEditable}
                     inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
                     
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
                     onFocus={onFocus}
+                    onClick={handleEditorClick}
+                    onContextMenu={(e) => selectionMode && e.preventDefault()}
                     
+                    onPointerDown={handleSmartPointerDown}
+                    onPointerMove={handleSmartPointerMove}
+                    onPointerUp={handleSmartPointerUp}
+                    onPointerCancel={handleSmartPointerUp}
+
                     suppressContentEditableWarning={true}
                     style={{
                         fontFamily: 'Calibri, Inter, sans-serif',
-                        fontSize: '11pt',
                         color: '#000000',
                         flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined,
-                        minHeight: '100%',
-                        boxSizing: 'border-box'
+                        minHeight: '100%' 
                     }}
                 />
             </div>
@@ -452,6 +931,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     paddingLeft: `${margins.left}px`,
                     paddingRight: `${margins.right}px`,
                 }}
+                onDoubleClick={onFooterDoubleClick}
                 onMouseDown={(e) => e.stopPropagation()} 
             >
                  <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
@@ -466,7 +946,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         suppressContentEditableWarning
                         onInput={handleFooterInput}
                         onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
-                        style={{ minHeight: '1em', fontFamily: 'Calibri, Inter, sans-serif', fontSize: '10pt' }}
+                        style={{ minHeight: '1em' }}
                     />
                  </div>
             </div>
