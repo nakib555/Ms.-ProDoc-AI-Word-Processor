@@ -12,10 +12,6 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
-// @ts-ignore
-import { jsPDF } from 'jspdf';
-// @ts-ignore
-import html2canvas from 'html2canvas';
 
 // --- Shared UI Components ---
 
@@ -330,7 +326,7 @@ const DesktopPrintPreview: React.FC<{
              {pages.length === 0 || isPreparing ? (
                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                      <Loader2 className="animate-spin" size={32} />
-                     <span className="text-sm font-medium">{isPreparing ? 'Rendering PDF...' : 'Generating Preview...'}</span>
+                     <span className="text-sm font-medium">{isPreparing ? 'Preparing document...' : 'Generating Preview...'}</span>
                  </div>
              ) : (
                  <div className="flex flex-col gap-8 items-center w-full pb-24">
@@ -391,7 +387,7 @@ const MobilePrintPreview: React.FC<{
                 {pages.length === 0 || isPreparing ? (
                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                          <Loader2 className="animate-spin" size={28} />
-                         <span className="text-xs font-medium">{isPreparing ? 'Generating PDF...' : 'Loading...'}</span>
+                         <span className="text-xs font-medium">{isPreparing ? 'Preparing document...' : 'Loading...'}</span>
                      </div>
                  ) : (
                      <div className="flex flex-col gap-4 items-center w-full transition-opacity duration-300" style={{ opacity: scale > 0 ? 1 : 0 }}>
@@ -406,7 +402,7 @@ const MobilePrintPreview: React.FC<{
                     disabled={isPreparing}
                     className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center hover:bg-blue-700 active:scale-90 transition-all border-2 border-white/20 backdrop-blur-sm"
                  >
-                    {isPreparing ? <Loader2 size={24} className="animate-spin"/> : <Download size={24} />}
+                    {isPreparing ? <Loader2 size={24} className="animate-spin"/> : <Printer size={24} />}
                  </button>
              </div>
         </div>
@@ -490,19 +486,11 @@ const PrintSettingsPanel: React.FC<{
                         label="Destination"
                         value="default"
                         onChange={() => {}}
-                        options={[{ value: 'default', label: 'Save as PDF' }]}
+                        options={[{ value: 'default', label: 'Save as PDF / Print' }]}
                         icon={Printer}
                         disabled
                     />
                     
-                    <PrintSelect
-                        label="Print Quality"
-                        value={dpi}
-                        onChange={setDpi}
-                        options={DPI_OPTIONS}
-                        icon={ImageIcon}
-                    />
-
                     <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 shadow-sm opacity-60 pointer-events-none" title="Copies disabled for PDF download">
                          <div className="flex flex-col">
                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Copies</span>
@@ -569,8 +557,8 @@ const PrintSettingsPanel: React.FC<{
                         disabled={isPreparing}
                         className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
-                        {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Download size={20}/>}
-                        <span>{isPreparing ? 'Generating PDF...' : 'Download PDF'}</span>
+                        {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Printer size={20}/>}
+                        <span>{isPreparing ? 'Preparing...' : 'Print / Save PDF'}</span>
                     </button>
                 </div>
             )}
@@ -608,7 +596,7 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
-  // High-Quality PDF Generation using Paged.js -> html2canvas -> jsPDF
+  // High-Quality Vector PDF Generation using Browser Print
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
 
@@ -619,17 +607,18 @@ export const PrintModal: React.FC = () => {
           const oldStyle = document.getElementById('paged-print-style');
           if (oldStyle) document.head.removeChild(oldStyle);
 
-          // 2. Create container for Paged.js and hide everything else via CSS class
+          // 2. Add printing class to body to hide app UI
+          document.body.classList.add('printing-mode');
+
+          // 3. Create container for Paged.js
           const printContainer = document.createElement('div');
           printContainer.id = 'paged-print-container';
-          // Position it absolutely off-screen or behind content, but it must be rendered
-          // We use negative z-index instead of display:none so html2canvas can capture it
           document.body.appendChild(printContainer);
 
-          // 3. Generate CSS for Paged.js based on localConfig
+          // 4. Generate CSS for Paged.js based on localConfig
           const { size, orientation, margins } = localConfig;
           
-          // Determine explicit dimensions in inches for PDF metadata and CSS
+          // Determine explicit dimensions in inches
           let widthIn = 0;
           let heightIn = 0;
 
@@ -649,10 +638,6 @@ export const PrintModal: React.FC = () => {
               widthIn = heightIn;
               heightIn = temp;
           }
-
-          // Convert to Points (72 DPI) for jsPDF
-          const widthPt = widthIn * 72;
-          const heightPt = heightIn * 72;
 
           // Use explicit dimensions for Paged.js to ensure matching aspect ratio
           const sizeCss = `${widthIn}in ${heightIn}in`;
@@ -685,7 +670,7 @@ export const PrintModal: React.FC = () => {
 
               /* Ensure content typography matches editor */
               .paged-content {
-                  font-family: 'Calibri, Inter, sans-serif',
+                  font-family: 'Calibri, Inter, sans-serif';
                   font-size: 11pt;
                   line-height: 1.5;
                   color: black;
@@ -714,13 +699,6 @@ export const PrintModal: React.FC = () => {
               .equation-handle, .equation-dropdown { display: none !important; }
               .prodoc-page-break { break-after: page; height: 0; margin: 0; border: none; }
               
-              /* Paged.js specific styles for capture */
-              .pagedjs_page {
-                 background: white;
-                 box-shadow: none !important;
-                 margin: 0 !important;
-              }
-              
               /* Hide the container from view but keep it renderable */
               #paged-print-container {
                   position: absolute;
@@ -728,11 +706,20 @@ export const PrintModal: React.FC = () => {
                   left: 0;
                   width: 100%;
                   z-index: -1000;
-                  visibility: visible; /* Must be visible for canvas capture */
+                  visibility: visible; 
+              }
+
+              @media print {
+                  body { margin: 0; }
+                  #paged-print-container { 
+                      display: block; 
+                      z-index: 9999; 
+                      position: relative;
+                  }
               }
           `;
 
-          // 4. Clean up Header/Footer HTML
+          // 5. Clean up Header/Footer HTML
           let cleanHeader = headerContent.replace('[Header]', '');
           let cleanFooter = footerContent; 
           if (cleanFooter.includes('page-number-placeholder')) {
@@ -745,7 +732,7 @@ export const PrintModal: React.FC = () => {
              }
           `;
 
-          // 5. Build HTML Structure
+          // 6. Build HTML Structure
           const htmlContent = `
               <div class="pagedjs-header">${cleanHeader}</div>
               <div class="pagedjs-footer">${cleanFooter}</div>
@@ -754,9 +741,8 @@ export const PrintModal: React.FC = () => {
               </div>
           `;
 
-          // 6. Run Previewer
+          // 7. Run Previewer (Paged.js)
           const previewer = new Previewer();
-          
           const styleEl = document.createElement('style');
           styleEl.id = 'paged-print-style';
           styleEl.innerHTML = css + pageNumCss;
@@ -765,56 +751,36 @@ export const PrintModal: React.FC = () => {
           // Render content into printContainer using Paged.js
           await previewer.preview(htmlContent, [], printContainer);
 
-          // 7. Capture Pages using html2canvas and add to jsPDF
-          const pagedPages = document.querySelectorAll('.pagedjs_page');
-          if (pagedPages.length === 0) throw new Error("No pages generated by Paged.js");
-          
-          // Initialize PDF with calculated points
-          const pdf = new jsPDF({
-              orientation: widthIn > heightIn ? 'landscape' : 'portrait',
-              unit: 'pt',
-              format: [widthPt, heightPt]
-          });
-
-          // Calculate scale based on user selected DPI. Standard screen DPI is 96.
-          // e.g., 300 DPI / 96 = ~3.125 scale factor
-          const canvasScale = dpi / 96;
-
-          for (let i = 0; i < pagedPages.length; i++) {
-              const pageEl = pagedPages[i] as HTMLElement;
-              
-              // Add new page if not the first
-              if (i > 0) pdf.addPage([widthPt, heightPt], widthIn > heightIn ? 'landscape' : 'portrait');
-              
-              // High scale for quality
-              const canvas = await html2canvas(pageEl, {
-                  scale: canvasScale, 
-                  useCORS: true,
-                  logging: false,
-                  backgroundColor: '#ffffff'
-              });
-              
-              const imgData = canvas.toDataURL('image/jpeg', 0.95);
-              
-              // Fit captured image exactly to the PDF page dimensions
-              pdf.addImage(imgData, 'JPEG', 0, 0, widthPt, heightPt);
-          }
-          
-          pdf.save(`${documentTitle || 'document'}.pdf`);
+          // 8. Trigger Browser Print
+          // Small delay to ensure DOM is painted and resources loaded
+          setTimeout(() => {
+              window.print();
+          }, 500);
 
       } catch (e) {
-          console.error("PDF Generation Error:", e);
-          alert("Failed to generate PDF. Please try again.");
-      } finally {
-          // Cleanup
+          console.error("Print Error:", e);
+          alert("Failed to prepare print document.");
+          document.body.classList.remove('printing-mode');
+          const container = document.getElementById('paged-print-container');
+          if (container) document.body.removeChild(container);
+          setIsPreparingPrint(false);
+      }
+  };
+
+  // Add effect to handle cleanup after print
+  useEffect(() => {
+      const cleanupAfterPrint = () => {
+          document.body.classList.remove('printing-mode');
           const container = document.getElementById('paged-print-container');
           if (container) document.body.removeChild(container);
           const style = document.getElementById('paged-print-style');
           if (style) document.head.removeChild(style);
-          
           setIsPreparingPrint(false);
-      }
-  };
+      };
+
+      window.addEventListener('afterprint', cleanupAfterPrint);
+      return () => window.removeEventListener('afterprint', cleanupAfterPrint);
+  }, []);
 
   return (
     <div 
