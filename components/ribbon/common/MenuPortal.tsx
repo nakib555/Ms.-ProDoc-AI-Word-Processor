@@ -64,15 +64,9 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         // If menu goes off-screen bottom, constrain height
         const availableHeight = viewportHeight - top - 10;
         
-        // If very little space below (< 200px) and more space above, consider flipping (if trigger height known)
-        // Without trigger height, we can't safely flip above. 
-        // Assuming ribbon menus drop down, we just constrain height to fit remaining viewport.
         if (availableHeight < 150) {
-             // Fallback: If excessively small, maybe we allow overlap or force a min height with scroll
-             // But standard behavior is scroll within available
              maxHeightStr = `${Math.max(150, availableHeight)}px`;
         } else {
-             // Cap at available height or 80vh, whichever is smaller
              maxHeightStr = `min(80vh, ${availableHeight}px)`;
         }
     }
@@ -130,7 +124,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
       />
       <div 
           ref={menuRef}
-          className="bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col py-1.5 animate-in fade-in zoom-in-95 duration-100 dark:text-slate-200"
+          className="bg-white dark:bg-[#1e293b] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col py-1.5 animate-in fade-in zoom-in-95 duration-100 dark:text-slate-200"
           style={style}
           onClick={(e) => e.stopPropagation()}
       >

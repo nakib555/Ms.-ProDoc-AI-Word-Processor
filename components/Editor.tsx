@@ -249,7 +249,7 @@ const Editor: React.FC = () => {
   const isPrint = viewMode === 'print';
 
   return (
-    <div className={`flex-1 flex flex-col relative transition-colors duration-500 overflow-hidden ${isPrint ? 'bg-[#f1f5f9] dark:bg-slate-950' : 'bg-white dark:bg-slate-900'}`}
+    <div className={`flex-1 flex flex-col relative transition-colors duration-500 overflow-hidden ${isPrint ? 'bg-[#f1f5f9] dark:bg-[#020617]' : 'bg-white dark:bg-slate-900'}`}
          style={!isPrint ? { backgroundColor: pageConfig.pageColor } : undefined}>
       
       <AutoSizer>

@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';
@@ -46,8 +47,6 @@ const Ribbon: React.FC<RibbonProps> = ({
 
   useEffect(() => {
      if (activeTab && contentRef.current) {
-        // Calculate height with a minimum to prevent layout shifts for smaller tabs
-        // Using slightly delayed height calc to allow Suspense to resolve if quick
         const timer = setTimeout(() => {
             if (contentRef.current) {
                 const contentHeight = contentRef.current.scrollHeight;
@@ -60,7 +59,6 @@ const Ribbon: React.FC<RibbonProps> = ({
      }
   }, [activeTab]);
 
-  // Handle horizontal scrolling via mouse wheel
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (el) {
@@ -76,7 +74,6 @@ const Ribbon: React.FC<RibbonProps> = ({
     }
   }, [activeTab]); 
 
-  // Memoize tab content
   const tabContent = useMemo(() => {
     return (
       <Suspense fallback={<TabLoading />}>
@@ -106,23 +103,21 @@ const Ribbon: React.FC<RibbonProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    // Allow interactions with inputs
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
       return;
     }
-    // Prevent focus loss
     e.preventDefault();
   };
 
   return (
     <div 
       onMouseDown={handleMouseDown}
-      className="flex flex-col z-20 no-print relative shadow-sm bg-slate-900 dark:bg-slate-950 transition-colors duration-300"
+      className="flex flex-col z-20 no-print relative shadow-sm bg-slate-900 dark:bg-[#0f172a] transition-colors duration-300"
     >
       <RibbonTabBar activeTab={activeTab} onTabChange={onTabChange} />
 
       <div 
-        className={`bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 relative z-10 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
+        className={`bg-white dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 relative z-10 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
         style={{ height: activeTab ? `${Math.max(height, 96)}px` : '0px' }}
       >
          <div 
@@ -137,7 +132,7 @@ const Ribbon: React.FC<RibbonProps> = ({
             </div>
          </div>
          
-         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-slate-800 to-transparent pointer-events-none md:hidden"></div>
+         <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-[#1e293b] to-transparent pointer-events-none md:hidden"></div>
       </div>
     </div>
   );

@@ -1,17 +1,20 @@
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Custom scrollbar for a cleaner look */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
 ::-webkit-scrollbar-track {
   background: transparent; 
 }
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1; /* slate-300 */
-  border-radius: 6px;
-  border: 3px solid transparent; /* Creates padding around thumb */
+  border-radius: 7px;
+  border: 4px solid transparent; /* Creates padding around thumb */
   background-clip: content-box;
   transition: background-color 0.2s ease;
 }
@@ -20,10 +23,10 @@
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background-color: #475569;
+  background-color: #334155; /* slate-700 */
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background-color: #64748b;
+  background-color: #475569; /* slate-600 */
 }
 
 /* Hide scrollbar for chrome/safari/opera */
@@ -79,6 +82,10 @@
   transition: background-color 0.2s ease;
 }
 
+.dark .prodoc-editor th, .dark .prodoc-editor td {
+  border-color: #cbd5e1; /* Keep borders visible even in dark mode if page is white */
+}
+
 /* Ensure empty cells are clickable/visible */
 .prodoc-editor td:empty::after, .prodoc-editor th:empty::after {
     content: '\00a0'; /* non-breaking space */
@@ -124,12 +131,17 @@
 
 /* Enhance visibility of selection in this mode */
 .smart-selection-active::selection {
-  background-color: rgba(59, 130, 246, 0.3); /* blue-500 with opacity */
+  background-color: rgba(99, 102, 241, 0.3); /* indigo-500 with opacity */
   color: inherit;
 }
 
+/* Global Selection Color for Dark Mode */
+.dark ::selection {
+  background-color: rgba(99, 102, 241, 0.5); /* indigo-500 */
+  color: white;
+}
+
 /* --- Placeholder for First Line --- */
-/* Uses :has() to target the first paragraph if it only contains a BR (empty state) */
 .prodoc-editor > p:first-child:has(br:only-child)::before {
   content: "Start typing...";
   color: #94a3b8; /* slate-400 */
@@ -139,7 +151,6 @@
   opacity: 0.6;
 }
 
-/* Fallback for purely empty p (if no BR present) */
 .prodoc-editor > p:first-child:empty::before {
   content: "Start typing...";
   color: #94a3b8;
@@ -176,6 +187,10 @@
   position: relative;
   top: 6px;
 }
+.dark .show-formatting-marks .prodoc-page-break::after {
+    background: #1e293b;
+    color: #94a3b8;
+}
 
 /* --- MathLive / Equation Box Styles --- */
 
@@ -189,31 +204,29 @@
   position: relative;
   border-radius: 4px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: text; /* Allow clicking to feel like editing text */
-  max-width: 100%; /* Constraint */
+  cursor: text; 
+  max-width: 100%; 
   overflow-x: auto;
 }
 
-/* Hover State */
 .equation-wrapper:hover {
   background-color: #f8fafc;
   border-color: #e2e8f0;
 }
 
-/* Active State (Focus Within) */
 .equation-wrapper:focus-within {
-  border-color: #cbd5e1; /* slate-300 */
-  background-color: #f1f5f9; /* slate-100 */
+  border-color: #cbd5e1; 
+  background-color: #f1f5f9; 
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
   transform: scale(1.02);
 }
 
 /* Handle (Left Grip) */
 .equation-handle {
-  display: none; /* Hidden by default */
+  display: none; 
   width: 14px;
-  background-color: #cbd5e1; /* Match border */
-  color: #475569; /* slate-600 */
+  background-color: #cbd5e1; 
+  color: #475569; 
   font-size: 12px;
   line-height: 1;
   align-items: center;
@@ -232,7 +245,7 @@
 
 /* Dropdown Arrow (Right) */
 .equation-dropdown {
-  display: none; /* Hidden by default */
+  display: none; 
   width: 14px;
   color: #475569;
   font-size: 8px;
@@ -249,7 +262,6 @@
   animation: page-enter 0.2s ease-out;
 }
 
-/* Math Field Overrides inside Wrapper */
 .equation-wrapper math-field {
   margin: 0 !important;
   padding: 4px 8px !important;
@@ -257,7 +269,7 @@
   border: none !important;
   box-shadow: none !important;
   min-width: 100px;
-  color: #1e293b; /* slate-800 */
+  color: #1e293b; 
   cursor: text;
   max-width: 100%;
 }
@@ -270,7 +282,6 @@
   box-shadow: none !important;
 }
 
-/* Standalone MathLive Integration Styles (fallback) */
 math-field:not(.equation-wrapper math-field) {
   display: inline-block;
   font-size: 1.15em;
@@ -295,7 +306,7 @@ math-field:not(.equation-wrapper math-field):focus-within {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
-/* Dark mode support */
+/* Dark mode equation overrides */
 .dark .equation-wrapper:focus-within {
   background-color: #1e293b;
   border-color: #475569;
@@ -312,7 +323,7 @@ math-field:not(.equation-wrapper math-field):focus-within {
   color: #94a3b8;
 }
 .dark .equation-wrapper math-field {
-  color: #e2e8f0;
+  color: #000; /* Keep black inside white page */
 }
 
 /* Formatting Marks */
@@ -336,7 +347,7 @@ math-field:not(.equation-wrapper math-field):focus-within {
 /* Header & Footer Editing Styles */
 .header-footer-label {
   position: absolute;
-  background-color: #2563eb; /* blue-600 */
+  background-color: #2563eb; 
   color: white;
   padding: 2px 8px;
   font-size: 10px;
@@ -347,12 +358,12 @@ math-field:not(.equation-wrapper math-field):focus-within {
   white-space: nowrap;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
   font-family: 'Inter', sans-serif;
-  border-radius: 0 0 4px 4px; /* Bottom rounded for header tag */
+  border-radius: 0 0 4px 4px; 
   animation: slideInFromTop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .header-footer-label.footer-tag {
-  border-radius: 4px 4px 0 0; /* Top rounded for footer tag */
+  border-radius: 4px 4px 0 0; 
   animation: slideInFromBottom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -363,12 +374,8 @@ math-field:not(.equation-wrapper math-field):focus-within {
 
 /* Print styles */
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  body.printing-mode > *:not(#paged-print-container) {
-    display: none !important;
-  }
+  .no-print { display: none !important; }
+  body.printing-mode > *:not(#paged-print-container) { display: none !important; }
   body.printing-mode #paged-print-container {
     display: block !important;
     position: absolute;
@@ -378,39 +385,14 @@ math-field:not(.equation-wrapper math-field):focus-within {
     margin: 0;
     padding: 0;
   }
-  
-  /* Paged.js override styles for clean print */
-  .pagedjs_pages {
-    width: 100%;
-    display: block;
-  }
-  .pagedjs_page {
-    margin: 0 !important;
-    box-shadow: none !important;
-    break-after: page;
-  }
-  
-  /* Standard cleanups */
-  .prodoc-page-break {
-    display: block;
-    break-after: page;
-    page-break-after: always;
-    height: 0;
-    border: none !important;
-    margin: 0;
-  }
-  .prodoc-page-break::after {
-    display: none;
-  }
-  .header-footer-label {
-    display: none !important;
-  }
-  .equation-handle, .equation-dropdown {
-    display: none !important;
-  }
+  .pagedjs_pages { width: 100%; display: block; }
+  .pagedjs_page { margin: 0 !important; box-shadow: none !important; break-after: page; }
+  .prodoc-page-break { display: block; break-after: page; page-break-after: always; height: 0; border: none !important; margin: 0; }
+  .prodoc-page-break::after { display: none; }
+  .header-footer-label { display: none !important; }
+  .equation-handle, .equation-dropdown { display: none !important; }
 }
 
-/* Paged.js Screen Preview Styles (hidden by default until printing-mode or specific container used) */
 .pagedjs_page {
   box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
   margin-bottom: 2em;

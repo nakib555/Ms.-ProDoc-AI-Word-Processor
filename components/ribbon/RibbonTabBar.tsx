@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
@@ -40,7 +41,9 @@ interface TabButtonProps {
 const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContextual, colorClass = 'text-amber-600' }: TabButtonProps) => {
     const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-100';
     const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : 'text-indigo-600 dark:text-indigo-400';
-    const activeBg = 'bg-white dark:bg-slate-800';
+    
+    // Updated dark mode backgrounds for active tab to match the ribbon body color (#1e293b)
+    const activeBg = 'bg-white dark:bg-[#1e293b]';
 
     return (
         <button
@@ -49,8 +52,8 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
             className={`
               px-3 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2
               ${isActive 
-                ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold shadow-[0_-1px_3px_rgba(0,0,0,0.05)]` 
-                : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/30 mb-0.5`}
+                ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold shadow-[0_-1px_3px_rgba(0,0,0,0.05)] dark:shadow-none` 
+                : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/50 mb-0.5`}
               ${isContextual ? 'border-t-2 border-t-current' : ''}
             `}
         >
@@ -66,7 +69,7 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
             {isActive && (
                <>
                  {/* Corner smoothing */}
-                 <div className="absolute bottom-0 left-0 right-0 h-3 bg-white dark:bg-slate-800 z-20"></div>
+                 <div className="absolute bottom-0 left-0 right-0 h-3 bg-white dark:bg-[#1e293b] z-20"></div>
                  <div className="absolute bottom-0 -left-2 w-2 h-2 bg-transparent shadow-[2px_2px_0_#fff] dark:shadow-[2px_2px_0_#1e293b] rounded-br-full z-20 pointer-events-none"></div>
                  <div className="absolute bottom-0 -right-2 w-2 h-2 bg-transparent shadow-[-2px_2px_0_#fff] dark:shadow-[-2px_2px_0_#1e293b] rounded-bl-full z-20 pointer-events-none"></div>
                </>
@@ -125,23 +128,17 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       const prevType = prevElementTypeRef.current;
       const prevArea = prevEditingAreaRef.current;
 
-      // Header & Footer Logic based on activeEditingArea state (Explicit Mode)
-      const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
-      const wasHeaderFooterMode = prevArea === 'header' || prevArea === 'footer';
-
-      if (isHeaderFooterMode && !wasHeaderFooterMode) {
+      if ((activeEditingArea === 'header' || activeEditingArea === 'footer') && (prevArea !== 'header' && prevArea !== 'footer')) {
           onTabChange(RibbonTab.HEADER_FOOTER);
-      } else if (!isHeaderFooterMode && wasHeaderFooterMode) {
+      } else if ((prevArea === 'header' || prevArea === 'footer') && (activeEditingArea !== 'header' && activeEditingArea !== 'footer')) {
           onTabChange(RibbonTab.HOME);
       }
-      // Other Contextual Tabs based on Element Selection
       else if (activeElementType === 'equation' && prevType !== 'equation') {
           onTabChange(RibbonTab.EQUATION);
       } 
       else if (activeElementType === 'table' && prevType !== 'table') {
           onTabChange(RibbonTab.TABLE_DESIGN);
       } 
-      // Close rules if not in specific mode
       else {
           if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
               timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
@@ -184,14 +181,14 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
 
   return (
-    <div className="relative flex items-end bg-[#0f172a] dark:bg-slate-950 pt-1 flex-shrink-0 z-20 w-full group select-none border-b border-white/10 dark:border-slate-800">
+    <div className="relative flex items-end bg-[#0f172a] dark:bg-[#0f172a] pt-1 flex-shrink-0 z-20 w-full group select-none border-b border-white/10 dark:border-slate-800">
        <div 
-          className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-8 bg-gradient-to-r from-[#0f172a] dark:from-slate-950 via-[#0f172a]/90 dark:via-slate-950/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-8 bg-gradient-to-r from-[#0f172a] dark:from-[#0f172a] via-[#0f172a]/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >
            <button 
               onClick={() => scroll('left')}
               onMouseDown={(e) => e.preventDefault()}
-              className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
+              className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-800 hover:bg-slate-700 dark:hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
               aria-label="Scroll left"
            >
               <ChevronLeft size={16} strokeWidth={2.5} />
@@ -246,12 +243,12 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       </div>
 
        <div 
-          className={`absolute right-0 top-0 bottom-0 z-30 flex items-center pr-1 pl-8 bg-gradient-to-l from-[#0f172a] dark:from-slate-950 via-[#0f172a]/90 dark:via-slate-950/90 to-transparent transition-opacity duration-200 ${showRightArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute right-0 top-0 bottom-0 z-30 flex items-center pr-1 pl-8 bg-gradient-to-l from-[#0f172a] dark:from-[#0f172a] via-[#0f172a]/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showRightArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >
            <button 
               onClick={() => scroll('right')}
               onMouseDown={(e) => e.preventDefault()}
-              className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-900 hover:bg-slate-700 dark:hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
+              className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-800 hover:bg-slate-700 dark:hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
               aria-label="Scroll right"
            >
               <ChevronRight size={16} strokeWidth={2.5} />

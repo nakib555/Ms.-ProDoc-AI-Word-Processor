@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Loader2, Lock, Unlock, ScanText } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
@@ -50,7 +51,7 @@ const StatusBar: React.FC = () => {
     <>
         <div 
           onMouseDown={handleMouseDown}
-          className="h-9 bg-slate-900 dark:bg-slate-950 text-slate-400 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 border-t border-slate-800 dark:border-slate-900 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] overflow-hidden transition-colors duration-300"
+          className="h-9 bg-[#0f172a] dark:bg-[#0f172a] text-slate-400 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 border-t border-slate-800 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] overflow-hidden transition-colors duration-300"
         >
           <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0">
             <div className="flex items-center gap-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
@@ -106,7 +107,7 @@ const StatusBar: React.FC = () => {
             </button>
 
             {/* View Modes - Desktop (Grouped) */}
-            <div className="hidden sm:flex items-center bg-slate-800 dark:bg-slate-900 rounded-md p-0.5 border border-slate-700 dark:border-slate-800">
+            <div className="hidden sm:flex items-center bg-slate-800 dark:bg-slate-800 rounded-md p-0.5 border border-slate-700 dark:border-slate-700">
                  <button 
                     onClick={() => !isAIProcessing && setViewMode('print')} 
                     disabled={isAIProcessing}

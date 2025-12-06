@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Menu, MoreHorizontal, Loader2, Cloud, Sparkles } from 'lucide-react';
+import { Menu, MoreHorizontal, Loader2, Cloud } from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';
 
 interface RibbonHeaderProps {
@@ -7,7 +8,7 @@ interface RibbonHeaderProps {
 }
 
 export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => {
-  const { saveStatus, documentTitle, setDocumentTitle, showCopilot, setShowCopilot, viewMode } = useEditor();
+  const { saveStatus, documentTitle, setDocumentTitle } = useEditor();
   
   const renderSaveStatus = () => {
     switch (saveStatus) {
@@ -47,7 +48,7 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
   return (
     <div 
       onMouseDown={handleMouseDown}
-      className="h-12 bg-[#0f172a] dark:bg-slate-950 text-white flex items-center justify-between px-4 select-none z-30 shadow-sm border-b border-white/5 dark:border-slate-800 shrink-0 relative transition-colors duration-300"
+      className="h-12 bg-[#0f172a] dark:bg-[#0f172a]/80 dark:backdrop-blur-xl text-white flex items-center justify-between px-4 select-none z-30 shadow-sm border-b border-white/10 dark:border-white/5 shrink-0 relative transition-colors duration-300"
     >
        <div className="flex items-center gap-4">
            <button 
@@ -82,17 +83,6 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
        </div>
 
        <div className="flex items-center gap-3">
-           {viewMode !== 'web' && (
-             <button 
-                onClick={() => setShowCopilot(!showCopilot)}
-                className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${showCopilot ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-900/20' : 'bg-transparent border-transparent hover:bg-white/5 text-slate-300 hover:text-white'}`}
-                title="Copilot"
-             >
-                <Sparkles size={16} className={showCopilot ? "text-indigo-200 fill-indigo-200/30" : ""} />
-                <span className="text-xs font-semibold">Copilot</span>
-             </button>
-           )}
-
            <div className="hidden md:flex items-center bg-slate-800/50 backdrop-blur-sm rounded-full px-3 py-1 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition-colors group">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)] group-hover:shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-shadow"></div>
               <span className="text-[10px] font-medium text-slate-300 group-hover:text-white">Online</span>
@@ -103,7 +93,7 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
            </button>
            
            <div className="flex items-center gap-1.5 pl-4 border-l border-slate-700/50 ml-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-inner cursor-pointer hover:ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#0f172a] transition-all transform hover:scale-105">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white shadow-inner cursor-pointer hover:ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#0f172a] transition-all transform hover:scale-105">
                 JD
               </div>
            </div>

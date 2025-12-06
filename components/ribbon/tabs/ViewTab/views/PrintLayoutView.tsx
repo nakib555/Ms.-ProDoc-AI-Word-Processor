@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
@@ -17,7 +16,7 @@ export const PrintLayoutTool: React.FC = () => {
         icon={FileText} 
         label="Print Layout" 
         onClick={() => setViewMode('print')} 
-        className={viewMode === 'print' ? 'bg-indigo-100 text-indigo-700' : ''}
+        className={viewMode === 'print' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200' : ''}
     />
   );
 };
@@ -168,29 +167,23 @@ const restoreGlobalCursor = (globalOffset: number) => {
         const pageLen = getNodeTextLength(el);
         const contentLen = isBlock(el) ? pageLen - 1 : pageLen;
         
-        // If cursor is strictly inside this page's content
         if (globalOffset < currentTotal + contentLen) {
             const localOffset = Math.max(0, globalOffset - currentTotal);
             setCursorInNode(el, localOffset);
             return;
         }
         
-        // If cursor is exactly at the end of this page's content (boundary)
         if (globalOffset === currentTotal + contentLen) {
-             // If it's the last page, place it at the end here
              if (i === totalPages) {
                  setCursorInNode(el, contentLen);
                  return;
              }
-             // Otherwise, we assume it belongs to the start of the next page
-             // We bump the globalOffset by 1 to account for the skipped page container boundary
              globalOffset += 1;
         }
         
         currentTotal += pageLen;
     }
     
-    // Fallback if something went wrong
     if (totalPages > 0) {
         const lastPage = document.getElementById(`prodoc-editor-${totalPages}`);
         if (lastPage) {
@@ -213,7 +206,6 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
             const len = (node.nodeValue || "").length;
             if (currentCount + len >= offset) {
                 const localOffset = offset - currentCount;
-                // Guard against negative offsets or out of bounds due to miscalculation
                 const safeOffset = Math.max(0, Math.min(len, localOffset));
                 range.setStart(node, safeOffset);
                 range.collapse(true);
@@ -379,12 +371,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     
-    // Sync Ruler
     if (rulerContainerRef.current) {
         rulerContainerRef.current.scrollLeft = container.scrollLeft;
     }
 
-    // Determine active page based on center point
     const containerRect = container.getBoundingClientRect();
     const centerY = containerRect.top + containerRect.height / 2;
     const centerX = containerRect.left + containerRect.width / 2;
@@ -399,7 +389,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         const wrapperCenterX = rect.left + rect.width / 2;
         const wrapperCenterY = rect.top + rect.height / 2;
         
-        // Distance from viewport center to page center
         const dist = Math.hypot(wrapperCenterX - centerX, wrapperCenterY - centerY);
         
         if (dist < minDistance) {
@@ -449,7 +438,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const isVertical = pageMovement === 'vertical';
   const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
 
-  // Calculate content width for horizontal scroll support in ruler sync
   const maxPageWidth = useMemo(() => {
       let max = 0;
       pagesData.forEach(p => {
@@ -467,14 +455,14 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   return (
     <div 
-      className="w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-slate-950 transition-colors duration-300 touch-pan-x touch-pan-y"
+      className="w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300 touch-pan-x touch-pan-y"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >
        {showRuler && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#f8fafc] border-b border-slate-200 z-20 shrink-0 sticky top-0 shadow-sm"
+            className="w-full overflow-hidden bg-[#f8fafc] dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 z-20 shrink-0 sticky top-0 shadow-sm"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
@@ -491,7 +479,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
-          style={{ scrollBehavior: 'auto' }} // Explicitly auto to prevent lag when typing
+          style={{ scrollBehavior: 'auto' }} 
        >
            <div 
                 className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} py-8 gap-8`}
@@ -502,7 +490,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                 }}
            >
                 {pagesData.map((pageData, index) => {
-                    // Calculate estimated height for content-visibility to prevent scroll jumps
                     const config = pageData.config;
                     let baseH = 0;
                     if (config.size === 'Custom' && config.customHeight) baseH = config.customHeight * 96;
@@ -515,7 +502,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                     return (
                         <div 
                             key={index} 
-                            // The key is index, so when a new page is inserted, it mounts and triggers the animation defined in index.css
                             className="prodoc-page-wrapper box-border shrink-0 relative group"
                             data-page-index={index}
                             style={{ 
