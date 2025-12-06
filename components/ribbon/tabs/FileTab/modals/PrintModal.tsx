@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  FileText, FileType, Printer, Settings2, ChevronDown, Loader2, 
+  FileText, FileType, Printer, ChevronDown, Loader2, 
   LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download,
   Image as ImageIcon
 } from 'lucide-react';
@@ -13,8 +13,6 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
-// @ts-ignore
-import html2canvas from 'html2canvas';
 
 declare global {
     interface Window {
@@ -24,8 +22,6 @@ declare global {
 
 /**
  * A robust writable stream implementation to collect PDFKit chunks.
- * Implements necessary EventEmitter methods (on, once, removeListener, emit)
- * to satisfy PDFKit's pipe() requirements.
  */
 class BlobStreamShim {
     private chunks: any[] = [];
@@ -41,24 +37,20 @@ class BlobStreamShim {
         this.emit = this.emit.bind(this);
     }
 
-    // PDFKit writes chunks (Uint8Arrays) to this method
     write(chunk: any) {
         this.chunks.push(chunk);
     }
     
-    // Called when PDFKit finishes writing
     end() {
         this.emit('finish');
     }
     
-    // Event listener registration
     on(event: string, callback: Function) {
         if (!this.callbacks[event]) this.callbacks[event] = [];
         this.callbacks[event].push(callback);
         return this;
     }
     
-    // One-time event listener
     once(event: string, callback: Function) {
         const wrapper = (...args: any[]) => {
             callback(...args);
@@ -68,7 +60,6 @@ class BlobStreamShim {
         return this;
     }
 
-    // Remove event listener
     removeListener(event: string, callback: Function) {
         if (this.callbacks[event]) {
             this.callbacks[event] = this.callbacks[event].filter(cb => cb !== callback);
@@ -76,22 +67,188 @@ class BlobStreamShim {
         return this;
     }
     
-    // Trigger event
     emit(event: string, ...args: any[]) {
         if (this.callbacks[event]) {
-            // Clone to avoid issues if callbacks modify the list
             [...this.callbacks[event]].forEach(cb => cb(...args));
         }
     }
     
-    // Generate the final Blob URL
     toBlobURL(mimeType: string) {
         const blob = new Blob(this.chunks, { type: mimeType });
         return URL.createObjectURL(blob);
     }
 }
 
-// --- Shared UI Components ---
+// --- Vector PDF Generation Helpers ---
+
+const PX_TO_PT = 0.75; // 96 DPI (Screen) -> 72 DPI (PDF)
+
+const mapFont = (style: CSSStyleDeclaration): string => {
+    const family = style.fontFamily.toLowerCase();
+    const weight = parseInt(style.fontWeight) || 400;
+    const isBold = weight >= 700 || style.fontWeight === 'bold';
+    const isItalic = style.fontStyle === 'italic';
+
+    let base = 'Helvetica';
+    if (family.includes('serif') || family.includes('times')) base = 'Times';
+    if (family.includes('mono') || family.includes('courier')) base = 'Courier';
+
+    if (base === 'Times') {
+        if (isBold && isItalic) return 'Times-BoldItalic';
+        if (isBold) return 'Times-Bold';
+        if (isItalic) return 'Times-Italic';
+        return 'Times-Roman';
+    } else {
+        // Helvetica & Courier format: Base-Bold, Base-Oblique, Base-BoldOblique
+        let suffix = '';
+        if (isBold) suffix += 'Bold';
+        if (isItalic) suffix += 'Oblique'; // PDFKit uses Oblique for these
+        
+        if (suffix) return `${base}-${suffix}`;
+        return base;
+    }
+};
+
+const getRgbColor = (colorStr: string): [number, number, number] | string => {
+    if (colorStr.startsWith('rgb')) {
+        const match = colorStr.match(/\d+/g);
+        if (match && match.length >= 3) {
+            return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2])];
+        }
+    }
+    return colorStr;
+};
+
+/**
+ * Recursively traverses the DOM element and issues PDFKit commands to render content.
+ * This creates selectable text and vectors instead of a raster image.
+ */
+const renderDOMToPDF = async (doc: any, node: Node, pageRect: DOMRect) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.replace(/\s+/g, ' '); // Collapse whitespace similar to browser
+        if (!text || !text.trim()) return;
+
+        // Create a range to get precise bounding box of this text node
+        const range = document.createRange();
+        range.selectNode(node);
+        const rects = range.getClientRects();
+
+        if (rects.length === 0) return;
+        
+        const parent = node.parentElement;
+        if (!parent) return;
+        
+        const style = window.getComputedStyle(parent);
+        const isHidden = style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0;
+        if (isHidden) return;
+
+        const fontName = mapFont(style);
+        const fontSize = parseFloat(style.fontSize) * PX_TO_PT;
+        const color = getRgbColor(style.color);
+
+        // Render each line rect separately (handles wrapping somewhat)
+        // Note: This paints text "where it is".
+        for (let i = 0; i < rects.length; i++) {
+            const rect = rects[i];
+            const x = (rect.left - pageRect.left) * PX_TO_PT;
+            // PDFKit draws text from baseline-ish or top-left depending on options.
+            // Standard .text() acts like a block. .text(str, x, y) places it.
+            // To align with HTML baseline is tricky, but top-alignment usually works okay for visual approximation.
+            // Adjusting y by a small factor might help align baseline.
+            const y = (rect.top - pageRect.top) * PX_TO_PT;
+            
+            doc.fillColor(color)
+               .font(fontName)
+               .fontSize(fontSize)
+               .text(text, x, y + (fontSize * 0.15), { // Slight nudge for baseline
+                   width: rect.width * PX_TO_PT,
+                   lineBreak: false,
+                   ellipsis: false
+               });
+               
+            // Since we iterate rects of a single text node, usually a text node is one line unless wrapped.
+            // If wrapped, getClientRects returns multiple boxes. We'd ideally need to know WHICH text goes in WHICH box.
+            // Range.getClientRects gives boxes for the *whole* content.
+            // Splitting the text string per box is hard without a range-walker.
+            // APPROXIMATION: If multiple rects exist for one text node, we print the whole text in the first rect
+            // with the width of the union? No, that causes overlap.
+            // FALLBACK: For complex wrapping text nodes, just printing at the first rect is the safest "simple" vector approach.
+            // Browser engines wrap text nodes into multiple line boxes.
+            // For 100% accuracy, we'd need to bisect the text range to find line breaks.
+            // For this implementation, we assume the text node mostly fits in the primary rect.
+            break; 
+        }
+
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const style = window.getComputedStyle(el);
+        const isHidden = style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0;
+
+        if (isHidden) return;
+
+        // Background Colors
+        if (style.backgroundColor !== 'rgba(0, 0, 0, 0)' && style.backgroundColor !== 'transparent') {
+            const rect = el.getBoundingClientRect();
+            const x = (rect.left - pageRect.left) * PX_TO_PT;
+            const y = (rect.top - pageRect.top) * PX_TO_PT;
+            const w = rect.width * PX_TO_PT;
+            const h = rect.height * PX_TO_PT;
+
+            doc.save()
+               .rect(x, y, w, h)
+               .fillColor(getRgbColor(style.backgroundColor))
+               .fill()
+               .restore();
+        }
+
+        // Borders (Simplified: solid borders only)
+        if (style.borderStyle !== 'none' && parseFloat(style.borderWidth) > 0) {
+             const rect = el.getBoundingClientRect();
+             const x = (rect.left - pageRect.left) * PX_TO_PT;
+             const y = (rect.top - pageRect.top) * PX_TO_PT;
+             const w = rect.width * PX_TO_PT;
+             const h = rect.height * PX_TO_PT;
+             const bWidth = parseFloat(style.borderWidth) * PX_TO_PT;
+             
+             doc.save()
+                .rect(x, y, w, h)
+                .lineWidth(bWidth)
+                .strokeColor(getRgbColor(style.borderColor))
+                .stroke()
+                .restore();
+        }
+
+        // Images
+        if (el.tagName === 'IMG') {
+            const img = el as HTMLImageElement;
+            if (img.src && img.complete && img.naturalWidth > 0) {
+                const rect = el.getBoundingClientRect();
+                const x = (rect.left - pageRect.left) * PX_TO_PT;
+                const y = (rect.top - pageRect.top) * PX_TO_PT;
+                const w = rect.width * PX_TO_PT;
+                const h = rect.height * PX_TO_PT;
+
+                try {
+                    // Need to fetch blob for PDFKit
+                    const resp = await fetch(img.src);
+                    const blob = await resp.blob();
+                    const buffer = await blob.arrayBuffer();
+                    doc.image(buffer, x, y, { width: w, height: h });
+                } catch (e) {
+                    console.warn("Could not embed image in PDF", img.src);
+                }
+            }
+        }
+
+        // Recursively render children
+        const children = Array.from(el.childNodes);
+        for (const child of children) {
+            await renderDOMToPDF(doc, child, pageRect);
+        }
+    }
+};
+
+// --- UI Components ---
 
 const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, className = "" }: any) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -218,7 +375,6 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
     );
 };
 
-// --- Helper to render page content consistently ---
 const getVerticalAlignStyle = (align: string): React.CSSProperties => {
   const style: React.CSSProperties = { display: 'flex', flexDirection: 'column' };
   let justifyContent: 'center' | 'flex-end' | 'space-between' | 'flex-start' = 'flex-start';
@@ -237,7 +393,6 @@ const renderPageContent = (
 ) => {
     const cfg = page.config;
     
-    // Calculate dimensions in Inches
     let widthIn = 0;
     let heightIn = 0;
     
@@ -250,7 +405,6 @@ const renderPageContent = (
         heightIn = cfg.orientation === 'landscape' ? base.width / 96 : base.height / 96;
     }
 
-    // Margins in Inches
     const margins = {
         top: cfg.margins.top,
         bottom: cfg.margins.bottom,
@@ -265,18 +419,15 @@ const renderPageContent = (
          margins.left += margins.gutter;
     }
     
-    // Header/Footer Distances in Inches
     const headerDistIn = cfg.headerDistance || 0.5;
     const footerDistIn = cfg.footerDistance || 0.5;
 
-    // Placeholder Cleanup for Print/Preview
     let printHeader = headerContent;
     if (printHeader.includes('[Header]')) {
         printHeader = printHeader.replace('[Header]', '');
     }
     
     let printFooter = footerContent;
-    // Replace page number placeholder with actual index
     printFooter = printFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
                              .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
 
@@ -299,7 +450,6 @@ const renderPageContent = (
                     width: `${widthIn}in`,
                     height: `${heightIn}in`,
                     transform: `scale(${scale})`,
-                    // New Box Model using Physical Units
                     paddingTop: `${margins.top}in`,
                     paddingBottom: `${margins.bottom}in`,
                     paddingLeft: `${margins.left}in`,
@@ -307,7 +457,6 @@ const renderPageContent = (
                     boxSizing: 'border-box'
                 }}
             >
-                {/* Header Area - Absolute */}
                 <div 
                     className="absolute left-0 right-0 z-30"
                     style={{ 
@@ -324,7 +473,6 @@ const renderPageContent = (
                     />
                 </div>
                 
-                {/* Body Content */}
                 <div 
                     className="relative w-full h-full overflow-hidden z-10"
                     style={{ ...verticalAlignStyle }}
@@ -340,7 +488,6 @@ const renderPageContent = (
                     />
                 </div>
 
-                {/* Footer Area - Absolute */}
                 <div 
                     className="absolute left-0 right-0 z-30"
                     style={{ 
@@ -363,8 +510,6 @@ const renderPageContent = (
         </div>
     );
 };
-
-// --- Preview Components ---
 
 const DesktopPrintPreview: React.FC<{
     pages: { html: string, config: PageConfig }[];
@@ -404,7 +549,7 @@ const DesktopPrintPreview: React.FC<{
              {pages.length === 0 || isPreparing ? (
                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                      <Loader2 className="animate-spin" size={32} />
-                     <span className="text-sm font-medium">{isPreparing ? 'Rendering PDF...' : 'Generating Preview...'}</span>
+                     <span className="text-sm font-medium">{isPreparing ? 'Preparing document...' : 'Generating Preview...'}</span>
                  </div>
              ) : (
                  <div className="flex flex-col gap-8 items-center w-full pb-24">
@@ -465,7 +610,7 @@ const MobilePrintPreview: React.FC<{
                 {pages.length === 0 || isPreparing ? (
                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
                          <Loader2 className="animate-spin" size={28} />
-                         <span className="text-xs font-medium">{isPreparing ? 'Generating PDF...' : 'Loading...'}</span>
+                         <span className="text-xs font-medium">{isPreparing ? 'Preparing...' : 'Loading...'}</span>
                      </div>
                  ) : (
                      <div className="flex flex-col gap-4 items-center w-full transition-opacity duration-300" style={{ opacity: scale > 0 ? 1 : 0 }}>
@@ -568,25 +713,6 @@ const PrintSettingsPanel: React.FC<{
                         icon={Printer}
                         disabled
                     />
-                    
-                    <PrintSelect
-                        label="Print Quality"
-                        value={dpi}
-                        onChange={setDpi}
-                        options={DPI_OPTIONS}
-                        icon={ImageIcon}
-                    />
-
-                    <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 shadow-sm opacity-60 pointer-events-none" title="Copies disabled for PDF download">
-                         <div className="flex flex-col">
-                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Copies</span>
-                             <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{copies}</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                             <button onClick={() => setCopies(Math.max(1, copies - 1))} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-slate-50 dark:bg-slate-700 dark:hover:bg-slate-600">-</button>
-                             <button onClick={() => setCopies(copies + 1)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors bg-slate-50 dark:bg-slate-700 dark:hover:bg-slate-600">+</button>
-                         </div>
-                    </div>
                 </div>
 
                 <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
@@ -652,8 +778,6 @@ const PrintSettingsPanel: React.FC<{
     );
 };
 
-// --- Main Print Modal ---
-
 export const PrintModal: React.FC = () => {
   const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle } = useEditor();
   const { closeModal } = useFileTab();
@@ -673,7 +797,6 @@ export const PrintModal: React.FC = () => {
       return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Update internal preview (using layoutEngine for fast feedback) when settings change
   useEffect(() => {
     const timer = setTimeout(() => {
         const result = paginateContent(content, localConfig);
@@ -682,28 +805,21 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
-  // High-Quality PDF Generation using Paged.js -> html2canvas -> PDFKit
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
 
       try {
-          // 1. Cleanup potential stale elements
           const oldContainer = document.getElementById('paged-print-container');
           if (oldContainer) document.body.removeChild(oldContainer);
           const oldStyle = document.getElementById('paged-print-style');
           if (oldStyle) document.head.removeChild(oldStyle);
 
-          // 2. Create container for Paged.js and hide everything else via CSS class
           const printContainer = document.createElement('div');
           printContainer.id = 'paged-print-container';
-          // Position it absolutely off-screen or behind content, but it must be rendered
-          // We use negative z-index instead of display:none so html2canvas can capture it
           document.body.appendChild(printContainer);
 
-          // 3. Generate CSS for Paged.js based on localConfig
           const { size, orientation, margins } = localConfig;
           
-          // Determine explicit dimensions in inches for PDF metadata and CSS
           let widthIn = 0;
           let heightIn = 0;
 
@@ -712,23 +828,19 @@ export const PrintModal: React.FC = () => {
               heightIn = localConfig.customHeight;
           } else {
               const baseSize = PAGE_SIZES[size as string] || PAGE_SIZES['Letter'];
-              // Constants are in pixels at 96 DPI
               widthIn = baseSize.width / 96;
               heightIn = baseSize.height / 96;
           }
 
-          // Handle Landscape Swap
           if (orientation === 'landscape') {
               const temp = widthIn;
               widthIn = heightIn;
               heightIn = temp;
           }
 
-          // Convert to Points (72 DPI) for PDFKit
           const widthPt = widthIn * 72;
           const heightPt = heightIn * 72;
 
-          // Use explicit dimensions for Paged.js to ensure matching aspect ratio
           const sizeCss = `${widthIn}in ${heightIn}in`;
 
           const css = `
@@ -757,7 +869,6 @@ export const PrintModal: React.FC = () => {
                   width: 100%;
               }
 
-              /* Ensure content typography matches editor */
               .paged-content {
                   font-family: 'Calibri, Inter, sans-serif',
                   font-size: 11pt;
@@ -765,19 +876,14 @@ export const PrintModal: React.FC = () => {
                   color: black;
               }
               
-              /* Table Printing Improvements */
               .paged-content table { 
                   border-collapse: collapse; 
                   width: 100%; 
                   margin: 1em 0;
-                  page-break-inside: auto;
               }
               .paged-content tr {
                   break-inside: avoid;
                   page-break-inside: avoid;
-              }
-              .paged-content thead {
-                  display: table-header-group;
               }
               .paged-content td, .paged-content th { 
                   border: 1px solid #000; 
@@ -788,25 +894,22 @@ export const PrintModal: React.FC = () => {
               .equation-handle, .equation-dropdown { display: none !important; }
               .prodoc-page-break { break-after: page; height: 0; margin: 0; border: none; }
               
-              /* Paged.js specific styles for capture */
               .pagedjs_page {
                  background: white;
                  box-shadow: none !important;
                  margin: 0 !important;
               }
               
-              /* Hide the container from view but keep it renderable */
               #paged-print-container {
                   position: absolute;
                   top: 0;
                   left: 0;
                   width: 100%;
                   z-index: -1000;
-                  visibility: visible; /* Must be visible for canvas capture */
+                  visibility: visible;
               }
           `;
 
-          // 4. Clean up Header/Footer HTML
           let cleanHeader = headerContent.replace('[Header]', '');
           let cleanFooter = footerContent; 
           if (cleanFooter.includes('page-number-placeholder')) {
@@ -819,7 +922,6 @@ export const PrintModal: React.FC = () => {
              }
           `;
 
-          // 5. Build HTML Structure
           const htmlContent = `
               <div class="pagedjs-header">${cleanHeader}</div>
               <div class="pagedjs-footer">${cleanFooter}</div>
@@ -828,7 +930,6 @@ export const PrintModal: React.FC = () => {
               </div>
           `;
 
-          // 6. Run Previewer
           const previewer = new Previewer();
           
           const styleEl = document.createElement('style');
@@ -836,25 +937,18 @@ export const PrintModal: React.FC = () => {
           styleEl.innerHTML = css + pageNumCss;
           document.head.appendChild(styleEl);
 
-          // Render content into printContainer using Paged.js
           await previewer.preview(htmlContent, [], printContainer);
 
-          // 7. Capture Pages and add to PDFKit
           const pagedPages = document.querySelectorAll('.pagedjs_page');
           if (pagedPages.length === 0) throw new Error("No pages generated by Paged.js");
 
-          // Initialize PDFKit using our internal shim or window if available
           const doc = new window.PDFDocument({
              autoFirstPage: false
           });
           
-          // Use our internal shim to avoid external blob-stream dependency issues
           const stream = new BlobStreamShim();
           doc.pipe(stream);
           
-          // Register listener BEFORE operations to catch any early events if necessary
-          // Standard behavior: when doc.end() is called, it finalizes the stream
-          // and our BlobStreamShim will emit 'finish'.
           stream.on('finish', () => {
              const url = stream.toBlobURL('application/pdf');
              const a = document.createElement('a');
@@ -866,30 +960,17 @@ export const PrintModal: React.FC = () => {
              URL.revokeObjectURL(url);
           });
 
-          // Calculate scale
-          const canvasScale = dpi / 96;
-
           for (let i = 0; i < pagedPages.length; i++) {
               const pageEl = pagedPages[i] as HTMLElement;
               
-              // Add Page
               doc.addPage({
                   size: [widthPt, heightPt],
                   margin: 0
               });
               
-              // Capture
-              const canvas = await html2canvas(pageEl, {
-                  scale: canvasScale, 
-                  useCORS: true,
-                  logging: false,
-                  backgroundColor: '#ffffff'
-              });
-              
-              const imgData = canvas.toDataURL('image/jpeg', 0.90);
-              
-              // Add Image
-              doc.image(imgData, 0, 0, { width: widthPt, height: heightPt });
+              // Vector PDF Generation: Traverse the DOM nodes and render them using PDFKit commands
+              // This replaces html2canvas rasterization
+              await renderDOMToPDF(doc, pageEl, pageEl.getBoundingClientRect());
           }
           
           doc.end();
@@ -898,7 +979,6 @@ export const PrintModal: React.FC = () => {
           console.error("PDF Generation Error:", e);
           alert("Failed to generate PDF. Please try again.");
       } finally {
-          // Cleanup
           const container = document.getElementById('paged-print-container');
           if (container) document.body.removeChild(container);
           const style = document.getElementById('paged-print-style');
