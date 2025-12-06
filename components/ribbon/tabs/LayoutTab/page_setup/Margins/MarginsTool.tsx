@@ -6,7 +6,7 @@ import { useLayoutTab } from '../../LayoutTabContext';
 import { DropdownButton } from '../../common/LayoutTools';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { MARGIN_PRESETS } from '../../../../../../constants';
-import { MarginPreset, PageConfig } from '../../../../../../types';
+import { MarginPreset, PageConfig, MarginValues } from '../../../../../../types';
 
 const PageSetupDialog = React.lazy(() => import('./CustomMargin/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 
@@ -49,7 +49,7 @@ export const MarginsTool: React.FC = () => {
       return result.charAt(0).toUpperCase() + result.slice(1);
   };
 
-  const marginOptions = useMemo(() => Object.entries(MARGIN_PRESETS).map(([key, val]) => {
+  const marginOptions = useMemo(() => (Object.entries(MARGIN_PRESETS) as [string, MarginValues][]).map(([key, val]) => {
       let icon = LayoutTemplate;
       if (key === 'narrow') icon = Columns;
       if (key === 'moderate') icon = MoveVertical;

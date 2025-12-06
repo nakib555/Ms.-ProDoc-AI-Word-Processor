@@ -13,15 +13,8 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig } from '../../../../../types';
 // @ts-ignore
 import { Previewer } from 'pagedjs';
-// @ts-ignore
 import html2canvas from 'html2canvas';
-
-// Access jspdf from window since it's loaded via script tag for browser compatibility
-declare global {
-    interface Window {
-        jspdf: any;
-    }
-}
+import { jsPDF } from 'jspdf';
 
 // --- UI Components ---
 
@@ -734,10 +727,7 @@ export const PrintModal: React.FC = () => {
           // 2. Initialize jsPDF
           // Use 'in' (inches) as unit since our layout logic is inch-based
           const orientationShort = orientation === 'landscape' ? 'l' : 'p';
-          // Initialize jsPDF through window or import if available
-          const jsPDF = window.jspdf?.jsPDF || (window as any).jsPDF;
-          if (!jsPDF) throw new Error("jsPDF library not loaded");
-
+          
           const pdf = new jsPDF({
               orientation: orientationShort,
               unit: 'in',
