@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useLayoutEffect, useCallback, Suspense } from 'react';
 import { useEditor } from '../contexts/EditorContext';
 import * as AutoSizerPkg from 'react-virtualized-auto-sizer';
@@ -67,7 +68,7 @@ const Editor: React.FC = () => {
       registerContainer(node);
   }, [registerContainer]);
 
-  // Zoom-to-Cursor Logic
+  // Zoom-to-Cursor Logic (Mouse Wheel)
   useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
@@ -86,7 +87,6 @@ const Editor: React.FC = () => {
               const scaleOld = zoom / 100;
               
               // Find content start offset (to handle centered layouts like Print View)
-              // In Print Layout, pages are centered by flexbox, creating a variable left margin.
               let contentOffsetLeft = 0;
               let contentOffsetTop = 0;
               
@@ -97,7 +97,6 @@ const Editor: React.FC = () => {
               }
               
               // Calculate the point on the content (unscaled coordinates) under the mouse
-              // We subtract the offset to account for the flexbox centering margin
               const pointX = (container.scrollLeft + mouseX - contentOffsetLeft) / scaleOld;
               const pointY = (container.scrollTop + mouseY - contentOffsetTop) / scaleOld;
               
@@ -120,7 +119,7 @@ const Editor: React.FC = () => {
       return () => container.removeEventListener('wheel', handleWheel);
   }, [zoom, setZoom]);
 
-  // Apply pending scroll adjustment after layout update
+  // Apply pending scroll adjustment after layout update (Zoom Logic)
   useLayoutEffect(() => {
       const container = containerRef.current;
       if (!container) {
@@ -128,48 +127,90 @@ const Editor: React.FC = () => {
           return;
       }
 
+      const rect = container.getBoundingClientRect();
+      const viewportW = rect.width;
+      const viewportH = rect.height;
+
+      const firstPage = container.querySelector('.prodoc-page-wrapper') as HTMLElement;
+      let newContentOffsetLeft = 0;
+      let newContentOffsetTop = 0;
+      let newContentWidth = 0;
+      
+      if (firstPage) {
+          newContentOffsetLeft = firstPage.offsetLeft;
+          newContentOffsetTop = firstPage.offsetTop;
+          newContentWidth = firstPage.offsetWidth;
+      }
+
       if (pendingScrollRef.current) {
-          // Case 1: Zoom to Cursor (initiated by Wheel)
+          // Case 1: Zoom to Mouse (Wheel)
           const { pointX, pointY, mouseX, mouseY } = pendingScrollRef.current;
           const scaleNew = zoom / 100;
           
-          // Recalculate content offsets after render (since layout/centering might have changed)
-          let newContentOffsetLeft = 0;
-          let newContentOffsetTop = 0;
-          
-          const firstPage = container.querySelector('.prodoc-page-wrapper') as HTMLElement;
-          if (firstPage) {
-              newContentOffsetLeft = firstPage.offsetLeft;
-              newContentOffsetTop = firstPage.offsetTop;
-          }
-
-          // Calculate new Scroll Positions to keep ContentPoint under MouseOffset
-          // Formula: Scroll = (Point * Scale) + Margin - Mouse
           container.scrollLeft = (pointX * scaleNew) + newContentOffsetLeft - mouseX;
           container.scrollTop = (pointY * scaleNew) + newContentOffsetTop - mouseY;
           
           pendingScrollRef.current = null;
       } else if (prevZoomRef.current !== zoom) {
-          // Case 2: Zoom to Center (initiated by UI/Keyboard)
-          // Simplistic center preservation
+          // Case 2: Zoom to Center or Caret (Button/Shortcut)
+          
           const oldScale = prevZoomRef.current / 100;
           const newScale = zoom / 100;
           
-          const { clientWidth, clientHeight, scrollLeft, scrollTop } = container;
+          // Check for selection to "Go towards cursor"
+          const sel = window.getSelection();
+          let hasValidSelection = false;
           
-          const centerX = scrollLeft + (clientWidth / 2);
-          const centerY = scrollTop + (clientHeight / 2);
+          // Only prioritize cursor if it's inside the editor
+          if (sel && sel.rangeCount > 0 && editorRef.current && editorRef.current.contains(sel.anchorNode)) {
+               const range = sel.getRangeAt(0);
+               const rangeRect = range.getBoundingClientRect();
+               
+               // Ensure rect is valid (not 0 size if collapsed, sometimes collapsed rects are tricky but usually have pos)
+               if (rangeRect.top !== 0 || rangeRect.left !== 0) {
+                   // Calculate how far the cursor is from the viewport center
+                   const caretX = rangeRect.left - rect.left;
+                   const caretY = rangeRect.top - rect.top;
+                   
+                   // Shift scroll to bring cursor to center
+                   const shiftX = caretX - (viewportW / 2);
+                   const shiftY = caretY - (viewportH / 2);
+                   
+                   container.scrollLeft += shiftX;
+                   container.scrollTop += shiftY;
+                   
+                   hasValidSelection = true;
+               }
+          }
+          
+          if (!hasValidSelection) {
+             // Default: Preserve Center of Viewport (Transform Origin: Center)
+             
+             // We attempt to map the previous center point to the new center point.
+             // OldContentWidth estimate
+             const baseWidth = newContentWidth / newScale;
+             const oldContentWidth = baseWidth * oldScale;
+             
+             // Estimate Old Offset based on flex centering logic
+             const oldOffsetLeft = Math.max(0, (viewportW - oldContentWidth) / 2);
+             // Assume Top Offset is relatively stable (padding) or assume vertical scroll continuity
+             // Simple centering is usually sufficient:
+             const oldOffsetTop = newContentOffsetTop; 
+             
+             const oldScrollLeft = container.scrollLeft;
+             const oldScrollTop = container.scrollTop;
+             
+             // Point P (Unscaled) at Center of Viewport
+             const pointX = (oldScrollLeft + (viewportW / 2) - oldOffsetLeft) / oldScale;
+             const pointY = (oldScrollTop + (viewportH / 2) - oldOffsetTop) / oldScale;
 
-          // Note: This simple formula assumes origin at 0,0. For perfect centering with flexbox
-          // we would need offsets too, but this is generally acceptable for button-based zoom.
-          const contentCenterX = centerX / oldScale;
-          const contentCenterY = centerY / oldScale;
-
-          const newScrollLeft = (contentCenterX * newScale) - (clientWidth / 2);
-          const newScrollTop = (contentCenterY * newScale) - (clientHeight / 2);
-
-          container.scrollLeft = newScrollLeft;
-          container.scrollTop = newScrollTop;
+             // Apply New Scroll to put P at Center
+             const targetVisX = (pointX * newScale) + newContentOffsetLeft;
+             const targetVisY = (pointY * newScale) + newContentOffsetTop;
+             
+             container.scrollLeft = targetVisX - (viewportW / 2);
+             container.scrollTop = targetVisY - (viewportH / 2);
+          }
       }
       
       prevZoomRef.current = zoom;

@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   FileText, FileType, Printer, Settings2, ChevronDown, Loader2, 
-  LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download
+  LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
@@ -412,16 +413,26 @@ const MobilePrintPreview: React.FC<{
     );
 };
 
+const DPI_OPTIONS = [
+    { value: 72, label: '72 DPI (Draft/Screen)' },
+    { value: 96, label: '96 DPI (Standard Web)' },
+    { value: 150, label: '150 DPI (Low Quality Print)' },
+    { value: 300, label: '300 DPI (High Quality Print)' },
+    { value: 600, label: '600 DPI (Ultra High Quality)' }
+];
+
 const PrintSettingsPanel: React.FC<{
     localConfig: PageConfig;
     setLocalConfig: (fn: (prev: PageConfig) => PageConfig) => void;
     copies: number;
     setCopies: (c: number) => void;
+    dpi: number;
+    setDpi: (dpi: number) => void;
     onPrint: () => void;
     isPreparing: boolean;
     closeModal: () => void;
     isMobile?: boolean;
-}> = ({ localConfig, setLocalConfig, copies, setCopies, onPrint, isPreparing, closeModal, isMobile }) => {
+}> = ({ localConfig, setLocalConfig, copies, setCopies, dpi, setDpi, onPrint, isPreparing, closeModal, isMobile }) => {
     
     const handleSettingChange = (key: keyof PageConfig | 'marginPreset', value: any) => {
       setLocalConfig(prev => {
@@ -483,6 +494,15 @@ const PrintSettingsPanel: React.FC<{
                         icon={Printer}
                         disabled
                     />
+                    
+                    <PrintSelect
+                        label="Print Quality"
+                        value={dpi}
+                        onChange={setDpi}
+                        options={DPI_OPTIONS}
+                        icon={ImageIcon}
+                    />
+
                     <div className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 shadow-sm opacity-60 pointer-events-none" title="Copies disabled for PDF download">
                          <div className="flex flex-col">
                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Copies</span>
@@ -569,6 +589,7 @@ export const PrintModal: React.FC = () => {
   const [previewPages, setPreviewPages] = useState<{ html: string, config: PageConfig }[]>([]);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
   const [copies, setCopies] = useState(1);
+  const [dpi, setDpi] = useState(300);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -608,17 +629,37 @@ export const PrintModal: React.FC = () => {
           // 3. Generate CSS for Paged.js based on localConfig
           const { size, orientation, margins } = localConfig;
           
-          let sizeStr = `${size} ${orientation}`;
+          // Determine explicit dimensions in inches for PDF metadata and CSS
+          let widthIn = 0;
+          let heightIn = 0;
+
           if (size === 'Custom' && localConfig.customWidth && localConfig.customHeight) {
-              sizeStr = `${localConfig.customWidth}in ${localConfig.customHeight}in`;
+              widthIn = localConfig.customWidth;
+              heightIn = localConfig.customHeight;
           } else {
-              const normalizedSize = size.toLowerCase().includes('envelope') ? size : size;
-              sizeStr = `${normalizedSize} ${orientation}`;
+              const baseSize = PAGE_SIZES[size as string] || PAGE_SIZES['Letter'];
+              // Constants are in pixels at 96 DPI
+              widthIn = baseSize.width / 96;
+              heightIn = baseSize.height / 96;
           }
+
+          // Handle Landscape Swap
+          if (orientation === 'landscape') {
+              const temp = widthIn;
+              widthIn = heightIn;
+              heightIn = temp;
+          }
+
+          // Convert to Points (72 DPI) for jsPDF
+          const widthPt = widthIn * 72;
+          const heightPt = heightIn * 72;
+
+          // Use explicit dimensions for Paged.js to ensure matching aspect ratio
+          const sizeCss = `${widthIn}in ${heightIn}in`;
 
           const css = `
               @page {
-                  size: ${sizeStr};
+                  size: ${sizeCss};
                   margin-top: ${margins.top}in;
                   margin-bottom: ${margins.bottom}in;
                   margin-left: ${margins.left}in;
@@ -644,7 +685,7 @@ export const PrintModal: React.FC = () => {
 
               /* Ensure content typography matches editor */
               .paged-content {
-                  font-family: 'Calibri', 'Inter', sans-serif;
+                  font-family: 'Calibri, Inter, sans-serif',
                   font-size: 11pt;
                   line-height: 1.5;
                   color: black;
@@ -728,35 +769,34 @@ export const PrintModal: React.FC = () => {
           const pagedPages = document.querySelectorAll('.pagedjs_page');
           if (pagedPages.length === 0) throw new Error("No pages generated by Paged.js");
           
-          // Determine PDF dimensions from the rendered page element (pixel perfect match)
-          const firstPageEl = pagedPages[0] as HTMLElement;
-          const widthPx = firstPageEl.offsetWidth;
-          const heightPx = firstPageEl.offsetHeight;
-          
-          // Convert to points for jsPDF (1px = 0.75pt at 96dpi)
-          const widthPt = widthPx * 0.75;
-          const heightPt = heightPx * 0.75;
-
+          // Initialize PDF with calculated points
           const pdf = new jsPDF({
-              orientation: widthPx > heightPx ? 'landscape' : 'portrait',
+              orientation: widthIn > heightIn ? 'landscape' : 'portrait',
               unit: 'pt',
               format: [widthPt, heightPt]
           });
+
+          // Calculate scale based on user selected DPI. Standard screen DPI is 96.
+          // e.g., 300 DPI / 96 = ~3.125 scale factor
+          const canvasScale = dpi / 96;
 
           for (let i = 0; i < pagedPages.length; i++) {
               const pageEl = pagedPages[i] as HTMLElement;
               
               // Add new page if not the first
-              if (i > 0) pdf.addPage([widthPt, heightPt], widthPx > heightPx ? 'landscape' : 'portrait');
+              if (i > 0) pdf.addPage([widthPt, heightPt], widthIn > heightIn ? 'landscape' : 'portrait');
               
+              // High scale for quality
               const canvas = await html2canvas(pageEl, {
-                  scale: 2, // 2x scale for better quality
+                  scale: canvasScale, 
                   useCORS: true,
                   logging: false,
                   backgroundColor: '#ffffff'
               });
               
               const imgData = canvas.toDataURL('image/jpeg', 0.95);
+              
+              // Fit captured image exactly to the PDF page dimensions
               pdf.addImage(imgData, 'JPEG', 0, 0, widthPt, heightPt);
           }
           
@@ -821,6 +861,8 @@ export const PrintModal: React.FC = () => {
                 setLocalConfig={setLocalConfig}
                 copies={copies}
                 setCopies={setCopies}
+                dpi={dpi}
+                setDpi={setDpi}
                 onPrint={handleDownloadPDF}
                 isPreparing={isPreparingPrint}
                 closeModal={closeModal}
