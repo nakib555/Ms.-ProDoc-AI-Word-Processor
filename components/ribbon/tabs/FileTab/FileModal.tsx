@@ -55,7 +55,7 @@ export const FileModal: React.FC = () => {
       <div 
          className={`
              bg-white dark:bg-slate-900 w-full rounded-2xl sm:rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-white/20 overflow-hidden
-             ${isPrint ? 'w-[95vw] h-[75vh] md:h-[90vh] max-w-[1600px]' : 'h-[75vh] sm:h-auto sm:max-h-[85vh] sm:max-w-5xl'}
+             ${isPrint ? 'w-[95vw] h-[75vh] md:h-[85vh] max-w-[1600px]' : 'h-[75vh] sm:h-auto sm:max-h-[85vh] sm:max-w-5xl'}
          `}
          onClick={e => e.stopPropagation()}
       >
