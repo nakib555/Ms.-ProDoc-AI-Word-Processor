@@ -14,7 +14,12 @@
     "@google/genai": "^1.30.0",
     "lucide-react": "^0.554.0",
     "react-virtualized-auto-sizer": "^1.0.24",
-    "pagedjs": "^0.4.3"
+    "pagedjs": "^0.4.3",
+    "html2pdf.js": "^0.10.1",
+    "satori": "^0.10.13",
+    "satori-html": "^0.3.2",
+    "jspdf": "^2.5.1",
+    "svg2pdf.js": "^2.2.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
