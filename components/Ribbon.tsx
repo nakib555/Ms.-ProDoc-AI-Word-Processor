@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';
-import { Loader2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Helper for safe lazy loading
 const safeLazy = (importPromise: Promise<any>, name: string) => 
@@ -31,8 +31,8 @@ interface RibbonProps {
 }
 
 const TabLoading = () => (
-  <div className="flex items-center justify-center h-20 w-full text-slate-400 gap-2">
-    <Loader2 className="animate-spin" size={16} />
+  <div className="flex items-center justify-center h-20 w-full text-slate-400 gap-3">
+    <LoadingSpinner className="w-5 h-5" />
     <span className="text-xs">Loading tools...</span>
   </div>
 );

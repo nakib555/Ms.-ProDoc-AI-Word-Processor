@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useLayoutEffect, useCallback, Suspense } from 'react';
 import { useEditor } from '../contexts/EditorContext';
 import * as AutoSizerPkg from 'react-virtualized-auto-sizer';
-import { Loader2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Safely resolve AutoSizer from the package (handles ESM/CJS interop on CDNs)
 const AutoSizer = (AutoSizerPkg as any).default || AutoSizerPkg;
@@ -36,8 +36,8 @@ const ReadLayoutView = React.lazy(() =>
 );
 
 const ViewLoading = () => (
-  <div className="flex flex-col items-center justify-center h-full w-full text-slate-400 gap-3">
-    <Loader2 className="animate-spin text-blue-500" size={32} />
+  <div className="flex flex-col items-center justify-center h-full w-full text-slate-400 gap-4">
+    <LoadingSpinner className="w-10 h-10" />
     <span className="text-sm font-medium">Loading document view...</span>
   </div>
 );

@@ -12,10 +12,6 @@ import { useFileTab } from '../FileTabContext';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
 import { PageConfig } from '../../../../../types';
-// @ts-ignore
-import { Previewer } from 'pagedjs';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
 // --- UI Components ---
 
@@ -711,6 +707,12 @@ export const PrintModal: React.FC = () => {
                   ${content}
               </div>
           `;
+
+          // Dynamic Imports for Performance
+          // Only load heavy print libraries when the user actually clicks download
+          const { Previewer } = await import('pagedjs');
+          const html2canvas = (await import('html2canvas')).default;
+          const { jsPDF } = await import('jspdf');
 
           const previewer = new Previewer();
           

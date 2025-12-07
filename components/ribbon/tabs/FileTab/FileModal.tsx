@@ -1,7 +1,8 @@
 
 import React, { Suspense } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useFileTab } from './FileTabContext';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Lazy Load Modals
 const InfoModal = React.lazy(() => import('./modals/InfoModal').then(m => ({ default: m.InfoModal })));
@@ -12,8 +13,8 @@ const PrintModal = React.lazy(() => import('./modals/PrintModal').then(m => ({ d
 const ShareModal = React.lazy(() => import('./modals/ShareModal').then(m => ({ default: m.ShareModal })));
 
 const ModalLoading = () => (
-  <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-    <Loader2 className="animate-spin mb-2" size={24} />
+  <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-2">
+    <LoadingSpinner className="w-8 h-8" />
     <span className="text-sm">Loading...</span>
   </div>
 );

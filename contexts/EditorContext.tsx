@@ -337,6 +337,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [pageDimensions]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
+    // Zoom Commands
     if (command === 'zoomIn') {
         setZoom(p => Math.min(500, p + 10));
         return;
@@ -357,6 +358,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         calculateFitZoom('page');
         return;
     }
+    
+    // File Commands
     if (command === 'save') {
         manualSave();
         return;
@@ -365,10 +368,26 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         alert('Use File > Export to save the document.');
         return;
     }
+
+    // Formatting Commands with Specific Logic
     if (command === 'growFont') {
         document.execCommand('increaseFontSize', false, undefined);
     } else if (command === 'shrinkFont') {
         document.execCommand('decreaseFontSize', false, undefined);
+    } else if (command === 'subscript') {
+        // Enforce mutual exclusivity with Superscript
+        // If superscript is active, turn it off first
+        if (document.queryCommandState('superscript')) {
+             document.execCommand('superscript', false, undefined);
+        }
+        document.execCommand('subscript', false, undefined);
+    } else if (command === 'superscript') {
+        // Enforce mutual exclusivity with Subscript
+        // If subscript is active, turn it off first
+        if (document.queryCommandState('subscript')) {
+             document.execCommand('subscript', false, undefined);
+        }
+        document.execCommand('superscript', false, undefined);
     } else if (command === 'undo') {
         undo();
         return;
@@ -376,6 +395,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         redo();
         return;
     } else {
+        // Default browser command
         document.execCommand(command, false, value);
     }
     

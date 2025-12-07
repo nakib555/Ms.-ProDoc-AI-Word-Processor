@@ -1,9 +1,10 @@
 
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
-import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Loader2, Lock, Unlock, ScanText } from 'lucide-react';
+import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getDocumentStats } from '../utils/textUtils';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
@@ -164,7 +165,7 @@ const StatusBar: React.FC = () => {
         </div>
 
         {showWordCountDialog && detailedStats && (
-            <Suspense fallback={<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/5"><div className="bg-white p-4 rounded shadow"><Loader2 className="animate-spin" /></div></div>}>
+            <Suspense fallback={<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/5"><div className="bg-white p-4 rounded shadow"><LoadingSpinner className="w-8 h-8" /></div></div>}>
                 <WordCountDialog 
                     isOpen={showWordCountDialog}
                     onClose={() => setShowWordCountDialog(false)}

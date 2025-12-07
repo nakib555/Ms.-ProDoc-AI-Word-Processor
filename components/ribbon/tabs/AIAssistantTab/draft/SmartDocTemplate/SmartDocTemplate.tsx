@@ -1,12 +1,13 @@
 
 import React, { useState, Suspense, useEffect } from 'react';
 // FIX: Import missing icons used in the component.
-import { LayoutTemplate, Sparkles, FileText, Feather, Activity, BookOpen, Loader2, ChevronDown, AlignLeft, Zap, Wand2, AlertTriangle, Smile, GraduationCap } from 'lucide-react';
+import { LayoutTemplate, FileText, Feather, BookOpen, ChevronDown, Zap, AlertTriangle, Smile, GraduationCap } from 'lucide-react';
 import { useAIAssistantTab } from '../../AIAssistantTabContext';
 import { useAI } from '../../../../../../hooks/useAI';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { ErrorBoundary } from '../../../../../ErrorBoundary';
 import { getSmartDocPrompt } from '../../../../../../services/prompts/tools/draft';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Lazy load the PredictiveBuilder to reduce initial bundle size
 const PredictiveBuilder = React.lazy(() => 
@@ -122,7 +123,7 @@ export const SmartDocTemplateTool: React.FC = () => {
                         }>
                             <Suspense fallback={
                                 <div className="flex-1 flex flex-col items-center justify-center p-8 text-slate-400 gap-3 text-xs">
-                                    <Loader2 className="animate-spin text-blue-500" size={24} />
+                                    <LoadingSpinner className="w-8 h-8" />
                                     <span>Loading smart templates...</span>
                                 </div>
                             }>
