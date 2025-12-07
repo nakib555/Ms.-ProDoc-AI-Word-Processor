@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, Square } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -8,28 +7,31 @@ export const ReadAloudTool: React.FC = () => {
   const { content } = useEditor();
   const [isReading, setIsReading] = useState(false);
   const [hasContent, setHasContent] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Check content presence for disabled state
   useEffect(() => {
     // Strip HTML tags to check if there is actual text
-    const text = content.replace(/<[^>]*>/g, '').trim();
+    const text = content.replace(/<[^>]*>/g, ' ').trim();
     setHasContent(text.length > 0);
   }, [content]);
 
-  // Monitor speech synthesis state
+  // Monitor speech synthesis state to sync UI if it stops externally
   useEffect(() => {
      const interval = setInterval(() => {
          if (!window.speechSynthesis.speaking && isReading) {
              setIsReading(false);
          }
-     }, 200);
+     }, 500);
      return () => clearInterval(interval);
   }, [isReading]);
 
   // Cleanup on unmount
   useEffect(() => {
       return () => {
-          window.speechSynthesis.cancel();
+          if (window.speechSynthesis) {
+              window.speechSynthesis.cancel();
+          }
       }
   }, []);
 
@@ -43,27 +45,47 @@ export const ReadAloudTool: React.FC = () => {
     // Create a temporary element to extract clean text from HTML content
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
-    const textToRead = tempDiv.innerText || '';
+    
+    // Get text content, replacing multiple spaces/newlines with single space
+    // This provides a smoother reading experience than raw innerText
+    const textToRead = (tempDiv.innerText || '').replace(/\s+/g, ' ').trim();
 
-    if (textToRead.trim().length > 0) {
+    if (textToRead.length > 0) {
         window.speechSynthesis.cancel(); // Cancel any existing speech
 
         const utterance = new SpeechSynthesisUtterance(textToRead);
+        utteranceRef.current = utterance;
         
-        // Optional: Attempt to set a preferred voice (English)
-        // Note: Voices array might be empty if loaded immediately, but default works fine
-        const voices = window.speechSynthesis.getVoices();
-        const preferredVoice = voices.find(v => v.lang.startsWith('en'));
-        if (preferredVoice) utterance.voice = preferredVoice;
+        // Attempt to set a preferred voice (English)
+        const loadVoices = () => {
+            const voices = window.speechSynthesis.getVoices();
+            // Prefer a high quality Google voice or standard English
+            const preferredVoice = voices.find(v => v.name.includes('Google US English')) || 
+                                   voices.find(v => v.lang.startsWith('en-US')) ||
+                                   voices.find(v => v.lang.startsWith('en'));
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+        };
 
+        loadVoices();
+        // If voices aren't loaded yet (Chrome behavior), listen for event
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+             window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        utterance.onstart = () => setIsReading(true);
         utterance.onend = () => setIsReading(false);
         utterance.onerror = (e) => {
-            console.error("TTS Error:", e);
+            // Check for interruption vs actual error
+            if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                console.error("TTS Error:", e.error); 
+            }
             setIsReading(false);
         };
 
         window.speechSynthesis.speak(utterance);
-        setIsReading(true);
     }
   };
 
