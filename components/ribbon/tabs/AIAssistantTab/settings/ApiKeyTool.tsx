@@ -3,26 +3,39 @@ import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Key, CheckCircle2, AlertTriangle, X, Loader2, Save, ExternalLink, 
-  Cpu, ChevronRight, RefreshCw, ChevronDown, Zap, Star, Sparkles, Check,
-  Feather
+  Cpu, ChevronDown, Zap, Star, Sparkles, Check,
+  Feather, Image as ImageIcon, Music, Type
 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { GoogleGenAI } from "@google/genai";
 
-const DEFAULT_MODELS = [
+const TEXT_MODELS = [
     { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro (Preview)' },
     { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
     { id: 'gemini-flash-latest', name: 'Gemini Flash (Latest)' },
     { id: 'gemini-flash-lite-latest', name: 'Gemini Flash Lite' },
 ];
 
-const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'experimental' }) => {
+const IMAGE_MODELS = [
+    { id: 'gemini-2.5-flash-image', name: 'Gemini 2.5 Flash Image' },
+    { id: 'gemini-3-pro-image-preview', name: 'Gemini 3.0 Pro Image' },
+    { id: 'imagen-4.0-generate-001', name: 'Imagen 4' },
+    { id: 'imagen-3.0-generate-001', name: 'Imagen 3' },
+];
+
+const AUDIO_MODELS = [
+    { id: 'gemini-2.5-flash-preview-tts', name: 'Gemini 2.5 Flash TTS' },
+];
+
+const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'experimental' | 'image' | 'audio' }) => {
     const styles = {
         pro: "bg-indigo-100 text-indigo-700 border-indigo-200",
         flash: "bg-amber-100 text-amber-700 border-amber-200",
         lite: "bg-green-100 text-green-700 border-green-200",
         preview: "bg-slate-100 text-slate-600 border-slate-200",
         experimental: "bg-purple-100 text-purple-700 border-purple-200",
+        image: "bg-pink-100 text-pink-700 border-pink-200",
+        audio: "bg-blue-100 text-blue-700 border-blue-200"
     };
     
     const icons = {
@@ -31,6 +44,8 @@ const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'ex
         lite: <Feather size={8} />,
         preview: null,
         experimental: <Sparkles size={8} />,
+        image: <ImageIcon size={8} />,
+        audio: <Music size={8} />
     };
 
     const labels = {
@@ -39,6 +54,8 @@ const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'ex
         lite: "Lite",
         preview: "Preview",
         experimental: "Exp",
+        image: "Img",
+        audio: "Aud"
     };
 
     return (
@@ -48,7 +65,7 @@ const ModelBadge = ({ type }: { type: 'pro' | 'flash' | 'lite' | 'preview' | 'ex
     );
 };
 
-const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
+const RichModelSelect = ({ value, onChange, options, disabled, icon: Icon }: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const [animateClass, setAnimateClass] = useState('');
@@ -64,8 +81,7 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
             const availableSpaceBelow = viewportHeight - rect.bottom - margin;
             const availableSpaceAbove = rect.top - margin;
             
-            // Approximate height: ~60px per item + padding
-            const contentHeight = options.length * 60 + 16;
+            const contentHeight = options.length * 50 + 16;
             const idealMaxHeight = 350;
 
             let top: number | string = rect.bottom + 4;
@@ -73,7 +89,6 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
             let maxHeight = Math.min(contentHeight, idealMaxHeight);
             let animation = 'zoom-in-95 origin-top';
 
-            // Flip upwards if space is constrained below but better above
             if (availableSpaceBelow < maxHeight && availableSpaceAbove > availableSpaceBelow) {
                  top = 'auto';
                  bottom = viewportHeight - rect.top + 4;
@@ -83,7 +98,6 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                  maxHeight = Math.min(maxHeight, availableSpaceBelow);
             }
 
-            // Horizontal bounds
             let left = rect.left;
             if (left + rect.width > viewportWidth - margin) {
                 left = viewportWidth - rect.width - margin;
@@ -124,6 +138,8 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
             isLite: lower.includes('lite') || lower.includes('nano'),
             isPreview: lower.includes('preview'),
             isExperimental: lower.includes('experimental'),
+            isImage: lower.includes('image') || lower.includes('imagen'),
+            isAudio: lower.includes('audio') || lower.includes('tts')
         };
     };
 
@@ -139,8 +155,8 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                 className={`w-full flex items-center justify-between bg-white border rounded-xl px-3 py-2.5 text-sm outline-none transition-all shadow-sm group text-left ${isOpen ? 'border-blue-500 ring-2 ring-blue-100' : 'border-slate-300 hover:border-blue-400'} ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
                 <div className="flex items-center gap-3 overflow-hidden">
-                    <div className={`p-1.5 rounded-lg shrink-0 ${getTraits(selectedOption?.id || '').isFlash ? 'bg-amber-100 text-amber-600' : 'bg-indigo-100 text-indigo-600'}`}>
-                        {getTraits(selectedOption?.id || '').isFlash ? <Zap size={16} className="fill-current"/> : <Cpu size={16}/>}
+                    <div className={`p-1.5 rounded-lg shrink-0 bg-slate-100 text-slate-600 group-hover:bg-slate-200 group-hover:text-slate-800 transition-colors`}>
+                        <Icon size={16} />
                     </div>
                     <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-slate-700 truncate block">{selectedOption?.name || value}</span>
@@ -157,7 +173,7 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                         className={`fixed z-[9999] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden animate-in fade-in duration-100 flex flex-col ${animateClass}`}
                         style={{ 
                            ...dropdownStyle,
-                           opacity: dropdownStyle.top || dropdownStyle.bottom ? 1 : 0 // Hide until positioned
+                           opacity: dropdownStyle.top || dropdownStyle.bottom ? 1 : 0 
                         }}
                     >
                         <div className="overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
@@ -170,8 +186,8 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                                         onClick={() => { onChange(option.id); setIsOpen(false); }}
                                         className={`w-full flex items-start gap-3 p-2 rounded-lg transition-colors text-left group ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                     >
-                                        <div className={`mt-0.5 p-1.5 rounded-md shrink-0 ${traits.isFlash ? 'text-amber-600 bg-amber-50' : 'text-indigo-600 bg-indigo-50'} ${isSelected ? 'ring-1 ring-inset ring-black/5' : ''}`}>
-                                            {traits.isFlash ? <Zap size={14} className="fill-current"/> : <Cpu size={14}/>}
+                                        <div className={`mt-0.5 p-1.5 rounded-md shrink-0 ${traits.isFlash ? 'text-amber-600 bg-amber-50' : 'text-slate-500 bg-slate-50'} ${isSelected ? 'ring-1 ring-inset ring-black/5' : ''}`}>
+                                            {traits.isFlash ? <Zap size={14} className="fill-current"/> : <Icon size={14}/>}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -185,6 +201,8 @@ const RichModelSelect = ({ value, onChange, options, disabled }: any) => {
                                                 <span className="text-[10px] text-slate-400 font-mono truncate">{option.id}</span>
                                                 {traits.isLite && <ModelBadge type="lite" />}
                                                 {traits.isPreview && <ModelBadge type="preview" />}
+                                                {traits.isImage && <ModelBadge type="image" />}
+                                                {traits.isAudio && <ModelBadge type="audio" />}
                                             </div>
                                         </div>
                                         {isSelected && <Check size={14} className="text-blue-600 mt-1 shrink-0" />}
@@ -206,69 +224,32 @@ export const ApiKeyTool: React.FC = () => {
   
   // Dialog State
   const [inputKey, setInputKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-3-pro-preview');
+  
+  // Model Selections
+  const [textModel, setTextModel] = useState('gemini-3-pro-preview');
+  const [imageModel, setImageModel] = useState('gemini-2.5-flash-image');
+  const [audioModel, setAudioModel] = useState('gemini-2.5-flash-preview-tts');
+
   const [verifying, setVerifying] = useState(false);
   const [verifyStatus, setVerifyStatus] = useState<'idle' | 'valid' | 'invalid'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [availableModels, setAvailableModels] = useState(DEFAULT_MODELS);
-  const [loadingModels, setLoadingModels] = useState(false);
-
-  const fetchModels = async (key: string) => {
-      if (!key) return;
-      setLoadingModels(true);
-      try {
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-          if (response.ok) {
-              const data = await response.json();
-              if (data.models) {
-                  const models = data.models
-                      .filter((m: any) => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-                      .map((m: any) => ({
-                          id: m.name.replace('models/', ''),
-                          name: m.displayName || m.name
-                      }))
-                      .sort((a: any, b: any) => {
-                          // Prioritize 3.0, then 2.5
-                          const getScore = (id: string) => {
-                              if (id.includes('gemini-3')) return 4;
-                              if (id.includes('gemini-2.5')) return 3;
-                              if (id.includes('gemini-2.0')) return 2;
-                              if (id.includes('gemini-1.5')) return 1;
-                              return 0;
-                          }
-                          const scoreA = getScore(a.id);
-                          const scoreB = getScore(b.id);
-                          if (scoreA !== scoreB) return scoreB - scoreA;
-                          return a.name.localeCompare(b.name);
-                      });
-                  
-                  if (models.length > 0) {
-                      setAvailableModels(models);
-                  }
-              }
-          }
-      } catch (e) {
-          console.warn("Could not fetch models dynamically, using defaults.", e);
-      } finally {
-          setLoadingModels(false);
-      }
-  };
 
   useEffect(() => {
-    // Check if key and model exist on mount (localStorage or env)
     const localKey = localStorage.getItem('gemini_api_key');
-    const localModel = localStorage.getItem('gemini_model');
     const envKey = process.env.API_KEY;
     
-    const effectiveKey = localKey || envKey;
+    // Load Model Preferences
+    const storedTextModel = localStorage.getItem('gemini_model_text') || localStorage.getItem('gemini_model');
+    const storedImageModel = localStorage.getItem('gemini_model_image');
+    const storedAudioModel = localStorage.getItem('gemini_model_audio');
 
+    if (storedTextModel) setTextModel(storedTextModel);
+    if (storedImageModel) setImageModel(storedImageModel);
+    if (storedAudioModel) setAudioModel(storedAudioModel);
+
+    const effectiveKey = localKey || envKey;
     setHasKey(!!effectiveKey);
     if (localKey) setInputKey(localKey);
-    if (localModel) setSelectedModel(localModel);
-    
-    if (effectiveKey) {
-        fetchModels(effectiveKey);
-    }
   }, []);
 
   const verifyKey = async () => {
@@ -283,18 +264,16 @@ export const ApiKeyTool: React.FC = () => {
 
     try {
         const client = new GoogleGenAI({ apiKey: inputKey });
-        // Simple test call to verify validity using the selected model
+        // Simple test call
         await client.models.generateContent({
-            model: selectedModel,
+            model: textModel, // Use text model for verification
             contents: [{ role: "user", parts: [{ text: "Ping" }] }],
         });
         setVerifyStatus('valid');
-        // Refresh models list on valid key
-        await fetchModels(inputKey);
     } catch (e: any) {
         console.error("API Verification Failed:", e);
         setVerifyStatus('invalid');
-        setErrorMessage("Invalid API Key or Model not available.");
+        setErrorMessage("Invalid API Key or Model access denied.");
     } finally {
         setVerifying(false);
     }
@@ -302,7 +281,12 @@ export const ApiKeyTool: React.FC = () => {
 
   const saveAndClose = () => {
       localStorage.setItem('gemini_api_key', inputKey);
-      localStorage.setItem('gemini_model', selectedModel);
+      
+      // Save specific model preferences
+      localStorage.setItem('gemini_model_text', textModel);
+      localStorage.setItem('gemini_model_image', imageModel);
+      localStorage.setItem('gemini_model_audio', audioModel);
+      
       setHasKey(true);
       setShowDialog(false);
       setVerifyStatus('idle');
@@ -310,13 +294,22 @@ export const ApiKeyTool: React.FC = () => {
 
   const clearKey = () => {
       localStorage.removeItem('gemini_api_key');
+      localStorage.removeItem('gemini_model_text');
+      localStorage.removeItem('gemini_model_image');
+      localStorage.removeItem('gemini_model_audio');
+      // Legacy cleanup
       localStorage.removeItem('gemini_model');
+
       setInputKey('');
-      setSelectedModel('gemini-3-pro-preview');
+      
+      // Reset defaults
+      setTextModel('gemini-3-pro-preview');
+      setImageModel('gemini-2.5-flash-image');
+      setAudioModel('gemini-2.5-flash-preview-tts');
+
       setHasKey(!!process.env.API_KEY);
       setVerifyStatus('idle');
       setErrorMessage('');
-      setAvailableModels(DEFAULT_MODELS);
   };
 
   return (
@@ -326,7 +319,7 @@ export const ApiKeyTool: React.FC = () => {
             icon={Key}
             label="API Key"
             onClick={() => setShowDialog(true)}
-            title={hasKey ? "Configure API Key & Model" : "Set API Key"}
+            title={hasKey ? "Configure AI Settings" : "Set API Key"}
             className={hasKey ? "bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800" : "bg-amber-50 text-amber-700 hover:bg-amber-100 hover:text-amber-800"}
           />
           <div className="absolute top-1 right-1 pointer-events-none">
@@ -340,8 +333,8 @@ export const ApiKeyTool: React.FC = () => {
 
         {showDialog && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in" onClick={() => setShowDialog(false)}>
-                <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md m-4 overflow-hidden animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
-                    <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+                <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md m-4 overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
                         <h3 className="font-bold text-slate-800 flex items-center gap-2">
                             <Key size={18} className="text-blue-600"/> AI Configuration
                         </h3>
@@ -350,12 +343,8 @@ export const ApiKeyTool: React.FC = () => {
                         </button>
                     </div>
                     
-                    <div className="p-6 space-y-5">
-                        <div className="text-sm text-slate-600 leading-relaxed">
-                            Configure your Google Gemini API connection details below.
-                        </div>
-                        
-                        {/* API Key Input */}
+                    <div className="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                        {/* API Key Section */}
                         <div className="space-y-1.5">
                             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">Gemini API Key</label>
                             <div className="relative">
@@ -390,28 +379,44 @@ export const ApiKeyTool: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Model Selection */}
-                        <div className="space-y-1.5">
-                            <div className="flex justify-between items-center">
-                                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">AI Model</label>
-                                <button 
-                                    onClick={() => fetchModels(inputKey || process.env.API_KEY || '')} 
-                                    disabled={loadingModels}
-                                    className="text-[10px] text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
-                                >
-                                    <RefreshCw size={10} className={loadingModels ? "animate-spin" : ""} /> Refresh List
-                                </button>
-                            </div>
+                        <div className="w-full h-px bg-slate-100"></div>
+
+                        {/* Model Configuration */}
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Default Models</h4>
                             
-                            <RichModelSelect 
-                                value={selectedModel}
-                                onChange={setSelectedModel}
-                                options={availableModels}
-                                disabled={loadingModels}
-                            />
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-medium text-slate-600">Text Generation</label>
+                                <RichModelSelect 
+                                    value={textModel}
+                                    onChange={setTextModel}
+                                    options={TEXT_MODELS}
+                                    icon={Type}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-medium text-slate-600">Image Generation</label>
+                                <RichModelSelect 
+                                    value={imageModel}
+                                    onChange={setImageModel}
+                                    options={IMAGE_MODELS}
+                                    icon={ImageIcon}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-medium text-slate-600">Audio / Speech</label>
+                                <RichModelSelect 
+                                    value={audioModel}
+                                    onChange={setAudioModel}
+                                    options={AUDIO_MODELS}
+                                    icon={Music}
+                                />
+                            </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center justify-between pt-2">
                              <a 
                                 href="https://aistudio.google.com/app/apikey" 
                                 target="_blank" 
@@ -423,13 +428,13 @@ export const ApiKeyTool: React.FC = () => {
                              
                              {(inputKey || localStorage.getItem('gemini_api_key')) && (
                                  <button onClick={clearKey} className="text-xs text-slate-400 hover:text-red-600 transition-colors">
-                                     Clear Settings
+                                     Reset All Settings
                                  </button>
                              )}
                         </div>
                     </div>
 
-                    <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                    <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
                         <button 
                             onClick={verifyKey}
                             disabled={verifying || !inputKey}
@@ -439,10 +444,9 @@ export const ApiKeyTool: React.FC = () => {
                         </button>
                         <button 
                             onClick={saveAndClose}
-                            disabled={verifyStatus !== 'valid'}
                             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
                         >
-                            <Save size={16} /> Save Settings
+                            <Save size={16} /> Save Changes
                         </button>
                     </div>
                 </div>

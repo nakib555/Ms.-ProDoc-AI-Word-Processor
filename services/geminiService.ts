@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, HarmCategory, HarmBlockThreshold, Modality } from "@google/genai";
 import { AIOperation } from '../types';
 import { getSystemPrompt, getChatSystemPrompt } from './prompts';
@@ -57,12 +58,16 @@ export const generateSpeech = async (text: string, voiceName: string = 'Kore'): 
       return null;
   }
 
+  // Use stored audio model preference
+  const storedModel = localStorage.getItem('gemini_model_audio');
+  const effectiveModel = storedModel || "gemini-2.5-flash-preview-tts";
+
   try {
     // Truncate text if too long to prevent errors (approx limit check for TTS model)
     const safeText = text.slice(0, 4000); 
     
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
+      model: effectiveModel,
       contents: [{ parts: [{ text: safeText }] }],
       config: {
         responseModalities: [Modality.AUDIO],
@@ -92,7 +97,8 @@ export const generateAIContent = async (
   userPrompt?: string,
   model: string = "gemini-3-pro-preview"
 ): Promise<string> => {
-  const storedModel = localStorage.getItem('gemini_model');
+  // Use stored text model preference (with fallback to legacy key or default param)
+  const storedModel = localStorage.getItem('gemini_model_text') || localStorage.getItem('gemini_model');
   const effectiveModel = storedModel || model;
 
   console.log(`[Gemini Service] generateAIContent. Op: ${operation}, Model: ${effectiveModel}`);
@@ -135,7 +141,7 @@ export const streamAIContent = async function* (
   userPrompt?: string,
   model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
-  const storedModel = localStorage.getItem('gemini_model');
+  const storedModel = localStorage.getItem('gemini_model_text') || localStorage.getItem('gemini_model');
   const effectiveModel = storedModel || model;
 
   const client = getClient();
@@ -172,7 +178,7 @@ export const chatWithDocumentStream = async function* (
   documentContent: string,
   model: string = "gemini-3-pro-preview"
 ): AsyncGenerator<string, void, unknown> {
-  const storedModel = localStorage.getItem('gemini_model');
+  const storedModel = localStorage.getItem('gemini_model_text') || localStorage.getItem('gemini_model');
   const effectiveModel = storedModel || model;
 
   const client = getClient();
@@ -213,23 +219,46 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
   const client = getClient();
   if (!client) throw new Error("API Key not configured.");
 
-  try {
-    const response = await client.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: prompt }],
-      },
-      config: {
-        safetySettings: SAFETY_SETTINGS
-      }
-    });
+  // Use stored image model preference
+  const storedModel = localStorage.getItem('gemini_model_image');
+  const effectiveModel = storedModel || 'gemini-2.5-flash-image';
 
-    if (response.candidates && response.candidates.length > 0) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
-          return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+  try {
+    // Branch logic: Imagen vs Gemini models
+    if (effectiveModel.toLowerCase().includes('imagen')) {
+         const response = await client.models.generateImages({
+            model: effectiveModel,
+            prompt: prompt,
+            config: {
+              numberOfImages: 1,
+              outputMimeType: 'image/jpeg',
+              aspectRatio: '1:1', // Default to square
+            },
+         });
+
+         const base64EncodeString = response.generatedImages?.[0]?.image?.imageBytes;
+         if (base64EncodeString) {
+             return `data:image/jpeg;base64,${base64EncodeString}`;
+         }
+    } else {
+        // Standard Gemini Image Generation
+        const response = await client.models.generateContent({
+          model: effectiveModel,
+          contents: {
+            parts: [{ text: prompt }],
+          },
+          config: {
+            safetySettings: SAFETY_SETTINGS
+          }
+        });
+
+        if (response.candidates && response.candidates.length > 0) {
+          for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+              return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            }
+          }
         }
-      }
     }
     return null;
   } catch (error: any) {
