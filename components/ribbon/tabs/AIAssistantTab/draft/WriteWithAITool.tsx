@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3, MessageCircle, Wand2, Loader2, Zap, Smile, Coffee } from 'lucide-react';
+import { PenLine, Sparkles, X, ArrowRight, FileText, Edit3, MessageCircle, Wand2, Zap, Smile, Coffee } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useAI } from '../../../../../hooks/useAI';
 import { useEditor } from '../../../../../contexts/EditorContext';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 type GenMode = 'insert' | 'replace' | 'edit';
 type ToneType = 'Professional' | 'Casual' | 'Confident' | 'Friendly' | 'Creative' | 'Concise';
@@ -17,8 +18,7 @@ const TONES: { id: ToneType; label: string; color: string; desc: string; icon: R
     { id: 'Concise', label: 'Concise', color: 'bg-slate-50 text-slate-700 border-slate-200 group-hover:border-slate-300', desc: 'To the point', icon: Edit3 },
 ];
 
-// Wrapped component to animate only the icon
-const SpinningLoader = (props: any) => <Loader2 {...props} className="animate-spin" />;
+const SpinningLoader = (props: any) => <LoadingSpinner {...props} className="w-4 h-4" />;
 
 export const WriteWithAITool: React.FC = () => {
   const { performAIAction } = useAI();

@@ -1,7 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { Send, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 import { useAI } from '../../../../../hooks/useAI';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export const QuickPromptTool: React.FC = () => {
   const { performAIAction, isProcessing } = useAI();
@@ -46,7 +47,7 @@ export const QuickPromptTool: React.FC = () => {
                 className="p-1.5 m-0.5 rounded-md hover:bg-indigo-50 text-indigo-600 disabled:opacity-40 disabled:hover:bg-transparent transition-colors flex-shrink-0 w-8 flex items-center justify-center"
                 title="Generate Content"
             >
-                {isProcessing ? <Loader2 size={14} className="animate-spin"/> : <Send size={14} />}
+                {isProcessing ? <LoadingSpinner className="w-3.5 h-3.5" /> : <Send size={14} />}
             </button>
         </div>
     </div>

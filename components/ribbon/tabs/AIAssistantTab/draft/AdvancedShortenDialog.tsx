@@ -2,12 +2,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Scissors, Minus, List, AlignLeft, 
-  Zap, MessageSquare, Check, RefreshCw, Copy, ArrowRight, 
+  Zap, MessageSquare, Check, Copy, ArrowRight, 
   ArrowLeft, Sliders, Trash2, ShieldCheck, Lock, Settings2, Sparkles
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
 import { getAdvancedShortenPrompt } from '../../../../../services/prompts/tools/refine';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface AdvancedShortenDialogProps {
   isOpen: boolean;
@@ -338,7 +339,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                     disabled={isGenerating || !inputText.trim()}
                     className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
-                    {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Zap size={18} className="fill-orange-200 text-orange-100" />}
+                    {isGenerating ? <LoadingSpinner className="w-4 h-4" /> : <Zap size={18} className="fill-orange-200 text-orange-100" />}
                     {isGenerating ? 'Shortening...' : 'Shorten'}
                 </button>
             </div>
@@ -420,8 +421,9 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                             {isGenerating ? (
                                 <div className="space-y-4">
                                     <div className="relative mx-auto w-16 h-16">
-                                        <div className="absolute inset-0 border-4 border-orange-100 dark:border-slate-800 rounded-full"></div>
-                                        <div className="absolute inset-0 border-4 border-orange-500 rounded-full border-t-transparent animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <LoadingSpinner className="w-12 h-12" />
+                                        </div>
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Analyzing text structure...</p>
@@ -458,7 +460,7 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
                             disabled={isGenerating || !inputText.trim()}
                             className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-orange-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
-                            {isGenerating ? <RefreshCw className="animate-spin" size={16}/> : <Zap size={16} />}
+                            {isGenerating ? <LoadingSpinner className="w-4 h-4" /> : <Zap size={16} />}
                             <span>Shorten</span>
                         </button>
 

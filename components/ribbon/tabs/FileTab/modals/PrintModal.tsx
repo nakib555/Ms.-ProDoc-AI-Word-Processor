@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  FileText, FileType, Printer, ChevronDown, Loader2, 
+  FileText, FileType, Printer, ChevronDown, 
   LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download,
   Image as ImageIcon,
   Monitor
@@ -12,6 +12,7 @@ import { useFileTab } from '../FileTabContext';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
 import { PageConfig } from '../../../../../types';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // --- UI Components ---
 
@@ -313,7 +314,7 @@ const DesktopPrintPreview: React.FC<{
         >
              {pages.length === 0 || isPreparing ? (
                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-                     <Loader2 className="animate-spin" size={32} />
+                     <LoadingSpinner className="w-8 h-8" />
                      <span className="text-sm font-medium">{isPreparing ? 'Preparing document...' : 'Generating Preview...'}</span>
                  </div>
              ) : (
@@ -374,7 +375,7 @@ const MobilePrintPreview: React.FC<{
             >
                 {pages.length === 0 || isPreparing ? (
                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
-                         <Loader2 className="animate-spin" size={28} />
+                         <LoadingSpinner className="w-8 h-8" />
                          <span className="text-xs font-medium">{isPreparing ? 'Preparing...' : 'Loading...'}</span>
                      </div>
                  ) : (
@@ -390,7 +391,7 @@ const MobilePrintPreview: React.FC<{
                     disabled={isPreparing}
                     className="w-14 h-14 bg-blue-600 text-white rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex items-center justify-center hover:bg-blue-700 active:scale-90 transition-all border-2 border-white/20 backdrop-blur-sm"
                  >
-                    {isPreparing ? <Loader2 size={24} className="animate-spin"/> : <Download size={24} />}
+                    {isPreparing ? <LoadingSpinner className="w-6 h-6 text-white"/> : <Download size={24} />}
                  </button>
              </div>
         </div>
@@ -550,7 +551,7 @@ const PrintSettingsPanel: React.FC<{
                         disabled={isPreparing}
                         className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
-                        {isPreparing ? <Loader2 className="animate-spin" size={20}/> : <Download size={20}/>}
+                        {isPreparing ? <LoadingSpinner className="w-5 h-5 text-white"/> : <Download size={20}/>}
                         <span>{isPreparing ? 'Generating PDF...' : 'Download PDF'}</span>
                     </button>
                 </div>

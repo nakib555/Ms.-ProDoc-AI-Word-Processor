@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Languages, Globe, Check, ChevronDown, FileText, Type, Loader2, ArrowRight } from 'lucide-react';
+import { Languages, Globe, Check, ChevronDown, FileText, Type, ArrowRight } from 'lucide-react';
 import { DropdownRibbonButton } from '../common/AITools';
 import { MenuPortal } from '../../../common/MenuPortal';
 import { useAIAssistantTab } from '../AIAssistantTabContext';
 import { useAI } from '../../../../../hooks/useAI';
 import { useEditor } from '../../../../../contexts/EditorContext';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 const LANGUAGES = [
     'English', 'Spanish', 'French', 'German', 'Italian', 
@@ -129,7 +130,7 @@ export const TranslateTool: React.FC = () => {
                             </div>
                         </div>
                         <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity text-indigo-500">
-                             {isProcessing ? <Loader2 size={14} className="animate-spin"/> : <ArrowRight size={14}/>}
+                             {isProcessing ? <LoadingSpinner className="w-3.5 h-3.5" /> : <ArrowRight size={14}/>}
                         </div>
                      </button>
 
@@ -149,7 +150,7 @@ export const TranslateTool: React.FC = () => {
                             </div>
                         </div>
                         <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity text-emerald-500">
-                             {isProcessing ? <Loader2 size={14} className="animate-spin"/> : <ArrowRight size={14}/>}
+                             {isProcessing ? <LoadingSpinner className="w-3.5 h-3.5" /> : <ArrowRight size={14}/>}
                         </div>
                      </button>
 

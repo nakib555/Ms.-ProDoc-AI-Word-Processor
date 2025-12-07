@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import { 
   FileText, Feather, Activity, BookOpen, Mail, Video, LayoutTemplate, 
@@ -8,11 +9,12 @@ import {
   Receipt, Building2, ShieldAlert, Hammer, Map, Plane, Leaf, Recycle, Wind, 
   TreeDeciduous, Factory, Wrench, Mountain, Camera, Utensils, Trophy, Dumbbell,
   Brain, Tv, Radio, HeartHandshake, Film, Gamepad2, Scissors, Lightbulb, GitBranch,
-  History, Palette, Globe, Library, Microscope, ShoppingBag, Heart, Rocket, Loader2,
+  History, Palette, Globe, Library, Microscope, ShoppingBag, Heart, Rocket,
   Sparkles, Zap, Wand2
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../../../services/geminiService';
 import { AIOperation } from '../../../../../../../types';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Dynamic Import Map for Categories
 const CATEGORY_LOADERS: Record<string, () => Promise<{l: string, f: string}[]>> = {
@@ -447,7 +449,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                      <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
                          {isSearchingAI ? (
                              <div className="px-2">
-                                <Loader2 size={12} className="animate-spin text-indigo-500"/>
+                                <LoadingSpinner className="w-3.5 h-3.5" />
                              </div>
                          ) : (
                              <button
@@ -499,7 +501,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                          <div className="py-8 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
                              {(Object.values(loadingStates).some(Boolean) || isSearchingAI) ? (
                                  <>
-                                    <Loader2 className="animate-spin" size={16}/>
+                                    <LoadingSpinner className="w-4 h-4" />
                                     <span>{isSearchingAI ? "AI is thinking..." : "Searching database..."}</span>
                                  </>
                              ) : (
@@ -549,7 +551,7 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                                         <div className="bg-slate-50/50 p-1 space-y-0.5 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
                                             {isLoading && !items && (
                                                 <div className="p-4 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
-                                                    <Loader2 className="animate-spin" size={14} /> Loading...
+                                                    <LoadingSpinner className="w-3.5 h-3.5" /> Loading...
                                                 </div>
                                             )}
                                             

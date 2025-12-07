@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { ImagePlus, Sparkles, X, Loader2, Download, Check, RefreshCw } from 'lucide-react';
+import { ImagePlus, Sparkles, X, Check, RefreshCw } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { generateAIImage } from '../../../../../services/geminiService';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export const GenerateImageTool: React.FC = () => {
   const { executeCommand } = useEditor();
@@ -90,9 +91,9 @@ export const GenerateImageTool: React.FC = () => {
                 {/* Image Preview Area */}
                 <div className="w-full aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative group shadow-inner shrink-0">
                     {isGenerating ? (
-                        <div className="flex flex-col items-center gap-3 text-slate-400 animate-pulse">
-                            <Loader2 size={48} className="animate-spin text-purple-500"/>
-                            <span className="text-sm font-medium">Creating your masterpiece...</span>
+                        <div className="flex flex-col items-center gap-3 text-slate-400">
+                            <LoadingSpinner className="w-12 h-12" />
+                            <span className="text-sm font-medium animate-pulse">Creating your masterpiece...</span>
                         </div>
                     ) : generatedImage ? (
                         <div className="relative w-full h-full flex items-center justify-center bg-[#f0f0f0]">
@@ -169,7 +170,7 @@ export const GenerateImageTool: React.FC = () => {
                             disabled={!prompt.trim() || isGenerating}
                             className="px-6 py-2 text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 rounded-lg shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed flex items-center gap-2 ml-auto"
                         >
-                            {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                            {isGenerating ? <LoadingSpinner className="w-4 h-4" /> : <Sparkles size={16} />}
                             Generate
                         </button>
                     )}

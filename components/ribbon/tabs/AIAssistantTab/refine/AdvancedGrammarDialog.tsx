@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  X, Check, Activity, Wand2, RefreshCw, ArrowRight, 
+  X, Check, Activity, Wand2, ArrowRight, 
   Sparkles, Type, AlignLeft, AlertCircle, Quote, Languages,
   ThumbsUp, BookOpen, PenTool, History, Settings2, Clock, ChevronRight, RotateCcw,
   Menu, ArrowLeft
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { getGrammarSystemPrompt } from '../../../../../services/prompts/tools/grammar';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface AdvancedGrammarDialogProps {
   isOpen: boolean;
@@ -410,7 +412,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
                     {isAnalyzing ? (
-                        <RefreshCw className="animate-spin" size={18}/>
+                        <LoadingSpinner className="w-5 h-5" />
                     ) : (
                         <Sparkles size={18} className="fill-indigo-200 text-indigo-100" />
                     )}
@@ -484,9 +486,9 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                     ) : isAnalyzing ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-6">
                             <div className="relative">
-                                <div className="w-20 h-20 border-4 border-indigo-100 dark:border-slate-800 rounded-full"></div>
-                                <div className="w-20 h-20 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
-                                <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-500 animate-pulse" size={32} />
+                                <div className="w-20 h-20 flex items-center justify-center">
+                                    <LoadingSpinner className="w-12 h-12" />
+                                </div>
                             </div>
                             <div className="text-center">
                                 <p className="font-bold text-slate-700 dark:text-slate-200 text-lg">Polishing your prose...</p>
@@ -585,7 +587,7 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                             disabled={isAnalyzing || !text.trim()}
                             className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
-                            {isAnalyzing ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                            {isAnalyzing ? <LoadingSpinner className="w-5 h-5" /> : <Sparkles size={18} />}
                             <span>Analyze</span>
                         </button>
 

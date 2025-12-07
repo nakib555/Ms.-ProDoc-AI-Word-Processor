@@ -2,12 +2,13 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  Key, CheckCircle2, AlertTriangle, X, Loader2, Save, ExternalLink, 
+  Key, CheckCircle2, AlertTriangle, X, Save, ExternalLink, 
   Cpu, ChevronDown, Zap, Star, Sparkles, Check,
   Feather, Image as ImageIcon, Music, Type
 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { GoogleGenAI } from "@google/genai";
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 const TEXT_MODELS = [
     { id: 'gemini-3-pro-preview', name: 'Gemini 3.0 Pro (Preview)' },
@@ -360,7 +361,7 @@ export const ApiKeyTool: React.FC = () => {
                                     className={`w-full pl-3 pr-10 py-2.5 border rounded-lg text-sm outline-none transition-all font-mono ${verifyStatus === 'invalid' ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-red-50' : verifyStatus === 'valid' ? 'border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 bg-green-50' : 'border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white'}`}
                                 />
                                 <div className="absolute right-3 top-3">
-                                    {verifying ? <Loader2 size={16} className="animate-spin text-blue-500"/> : 
+                                    {verifying ? <LoadingSpinner className="w-4 h-4 text-blue-500"/> : 
                                      verifyStatus === 'valid' ? <CheckCircle2 size={16} className="text-green-500"/> :
                                      verifyStatus === 'invalid' ? <AlertTriangle size={16} className="text-red-500"/> : null}
                                 </div>
@@ -434,24 +435,4 @@ export const ApiKeyTool: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
-                        <button 
-                            onClick={verifyKey}
-                            disabled={verifying || !inputKey}
-                            className="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 focus:ring-2 focus:ring-slate-200 transition-all disabled:opacity-50 shadow-sm"
-                        >
-                            Verify
-                        </button>
-                        <button 
-                            onClick={saveAndClose}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all disabled:opacity-50 disabled:shadow-none flex items-center gap-2"
-                        >
-                            <Save size={16} /> Save Changes
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
-    </>
-  );
-};
+                    <div className="px-5 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-

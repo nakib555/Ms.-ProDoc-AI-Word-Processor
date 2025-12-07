@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, FileText, List, AlignLeft, Hash, Zap, Globe, 
   Sparkles, Check, Copy, ArrowRight, Settings2, Sliders, 
-  RefreshCw, MessageSquare, ArrowLeft
+  MessageSquare, ArrowLeft
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
 import { getAdvancedSummaryPrompt } from '../../../../../services/prompts/tools/summary';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface AdvancedSummarizeDialogProps {
   isOpen: boolean;
@@ -329,7 +331,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                     disabled={isGenerating || !inputText.trim()}
                     className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
-                    {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                    {isGenerating ? <LoadingSpinner className="w-5 h-5" /> : <Sparkles size={18} />}
                     {isGenerating ? 'Summarizing...' : 'Generate Summary'}
                 </button>
             </div>
@@ -412,8 +414,9 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                             {isGenerating ? (
                                 <div className="space-y-4">
                                     <div className="relative mx-auto w-16 h-16">
-                                        <div className="absolute inset-0 border-4 border-violet-100 dark:border-slate-800 rounded-full"></div>
-                                        <div className="absolute inset-0 border-4 border-violet-600 rounded-full border-t-transparent animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <LoadingSpinner className="w-12 h-12" />
+                                        </div>
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Analyzing text structure...</p>
@@ -450,7 +453,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
                             disabled={isGenerating || !inputText.trim()}
                             className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
-                            {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                            {isGenerating ? <LoadingSpinner className="w-4 h-4" /> : <Sparkles size={18} />}
                             <span>Generate</span>
                         </button>
 

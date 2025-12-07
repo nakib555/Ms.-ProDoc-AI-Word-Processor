@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, Loader2, Square } from 'lucide-react';
+import { Volume2, Square } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { generateSpeech } from '../../../../../services/geminiService';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Animated Visualizer Component
 const WaveformIcon = ({ className }: { className?: string }) => (
@@ -140,7 +142,10 @@ export const ReadAloudTool: React.FC = () => {
   }, []);
 
   let Icon = Volume2;
-  if (isLoading) Icon = Loader2;
+  // Use LoadingSpinner component instead of Loader2 icon
+  const SpinnerIcon = (props: any) => <LoadingSpinner {...props} className="w-4 h-4" />;
+
+  if (isLoading) Icon = SpinnerIcon;
   else if (isPlaying) Icon = WaveformIcon;
   else if (isPlaying) Icon = Square; // Fallback
 
@@ -151,9 +156,7 @@ export const ReadAloudTool: React.FC = () => {
         onClick={handleReadAloud} 
         disabled={!hasContent && !isPlaying}
         className={isPlaying || isLoading ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200" : ""}
-        title={!hasContent ? "No content to read" : isReading ? "Stop Reading" : "Read document aloud with Gemini AI"}
+        title={!hasContent ? "No content to read" : isPlaying ? "Stop Reading" : "Read document aloud with Gemini AI"}
     />
   );
 };
-// Helper alias for tooltip
-const isReading = false;

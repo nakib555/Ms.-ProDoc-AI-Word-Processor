@@ -1,13 +1,15 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Maximize2, ListPlus, BookOpen, History, ListOrdered, 
   Lightbulb, TrendingUp, Book, BarChart, Feather, ArrowRight,
-  Check, RefreshCw, Copy, Sparkles, MessageSquare, ZoomIn, ArrowLeft, Settings2
+  Check, Copy, Sparkles, MessageSquare, ZoomIn, ArrowLeft, Settings2
 } from 'lucide-react';
 import { generateAIContent } from '../../../../../services/geminiService';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
 import { getAdvancedExpandPrompt } from '../../../../../services/prompts/tools/refine';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface AdvancedExpandDialogProps {
   isOpen: boolean;
@@ -212,7 +214,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                     disabled={isGenerating || !inputText.trim()}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.98]"
                 >
-                    {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                    {isGenerating ? <LoadingSpinner className="w-5 h-5" /> : <Sparkles size={18} />}
                     {isGenerating ? 'Expanding...' : 'Generate'}
                 </button>
             </div>
@@ -292,8 +294,9 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                             {isGenerating ? (
                                 <div className="space-y-4">
                                     <div className="relative mx-auto w-16 h-16">
-                                        <div className="absolute inset-0 border-4 border-blue-100 dark:border-slate-800 rounded-full"></div>
-                                        <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <LoadingSpinner className="w-12 h-12" />
+                                        </div>
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Expanding your ideas...</p>
@@ -329,7 +332,7 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                             disabled={isGenerating || !inputText.trim()}
                             className="flex-1 md:flex-none md:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                         >
-                            {isGenerating ? <RefreshCw className="animate-spin" size={18}/> : <Sparkles size={18} />}
+                            {isGenerating ? <LoadingSpinner className="w-4 h-4" /> : <Sparkles size={18} />}
                             <span>Generate</span>
                         </button>
 

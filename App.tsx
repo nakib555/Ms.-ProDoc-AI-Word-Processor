@@ -6,7 +6,7 @@ import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
 import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
 import { RibbonTab } from './types';
-import { Loader2 } from 'lucide-react';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -54,7 +54,7 @@ const AppContent: React.FC = () => {
               <div className="absolute inset-0 bg-white/50 dark:bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-500">
                  <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-zoom-in mx-4 max-w-sm w-full border border-white/40 dark:border-slate-700 ring-1 ring-black/5">
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20 ring-4 ring-indigo-50 dark:ring-indigo-900/30 relative">
-                      <Loader2 className="animate-spin text-white" size={32} />
+                      <LoadingSpinner className="w-10 h-10" />
                       <div className="absolute inset-0 rounded-full bg-indigo-400/30 animate-ping"></div>
                     </div>
                     <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">AI is Thinking</h3>
