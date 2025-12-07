@@ -39,16 +39,16 @@ export class LiveService {
       const client = this.getClient();
 
       // Initialize Audio Context
+      // We force 16kHz here so that the browser resamples the mic input automatically
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 16000,
       });
 
       // Get Microphone Stream
+      // Using relaxed constraints to avoid "Requested device not found" / OverconstrainedError.
+      // We simply ask for audio; the AudioContext above handles the 16kHz requirement via resampling.
       this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-        },
+        audio: true, 
       });
 
       // Initialize Session
@@ -89,7 +89,17 @@ export class LiveService {
     } catch (error: any) {
       console.error("Failed to start dictation:", error);
       this.cleanup();
-      onError(error);
+      
+      // Improve error message for common issues
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+         onError(new Error("Microphone permission denied. Please allow microphone access in your browser settings."));
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+         onError(new Error("No microphone found. Please check your audio input settings."));
+      } else if (error.name === 'OverconstrainedError') {
+         onError(new Error("Microphone hardware constraints not met."));
+      } else {
+         onError(error);
+      }
     }
   }
 
