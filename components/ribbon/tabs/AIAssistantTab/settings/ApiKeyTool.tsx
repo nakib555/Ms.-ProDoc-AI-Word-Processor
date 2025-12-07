@@ -333,7 +333,7 @@ export const ApiKeyTool: React.FC = () => {
 
         {showDialog && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm animate-in fade-in" onClick={() => setShowDialog(false)}>
-                <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md m-4 overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <div className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-md m-4 overflow-hidden animate-in zoom-in-95 flex flex-col h-[75vh] md:h-auto md:max-h-[85vh]" onClick={e => e.stopPropagation()}>
                     <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100 bg-slate-50/50 shrink-0">
                         <h3 className="font-bold text-slate-800 flex items-center gap-2">
                             <Key size={18} className="text-blue-600"/> AI Configuration
