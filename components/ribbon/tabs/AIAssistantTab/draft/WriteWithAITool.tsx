@@ -7,15 +7,15 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 type GenMode = 'insert' | 'replace' | 'edit';
-type ToneType = 'Professional' | 'Casual' | 'Confident' | 'Friendly' | 'Creative' | 'Concise';
+type ToneType = 'professional' | 'casual' | 'confident' | 'friendly' | 'creative' | 'concise';
 
 const TONES: { id: ToneType; label: string; color: string; desc: string; icon: React.ElementType }[] = [
-    { id: 'Professional', label: 'Professional', color: 'bg-blue-50 text-blue-700 border-blue-200 group-hover:border-blue-300', desc: 'Polished & clear', icon: FileText },
-    { id: 'Casual', label: 'Casual', color: 'bg-orange-50 text-orange-700 border-orange-200 group-hover:border-orange-300', desc: 'Relaxed vibe', icon: Coffee },
-    { id: 'Confident', label: 'Confident', color: 'bg-purple-50 text-purple-700 border-purple-200 group-hover:border-purple-300', desc: 'Bold & direct', icon: Zap },
-    { id: 'Friendly', label: 'Friendly', color: 'bg-green-50 text-green-700 border-green-200 group-hover:border-green-300', desc: 'Warm & open', icon: Smile },
-    { id: 'Creative', label: 'Creative', color: 'bg-pink-50 text-pink-700 border-pink-200 group-hover:border-pink-300', desc: 'Imaginative', icon: Sparkles },
-    { id: 'Concise', label: 'Concise', color: 'bg-slate-50 text-slate-700 border-slate-200 group-hover:border-slate-300', desc: 'To the point', icon: Edit3 },
+    { id: 'professional', label: 'Professional', color: 'bg-blue-50 text-blue-700 border-blue-200 group-hover:border-blue-300', desc: 'Polished & clear', icon: FileText },
+    { id: 'casual', label: 'Casual', color: 'bg-orange-50 text-orange-700 border-orange-200 group-hover:border-orange-300', desc: 'Relaxed vibe', icon: Coffee },
+    { id: 'confident', label: 'Confident', color: 'bg-purple-50 text-purple-700 border-purple-200 group-hover:border-purple-300', desc: 'Bold & direct', icon: Zap },
+    { id: 'friendly', label: 'Friendly', color: 'bg-green-50 text-green-700 border-green-200 group-hover:border-green-300', desc: 'Warm & open', icon: Smile },
+    { id: 'creative', label: 'Creative', color: 'bg-pink-50 text-pink-700 border-pink-200 group-hover:border-pink-300', desc: 'Imaginative', icon: Sparkles },
+    { id: 'concise', label: 'Concise', color: 'bg-slate-50 text-slate-700 border-slate-200 group-hover:border-slate-300', desc: 'To the point', icon: Edit3 },
 ];
 
 const SpinningLoader = (props: any) => <LoadingSpinner {...props} className="w-4 h-4" />;
@@ -26,8 +26,9 @@ export const WriteWithAITool: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [mode, setMode] = useState<GenMode>('insert');
-  const [tone, setTone] = useState<ToneType>('Professional');
+  const [tone, setTone] = useState<ToneType>('professional');
   const [hasSelection, setHasSelection] = useState(false);
+  const [hasContent, setHasContent] = useState(false);
   const [canInsert, setCanInsert] = useState(false);
   const [savedRange, setSavedRange] = useState<Range | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -39,6 +40,10 @@ export const WriteWithAITool: React.FC = () => {
         // Check for active selection (for Edit mode)
         const hasSel = !!(selection && selection.rangeCount > 0 && !selection.isCollapsed);
         setHasSelection(hasSel);
+
+        // Check for any content in document
+        const hasText = editorRef.current && editorRef.current.innerText.trim().length > 0;
+        setHasContent(!!hasText);
         
         // Check for cursor presence (for Insert mode)
         let isCursorInEditor = false;
@@ -51,7 +56,10 @@ export const WriteWithAITool: React.FC = () => {
         }
         setCanInsert(isCursorInEditor);
 
-        // Default mode logic
+        // Default mode logic: 
+        // 1. If selection exists -> Edit
+        // 2. If no selection but cursor valid -> Insert
+        // 3. Else -> Replace (New Doc)
         if (hasSel) {
             setMode('edit');
         } else if (isCursorInEditor) {
@@ -72,6 +80,7 @@ export const WriteWithAITool: React.FC = () => {
         const enhancedPrompt = `[Tone: ${tone}] ${prompt}`;
         const operation = mode === 'edit' ? 'edit_content' : 'generate_content';
         
+        // Pass useSelection: true if we are in edit mode, even if no selection (implies full doc refine)
         performAIAction(operation, enhancedPrompt, { 
             mode: mode === 'replace' ? 'replace' : 'insert',
             useSelection: mode === 'edit'
@@ -149,6 +158,59 @@ export const WriteWithAITool: React.FC = () => {
                     {/* Scrollable Content */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-8 bg-[#fcfcfd] dark:bg-slate-950 min-h-0">
                         
+                        {/* Mode Selection */}
+                        <div className="space-y-3">
+                            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">Output Action</label>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button 
+                                    onClick={() => setMode('insert')}
+                                    disabled={!canInsert}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 gap-2 group shadow-sm ${
+                                        mode === 'insert' 
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/30 ring-2 ring-offset-2 ring-indigo-500/20 dark:ring-offset-slate-900' 
+                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-200'
+                                    } ${!canInsert ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                >
+                                    <div className={`p-1.5 rounded-lg transition-colors ${mode === 'insert' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-indigo-500'}`}>
+                                        <ArrowRight size={18} />
+                                    </div>
+                                    <span className="text-xs font-bold">Insert</span>
+                                    <span className="text-[9px] text-opacity-70 text-current absolute bottom-1.5">At Cursor</span>
+                                </button>
+                                
+                                <button 
+                                    onClick={() => setMode('edit')}
+                                    disabled={!hasSelection && !hasContent}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 gap-2 group shadow-sm ${
+                                        mode === 'edit' 
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/30 ring-2 ring-offset-2 ring-indigo-500/20 dark:ring-offset-slate-900' 
+                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-200'
+                                    } ${(!hasSelection && !hasContent) ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
+                                >
+                                    <div className={`p-1.5 rounded-lg transition-colors ${mode === 'edit' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-indigo-500'}`}>
+                                        <Edit3 size={18} />
+                                    </div>
+                                    <span className="text-xs font-bold">Refine</span>
+                                    <span className="text-[9px] text-opacity-70 text-current absolute bottom-1.5">{hasSelection ? 'Selection' : 'Document'}</span>
+                                </button>
+
+                                <button 
+                                    onClick={() => setMode('replace')}
+                                    className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 gap-2 group shadow-sm ${
+                                        mode === 'replace' 
+                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/30 ring-2 ring-offset-2 ring-indigo-500/20 dark:ring-offset-slate-900' 
+                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-200'
+                                    }`}
+                                >
+                                    <div className={`p-1.5 rounded-lg transition-colors ${mode === 'replace' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-indigo-500'}`}>
+                                        <FileText size={18} />
+                                    </div>
+                                    <span className="text-xs font-bold">New Doc</span>
+                                    <span className="text-[9px] text-opacity-70 text-current absolute bottom-1.5">Replace All</span>
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Prompt Input Section */}
                         <div className="space-y-3">
                             <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex justify-between items-center px-1">
@@ -217,55 +279,6 @@ export const WriteWithAITool: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Mode Selection */}
-                        <div className="space-y-3">
-                            <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">Output Action</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button 
-                                    onClick={() => setMode('insert')}
-                                    disabled={!canInsert}
-                                    className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 gap-2 group shadow-sm ${
-                                        mode === 'insert' 
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/30 ring-2 ring-offset-2 ring-indigo-500/20 dark:ring-offset-slate-900' 
-                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-200'
-                                    } ${!canInsert ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
-                                >
-                                    <div className={`p-1.5 rounded-lg transition-colors ${mode === 'insert' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-indigo-500'}`}>
-                                        <ArrowRight size={18} />
-                                    </div>
-                                    <span className="text-xs font-bold">Insert</span>
-                                </button>
-                                
-                                <button 
-                                    onClick={() => setMode('edit')}
-                                    disabled={!hasSelection}
-                                    className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 gap-2 group shadow-sm ${
-                                        mode === 'edit' 
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/30 ring-2 ring-offset-2 ring-indigo-500/20 dark:ring-offset-slate-900' 
-                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-200'
-                                    } ${!hasSelection ? 'opacity-50 cursor-not-allowed grayscale' : ''}`}
-                                >
-                                    <div className={`p-1.5 rounded-lg transition-colors ${mode === 'edit' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-indigo-500'}`}>
-                                        <Edit3 size={18} />
-                                    </div>
-                                    <span className="text-xs font-bold">Refine</span>
-                                </button>
-
-                                <button 
-                                    onClick={() => setMode('replace')}
-                                    className={`relative flex flex-col items-center justify-center p-3 rounded-2xl border text-center transition-all duration-200 gap-2 group shadow-sm ${
-                                        mode === 'replace' 
-                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/30 ring-2 ring-offset-2 ring-indigo-500/20 dark:ring-offset-slate-900' 
-                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-indigo-200'
-                                    }`}
-                                >
-                                    <div className={`p-1.5 rounded-lg transition-colors ${mode === 'replace' ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-indigo-500'}`}>
-                                        <FileText size={18} />
-                                    </div>
-                                    <span className="text-xs font-bold">New Doc</span>
-                                </button>
-                            </div>
-                        </div>
                     </div>
 
                     {/* Footer */}
@@ -282,7 +295,7 @@ export const WriteWithAITool: React.FC = () => {
                             className="flex-[2] px-6 py-3.5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-500/30 dark:shadow-none transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2.5 active:scale-95 hover:scale-[1.02]"
                         >
                             <Sparkles size={18} className="fill-indigo-200 text-indigo-100" />
-                            {mode === 'insert' ? 'Generate Content' : mode === 'edit' ? 'Update Selection' : 'Create Document'}
+                            {mode === 'insert' ? 'Generate & Insert' : mode === 'edit' ? 'Refine Content' : 'Create New Doc'}
                         </button>
                     </div>
                 </div>

@@ -50,6 +50,8 @@ export const useAI = () => {
     console.log(`[useAI] Action: ${operation}, Mode: ${options.mode}`);
     
     let activeRange: Range | null = restoreRange || null;
+    
+    // Auto-detect range if insert/edit mode
     if (!activeRange && options.mode !== 'replace') {
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0) {
@@ -57,25 +59,12 @@ export const useAI = () => {
         }
     }
 
-    // Restore focus context
-    if (options.mode !== 'replace') {
-        if (activeRange) {
-            try {
-                const sel = window.getSelection();
-                if (sel) {
-                    sel.removeAllRanges();
-                    sel.addRange(activeRange);
-                }
-            } catch (e) {}
-        } else if (editorRef.current && document.activeElement !== editorRef.current) {
-             editorRef.current.focus();
-        }
-    }
-
+    // Context Extraction
     const selection = window.getSelection();
     const hasSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed;
     let textToProcess = hasSelection ? selection.toString() : "";
 
+    // If 'Insert' and prompt provided, we might want context from doc or just blank
     if (operation === 'generate_content') {
         if (!customInput) {
             alert("Please provide a prompt.");
@@ -83,9 +72,22 @@ export const useAI = () => {
         }
         if (options.mode === 'insert') textToProcess = content || ""; 
         else if (options.mode === 'replace') textToProcess = "";
-    } else if (operation === 'edit_content' && !textToProcess) {
-        alert("Please select text to refine.");
-        return;
+    } 
+    
+    // If 'Refine' (Edit) and no selection, fallback to full doc
+    else if (operation === 'edit_content' && !textToProcess) {
+        if (content && content.trim().length > 0) {
+             textToProcess = editorRef.current?.innerText || ""; // Use text content for context
+             // Select entire document for replacement
+             if (editorRef.current) {
+                 const range = document.createRange();
+                 range.selectNodeContents(editorRef.current);
+                 activeRange = range; // Update target range to full doc
+             }
+        } else {
+             alert("Please select text or ensure document has content to refine.");
+             return;
+        }
     }
 
     const expectsJson = 
@@ -125,11 +127,10 @@ export const useAI = () => {
             }
 
             if (options.mode === 'replace') {
-                // Full Document Replacement
+                // Full Document Replacement - Clear Existing State
                 
                 // Handle Document Settings
                 const docSettings = parsedData.document?.settings || {};
-                // Check for page_settings block too (legacy support)
                 let blocks = parsedData.document?.blocks || parsedData.blocks || [];
                 if (!Array.isArray(blocks)) blocks = [];
 
@@ -157,10 +158,9 @@ export const useAI = () => {
                     }));
                 }
 
-                // Handle Headers/Footers
+                // Handle Headers/Footers - Reset if missing to ensure clean slate
                 const headers = parsedData.document?.headers || parsedData.document?.header;
                 if (headers) {
-                    // If headers is an object with 'default', use that. If it's an array (legacy/singular), use it directly.
                     const defaultHeader = Array.isArray(headers) ? headers : (headers.default || headers.first);
                     if (defaultHeader) setHeaderContent(jsonToHtml({ blocks: defaultHeader }));
                 } else {
@@ -175,29 +175,26 @@ export const useAI = () => {
                     setFooterContent('<div style="color: #94a3b8;">[Page <span class="page-number-placeholder">1</span>]</div>');
                 }
 
-                // Render Body
+                // Render Body - Completely Replace
                 const bodyHtml = jsonToHtml({ blocks });
                 
+                // Use setContent to fully reset editor state/history
+                setContent(bodyHtml, true);
+                
+                // If possible, focus start
                 if (editorRef.current) {
-                    editorRef.current.focus();
-                    executeCommand('selectAll');
-                    executeCommand('insertHTML', bodyHtml);
-                    window.getSelection()?.removeAllRanges();
                     editorRef.current.scrollTop = 0;
-                } else {
-                    setContent(bodyHtml);
                 }
                 
             } else {
-                // Insert Mode
+                // Insert/Edit Mode
                 let contentData = parsedData;
                 let blocks = contentData.document?.blocks || contentData.blocks || (Array.isArray(contentData) ? contentData : [contentData]);
                 
-                // Filter out page settings if inserting
                 blocks = blocks.filter((b: any) => b.type !== 'page_settings');
-                
                 const html = jsonToHtml(blocks);
                 
+                // Restore range/cursor before insertion
                 if (activeRange) {
                     const sel = window.getSelection();
                     if (sel) {
