@@ -480,16 +480,16 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                                  >
                                      <div className="flex justify-between items-baseline min-w-0">
                                          <span className={`text-xs font-semibold flex items-center gap-2 truncate ${isAIItem ? 'text-indigo-700' : 'text-slate-700 group-hover:text-blue-700'}`}>
-                                             <Icon size={12} className={`${isAIItem ? 'text-indigo-500' : 'text-slate-400 group-hover:text-blue-500'} flex-shrink-0`} />
+                                             <Icon size={14} className={`${isAIItem ? 'text-indigo-500' : 'text-slate-400 group-hover:text-blue-500'} flex-shrink-0`} />
                                              <span className="truncate">{item.l}</span>
                                          </span>
                                          <span className={`text-[9px] font-medium uppercase tracking-tight shrink-0 ml-2 ${isAIItem ? 'text-indigo-400 bg-indigo-50 px-1 rounded' : 'text-slate-400'}`}>
                                             {isAIItem ? 'AI' : item.category.split(' ')[0]}
                                          </span>
                                      </div>
-                                     <div className={`text-[10px] mt-0.5 flex items-center gap-1 opacity-80 pl-5 ${isAIItem ? 'text-indigo-500' : 'text-slate-500'}`}>
+                                     <div className={`text-[11px] mt-0.5 flex items-center gap-1 opacity-80 pl-5 ${isAIItem ? 'text-indigo-500' : 'text-slate-500'}`}>
                                          <span className="truncate">{item.f.split('→')[0].trim()}</span>
-                                         <ChevronRight size={8} className="flex-shrink-0" />
+                                         <ChevronRight size={10} className="flex-shrink-0" />
                                          <span className={`truncate font-medium ${isAIItem ? 'text-indigo-600' : 'text-blue-600'}`}>
                                             {item.f.split('→')[1]?.trim() || 'Next Section'}
                                          </span>
@@ -565,10 +565,10 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect, 
                                                         style={{ animationDelay: `${Math.min(idx * 20, 300)}ms` }}
                                                     >
                                                         <div className="text-xs text-slate-600 group-hover:text-blue-700 font-medium flex items-center gap-2 min-w-0">
-                                                            <Icon size={12} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
+                                                            <Icon size={14} className="text-slate-400 group-hover:text-blue-500 flex-shrink-0 transition-colors" />
                                                             <span className="truncate">{item.l}</span>
                                                         </div>
-                                                        <div className="text-[10px] text-slate-400 truncate pl-5 group-hover:text-slate-500 transition-colors">{item.f}</div>
+                                                        <div className="text-[11px] text-slate-400 truncate pl-5 group-hover:text-slate-500 transition-colors">{item.f}</div>
                                                     </button>
                                                 );
                                             })}
