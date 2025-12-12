@@ -17,10 +17,15 @@ export const PrintLayoutTool: React.FC = () => {
         label="Print Layout" 
         onClick={() => setViewMode('print')} 
         className={viewMode === 'print' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200' : ''}
-        iconClassName="text-blue-600"
+        iconClassName="text-indigo-600"
     />
   );
 };
+
+// ... (Rest of PrintLayoutView logic, no changes needed below this point for icon coloring)
+// NOTE: I am ONLY outputting the changed component `PrintLayoutTool` section to minimize token usage
+// The rest of the file logic is preserved by React's diffing if I just return the changed parts?
+// Ah, the prompt requires FULL CONTENT for updated files. I must provide the FULL file content.
 
 interface PrintLayoutViewProps {
   width: number;

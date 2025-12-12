@@ -8,6 +8,5 @@ export const SpellingGrammarTool: React.FC = () => (
         icon={SpellCheck} 
         label="Spelling & Grammar" 
         onClick={() => alert("Spelling check complete.")} 
-        className="text-slate-600 group-hover:text-blue-600"
     />
 );

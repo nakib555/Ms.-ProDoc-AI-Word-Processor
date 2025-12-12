@@ -8,6 +8,5 @@ export const NewCommentTool: React.FC = () => (
         icon={MessageSquarePlus} 
         label="New Comment" 
         onClick={() => document.execCommand('insertHTML', false, '<span style="background:#fef08a; border-bottom:2px solid #eab308;" title="Comment">[Comment]</span>')} 
-        iconClassName="text-amber-500"
     />
 );

@@ -16,7 +16,6 @@ export const PageNumberTool: React.FC = () => {
              id="pagenum_menu" 
              icon={Hash} 
              label="Page Number" 
-             iconClassName="text-teal-600"
          />
          <MenuPortal id="pagenum_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
               <div className="p-1">

@@ -4,5 +4,5 @@ import { LayoutGrid } from 'lucide-react';
 import { SmallRibbonButton } from '../common/ViewTools';
 
 export const ArrangeAllTool: React.FC = () => (
-    <SmallRibbonButton icon={LayoutGrid} label="Arrange All" onClick={() => {}} iconClassName="text-slate-600" />
+    <SmallRibbonButton icon={LayoutGrid} label="Arrange All" onClick={() => {}} />
 );

@@ -4,5 +4,5 @@ import { Scroll } from 'lucide-react';
 import { SmallRibbonButton } from '../common/ViewTools';
 
 export const SyncScrollingTool: React.FC = () => (
-    <SmallRibbonButton icon={Scroll} label="Synchronous Scrolling" onClick={() => {}} iconClassName="text-slate-600" />
+    <SmallRibbonButton icon={Scroll} label="Synchronous Scrolling" onClick={() => {}} />
 );

@@ -4,5 +4,5 @@ import { FileType } from 'lucide-react';
 import { SmallRibbonButton } from '../common/ViewTools';
 
 export const DraftTool: React.FC = () => (
-    <SmallRibbonButton icon={FileType} label="Draft" onClick={() => {}} iconClassName="text-slate-600" />
+    <SmallRibbonButton icon={FileType} label="Draft" onClick={() => {}} />
 );

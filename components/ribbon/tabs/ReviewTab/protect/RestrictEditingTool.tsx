@@ -4,5 +4,5 @@ import { Lock } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 
 export const RestrictEditingTool: React.FC = () => (
-    <RibbonButton icon={Lock} label="Restrict Editing" onClick={() => {}} iconClassName="text-amber-500" />
+    <RibbonButton icon={Lock} label="Restrict Editing" onClick={() => {}} />
 );

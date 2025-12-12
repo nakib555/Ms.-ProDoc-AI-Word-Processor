@@ -20,7 +20,6 @@ export const ColumnsTool: React.FC = () => {
              id={menuId} 
              icon={Columns} 
              label="Columns" 
-             iconClassName="text-green-600"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={160}>
              <div className="p-1 grid grid-cols-1 gap-0.5">

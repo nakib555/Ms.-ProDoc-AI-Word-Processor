@@ -4,5 +4,5 @@ import { Split } from 'lucide-react';
 import { SmallRibbonButton } from '../common/ViewTools';
 
 export const SplitTool: React.FC = () => (
-    <SmallRibbonButton icon={Split} label="Split" onClick={() => {}} iconClassName="text-slate-600" />
+    <SmallRibbonButton icon={Split} label="Split" onClick={() => {}} />
 );

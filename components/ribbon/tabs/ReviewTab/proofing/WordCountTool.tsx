@@ -11,7 +11,6 @@ export const WordCountTool: React.FC = () => {
         icon={Hash} 
         label="Word Count" 
         onClick={() => alert(`Word Count: ${wordCount}`)} 
-        className="text-slate-600 group-hover:text-green-600"
     />
   );
 };

@@ -4,5 +4,5 @@ import { Files } from 'lucide-react';
 import { SmallRibbonButton } from '../common/ViewTools';
 
 export const MultiplePagesTool: React.FC = () => (
-    <SmallRibbonButton icon={Files} label="Multiple Pages" onClick={() => {}} iconClassName="text-slate-600" />
+    <SmallRibbonButton icon={Files} label="Multiple Pages" onClick={() => {}} />
 );

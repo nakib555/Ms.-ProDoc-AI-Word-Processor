@@ -19,7 +19,6 @@ export const BordersShadingTools: React.FC = () => {
             id={shadingId}
             icon={PaintBucket}
             title="Shading"
-            iconClass="text-orange-500 fill-orange-200"
         />
         <MenuPortal id={shadingId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={176}>
             <div className="p-2">
@@ -50,7 +49,6 @@ export const BordersShadingTools: React.FC = () => {
             id={bordersId}
             icon={LayoutGrid}
             title="Borders"
-            iconClass="text-slate-800"
         />
         <MenuPortal id={bordersId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={160}>
             <div className="p-1 space-y-0.5">

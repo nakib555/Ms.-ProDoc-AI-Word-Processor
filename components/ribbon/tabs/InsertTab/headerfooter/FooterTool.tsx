@@ -16,7 +16,6 @@ export const FooterTool: React.FC = () => {
              id="footer_menu" 
              icon={PanelBottom} 
              label="Footer" 
-             iconClassName="text-violet-600"
          />
          <MenuPortal id="footer_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
               <div className="p-1">

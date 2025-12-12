@@ -6,5 +6,5 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const PageWidthTool: React.FC = () => {
   const { executeCommand } = useEditor();
-  return <SmallRibbonButton icon={ArrowLeftRight} label="Page Width" onClick={() => executeCommand('fitWidth')} iconClassName="text-indigo-500" />;
+  return <SmallRibbonButton icon={ArrowLeftRight} label="Page Width" onClick={() => executeCommand('fitWidth')} />;
 };

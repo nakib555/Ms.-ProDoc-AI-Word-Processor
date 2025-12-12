@@ -7,6 +7,6 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 export const SymbolTool: React.FC = () => {
   const { executeCommand } = useEditor();
   return (
-      <RibbonButton icon={Omega} label="Symbol" onClick={() => executeCommand('insertText', '™')} hasArrow iconClassName="text-purple-600" />
+      <RibbonButton icon={Omega} label="Symbol" onClick={() => executeCommand('insertText', '™')} hasArrow />
   );
 };

@@ -4,5 +4,5 @@ import { Volume2 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 
 export const ImmersiveReaderTool: React.FC = () => (
-    <RibbonButton icon={Volume2} label="Immersive Reader" onClick={() => {}} iconClassName="text-blue-500" />
+    <RibbonButton icon={Volume2} label="Immersive Reader" onClick={() => {}} />
 );

@@ -6,5 +6,5 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const OnePageTool: React.FC = () => {
   const { executeCommand } = useEditor();
-  return <SmallRibbonButton icon={File} label="One Page" onClick={() => executeCommand('fitPage')} iconClassName="text-slate-600" />;
+  return <SmallRibbonButton icon={File} label="One Page" onClick={() => executeCommand('fitPage')} />;
 };

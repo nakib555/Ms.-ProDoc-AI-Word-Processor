@@ -16,7 +16,6 @@ export const HeaderTool: React.FC = () => {
              id="header_menu" 
              icon={PanelTop} 
              label="Header" 
-             iconClassName="text-indigo-600"
          />
          <MenuPortal id="header_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
               <div className="p-1">

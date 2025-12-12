@@ -9,7 +9,6 @@ export const WrapTextTool: React.FC = () => {
         id="wrap" 
         icon={WrapText} 
         label="Wrap Text" 
-        iconClassName="text-green-500"
     />
   );
 };

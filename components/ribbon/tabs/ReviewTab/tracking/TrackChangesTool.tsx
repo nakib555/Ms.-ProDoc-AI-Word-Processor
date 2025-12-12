@@ -9,6 +9,5 @@ export const TrackChangesTool: React.FC = () => (
         label="Track Changes" 
         onClick={() => {}} 
         hasArrow
-        iconClassName="text-orange-600"
     />
 );

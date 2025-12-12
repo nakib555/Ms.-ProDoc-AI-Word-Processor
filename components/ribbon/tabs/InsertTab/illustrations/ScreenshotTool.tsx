@@ -4,5 +4,5 @@ import { Camera } from 'lucide-react';
 import { SmallRibbonButton } from '../common/InsertTools';
 
 export const ScreenshotTool: React.FC = () => (
-    <SmallRibbonButton icon={Camera} label="Screenshot" onClick={() => alert('Screenshot')} iconClassName="text-slate-600" />
+    <SmallRibbonButton icon={Camera} label="Screenshot" onClick={() => alert('Screenshot')} />
 );

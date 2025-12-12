@@ -9,6 +9,5 @@ export const EditorTool: React.FC = () => (
         label="Editor" 
         onClick={() => alert("Editor Score: 100%")} 
         title="Editor"
-        iconClassName="text-blue-600"
     />
 );

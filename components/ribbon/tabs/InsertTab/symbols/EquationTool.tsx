@@ -9,6 +9,9 @@ export const EquationTool: React.FC = () => {
 
   const insertEquation = () => {
       // Insert a structured equation box mimicking MS Word
+      // Wrapper has contenteditable="false" to act as a single block for the editor's cursor handling logic,
+      // but allows focus to enter the math-field inside.
+      // Using zero-width spaces (&#8203;) for seamless cursor boundary
       const html = `&#8203;<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type equation here."></math-field><span class="equation-dropdown">▼</span></span>&#8203;`;
       executeCommand('insertHTML', html);
   };
@@ -19,7 +22,6 @@ export const EquationTool: React.FC = () => {
         label="Equation" 
         onClick={insertEquation} 
         hasArrow 
-        iconClassName="text-green-600"
       />
   );
 };

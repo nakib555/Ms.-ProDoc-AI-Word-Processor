@@ -4,5 +4,5 @@ import { Layers } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 
 export const SwitchWindowsTool: React.FC = () => (
-    <RibbonButton icon={Layers} label="Switch Windows" onClick={() => {}} hasArrow iconClassName="text-blue-500" />
+    <RibbonButton icon={Layers} label="Switch Windows" onClick={() => {}} hasArrow />
 );
