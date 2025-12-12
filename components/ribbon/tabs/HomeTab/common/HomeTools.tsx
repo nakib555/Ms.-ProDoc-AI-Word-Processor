@@ -24,7 +24,7 @@ export const DropdownToolBtn: React.FC<DropdownButtonProps> = React.memo(({
       onClick={(e) => { e.stopPropagation(); toggleMenu(id); }}
       className={`
         p-1 rounded-md flex items-center justify-center transition-all w-8 h-7 relative group
-        ${activeMenu === id ? 'bg-indigo-100 dark:bg-slate-700 text-indigo-700 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400'}
+        ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'}
         ${className || ''}
       `} 
       title={title}
@@ -36,7 +36,7 @@ export const DropdownToolBtn: React.FC<DropdownButtonProps> = React.memo(({
           style={{ backgroundColor: color }}
         />
       )}
-      <ChevronDown size={8} className="ml-0.5 text-slate-400 dark:text-slate-500" />
+      <ChevronDown size={8} className="ml-0.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400" />
     </button>
   );
 });
@@ -57,7 +57,7 @@ export const ToolBtn: React.FC<{
     disabled={disabled} 
     className={`
       p-1 rounded-md flex items-center justify-center transition-all w-7 h-7 relative group
-      ${active ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400'}
+      ${active ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'}
       ${disabled ? 'opacity-40 cursor-not-allowed hover:bg-transparent hover:text-slate-600 dark:hover:text-slate-300' : ''}
       ${className || ''}
     `} 
