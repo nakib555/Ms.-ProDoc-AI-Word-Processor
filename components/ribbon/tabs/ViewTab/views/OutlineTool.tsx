@@ -4,5 +4,5 @@ import { ListTree } from 'lucide-react';
 import { SmallRibbonButton } from '../common/ViewTools';
 
 export const OutlineTool: React.FC = () => (
-    <SmallRibbonButton icon={ListTree} label="Outline" onClick={() => {}} />
+    <SmallRibbonButton icon={ListTree} label="Outline" onClick={() => {}} iconClassName="text-slate-600" />
 );

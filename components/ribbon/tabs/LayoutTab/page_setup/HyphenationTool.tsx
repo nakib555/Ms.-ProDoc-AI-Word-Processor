@@ -5,6 +5,6 @@ import { RibbonButton } from '../../../common/RibbonButton';
 
 export const HyphenationTool: React.FC = () => {
   return (
-    <RibbonButton icon={Minus} label="Hyphenation" onClick={() => {}} hasArrow />
+    <RibbonButton icon={Minus} label="Hyphenation" onClick={() => {}} hasArrow iconClassName="text-pink-500" />
   );
 };

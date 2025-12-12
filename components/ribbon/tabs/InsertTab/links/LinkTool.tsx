@@ -22,6 +22,7 @@ export const LinkTool: React.FC = () => {
              id="link_menu" 
              icon={Link} 
              label="Link" 
+             iconClassName="text-blue-500"
          />
          <MenuPortal id="link_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
              <div className="p-1">

@@ -23,6 +23,7 @@ export const LineNumbersTool: React.FC = () => {
             label="Line Numbers" 
             onClick={() => setShowDialog(true)} 
             hasArrow 
+            iconClassName="text-orange-500"
         />
         {showDialog && (
              <Suspense fallback={null}>

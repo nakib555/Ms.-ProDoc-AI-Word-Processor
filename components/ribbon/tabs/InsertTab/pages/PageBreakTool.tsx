@@ -11,6 +11,7 @@ export const PageBreakTool: React.FC = () => {
         icon={SeparatorHorizontal} 
         label="Page Break" 
         onClick={() => executeCommand('insertHTML', '<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div>&#8203;')} 
+        iconClassName="text-sky-500"
     />
   );
 };

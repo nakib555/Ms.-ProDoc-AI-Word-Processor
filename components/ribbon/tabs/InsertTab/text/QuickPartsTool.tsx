@@ -4,5 +4,5 @@ import { Blocks } from 'lucide-react';
 import { SmallRibbonButton } from '../common/InsertTools';
 
 export const QuickPartsTool: React.FC = () => (
-    <SmallRibbonButton icon={Blocks} label="Quick Parts" onClick={() => {}} />
+    <SmallRibbonButton icon={Blocks} label="Quick Parts" onClick={() => {}} iconClassName="text-blue-500" />
 );

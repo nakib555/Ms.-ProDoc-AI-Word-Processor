@@ -18,6 +18,7 @@ export const SpacingTool: React.FC = () => {
             id={menuId}
             icon={ArrowUpDown}
             title="Line & Paragraph Spacing"
+            iconClass="text-sky-600"
         />
         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={100}>
             {[1.0, 1.15, 1.5, 2.0, 2.5, 3.0].map(val => (

@@ -4,5 +4,5 @@ import { PenOff } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 
 export const HideInkTool: React.FC = () => (
-    <RibbonButton icon={PenOff} label="Hide Ink" onClick={() => {}} />
+    <RibbonButton icon={PenOff} label="Hide Ink" onClick={() => {}} iconClassName="text-slate-500" />
 );

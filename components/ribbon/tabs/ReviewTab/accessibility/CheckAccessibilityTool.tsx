@@ -9,5 +9,6 @@ export const CheckAccessibilityTool: React.FC = () => (
         label="Check Accessibility" 
         onClick={() => {}} 
         title="Check Accessibility" 
+        iconClassName="text-purple-600"
     />
 );

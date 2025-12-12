@@ -42,6 +42,7 @@ export const TextEffectsTool: React.FC = () => {
           icon={Type}
           title="Text Effects & Typography"
           className="text-blue-500 shadow-sm border border-transparent hover:border-slate-300"
+          iconClass="text-sky-500 fill-sky-200"
        />
        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={220}>
           <div className="p-2">

@@ -9,6 +9,7 @@ export const PositionTool: React.FC = () => {
         id="position" 
         icon={Move} 
         label="Position" 
+        iconClassName="text-blue-500"
     />
   );
 };

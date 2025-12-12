@@ -4,5 +4,5 @@ import { Languages } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 
 export const TranslateTool: React.FC = () => (
-    <RibbonButton icon={Languages} label="Translate" onClick={() => {}} hasArrow />
+    <RibbonButton icon={Languages} label="Translate" onClick={() => {}} hasArrow iconClassName="text-indigo-600" />
 );

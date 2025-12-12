@@ -11,6 +11,7 @@ export const BlankPageTool: React.FC = () => {
         icon={FilePlus} 
         label="Blank Page" 
         onClick={() => executeCommand('insertHTML', '<div class="prodoc-page-break" style="page-break-after: always; height: 0; width: 100%; display: block;"></div>&#8203;')} 
+        iconClassName="text-cyan-600"
     />
   );
 };

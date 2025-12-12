@@ -17,6 +17,7 @@ export const BreaksTool: React.FC = () => {
              id={menuId} 
              icon={Scissors} 
              label="Breaks" 
+             iconClassName="text-red-500"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={200}>
              <div className="p-2">

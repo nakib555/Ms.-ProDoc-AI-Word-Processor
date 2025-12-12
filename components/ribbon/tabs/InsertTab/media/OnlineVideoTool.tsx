@@ -27,6 +27,7 @@ export const OnlineVideoTool: React.FC = () => {
          label="Online Video" 
          onClick={insertVideo} 
          title="Embed YouTube Video"
+         iconClassName="text-red-500"
      />
   );
 };

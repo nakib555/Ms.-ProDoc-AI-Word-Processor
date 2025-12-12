@@ -6,5 +6,5 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const Zoom100Tool: React.FC = () => {
   const { executeCommand } = useEditor();
-  return <RibbonButton icon={ZoomIn} label="100%" onClick={() => executeCommand('zoomReset')} />;
+  return <RibbonButton icon={ZoomIn} label="100%" onClick={() => executeCommand('zoomReset')} iconClassName="text-green-600" />;
 };
