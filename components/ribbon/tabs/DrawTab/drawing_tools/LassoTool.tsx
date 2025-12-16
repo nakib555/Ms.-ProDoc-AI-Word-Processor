@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LassoSelect } from 'lucide-react';
 import { useDrawTab } from '../DrawTabContext';
@@ -8,7 +9,7 @@ export const LassoTool: React.FC = () => {
 
   return (
     <button 
-        className={`flex flex-col items-center justify-center p-1 w-12 h-full rounded-md transition-all ${isActive ? 'bg-slate-200 text-blue-700 shadow-inner' : 'hover:bg-slate-100 text-slate-600'}`}
+        className={`flex flex-col items-center justify-center p-1 w-12 h-full rounded-md transition-all ${isActive ? 'bg-slate-200 text-blue-700 shadow-inner' : 'hover:bg-slate-100 dark:hover:bg-transparent text-slate-600 dark:text-slate-300'}`}
         onClick={() => setActiveTool('lasso')}
         title="Lasso Select"
     >

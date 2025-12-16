@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { RibbonSection } from '../../../../common/RibbonSection';
 import { RibbonButton } from '../../../../common/RibbonButton';
@@ -78,8 +79,8 @@ export const TableDesignTab: React.FC = () => {
                  <div className="bg-white row-span-1"></div>
                  <div className="bg-orange-50 row-span-1"></div>
              </button>
-             <button onMouseDown={(e) => e.preventDefault()} className="h-full w-6 flex items-center justify-center hover:bg-slate-100 rounded">
-                 <ChevronDown size={12} />
+             <button onMouseDown={(e) => e.preventDefault()} className="h-full w-6 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-transparent rounded">
+                 <ChevronDown size={12} className="dark:text-slate-400" />
              </button>
          </div>
       </RibbonSection>
@@ -87,8 +88,8 @@ export const TableDesignTab: React.FC = () => {
       <RibbonSection title="Borders">
           <div className="flex items-center gap-2 h-full px-1">
               <div className="flex flex-col gap-1">
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-1 py-0.5 hover:bg-slate-100 rounded text-xs" onClick={() => {}}>
-                      <PaintBucket size={14} className="text-blue-600"/> 
+                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-1 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-xs dark:text-slate-300" onClick={() => {}}>
+                      <PaintBucket size={14} className="text-blue-600 dark:text-blue-400"/> 
                       <span className="text-[10px]">Shading</span>
                       <div className="w-12 h-3 flex gap-[1px] ml-1">
                           {COLORS.slice(0, 5).map(c => (
@@ -96,21 +97,21 @@ export const TableDesignTab: React.FC = () => {
                           ))}
                       </div>
                   </button>
-                  <div className="flex items-center gap-1 border p-0.5 rounded bg-white">
-                      <div className="w-8 h-[1px] bg-black"></div>
-                      <ChevronDown size={10} />
+                  <div className="flex items-center gap-1 border p-0.5 rounded bg-white dark:bg-slate-800 dark:border-slate-600">
+                      <div className="w-8 h-[1px] bg-black dark:bg-slate-400"></div>
+                      <ChevronDown size={10} className="dark:text-slate-400" />
                   </div>
-                  <div className="flex items-center gap-1 border p-0.5 rounded bg-white">
-                      <span className="text-[10px]">½ pt</span>
-                      <ChevronDown size={10} />
+                  <div className="flex items-center gap-1 border p-0.5 rounded bg-white dark:bg-slate-800 dark:border-slate-600">
+                      <span className="text-[10px] dark:text-slate-300">½ pt</span>
+                      <ChevronDown size={10} className="dark:text-slate-400" />
                   </div>
               </div>
               
-              <div className="flex flex-col items-center justify-center px-2 border-l border-slate-100">
+              <div className="flex flex-col items-center justify-center px-2 border-l border-slate-100 dark:border-slate-700">
                   <RibbonButton icon={LayoutGrid} label="Borders" onClick={() => handleBorder({border: '1px solid black'})} hasArrow />
               </div>
               
-              <div className="flex flex-col items-center justify-center px-2 border-l border-slate-100">
+              <div className="flex flex-col items-center justify-center px-2 border-l border-slate-100 dark:border-slate-700">
                   <RibbonButton icon={PenTool} label="Border Painter" onClick={() => {}} />
               </div>
           </div>

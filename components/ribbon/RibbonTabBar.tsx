@@ -56,7 +56,7 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
               px-3 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2
               ${isActive 
                 ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold shadow-[0_-1px_3px_rgba(0,0,0,0.05)] dark:shadow-none` 
-                : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/50 mb-0.5`}
+                : `${baseColor} mb-0.5`}
               ${isContextual ? 'border-t-2 border-t-current' : ''}
             `}
         >

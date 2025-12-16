@@ -12,7 +12,7 @@ export const SmallRibbonButton: React.FC<{
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
-    className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-slate-800 rounded-sm group transition-colors ${className || ''}`}
+    className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-transparent rounded-sm group transition-colors ${className || ''}`}
     title={label}
   >
     <Icon size={14} className="text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 mr-2 shrink-0" />

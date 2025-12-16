@@ -17,7 +17,7 @@ export const StructureButton: React.FC<{
   hasArrow?: boolean;
 }> = ({ icon: Icon, label, onClick, className, hasArrow }) => (
   <button
-    className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex-shrink-0 ${className || ''}`}
+    className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-transparent flex-shrink-0 ${className || ''}`}
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
     title={label}
@@ -36,7 +36,7 @@ const SymbolBtn: React.FC<{ symbol: string, onClick: () => void }> = ({ symbol, 
     <button
         onClick={onClick}
         onMouseDown={(e) => e.preventDefault()}
-        className="h-9 w-9 flex items-center justify-center text-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-sm rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all font-serif select-none"
+        className="h-9 w-9 flex items-center justify-center text-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-transparent hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-sm rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all font-serif select-none"
         title={symbol}
     >
         {symbol}
@@ -49,7 +49,7 @@ const TabButton: React.FC<{ label: string, active: boolean, onClick: () => void,
         className={`px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all whitespace-nowrap rounded-lg flex-shrink-0 outline-none select-none border ${
             active 
             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border-slate-200 dark:border-slate-600 ring-1 ring-black/[0.02]' 
-            : 'text-slate-500 dark:text-slate-400 border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200'
+            : 'text-slate-500 dark:text-slate-400 border-transparent hover:bg-slate-200/50 dark:hover:bg-transparent hover:text-slate-700 dark:hover:text-slate-200'
         } ${className}`}
     >
         {label}
@@ -105,7 +105,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
             <button
                 ref={(el) => registerTrigger(menuId, el)}
                 onClick={(e) => { e.stopPropagation(); toggleMenu(menuId); }}
-                className={`flex items-center gap-2 px-3 py-1.5 text-[11px] rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 border border-transparent transition-all w-full text-left group ${isOpen ? 'bg-slate-200 dark:bg-slate-700 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}
+                className={`flex items-center gap-2 px-3 py-1.5 text-[11px] rounded-md hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-transparent transition-all w-full text-left group ${isOpen ? 'bg-slate-200 dark:bg-slate-700 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}
                 title={category}
                 onMouseDown={(e) => e.preventDefault()}
             >
@@ -229,7 +229,7 @@ export const StructureDropdown: React.FC<{
                 ref={(el) => registerTrigger(id, el)}
                 onClick={(e) => { e.stopPropagation(); toggleMenu(id); }}
                 onMouseDown={(e) => e.preventDefault()}
-                className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex-shrink-0 ${isOpen ? 'bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : ''}`}
+                className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-transparent flex-shrink-0 ${isOpen ? 'bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : ''}`}
                 title={label}
             >
                 <div className="p-1.5 rounded-md transition-all mb-1 bg-transparent">

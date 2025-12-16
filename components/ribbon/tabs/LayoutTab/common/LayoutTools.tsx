@@ -25,7 +25,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({
           <button
               onClick={(e) => { e.stopPropagation(); !disabled && toggleMenu(id); }}
               onMouseDown={(e) => e.preventDefault()}
-              className={`flex flex-col items-center justify-center px-2 py-1 min-w-[60px] md:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white shadow-inner ring-1 ring-slate-300 dark:ring-slate-600' : ''}`}
+              className={`flex flex-col items-center justify-center px-2 py-1 min-w-[60px] md:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-transparent ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white shadow-inner ring-1 ring-slate-300 dark:ring-slate-600' : ''}`}
           >
               <div className="p-1.5 rounded-md transition-all mb-1">
                   <Icon className={`w-6 h-6 ${iconClassName || 'text-slate-500 dark:text-slate-400'} ${activeMenu === id ? 'text-slate-900 dark:text-white' : 'group-hover:text-slate-700 dark:group-hover:text-slate-200'}`} strokeWidth={1.5} />

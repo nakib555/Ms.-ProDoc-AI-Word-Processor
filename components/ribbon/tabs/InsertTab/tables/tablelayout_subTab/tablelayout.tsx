@@ -197,28 +197,28 @@ export const TableLayoutTab: React.FC = () => {
 
       <RibbonSection title="Rows & Columns">
           <div className="flex h-full items-center gap-1">
-              <div className="flex flex-col h-full justify-center gap-0.5 border-r border-slate-200 pr-1 mr-1">
-                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-50 text-red-600 rounded text-[10px] font-medium" onClick={deleteRow}>
+              <div className="flex flex-col h-full justify-center gap-0.5 border-r border-slate-200 dark:border-slate-700 pr-1 mr-1">
+                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-50 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteRow}>
                      <Trash2 size={12}/> Delete Row
                  </button>
-                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-50 text-red-600 rounded text-[10px] font-medium" onClick={deleteCol}>
+                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-50 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteCol}>
                      <Trash2 size={12}/> Delete Column
                  </button>
               </div>
 
               <div className="flex flex-col gap-0.5">
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => insertRow('above')}>
+                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertRow('above')}>
                       <ArrowUpToLine size={14}/> Insert Above
                   </button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => insertRow('below')}>
+                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertRow('below')}>
                       <ArrowDownToLine size={14}/> Insert Below
                   </button>
               </div>
               <div className="flex flex-col gap-0.5">
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => insertCol('left')}>
+                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertCol('left')}>
                       <ArrowLeftToLine size={14}/> Insert Left
                   </button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => insertCol('right')}>
+                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertCol('right')}>
                       <ArrowRightToLine size={14}/> Insert Right
                   </button>
               </div>
@@ -227,13 +227,13 @@ export const TableLayoutTab: React.FC = () => {
 
       <RibbonSection title="Merge">
           <div className="flex flex-col h-full justify-center gap-0.5 min-w-[80px]">
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={mergeCells}>
+              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={mergeCells}>
                   <Merge size={14}/> Merge Right
               </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={splitCells}>
+              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={splitCells}>
                   <Split size={14}/> Split Cells
               </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={splitTable}>
+              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={splitTable}>
                   <Split size={14} className="rotate-90"/> Split Table
               </button>
           </div>
@@ -242,21 +242,21 @@ export const TableLayoutTab: React.FC = () => {
       <RibbonSection title="Cell Size">
           <div className="flex h-full items-center gap-2 px-1">
               <div className="flex flex-col gap-1">
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => autoFit('contents')}>
+                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => autoFit('contents')}>
                     <Minimize size={14}/> AutoFit Contents
                 </button>
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => autoFit('window')}>
+                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => autoFit('window')}>
                     <Maximize size={14}/> AutoFit Window
                 </button>
               </div>
               
-              <div className="w-[1px] h-8 bg-slate-200 mx-0.5"></div>
+              <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
 
               <div className="flex flex-col gap-1">
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={distributeRows}>
+                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={distributeRows}>
                     <Scaling size={14}/> Distribute Rows
                 </button>
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={distributeCols}>
+                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={distributeCols}>
                     <Scaling size={14} className="rotate-90"/> Distribute Cols
                 </button>
               </div>
@@ -266,35 +266,35 @@ export const TableLayoutTab: React.FC = () => {
       <RibbonSection title="Alignment">
           <div className="flex h-full items-center gap-2 px-1">
               {/* 3x3 Grid for Alignment */}
-              <div className="grid grid-cols-3 gap-0.5 p-0.5 border rounded bg-white shadow-sm">
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('top', 'left')} title="Top Left"><AlignLeft size={10} className="rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('top', 'center')} title="Top Center"><AlignCenter size={10} className="-rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('top', 'right')} title="Top Right"><AlignRight size={10} className="rotate-45"/></button>
+              <div className="grid grid-cols-3 gap-0.5 p-0.5 border rounded bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('top', 'left')} title="Top Left"><AlignLeft size={10} className="rotate-45"/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('top', 'center')} title="Top Center"><AlignCenter size={10} className="-rotate-45"/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('top', 'right')} title="Top Right"><AlignRight size={10} className="rotate-45"/></button>
                   
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('middle', 'left')} title="Center Left"><AlignLeft size={10}/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('middle', 'center')} title="Center"><AlignCenter size={10}/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('middle', 'right')} title="Center Right"><AlignRight size={10}/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('middle', 'left')} title="Center Left"><AlignLeft size={10}/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('middle', 'center')} title="Center"><AlignCenter size={10}/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('middle', 'right')} title="Center Right"><AlignRight size={10}/></button>
                   
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('bottom', 'left')} title="Bottom Left"><AlignLeft size={10} className="-rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('bottom', 'center')} title="Bottom Center"><AlignCenter size={10} className="rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 rounded" onClick={() => setAlign('bottom', 'right')} title="Bottom Right"><AlignRight size={10} className="-rotate-45"/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('bottom', 'left')} title="Bottom Left"><AlignLeft size={10} className="-rotate-45"/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('bottom', 'center')} title="Bottom Center"><AlignCenter size={10} className="rotate-45"/></button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('bottom', 'right')} title="Bottom Right"><AlignRight size={10} className="-rotate-45"/></button>
               </div>
               <div className="flex flex-col gap-0.5 text-[10px] min-w-[70px]">
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-1.5 px-1 py-1 hover:bg-slate-100 rounded" onClick={setTextDirection}><Type size={12}/> Text Dir</button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-1.5 px-1 py-1 hover:bg-slate-100 rounded" onClick={() => runOnCell(c => c.style.padding = "8px")}><Settings size={12}/> Margins</button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-1.5 px-1 py-1 hover:bg-slate-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={setTextDirection}><Type size={12}/> Text Dir</button>
+                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-1.5 px-1 py-1 hover:bg-slate-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => runOnCell(c => c.style.padding = "8px")}><Settings size={12}/> Margins</button>
               </div>
           </div>
       </RibbonSection>
 
       <RibbonSection title="Data">
           <div className="flex flex-col h-full justify-center gap-0.5 px-1">
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => alert("Sort Dialog")}>
+              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => alert("Sort Dialog")}>
                   <ArrowDownAZ size={14}/> Sort
               </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => {}}>
+              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => {}}>
                   <Type size={14}/> Convert to Text
               </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 rounded text-[10px]" onClick={() => {}}>
+              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => {}}>
                   <Calculator size={14}/> Formula
               </button>
           </div>

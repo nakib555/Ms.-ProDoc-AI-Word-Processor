@@ -7,7 +7,7 @@ export const UnicodeTool: React.FC = () => {
   
   return (
     <button 
-        className="flex items-center gap-1.5 text-[11px] cursor-pointer rounded px-1 py-0.5 group"
+        className="flex items-center gap-1.5 text-[11px] cursor-pointer rounded px-1 py-0.5 group hover:bg-slate-100 dark:hover:bg-transparent"
         onClick={() => setConversionType('unicode')}
     >
         <div className={`w-3 h-3 rounded-full border flex items-center justify-center transition-colors ${conversionType === 'unicode' ? 'border-blue-600 bg-blue-600' : 'border-slate-400 bg-white group-hover:border-blue-400'}`}>
