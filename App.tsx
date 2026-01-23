@@ -5,7 +5,6 @@ import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
 import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
-import { RibbonHeader } from './components/ribbon/RibbonHeader';
 import { CopilotSidebar } from './components/CopilotSidebar';
 import { RibbonTab } from './types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -35,8 +34,6 @@ const AppContent: React.FC = () => {
     <div className="h-[100dvh] flex flex-col bg-white dark:bg-[#020617] overflow-hidden text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
       {isReadMode && <ReadModeToolbar />}
-
-      {!isReadMode && <RibbonHeader toggleSidebar={() => {}} />}
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {!isReadMode && (
