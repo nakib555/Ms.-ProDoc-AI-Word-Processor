@@ -14,10 +14,38 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
+import { Node, mergeAttributes } from '@tiptap/core';
 
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
+
+// Custom Page Break Extension
+const PageBreakExtension = Node.create({
+  name: 'pageBreak',
+  group: 'block',
+  atom: true,
+  draggable: true,
+  
+  parseHTML() {
+    return [
+      { tag: 'div', getAttrs: (node) => (node as HTMLElement).classList.contains('prodoc-page-break') && null },
+      { tag: 'hr', getAttrs: (node) => (node as HTMLElement).style.pageBreakAfter === 'always' && null }
+    ];
+  },
+  
+  renderHTML({ HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { class: 'prodoc-page-break', 'data-type': 'page-break' })];
+  },
+  
+  addCommands() {
+    return {
+      setPageBreak: () => ({ chain }) => {
+        return chain().insertContent({ type: this.name }).run();
+      },
+    };
+  },
+});
 
 // Define custom types for TipTap integration
 export interface EditorContextType {
@@ -178,6 +206,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
+      PageBreakExtension,
     ],
     content: DEFAULT_CONTENT,
     onUpdate: ({ editor }) => {
@@ -238,8 +267,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'fitWidth': setZoom(120); break;
         case 'save': manualSave(); break;
         case 'cut': 
-            // navigator.clipboard access usually requires user gesture/secure context
-            // Simulating via selection deletion as programmatic clip access is restricted
             document.execCommand('cut');
             break;
         case 'copy':

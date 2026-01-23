@@ -136,9 +136,48 @@
   outline: 3px solid #60a5fa;
 }
 
+/* Page Break Visualization in Editor */
+.prodoc-page-break {
+  border-top: 1px dashed #94a3b8;
+  margin: 1.5rem 0;
+  position: relative;
+  height: 0;
+  page-break-after: always;
+  display: block;
+}
+
+.prodoc-page-break::after {
+  content: 'Page Break';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f1f5f9; /* Match editor bg */
+  color: #64748b;
+  padding: 0 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.dark .prodoc-page-break::after {
+  background: #020617; /* Match dark editor bg */
+  color: #94a3b8;
+}
+
 /* Print styles */
 @media print {
   .no-print { display: none !important; }
   body { background: white; }
   .ProseMirror { padding: 0; margin: 0; }
+  
+  .prodoc-page-break {
+      height: 0;
+      border: none;
+      margin: 0;
+  }
+  .prodoc-page-break::after {
+      display: none;
+  }
 }

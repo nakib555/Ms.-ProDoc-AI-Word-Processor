@@ -92,7 +92,16 @@ const isAtomic = (node: Node): boolean => {
     return ['IMG', 'VIDEO', 'IFRAME', 'HR', 'MATH-FIELD'].includes(el.tagName) ||
            el.classList.contains('equation-wrapper') ||
            el.classList.contains('prodoc-page-break') ||
+           el.getAttribute('data-type') === 'page-break' ||
            el.classList.contains('prodoc-section-break');
+};
+
+// Check if a node contains a page break internally
+const containsPageBreak = (node: Node): boolean => {
+    if (node.nodeType !== Node.ELEMENT_NODE) return false;
+    const el = node as HTMLElement;
+    if (el.classList.contains('prodoc-page-break') || el.getAttribute('data-type') === 'page-break') return true;
+    return !!el.querySelector('.prodoc-page-break, [data-type="page-break"]');
 };
 
 const splitBlock = (
@@ -103,6 +112,8 @@ const splitBlock = (
     
     const effectiveLimit = Math.max(0, remainingHeight - SAFETY_BUFFER);
 
+    // If it's a page break or explicit atomic, move it entirely if it's the break itself, 
+    // but if it's a container with a break inside, we need deeper logic (handled by containsPageBreak check in paginate)
     if (isAtomic(originalNode)) {
         return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
     }
@@ -122,6 +133,19 @@ const splitBlock = (
             measureTable.appendChild(row);
             const newTotalHeight = measureTable.getBoundingClientRect().height;
             
+            // Check for explicit page breaks inside cells
+            if (containsPageBreak(row)) {
+                 // Force split at this row.
+                 // If the break is inside row i, we should ideally split inside the row, 
+                 // but for table robustness we usually push the whole row to next page.
+                 // Or if it's the first row, we push table.
+                 if (i === 0) {
+                     return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
+                 }
+                 splitIndex = i;
+                 break;
+            }
+
             if (newTotalHeight > effectiveLimit) {
                 if (i === 0) {
                      return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
@@ -165,6 +189,15 @@ const splitBlock = (
     const processNodes = (nodes: Node[], parentKeep: HTMLElement, parentMove: HTMLElement): boolean => {
         for (let i = 0; i < nodes.length; i++) {
             const child = nodes[i];
+            
+            // Check if this child forces a break
+            if (containsPageBreak(child) || (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).classList.contains('prodoc-page-break'))) {
+                 // Force move this and all subsequent siblings to next page
+                 parentMove.appendChild(child.cloneNode(true));
+                 moveSiblings(nodes, i + 1, parentMove);
+                 return true;
+            }
+
             const childClone = child.cloneNode(true);
             parentKeep.appendChild(childClone);
             
@@ -284,8 +317,14 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           }
           continue;
       }
-      const isPageBreak = node.classList?.contains('prodoc-page-break') || node.style?.pageBreakAfter === 'always' || node.style?.breakAfter === 'page';
-      if (isPageBreak) { currentPageNodes.push(node); flushPage(); continue; }
+      
+      const isPageBreak = node.classList?.contains('prodoc-page-break') || node.getAttribute('data-type') === 'page-break' || node.style?.pageBreakAfter === 'always' || node.style?.breakAfter === 'page';
+      
+      if (isPageBreak) { 
+          currentPageNodes.push(node); // Keep break marker on current page
+          flushPage(); 
+          continue; 
+      }
 
       const remainingForStart = Math.max(0, currentFrame.bodyHeight - currentH - SAFETY_BUFFER);
       if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) { flushPage(); i--; continue; }
@@ -294,7 +333,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
       if (currentH + nodeH > currentFrame.bodyHeight - SAFETY_BUFFER) {
           const remainingSpace = Math.max(0, currentFrame.bodyHeight - currentH);
           
-          // Safety valve: If we are at top of page and node fits nowhere (even split fails to produce keep), place it anyway to avoid loop
+          // Safety valve: If we are at top of page and node fits nowhere, place it
           if (currentH < MIN_LINE_HEIGHT * 2 && nodeH > remainingSpace) {
               const splitCheck = splitBlock(node, remainingSpace, sandbox);
               if (!splitCheck.keep && splitCheck.move) {
