@@ -169,6 +169,16 @@
   color: #94a3b8;
 }
 
+/* Hide visual page break line in Print Layout Mode where physical pages are shown */
+.print-layout-mode .prodoc-page-break {
+    border: none;
+    height: 0;
+    margin: 0;
+}
+.print-layout-mode .prodoc-page-break::after {
+    display: none;
+}
+
 /* Section Break Visualization */
 .prodoc-section-break {
     border-top: 2px dotted #64748b;
