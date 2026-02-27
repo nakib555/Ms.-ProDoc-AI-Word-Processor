@@ -52,7 +52,7 @@ export const FileModal: React.FC = () => {
   const isPrint = activeModal === 'print';
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={closeModal}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 no-print" onClick={closeModal}>
       <div 
          className={`
              bg-white dark:bg-slate-900 w-full rounded-2xl sm:rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-white/20 overflow-hidden

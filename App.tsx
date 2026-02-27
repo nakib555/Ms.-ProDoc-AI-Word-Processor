@@ -38,10 +38,12 @@ const AppContent: React.FC = () => {
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {!isReadMode && (
             <ErrorBoundary>
-                <Ribbon 
-                    activeTab={activeTab} 
-                    onTabChange={handleTabChange} 
-                />
+                <div className="no-print">
+                    <Ribbon 
+                        activeTab={activeTab} 
+                        onTabChange={handleTabChange} 
+                    />
+                </div>
             </ErrorBoundary>
         )}
         
@@ -53,7 +55,7 @@ const AppContent: React.FC = () => {
             
             {/* AI Overlay Loading State - Only show when thinking, not when writing/streaming */}
             {aiState === 'thinking' && (
-              <div className="absolute inset-0 bg-white/50 dark:bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-500">
+              <div className="absolute inset-0 bg-white/50 dark:bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-500 no-print">
                  <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-zoom-in mx-4 max-w-sm w-full border border-white/40 dark:border-slate-700 ring-1 ring-black/5">
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20 ring-4 ring-indigo-50 dark:ring-indigo-900/30 relative">
                       <LoadingSpinner className="w-10 h-10" />
@@ -66,12 +68,20 @@ const AppContent: React.FC = () => {
             )}
           </div>
           
-          <CopilotSidebar />
+          <div className="no-print">
+            <CopilotSidebar />
+          </div>
         </div>
       </div>
 
-      <MobileSelectionToolbar />
-      {!isReadMode && <StatusBar />}
+      <div className="no-print">
+        <MobileSelectionToolbar />
+      </div>
+      {!isReadMode && (
+        <div className="no-print">
+            <StatusBar />
+        </div>
+      )}
 
       {/* Global Page Setup Dialog */}
       {showPageSetup && (

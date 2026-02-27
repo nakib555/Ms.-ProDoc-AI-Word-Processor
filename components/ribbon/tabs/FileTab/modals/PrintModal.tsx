@@ -539,7 +539,7 @@ const PrintSettingsPanel: React.FC<{
 };
 
 export const PrintModal: React.FC = () => {
-  const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle } = useEditor();
+  const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle, setPageConfig } = useEditor();
   const { closeModal } = useFileTab();
   
   const [mobileTab, setMobileTab] = useState<'settings' | 'preview'>('settings');
@@ -566,6 +566,13 @@ export const PrintModal: React.FC = () => {
 
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
+      
+      // Update global config to match local print settings so the editor reflects the print layout
+      setPageConfig(localConfig);
+      
+      // Wait for editor to re-render with new config
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       await generatePdfPrint(content, localConfig, headerContent, footerContent);
       setIsPreparingPrint(false);
   };

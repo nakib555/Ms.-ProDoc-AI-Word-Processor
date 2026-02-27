@@ -589,7 +589,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   return (
     <div 
-        className="relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] mx-auto origin-top"
+        className="prodoc-page-wrapper relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] mx-auto origin-top"
         style={{ width: `${widthIn * scale}in`, height: `${heightIn * scale}in` }}
     >
         <div 

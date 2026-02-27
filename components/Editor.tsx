@@ -30,7 +30,9 @@ const Editor: React.FC = () => {
 
   return (
     <>
-        <MiniToolbar />
+        <div className="no-print">
+            <MiniToolbar />
+        </div>
         
         {viewMode === 'print' ? (
             <div className="flex-1 h-full w-full print-layout-mode overflow-hidden flex flex-col">
