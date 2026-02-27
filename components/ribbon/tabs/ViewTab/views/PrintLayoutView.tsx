@@ -317,16 +317,20 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         if (!isMounted) return;
         
         const currentCursor = getGlobalCursorPosition();
-        const result = paginateContent(content, pageConfig);
         
-        setPagesData(result.pages);
-        setTotalPages(result.pages.length);
+        // Use requestAnimationFrame to avoid blocking the main thread immediately
+        requestAnimationFrame(() => {
+             const result = paginateContent(content, pageConfig);
+             
+             setPagesData(result.pages);
+             setTotalPages(result.pages.length);
+             
+             if (currentCursor !== null) {
+                 cursorRestorationRef.current = currentCursor;
+             }
+        });
         
-        if (currentCursor !== null) {
-            cursorRestorationRef.current = currentCursor;
-        }
-        
-    }, 40);
+    }, 200);
 
     return () => { 
         isMounted = false; 

@@ -348,15 +348,15 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       }
   }, [activeFooterContent, pageNumber]);
 
-  // Observer for main content
-  useEffect(() => {
-    if (!editorRef.current || readOnly || !onContentChange || selectedImage) return;
-    const observer = new MutationObserver(() => {
-        if (editorRef.current) onContentChange(editorRef.current.innerHTML, pageNumber - 1);
-    });
-    observer.observe(editorRef.current, { characterData: true, childList: true, subtree: true, attributes: true });
-    return () => observer.disconnect();
-  }, [onContentChange, pageNumber, readOnly, selectedImage]);
+  // Observer for main content - Removed to prevent double updates with onInput
+  // useEffect(() => {
+  //   if (!editorRef.current || readOnly || !onContentChange || selectedImage) return;
+  //   const observer = new MutationObserver(() => {
+  //       if (editorRef.current) onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+  //   });
+  //   observer.observe(editorRef.current, { characterData: true, childList: true, subtree: true, attributes: true });
+  //   return () => observer.disconnect();
+  // }, [onContentChange, pageNumber, readOnly, selectedImage]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     if (onContentChange) onContentChange(e.currentTarget.innerHTML, pageNumber - 1);

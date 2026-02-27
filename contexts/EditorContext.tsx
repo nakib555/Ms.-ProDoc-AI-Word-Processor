@@ -343,11 +343,18 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
      // Placeholder
   };
   
-  const handlePasteSpecial = async () => {}; // TipTap handles paste
+  const handlePasteSpecial = useCallback(async (type: 'keep-source' | 'merge' | 'text-only') => {}, []); // TipTap handles paste
 
-  const pageDimensions = { width: 816, height: 1056 }; // Default Letter
+  const pageDimensions = useMemo(() => ({ width: 816, height: 1056 }), []); // Default Letter
   
-  const contextValue = {
+  const addCustomStyle = useCallback((name: string) => {}, []);
+  const applyCustomStyle = useCallback((style: CustomStyle) => {}, []);
+  const applyAdvancedStyleCallback = useCallback((styles: React.CSSProperties) => applyAdvancedStyle(styles), []);
+  const applyBlockStyleCallback = useCallback((styles: React.CSSProperties) => applyBlockStyle(styles), []);
+  const setIsAIProcessing = useCallback((v: boolean) => setAiState(v ? 'thinking' : 'idle'), []);
+  const registerContainer = useCallback((node: HTMLDivElement | null) => { containerRef.current = node; }, []);
+
+  const contextValue = useMemo(() => ({
     editor,
     content: editor?.getHTML() || '',
     setContent,
@@ -372,7 +379,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     showPageSetup,
     setShowPageSetup,
     pageDimensions,
-    registerContainer: (node: HTMLDivElement | null) => { containerRef.current = node; },
+    registerContainer,
     showRuler,
     setShowRuler,
     documentTitle,
@@ -382,11 +389,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     creationDate,
     showFormattingMarks,
     setShowFormattingMarks,
-    customStyles: [],
-    addCustomStyle: () => {},
-    applyCustomStyle: () => {},
-    applyAdvancedStyle,
-    applyBlockStyle,
+    customStyles: [] as CustomStyle[],
+    addCustomStyle,
+    applyCustomStyle,
+    applyAdvancedStyle: applyAdvancedStyleCallback,
+    applyBlockStyle: applyBlockStyleCallback,
     handlePasteSpecial,
     activeElementType,
     currentPage,
@@ -398,7 +405,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     aiState,
     setAiState,
     isAIProcessing: aiState !== 'idle',
-    setIsAIProcessing: (v: boolean) => setAiState(v ? 'thinking' : 'idle'),
+    setIsAIProcessing,
     activeEditingArea,
     setActiveEditingArea,
     headerContent,
@@ -416,7 +423,46 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     hasActiveSelection,
     selectionAction,
     setSelectionAction
-  };
+  }), [
+    editor,
+    setContent,
+    wordCount,
+    zoom,
+    viewMode,
+    pageMovement,
+    readConfig,
+    saveStatus,
+    executeCommand,
+    pageConfig,
+    showPageSetup,
+    pageDimensions,
+    registerContainer,
+    showRuler,
+    documentTitle,
+    lastModified,
+    creationDate,
+    showFormattingMarks,
+    addCustomStyle,
+    applyCustomStyle,
+    applyAdvancedStyleCallback,
+    applyBlockStyleCallback,
+    handlePasteSpecial,
+    activeElementType,
+    currentPage,
+    totalPages,
+    showCopilot,
+    aiState,
+    setIsAIProcessing,
+    activeEditingArea,
+    headerContent,
+    footerContent,
+    firstHeaderContent,
+    firstFooterContent,
+    isKeyboardLocked,
+    selectionMode,
+    hasActiveSelection,
+    selectionAction
+  ]);
 
   return (
     <EditorContext.Provider value={contextValue}>
