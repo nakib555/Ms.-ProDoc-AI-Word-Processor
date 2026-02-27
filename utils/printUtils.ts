@@ -2,11 +2,18 @@
 import { PageConfig } from '../types';
 import { PAGE_SIZES } from '../constants';
 
+export interface PrintOptions {
+    range: 'all' | 'current' | 'custom';
+    pages?: string;
+    currentPage?: number;
+}
+
 export const generatePdfPrint = async (
     content: string, 
     config: PageConfig, 
     headerContent: string, 
-    footerContent: string
+    footerContent: string,
+    options: PrintOptions = { range: 'all' }
 ): Promise<void> => {
     try {
         const { size, orientation, margins } = config;
@@ -30,6 +37,45 @@ export const generatePdfPrint = async (
         }
 
         const sizeCss = `${widthIn}in ${heightIn}in`;
+
+        // Generate page visibility CSS
+        let pageVisibilityCss = '';
+        
+        if (options.range === 'current' && options.currentPage !== undefined) {
+            // Show only current page (0-based index)
+            const pageIndex = options.currentPage - 1;
+            pageVisibilityCss = `
+                .prodoc-page-wrapper { display: none !important; }
+                .prodoc-page-wrapper[data-page-index="${pageIndex}"] { display: block !important; }
+            `;
+        } else if (options.range === 'custom' && options.pages) {
+            // Parse custom range (e.g., "1-3, 5")
+            const pagesToShow = new Set<number>();
+            const parts = options.pages.split(',').map(p => p.trim());
+            
+            parts.forEach(part => {
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(n => parseInt(n, 10));
+                    if (!isNaN(start) && !isNaN(end)) {
+                        for (let i = start; i <= end; i++) pagesToShow.add(i - 1);
+                    }
+                } else {
+                    const page = parseInt(part, 10);
+                    if (!isNaN(page)) pagesToShow.add(page - 1);
+                }
+            });
+
+            if (pagesToShow.size > 0) {
+                const selectors = Array.from(pagesToShow)
+                    .map(i => `.prodoc-page-wrapper[data-page-index="${i}"]`)
+                    .join(',\n');
+                
+                pageVisibilityCss = `
+                    .prodoc-page-wrapper { display: none !important; }
+                    ${selectors} { display: block !important; }
+                `;
+            }
+        }
 
         // Create a style element for print-specific overrides
         const styleEl = document.createElement('style');
@@ -103,6 +149,9 @@ export const generatePdfPrint = async (
                     content-visibility: visible !important;
                     contain-intrinsic-size: auto !important;
                 }
+
+                /* Apply page visibility rules */
+                ${pageVisibilityCss}
                 
                 /* Target the page sheet */
                 .prodoc-page-sheet {
