@@ -156,6 +156,17 @@ export interface PageConfig {
   // Paper Source
   paperSourceFirstPage?: string;
   paperSourceOtherPages?: string;
+
+  // Line Numbers & Hyphenation
+  lineNumbers?: {
+    enabled: boolean;
+    startAt?: number;
+    restartEachPage?: boolean;
+    restartEachSection?: boolean;
+    distanceFromText?: number; // inches
+    countBy?: number;
+  };
+  hyphenation?: boolean;
 }
 
 export interface CustomStyle {

@@ -122,6 +122,8 @@ export const generatePdfPrint = async (
                     column-count: ${config.columns || 1} !important;
                     column-gap: ${config.columnGap || 0.5}in !important;
                     column-fill: auto !important;
+                    hyphens: ${config.hyphenation ? 'auto' : 'none'} !important;
+                    -webkit-hyphens: ${config.hyphenation ? 'auto' : 'none'} !important;
                 }
                 
                 /* Hide placeholders in print */

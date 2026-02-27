@@ -654,7 +654,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         minHeight: '100%',
                         columnCount: config.columns || 1,
                         columnGap: `${config.columnGap || 0.5}in`,
-                        columnFill: 'auto'
+                        columnFill: 'auto',
+                        hyphens: config.hyphenation ? 'auto' : 'none',
+                        WebkitHyphens: config.hyphenation ? 'auto' : 'none',
                     }}
                 />
                 {selectedImage && editorRef.current && (
@@ -713,7 +715,8 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
         prev.config.watermark === next.config.watermark &&
         prev.config.background === next.config.background &&
         prev.config.columns === next.config.columns &&
-        prev.config.columnGap === next.config.columnGap
+        prev.config.columnGap === next.config.columnGap &&
+        prev.config.hyphenation === next.config.hyphenation
     );
 };
 
