@@ -462,7 +462,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
        {showRuler && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#f8fafc] dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 z-20 shrink-0 sticky top-0 shadow-sm"
+            className="w-full overflow-hidden bg-[#f8fafc] dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 z-20 shrink-0 sticky top-0 shadow-sm no-print"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >

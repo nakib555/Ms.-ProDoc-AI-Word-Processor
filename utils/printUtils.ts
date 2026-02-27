@@ -72,11 +72,18 @@ export const generatePdfPrint = async (
                     display: none !important;
                 }
                 
-                /* Target the scroll container inside PrintLayoutView */
-                .print-layout-mode > div {
+                /* Target the scroll container and flex layouts */
+                .print-layout-mode,
+                .print-layout-mode * {
                     overflow: visible !important;
                     height: auto !important;
-                    display: block !important;
+                }
+
+                /* Remove gaps and padding from the page container */
+                .print-layout-mode .flex {
+                    gap: 0 !important;
+                    padding: 0 !important;
+                    display: block !important; /* Stack pages vertically */
                 }
                 
                 /* Target the page wrapper */
@@ -91,6 +98,10 @@ export const generatePdfPrint = async (
                     height: auto !important;
                     display: block !important;
                     float: none !important;
+                    
+                    /* Disable virtualization for print */
+                    content-visibility: visible !important;
+                    contain-intrinsic-size: auto !important;
                 }
                 
                 /* Target the page sheet */
@@ -108,6 +119,9 @@ export const generatePdfPrint = async (
                 /* Ensure text colors are black for print */
                 .prodoc-editor {
                     color: black !important;
+                    column-count: ${config.columns || 1} !important;
+                    column-gap: ${config.columnGap || 0.5}in !important;
+                    column-fill: auto !important;
                 }
                 
                 /* Hide placeholders in print */

@@ -140,6 +140,8 @@ export interface PageConfig {
   headerDistance: number; // inches from edge
   footerDistance: number; // inches from edge
   verticalAlign: VerticalAlignment;
+  columns?: number; // Number of text columns (default 1)
+  columnGap?: number; // inches (default 0.5)
   customWidth?: number; // For custom size
   customHeight?: number; // For custom size
   gutterPosition?: 'left' | 'top';

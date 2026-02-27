@@ -1,16 +1,18 @@
 
 import React from 'react';
 import { Columns, AlignStartVertical } from 'lucide-react';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { useLayoutTab } from '../LayoutTabContext';
 import { DropdownButton } from '../common/LayoutTools';
 import { MenuPortal } from '../../../common/MenuPortal';
 
 export const ColumnsTool: React.FC = () => {
   const { activeMenu, menuPos, closeMenu } = useLayoutTab();
+  const { setPageConfig } = useEditor();
   const menuId = 'columns';
 
   const handleColumnChange = (cols: number) => {
-      alert(`Set columns to ${cols}. Note: Multi-column layout requires print view mode.`);
+      setPageConfig(prev => ({ ...prev, columns: cols }));
       closeMenu();
   };
 

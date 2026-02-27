@@ -283,7 +283,18 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
 
   let currentConfig = { ...initialConfig };
   let currentFrame = new PageFrame(currentConfig);
-  sandbox.setWidth(currentFrame.bodyWidth);
+  
+  // Multi-column support logic
+  const getEffectiveDimensions = (frame: PageFrame, config: PageConfig) => {
+      const cols = config.columns || 1;
+      const gap = (config.columnGap || 0.5) * DPI;
+      const effectiveWidth = (frame.bodyWidth - (cols - 1) * gap) / cols;
+      const effectiveHeight = frame.bodyHeight * cols;
+      return { effectiveWidth, effectiveHeight };
+  };
+
+  let { effectiveWidth, effectiveHeight } = getEffectiveDimensions(currentFrame, currentConfig);
+  sandbox.setWidth(effectiveWidth);
 
   let currentPageNodes: HTMLElement[] = [];
   let currentH = 0;
@@ -306,7 +317,10 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
                   const newSettings = JSON.parse(decodeURIComponent(configData));
                   currentConfig = { ...currentConfig, ...newSettings };
                   currentFrame = new PageFrame(currentConfig);
-                  sandbox.setWidth(currentFrame.bodyWidth);
+                  const dims = getEffectiveDimensions(currentFrame, currentConfig);
+                  effectiveWidth = dims.effectiveWidth;
+                  effectiveHeight = dims.effectiveHeight;
+                  sandbox.setWidth(effectiveWidth);
               } catch (e) { console.error("Failed to parse section break", e); }
           }
           if (currentPageNodes.length > 0) flushPage();
@@ -328,12 +342,12 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
 
       lastWasBreak = false;
 
-      const remainingForStart = Math.max(0, currentFrame.bodyHeight - currentH - SAFETY_BUFFER);
+      const remainingForStart = Math.max(0, effectiveHeight - currentH - SAFETY_BUFFER);
       if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) { flushPage(); i--; continue; }
 
       const nodeH = sandbox.measure(node);
-      if (currentH + nodeH > currentFrame.bodyHeight - SAFETY_BUFFER) {
-          const remainingSpace = Math.max(0, currentFrame.bodyHeight - currentH);
+      if (currentH + nodeH > effectiveHeight - SAFETY_BUFFER) {
+          const remainingSpace = Math.max(0, effectiveHeight - currentH);
           
           // Safety valve: If we are at top of page and node fits nowhere, place it
           if (currentH < MIN_LINE_HEIGHT * 2 && nodeH > remainingSpace) {

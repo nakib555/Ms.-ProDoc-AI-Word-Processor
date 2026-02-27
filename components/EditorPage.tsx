@@ -647,7 +647,15 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     onContextMenu={(e) => selectionMode && e.preventDefault()}
                     onPointerDown={handleSmartPointerDown} onPointerMove={handleSmartPointerMove} onPointerUp={handleSmartPointerUp} onPointerCancel={handleSmartPointerUp}
                     suppressContentEditableWarning={true}
-                    style={{ fontFamily: 'Calibri, Inter, sans-serif', color: '#000000', flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined, minHeight: '100%' }}
+                    style={{ 
+                        fontFamily: 'Calibri, Inter, sans-serif', 
+                        color: '#000000', 
+                        flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined, 
+                        minHeight: '100%',
+                        columnCount: config.columns || 1,
+                        columnGap: `${config.columnGap || 0.5}in`,
+                        columnFill: 'auto'
+                    }}
                 />
                 {selectedImage && editorRef.current && (
                     <ResizerOverlay target={selectedImage} container={editorRef.current} scale={1} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
@@ -703,7 +711,9 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
         prev.config.footerDistance === next.config.footerDistance &&
         prev.config.pageColor === next.config.pageColor &&
         prev.config.watermark === next.config.watermark &&
-        prev.config.background === next.config.background
+        prev.config.background === next.config.background &&
+        prev.config.columns === next.config.columns &&
+        prev.config.columnGap === next.config.columnGap
     );
 };
 
