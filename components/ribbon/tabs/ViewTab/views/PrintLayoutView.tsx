@@ -459,7 +459,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   return (
     <div 
-      className="w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300 touch-pan-x touch-pan-y"
+      className="print-layout-mode w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300 touch-pan-x touch-pan-y"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >

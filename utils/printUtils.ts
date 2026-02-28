@@ -87,6 +87,21 @@ export const generatePdfPrint = async (
             }
             
             @media print {
+                /* Force white background and black text globally for print */
+                html, body, #root, .print-layout-mode, .prodoc-page-wrapper, .prodoc-page-sheet {
+                    background-color: white !important;
+                    background: white !important;
+                    color: black !important;
+                }
+
+                /* Ensure text colors are black for print and backgrounds transparent */
+                .prodoc-editor, .prodoc-editor * {
+                    color: black !important;
+                    background-color: transparent !important;
+                    text-shadow: none !important;
+                    box-shadow: none !important;
+                }
+
                 /* Hide everything by default */
                 body > * {
                     display: none !important;
@@ -114,7 +129,7 @@ export const generatePdfPrint = async (
                 }
 
                 /* Hide UI elements explicitly */
-                .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .copilot-sidebar, .mobile-selection-toolbar {
+                .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .copilot-sidebar, .mobile-selection-toolbar, .ProseMirror-selectednode {
                     display: none !important;
                 }
                 
@@ -165,9 +180,7 @@ export const generatePdfPrint = async (
                     background: white !important;
                 }
 
-                /* Ensure text colors are black for print */
                 .prodoc-editor {
-                    color: black !important;
                     column-count: ${config.columns || 1} !important;
                     column-gap: ${config.columnGap || 0.5}in !important;
                     column-fill: auto !important;
@@ -182,24 +195,27 @@ export const generatePdfPrint = async (
             }
         `;
         
+        // Remove existing print style if any
+        const existingStyle = document.getElementById('native-print-style');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+
         document.head.appendChild(styleEl);
         
-        // Give time for styles to apply
+        // Give time for styles to apply and layout to stabilize
         setTimeout(() => {
             window.print();
-        }, 100);
-        
-        const cleanup = () => {
-            if (document.head.contains(styleEl)) {
-                document.head.removeChild(styleEl);
-            }
-            window.removeEventListener('afterprint', cleanup);
-        };
-        
-        window.addEventListener('afterprint', cleanup);
-        
-        // Fallback cleanup
-        setTimeout(cleanup, 5000); 
+            
+            // Cleanup after print dialog closes (or after a delay if non-blocking)
+            // Note: In many browsers window.print() is blocking, so this runs after dialog closes.
+            // In others, it might run immediately. We use a small delay to be safe.
+            setTimeout(() => {
+                 if (document.head.contains(styleEl)) {
+                    document.head.removeChild(styleEl);
+                }
+            }, 500);
+        }, 250); // Increased delay to ensure styles apply
 
     } catch (e) {
         console.error("Print Error:", e);
