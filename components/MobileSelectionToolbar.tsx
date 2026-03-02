@@ -18,9 +18,11 @@ export const MobileSelectionToolbar: React.FC = () => {
     // Clear selection when mode is deactivated
     useEffect(() => {
         if (!selectionMode) {
-            setIsExtending(false);
+            setTimeout(() => {
+                setIsExtending(false);
+                setSelectionAction(null);
+            }, 0);
             window.getSelection()?.removeAllRanges();
-            setSelectionAction(null);
         }
     }, [selectionMode, setSelectionAction]);
 
