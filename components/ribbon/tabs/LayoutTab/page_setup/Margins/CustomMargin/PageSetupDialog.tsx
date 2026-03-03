@@ -26,7 +26,10 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setLocalConfig(JSON.parse(JSON.stringify(config)));
+      const t = setTimeout(() => {
+        setLocalConfig(JSON.parse(JSON.stringify(config)));
+      }, 0);
+      return () => clearTimeout(t);
     }
   }, [isOpen, config]);
 

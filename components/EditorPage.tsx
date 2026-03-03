@@ -168,6 +168,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   setFirstFooterContent
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const [editorElement, setEditorElement] = useState<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
@@ -524,8 +525,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   // Margins & Styles
   const getMarginsInches = () => {
     const m = config.margins;
-    let top = Math.max(m.top, config.headerDistance || 0);
-    let bottom = Math.max(m.bottom, config.footerDistance || 0);
+    // Removed Math.max constraint to allow dynamic adjustment
+    let top = m.top;
+    let bottom = m.bottom;
     let left = m.left;
     let right = m.right;
     const gutter = m.gutter || 0;
@@ -541,6 +543,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     return { top, right, bottom, left };
   };
   const margins = getMarginsInches();
+
+  // Dynamic Header/Footer Distance Calculation
+  // Scales down the distance if the margin is too small to accommodate the default distance
+  const defaultHeaderDist = config.headerDistance || 0.5;
+  const effectiveHeaderDist = Math.min(defaultHeaderDist, margins.top / 2);
+
+  const defaultFooterDist = config.footerDistance || 0.5;
+  const effectiveFooterDist = Math.min(defaultFooterDist, margins.bottom / 2);
 
   const getBackgroundStyle = (): React.CSSProperties => {
       const base: React.CSSProperties = { backgroundColor: config.pageColor || '#ffffff' };
@@ -607,11 +617,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             {/* Header Area */}
             <div 
                 className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
-                style={{ top: 0, height: `${margins.top}in`, maxHeight: `${safeMaxHeaderHeight}in`, paddingTop: `${config.headerDistance || 0.5}in`, paddingLeft: `${margins.left}in`, paddingRight: `${margins.right}in` }}
+                style={{ top: 0, height: `${margins.top}in`, maxHeight: `${safeMaxHeaderHeight}in`, paddingTop: `${effectiveHeaderDist}in`, paddingLeft: `${margins.left}in`, paddingRight: `${margins.right}in` }}
                 onDoubleClick={onHeaderDoubleClick} onMouseDown={(e) => e.stopPropagation()} 
             >
-                <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
-                    {isHeaderFooterMode && <div className="header-footer-label bg-indigo-600 text-white" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>{isFirstPage && useDifferentFirstPage ? "First Page Header" : "Header"}</div>}
+                <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500 print:border-none' : 'hover:bg-slate-50/50'}`}>
+                    {isHeaderFooterMode && <div className="header-footer-label bg-indigo-600 text-white print:hidden" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>{isFirstPage && useDifferentFirstPage ? "First Page Header" : "Header"}</div>}
                     <div 
                         ref={headerRef}
                         className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
@@ -639,7 +649,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             >
                 <div
                     id={`prodoc-editor-${pageNumber}`}
-                    ref={editorRef}
+                    ref={(el) => {
+                        editorRef.current = el;
+                        if (el !== editorElement) setEditorElement(el);
+                    }}
                     className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
                     contentEditable={isBodyEditable}
                     inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
@@ -659,19 +672,19 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         WebkitHyphens: config.hyphenation ? 'auto' : 'none',
                     }}
                 />
-                {selectedImage && editorRef.current && (
-                    <ResizerOverlay target={selectedImage} container={editorRef.current} scale={1} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
+                {selectedImage && editorElement && (
+                    <ResizerOverlay target={selectedImage} container={editorElement} scale={1} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
                 )}
             </div>
 
             {/* Footer Area */}
             <div 
                 className={`absolute left-0 right-0 z-30 ${isHeaderFooterMode ? 'z-50' : ''}`}
-                style={{ bottom: 0, height: `${margins.bottom}in`, maxHeight: `${safeMaxFooterHeight}in`, paddingBottom: `${config.footerDistance || 0.5}in`, paddingLeft: `${margins.left}in`, paddingRight: `${margins.right}in` }}
+                style={{ bottom: 0, height: `${margins.bottom}in`, maxHeight: `${safeMaxFooterHeight}in`, paddingBottom: `${effectiveFooterDist}in`, paddingLeft: `${margins.left}in`, paddingRight: `${margins.right}in` }}
                 onDoubleClick={onFooterDoubleClick} onMouseDown={(e) => e.stopPropagation()} 
             >
-                 <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-indigo-500' : 'hover:bg-slate-50/50'}`}>
-                    {isHeaderFooterMode && <div className="header-footer-label footer-tag bg-indigo-600 text-white" style={{ left: 0, top: -2, transform: 'translateY(-100%)' }}>{isFirstPage && useDifferentFirstPage ? "First Page Footer" : "Footer"}</div>}
+                 <div className={`w-full h-full relative flex flex-col justify-end ${isHeaderFooterMode ? 'border-t-2 border-dashed border-indigo-500 print:border-none' : 'hover:bg-slate-50/50'}`}>
+                    {isHeaderFooterMode && <div className="header-footer-label footer-tag bg-indigo-600 text-white print:hidden" style={{ left: 0, top: -2, transform: 'translateY(-100%)' }}>{isFirstPage && useDifferentFirstPage ? "First Page Footer" : "Footer"}</div>}
                     <div 
                         ref={footerRef}
                         className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}

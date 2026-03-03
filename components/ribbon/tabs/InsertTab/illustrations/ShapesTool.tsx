@@ -1,10 +1,10 @@
 
 import React, { useCallback } from 'react';
 import { Shapes } from 'lucide-react';
-import { useEditor } from '../../../../../../contexts/EditorContext';
-import { useInsertTab } from '../../InsertTabContext';
-import { DropdownButton } from '../../common/InsertTools';
-import { MenuPortal } from '../../../../common/MenuPortal';
+import { useEditor } from '@/contexts/EditorContext';
+import { useInsertTab } from '@/components/ribbon/tabs/InsertTab/InsertTabContext';
+import { DropdownButton } from '@/components/ribbon/tabs/InsertTab/common/InsertTools';
+import { MenuPortal } from '@/components/ribbon/common/MenuPortal';
 
 import { LineShapes } from './Shapes/lines';
 import { RectangleShapes } from './Shapes/rectangles';
@@ -14,21 +14,21 @@ import { EquationShapes } from './Shapes/equationShapes';
 import { FlowchartShapes } from './Shapes/flowchart';
 import { StarsAndBannersShapes } from './Shapes/starsAndBanners';
 
-interface ShapeDef {
+export interface ShapeDef {
     id: string;
     title: string;
     path: string;
 }
 
 // Helper to generate SVG for specific shapes to ensure they are "thin" single lines/strokes
-const getShapeHtml = (shape: ShapeDef) => {
+export const getShapeHtml = (shape: ShapeDef) => {
     const commonStyle = "display: inline-block; margin: 10px; vertical-align: middle;";
     const stroke = "#1e293b"; // Slate-800
-    const strokeWidth = "1";
+    const strokeWidth = "2"; // Matched to Lucide default stroke width
     
     // For complex shapes that fallback to path, we use stroke-width scaled for the 2048 viewBox
-    // 64px render size / 2048 units = 1/32 scale. 1px target / (1/32) = 32 units.
-    const complexStrokeWidth = "32"; 
+    // 64px render size / 2048 units = 1/32 scale. 2px target / (1/32) = 64 units.
+    const complexStrokeWidth = "64"; 
 
     switch (shape.id) {
         // --- Lines ---
@@ -62,16 +62,16 @@ const getShapeHtml = (shape: ShapeDef) => {
 
         // --- Basic Geometry (Outlined) ---
         case 'Rectangle':
-            return `<div style="${commonStyle} width: 100px; height: 60px; border: 1px solid ${stroke}; background: transparent;"></div>`;
+            return `<div style="${commonStyle} width: 100px; height: 60px; border: 2px solid ${stroke}; background: transparent;"></div>`;
             
         case 'RoundedRectangle':
-            return `<div style="${commonStyle} width: 100px; height: 60px; border: 1px solid ${stroke}; background: transparent; border-radius: 12px;"></div>`;
+            return `<div style="${commonStyle} width: 100px; height: 60px; border: 2px solid ${stroke}; background: transparent; border-radius: 12px;"></div>`;
             
         case 'Ellipse': // Oval
-            return `<div style="${commonStyle} width: 80px; height: 80px; border: 1px solid ${stroke}; background: transparent; border-radius: 50%;"></div>`;
+            return `<div style="${commonStyle} width: 80px; height: 80px; border: 2px solid ${stroke}; background: transparent; border-radius: 50%;"></div>`;
             
         case 'TextBox':
-             return `<div style="${commonStyle} width: 120px; height: 60px; border: 1px solid #94a3b8; background: white; padding: 8px; font-size: 12px; color: #475569;">Text Box</div>`;
+             return `<div style="${commonStyle} width: 120px; height: 60px; border: 2px solid #94a3b8; background: white; padding: 8px; font-size: 12px; color: #475569;">Text Box</div>`;
 
         case 'Triangle': // Isosceles
              return `<svg width="100" height="100" viewBox="0 0 100 100" style="${commonStyle} overflow: visible;">
@@ -100,7 +100,7 @@ const ShapeItem: React.FC<{
         type="button"
         onClick={onClick}
         onMouseDown={(e) => e.preventDefault()}
-        className="w-7 h-7 flex items-center justify-center hover:bg-slate-200 rounded-sm border border-transparent hover:border-blue-300 transition-all text-slate-700 hover:text-blue-700 p-0.5"
+        className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md border border-transparent hover:border-slate-300 dark:hover:border-slate-600 transition-all text-slate-700 dark:text-slate-300 p-1"
         title={title}
     >
         <svg 
@@ -109,7 +109,9 @@ const ShapeItem: React.FC<{
             viewBox="0 0 2048 2048" 
             fill="none" 
             stroke="currentColor"
-            strokeWidth="80"
+            strokeWidth="120" 
+            strokeLinecap="round"
+            strokeLinejoin="round"
             className="pointer-events-none"
         >
             <path d={path} />
@@ -133,7 +135,7 @@ const ShapeCategory: React.FC<{ title: string; shapes: Array<ShapeDef>; onInsert
     </div>
 ));
 
-const ShapesMenu = React.memo<{ onInsert: (shape: ShapeDef) => void }>(({ onInsert }) => {
+export const ShapesMenu = React.memo<{ onInsert: (shape: ShapeDef) => void }>(({ onInsert }) => {
     return (
         <div className="p-3 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 select-none" onScroll={(e) => e.stopPropagation()}>
             <ShapeCategory title="Lines" shapes={LineShapes} onInsert={onInsert} />

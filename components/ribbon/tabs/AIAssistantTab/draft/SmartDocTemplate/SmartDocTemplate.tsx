@@ -45,8 +45,11 @@ export const SmartDocTemplateTool: React.FC = () => {
 
   useEffect(() => {
       if (!isActive) {
-          setShowBuilder(false);
-          setSelectedStyle('Professional');
+          const t = setTimeout(() => {
+              setShowBuilder(false);
+              setSelectedStyle('Professional');
+          }, 0);
+          return () => clearTimeout(t);
       }
   }, [isActive]);
 

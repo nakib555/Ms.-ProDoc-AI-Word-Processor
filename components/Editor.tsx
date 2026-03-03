@@ -1,11 +1,39 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useState, useLayoutEffect } from 'react';
 import { useEditor } from '../contexts/EditorContext';
 import { MiniToolbar } from './MiniToolbar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { PrintLayoutView } from './ribbon/tabs/ViewTab/views/PrintLayoutView';
 import { WebLayoutView } from './ribbon/tabs/ViewTab/views/WebLayoutTool';
 import { ReadLayoutView } from './ribbon/tabs/ViewTab/views/ReadLayoutView';
+
+const ResponsiveContainer = ({ children }: { children: (size: { width: number, height: number }) => React.ReactNode }) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [size, setSize] = useState({ width: 0, height: 0 });
+
+    useLayoutEffect(() => {
+        if (!ref.current) return;
+        
+        const updateSize = () => {
+            if (ref.current) {
+                const { width, height } = ref.current.getBoundingClientRect();
+                setSize({ width, height });
+            }
+        };
+
+        updateSize();
+
+        const observer = new ResizeObserver(updateSize);
+        observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
+
+    return (
+        <div ref={ref} className="w-full h-full overflow-hidden relative">
+            {children(size)}
+        </div>
+    );
+};
 
 const Editor: React.FC = () => {
   const { editor, viewMode, content, setContent, pageConfig, zoom, showRuler, showFormattingMarks, registerContainer, editorRef } = useEditor();
@@ -36,17 +64,21 @@ const Editor: React.FC = () => {
         
         {viewMode === 'print' ? (
             <div className="flex-1 h-full w-full print-layout-mode overflow-hidden flex flex-col">
-                <PrintLayoutView 
-                    width={window.innerWidth}
-                    height={window.innerHeight}
-                    content={content}
-                    setContent={handleContentChange}
-                    pageConfig={pageConfig}
-                    zoom={zoom}
-                    showRuler={showRuler}
-                    showFormattingMarks={showFormattingMarks}
-                    containerRef={registerContainer}
-                />
+                <ResponsiveContainer>
+                    {({ height, width }) => (
+                        <PrintLayoutView 
+                            width={width}
+                            height={height}
+                            content={content}
+                            setContent={handleContentChange}
+                            pageConfig={pageConfig}
+                            zoom={zoom}
+                            showRuler={showRuler}
+                            showFormattingMarks={showFormattingMarks}
+                            containerRef={registerContainer}
+                        />
+                    )}
+                </ResponsiveContainer>
             </div>
         ) : (
             <div className="flex-1 h-full w-full web-layout-mode overflow-hidden flex flex-col">

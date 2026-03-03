@@ -168,6 +168,10 @@ export interface EditorContextType {
   isKeyboardLocked: boolean;
   setIsKeyboardLocked: React.Dispatch<React.SetStateAction<boolean>>;
 
+  // Zoom Mode
+  zoomMode: 'custom' | 'fit-width' | 'fit-page';
+  setZoomMode: React.Dispatch<React.SetStateAction<'custom' | 'fit-width' | 'fit-page'>>;
+
   // Selection Mode
   selectionMode: boolean;
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -185,6 +189,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastModified, setLastModified] = useState(() => new Date());
   const [wordCount, setWordCount] = useState(0);
   const [zoom, setZoom] = useState(100);
+  const [zoomMode, setZoomMode] = useState<'custom' | 'fit-width' | 'fit-page'>('custom');
   const [viewMode, setViewMode] = useState<ViewMode>('print'); // 'print' acts as our main view now
   const [pageMovement, setPageMovement] = useState<PageMovement>('vertical');
   const [showRuler, setShowRuler] = useState(true);
@@ -315,9 +320,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'insertText': editor.chain().focus().insertContent(value!).run(); break;
         case 'selectAll': editor.chain().focus().selectAll().run(); break;
         case 'removeFormat': editor.chain().focus().unsetAllMarks().clearNodes().run(); break;
-        case 'zoomReset': setZoom(100); break;
-        case 'fitPage': setZoom(75); break;
-        case 'fitWidth': setZoom(120); break;
+        case 'zoomReset': 
+            setZoomMode('custom');
+            setZoom(100); 
+            break;
+        case 'fitPage': setZoomMode('fit-page'); break;
+        case 'fitWidth': setZoomMode('fit-width'); break;
         case 'save': manualSave(); break;
         case 'pageBreak': editor.chain().focus().setPageBreak().run(); break;
         case 'cut': 
@@ -365,6 +373,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     wordCount,
     zoom,
     setZoom,
+    zoomMode,
+    setZoomMode,
     viewMode,
     setViewMode,
     pageMovement,
@@ -428,6 +438,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setContent,
     wordCount,
     zoom,
+    zoomMode,
     viewMode,
     pageMovement,
     readConfig,

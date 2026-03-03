@@ -23,8 +23,13 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    setMode(initialMode);
-    setMessage('');
+    if (isOpen) {
+        const t = setTimeout(() => {
+            setMode(initialMode);
+            setMessage('');
+        }, 0);
+        return () => clearTimeout(t);
+    }
   }, [initialMode, isOpen]);
 
   // Helper to get all matches in the editor
