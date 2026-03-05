@@ -106,7 +106,7 @@ export const useAI = () => {
 
     try {
         if (expectsJson) {
-            let jsonString = await generateAIContent(operation as AIOperation, textToProcess, customInput);
+            const jsonString = await generateAIContent(operation as AIOperation, textToProcess, customInput);
             
             setAiState('writing');
 
@@ -188,7 +188,7 @@ export const useAI = () => {
                 
             } else {
                 // Insert/Edit Mode
-                let contentData = parsedData;
+                const contentData = parsedData;
                 let blocks = contentData.document?.blocks || contentData.blocks || (Array.isArray(contentData) ? contentData : [contentData]);
                 
                 blocks = blocks.filter((b: any) => b.type !== 'page_settings');

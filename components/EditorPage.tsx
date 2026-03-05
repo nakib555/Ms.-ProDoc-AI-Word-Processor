@@ -261,7 +261,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             preCaretRange.setEnd(range.endContainer, range.endOffset);
             caretOffset = preCaretRange.toString().length;
         }
-      } catch (e) {}
+      } catch (_e) {
+        // ignore
+      }
     }
     return caretOffset;
   };
@@ -319,7 +321,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             const newContentLength = getTextLength(editorRef.current);
             if (savedOffset <= newContentLength) {
                 editorRef.current.focus();
-                try { setCaretPosition(editorRef.current, savedOffset); } catch (e) {}
+                try { setCaretPosition(editorRef.current, savedOffset); } catch (_e) { /* ignore */ }
             }
         }
       }
@@ -422,7 +424,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
          e.preventDefault(); return;
     }
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
-        if (e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+        if (e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) { redo(); } else { undo(); } return; }
         if (e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
     }
     const selection = window.getSelection();
@@ -527,7 +529,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const m = config.margins;
     // Removed Math.max constraint to allow dynamic adjustment
     let top = m.top;
-    let bottom = m.bottom;
+    const bottom = m.bottom;
     let left = m.left;
     let right = m.right;
     const gutter = m.gutter || 0;

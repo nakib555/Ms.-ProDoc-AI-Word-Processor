@@ -29,7 +29,9 @@ export const FontFamilyTool: React.FC = () => {
                 setIsMixed(false);
                 return;
             }
-        } catch (e) {}
+        } catch (_e) {
+            // ignore
+        }
 
         // Method 2: Fallback to computed style of anchor node if command fails or returns nothing
         const selection = window.getSelection();
@@ -41,7 +43,7 @@ export const FontFamilyTool: React.FC = () => {
         // Ensure selection is inside editor
         if (editorRef.current && node && editorRef.current.contains(node)) {
              const computed = window.getComputedStyle(node as HTMLElement);
-             let font = computed.fontFamily.split(',')[0].trim().replace(/['"]/g, '');
+             const font = computed.fontFamily.split(',')[0].trim().replace(/['"]/g, '');
              
              // Check for mixed selection manually if range is large? 
              // For performance, we stick to anchor node or queryCommandValue result

@@ -316,7 +316,9 @@ export const PredictiveBuilder: React.FC<PredictiveBuilderProps> = ({ onSelect }
                              } else if (obj.templates && Array.isArray(obj.templates)) {
                                  setAiResults(obj.templates.map((x: any) => ({...x, category: 'AI Suggestion'})));
                              }
-                         } catch(e2) {}
+                         } catch(_e2) {
+                             // ignore
+                         }
                     }
                 }
             } catch (err) {

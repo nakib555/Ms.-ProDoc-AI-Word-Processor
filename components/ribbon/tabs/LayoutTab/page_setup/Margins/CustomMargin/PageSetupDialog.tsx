@@ -54,7 +54,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
     };
 
     let effectiveLeft = previewMargins.left;
-    let effectiveRight = previewMargins.right;
+    const effectiveRight = previewMargins.right;
     let effectiveTop = previewMargins.top;
 
     if (!isMirroredOrBookFold && hasGutter) {

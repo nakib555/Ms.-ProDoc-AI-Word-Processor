@@ -114,7 +114,7 @@ export interface EditorContextType {
   setReadConfig: React.Dispatch<React.SetStateAction<ReadModeConfig>>;
   saveStatus: SaveStatus;
   executeCommand: (command: string, value?: string) => void;
-  editorRef: React.RefObject<HTMLDivElement | null>;
+  editorRef: React.MutableRefObject<HTMLDivElement | null>;
   pageConfig: PageConfig;
   setPageConfig: React.Dispatch<React.SetStateAction<PageConfig>>;
   showPageSetup: boolean;
@@ -241,7 +241,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     textScale: 1.2
   });
 
-  const editorRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { saveStatus, triggerAutoSave, manualSave } = useAutoSave();
 

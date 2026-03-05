@@ -44,7 +44,7 @@ const parseMarkdownToHtml = (text: string): string => {
         const lines = html.split('\n');
         let inTable = false;
         let tableHtml = '';
-        let processedLines = [];
+        const processedLines = [];
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
@@ -123,7 +123,7 @@ export const renderBlock = (block: any): string => {
     }
 
     // 2. Parse Content (Markdown + Inline HTML)
-    let renderedHtml = parseMarkdownToHtml(rawContent);
+    const renderedHtml = parseMarkdownToHtml(rawContent);
 
     // 3. Wrap in Block Container based on type
     // Note: AI might put <div style="..."> inside the content string directly.
@@ -160,7 +160,7 @@ export const renderBlock = (block: any): string => {
             // If content is empty but has "rows" array (Legacy), handle it.
             if (!rawContent && block.rows) {
                 // Legacy renderer fallback
-                let rows = block.rows.map((r: any) => `<tr>${r.cells.map((c: any) => `<td style="border:1px solid #ddd; padding:8px">${parseMarkdownToHtml(c.content || "")}</td>`).join('')}</tr>`).join('');
+                const rows = block.rows.map((r: any) => `<tr>${r.cells.map((c: any) => `<td style="border:1px solid #ddd; padding:8px">${parseMarkdownToHtml(c.content || "")}</td>`).join('')}</tr>`).join('');
                 return `<table style="width:100%; border-collapse:collapse; ${containerStyle}">${rows}</table>`;
             }
             return renderedHtml;

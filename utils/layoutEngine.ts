@@ -311,7 +311,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
       };
 
       for (let i = 0; i < nodes.length; i++) {
-          let node = nodes[i];
+          const node = nodes[i];
           if (node.classList?.contains('prodoc-section-break')) {
               const configData = node.getAttribute('data-config');
               if (configData) {
