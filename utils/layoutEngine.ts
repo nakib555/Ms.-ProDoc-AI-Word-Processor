@@ -251,138 +251,142 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
   if (typeof document === 'undefined') return { pages: [{ html, config: initialConfig }], pageHeight: 0, pageWidth: 0 };
   const initialFrame = new PageFrame(initialConfig);
   const sandbox = new LayoutSandbox();
-  const pages: { html: string, config: PageConfig }[] = [];
-
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const body = doc.body;
-
-  const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
-  splitTables.forEach(splitTable => {
-      const prev = splitTable.previousElementSibling;
-      if (prev && prev.tagName === 'TABLE') {
-          while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
-          splitTable.remove();
-      } else {
-          splitTable.removeAttribute('data-continuation');
-      }
-  });
-
-  const nodes: HTMLElement[] = [];
-  Array.from(body.childNodes).forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-          if (node.textContent && (node.textContent.trim() || node.textContent.includes('\n'))) {
-              const p = document.createElement('p');
-              p.appendChild(node.cloneNode(true));
-              nodes.push(p);
-          }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-          nodes.push(node.cloneNode(true) as HTMLElement);
-      }
-  });
-
-  let currentConfig = { ...initialConfig };
-  let currentFrame = new PageFrame(currentConfig);
   
-  // Multi-column support logic
-  const getEffectiveDimensions = (frame: PageFrame, config: PageConfig) => {
-      const cols = config.columns || 1;
-      const gap = (config.columnGap || 0.5) * DPI;
-      const effectiveWidth = (frame.bodyWidth - (cols - 1) * gap) / cols;
-      const effectiveHeight = frame.bodyHeight * cols;
-      return { effectiveWidth, effectiveHeight };
-  };
+  try {
+      const pages: { html: string, config: PageConfig }[] = [];
 
-  let { effectiveWidth, effectiveHeight } = getEffectiveDimensions(currentFrame, currentConfig);
-  sandbox.setWidth(effectiveWidth);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const body = doc.body;
 
-  let currentPageNodes: HTMLElement[] = [];
-  let currentH = 0;
-  let lastWasBreak = false; // Track if the last item processed forced a break
-
-  const flushPage = () => {
-      const div = document.createElement('div');
-      currentPageNodes.forEach(n => div.appendChild(n));
-      pages.push({ html: div.innerHTML, config: { ...currentConfig } });
-      currentPageNodes = [];
-      currentH = 0;
-  };
-
-  for (let i = 0; i < nodes.length; i++) {
-      let node = nodes[i];
-      if (node.classList?.contains('prodoc-section-break')) {
-          const configData = node.getAttribute('data-config');
-          if (configData) {
-              try {
-                  const newSettings = JSON.parse(decodeURIComponent(configData));
-                  currentConfig = { ...currentConfig, ...newSettings };
-                  currentFrame = new PageFrame(currentConfig);
-                  const dims = getEffectiveDimensions(currentFrame, currentConfig);
-                  effectiveWidth = dims.effectiveWidth;
-                  effectiveHeight = dims.effectiveHeight;
-                  sandbox.setWidth(effectiveWidth);
-              } catch (e) { console.error("Failed to parse section break", e); }
+      const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
+      splitTables.forEach(splitTable => {
+          const prev = splitTable.previousElementSibling;
+          if (prev && prev.tagName === 'TABLE') {
+              while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
+              splitTable.remove();
+          } else {
+              splitTable.removeAttribute('data-continuation');
           }
-          if (currentPageNodes.length > 0) flushPage();
-          else if (pages.length === 0) { // Force blank first page if section break is first item
-               pages.push({ html: '<p><br/></p>', config: initialConfig }); 
-          }
-          lastWasBreak = true;
-          continue;
-      }
-      
-      const isPageBreak = node.classList?.contains('prodoc-page-break') || node.getAttribute('data-type') === 'page-break' || node.style?.pageBreakAfter === 'always' || node.style?.breakAfter === 'page';
-      
-      if (isPageBreak) { 
-          currentPageNodes.push(node); // Keep break marker on current page
-          flushPage(); 
-          lastWasBreak = true;
-          continue; 
-      }
+      });
 
-      lastWasBreak = false;
-
-      const remainingForStart = Math.max(0, effectiveHeight - currentH - SAFETY_BUFFER);
-      if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) { flushPage(); i--; continue; }
-
-      const nodeH = sandbox.measure(node);
-      if (currentH + nodeH > effectiveHeight - SAFETY_BUFFER) {
-          const remainingSpace = Math.max(0, effectiveHeight - currentH);
-          
-          // Safety valve: If we are at top of page and node fits nowhere, place it
-          if (currentH < MIN_LINE_HEIGHT * 2 && nodeH > remainingSpace) {
-              const splitCheck = splitBlock(node, remainingSpace, sandbox);
-              if (!splitCheck.keep && splitCheck.move) {
-                   currentPageNodes.push(node);
-                   flushPage();
-                   continue;
+      const nodes: HTMLElement[] = [];
+      Array.from(body.childNodes).forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE) {
+              if (node.textContent && (node.textContent.trim() || node.textContent.includes('\n'))) {
+                  const p = document.createElement('p');
+                  p.appendChild(node.cloneNode(true));
+                  nodes.push(p);
               }
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+              nodes.push(node.cloneNode(true) as HTMLElement);
+          }
+      });
+
+      let currentConfig = { ...initialConfig };
+      let currentFrame = new PageFrame(currentConfig);
+      
+      // Multi-column support logic
+      const getEffectiveDimensions = (frame: PageFrame, config: PageConfig) => {
+          const cols = config.columns || 1;
+          const gap = (config.columnGap || 0.5) * DPI;
+          const effectiveWidth = (frame.bodyWidth - (cols - 1) * gap) / cols;
+          const effectiveHeight = frame.bodyHeight * cols;
+          return { effectiveWidth, effectiveHeight };
+      };
+
+      let { effectiveWidth, effectiveHeight } = getEffectiveDimensions(currentFrame, currentConfig);
+      sandbox.setWidth(effectiveWidth);
+
+      let currentPageNodes: HTMLElement[] = [];
+      let currentH = 0;
+      let lastWasBreak = false; // Track if the last item processed forced a break
+
+      const flushPage = () => {
+          const div = document.createElement('div');
+          currentPageNodes.forEach(n => div.appendChild(n));
+          pages.push({ html: div.innerHTML, config: { ...currentConfig } });
+          currentPageNodes = [];
+          currentH = 0;
+      };
+
+      for (let i = 0; i < nodes.length; i++) {
+          const node = nodes[i];
+          if (node.classList?.contains('prodoc-section-break')) {
+              const configData = node.getAttribute('data-config');
+              if (configData) {
+                  try {
+                      const newSettings = JSON.parse(decodeURIComponent(configData));
+                      currentConfig = { ...currentConfig, ...newSettings };
+                      currentFrame = new PageFrame(currentConfig);
+                      const dims = getEffectiveDimensions(currentFrame, currentConfig);
+                      effectiveWidth = dims.effectiveWidth;
+                      effectiveHeight = dims.effectiveHeight;
+                      sandbox.setWidth(effectiveWidth);
+                  } catch (e) { console.error("Failed to parse section break", e); }
+              }
+              if (currentPageNodes.length > 0) flushPage();
+              else if (pages.length === 0) { // Force blank first page if section break is first item
+                   pages.push({ html: '<p><br/></p>', config: initialConfig }); 
+              }
+              lastWasBreak = true;
+              continue;
+          }
+          
+          const isPageBreak = node.classList?.contains('prodoc-page-break') || node.getAttribute('data-type') === 'page-break' || node.style?.pageBreakAfter === 'always' || node.style?.breakAfter === 'page';
+          
+          if (isPageBreak) { 
+              currentPageNodes.push(node); // Keep break marker on current page
+              flushPage(); 
+              lastWasBreak = true;
+              continue; 
           }
 
-          const split = splitBlock(node, remainingSpace, sandbox);
-          if (split.keep && (split.keep.hasChildNodes() || split.keep.tagName === 'IMG' || split.keep.tagName === 'TABLE')) {
-              currentPageNodes.push(split.keep);
-              flushPage(); 
-              if (split.move && (split.move.hasChildNodes() || split.move.tagName === 'IMG' || split.move.tagName === 'TABLE')) {
-                  nodes[i] = split.move; i--;
+          lastWasBreak = false;
+
+          const remainingForStart = Math.max(0, effectiveHeight - currentH - SAFETY_BUFFER);
+          if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) { flushPage(); i--; continue; }
+
+          const nodeH = sandbox.measure(node);
+          if (currentH + nodeH > effectiveHeight - SAFETY_BUFFER) {
+              const remainingSpace = Math.max(0, effectiveHeight - currentH);
+              
+              // Safety valve: If we are at top of page and node fits nowhere, place it
+              if (currentH < MIN_LINE_HEIGHT * 2 && nodeH > remainingSpace) {
+                  const splitCheck = splitBlock(node, remainingSpace, sandbox);
+                  if (!splitCheck.keep && splitCheck.move) {
+                       currentPageNodes.push(node);
+                       flushPage();
+                       continue;
+                  }
+              }
+
+              const split = splitBlock(node, remainingSpace, sandbox);
+              if (split.keep && (split.keep.hasChildNodes() || split.keep.tagName === 'IMG' || split.keep.tagName === 'TABLE')) {
+                  currentPageNodes.push(split.keep);
+                  flushPage(); 
+                  if (split.move && (split.move.hasChildNodes() || split.move.tagName === 'IMG' || split.move.tagName === 'TABLE')) {
+                      nodes[i] = split.move; i--;
+                  }
+              } else {
+                  if (currentPageNodes.length > 0) { flushPage(); i--; }
+                  else { currentPageNodes.push(node); flushPage(); }
               }
           } else {
-              if (currentPageNodes.length > 0) { flushPage(); i--; }
-              else { currentPageNodes.push(node); flushPage(); }
+              currentPageNodes.push(node);
+              currentH += nodeH;
           }
-      } else {
-          currentPageNodes.push(node);
-          currentH += nodeH;
       }
-  }
 
-  if (currentPageNodes.length > 0) {
-      flushPage();
-  } else if (lastWasBreak || pages.length === 0) {
-      // If document ends with a break (page or section), force a new blank page
-      pages.push({ html: '<p><br></p>', config: { ...currentConfig } });
-  }
+      if (currentPageNodes.length > 0) {
+          flushPage();
+      } else if (lastWasBreak || pages.length === 0) {
+          // If document ends with a break (page or section), force a new blank page
+          pages.push({ html: '<p><br></p>', config: { ...currentConfig } });
+      }
 
-  sandbox.destroy();
-  return { pages, pageHeight: initialFrame.height, pageWidth: initialFrame.width };
+      return { pages, pageHeight: initialFrame.height, pageWidth: initialFrame.width };
+  } finally {
+      sandbox.destroy();
+  }
 };

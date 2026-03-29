@@ -297,7 +297,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     footerContent,
     setFooterContent,
     editorRef,
-    setZoom
+    setZoom,
+    zoomMode
   } = useEditor();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
@@ -310,6 +311,53 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const touchDistRef = useRef<number>(0);
   const startZoomRef = useRef<number>(0);
 
+  // Dynamic Zoom Logic
+  useEffect(() => {
+      if (zoomMode === 'custom') return;
+      if (width <= 0 || height <= 0) return;
+
+      const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
+      let pageWidth = 0;
+      let pageHeight = 0;
+
+      if (activePageConfig.size === 'Custom' && activePageConfig.customWidth && activePageConfig.customHeight) {
+          pageWidth = activePageConfig.customWidth * 96;
+          pageHeight = activePageConfig.customHeight * 96;
+      } else {
+          const base = PAGE_SIZES[activePageConfig.size as string] || PAGE_SIZES['Letter'];
+          if (activePageConfig.orientation === 'portrait') {
+              pageWidth = base.width;
+              pageHeight = base.height;
+          } else {
+              pageWidth = base.height;
+              pageHeight = base.width;
+          }
+      }
+
+      const padding = 64; // 32px padding on each side
+      const availableWidth = Math.max(100, width - padding);
+      const availableHeight = Math.max(100, height - padding);
+
+      let newZoom = 100;
+
+      if (zoomMode === 'fit-width') {
+          newZoom = (availableWidth / pageWidth) * 100;
+      } else if (zoomMode === 'fit-page') {
+          const zoomW = (availableWidth / pageWidth) * 100;
+          const zoomH = (availableHeight / pageHeight) * 100;
+          newZoom = Math.min(zoomW, zoomH);
+      }
+
+      // Clamp zoom
+      newZoom = Math.max(10, Math.min(500, newZoom));
+      
+      // Only update if significantly different to avoid loops
+      if (Math.abs(newZoom - zoom) > 1) {
+          setZoom(newZoom);
+      }
+
+  }, [width, height, zoomMode, pageConfig, currentPage, pagesData, zoom, setZoom]);
+
   useEffect(() => {
     let isMounted = true;
     
@@ -317,16 +365,20 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         if (!isMounted) return;
         
         const currentCursor = getGlobalCursorPosition();
-        const result = paginateContent(content, pageConfig);
         
-        setPagesData(result.pages);
-        setTotalPages(result.pages.length);
+        // Use requestAnimationFrame to avoid blocking the main thread immediately
+        requestAnimationFrame(() => {
+             const result = paginateContent(content, pageConfig);
+             
+             setPagesData(result.pages);
+             setTotalPages(result.pages.length);
+             
+             if (currentCursor !== null) {
+                 cursorRestorationRef.current = currentCursor;
+             }
+        });
         
-        if (currentCursor !== null) {
-            cursorRestorationRef.current = currentCursor;
-        }
-        
-    }, 40);
+    }, 200);
 
     return () => { 
         isMounted = false; 
@@ -344,7 +396,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   useEffect(() => {
       const activePageEl = document.getElementById(`prodoc-editor-${currentPage}`);
       if (activePageEl && editorRef) {
-          (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = activePageEl as HTMLDivElement;
+           
+          editorRef.current = activePageEl as HTMLDivElement;
       }
   }, [currentPage, editorRef, pagesData]);
 
@@ -364,7 +417,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const handlePageFocus = useCallback((index: number, e: React.FocusEvent<HTMLDivElement>) => {
       setCurrentPage(index + 1);
       if (editorRef) {
-          (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = e.currentTarget;
+           
+          editorRef.current = e.currentTarget;
       }
   }, [setCurrentPage, editorRef]);
 
@@ -455,7 +509,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   return (
     <div 
-      className="w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300 touch-pan-x touch-pan-y"
+      className="print-layout-mode w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300 touch-pan-x touch-pan-y"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
     >

@@ -63,7 +63,7 @@ export const ReadAloudTool: React.FC = () => {
 
   const stopAudio = () => {
       if (sourceRef.current) {
-          try { sourceRef.current.stop(); } catch (e) {}
+          try { sourceRef.current.stop(); } catch (_e) { /* ignore */ }
           sourceRef.current = null;
       }
       setIsPlaying(false);
@@ -98,7 +98,7 @@ export const ReadAloudTool: React.FC = () => {
         
         if (audioData) {
              if (!audioContextRef.current) {
-                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+                 audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)({ sampleRate: 24000 });
              }
              
              if (audioContextRef.current.state === 'suspended') {
@@ -141,13 +141,12 @@ export const ReadAloudTool: React.FC = () => {
       };
   }, []);
 
-  let Icon = Volume2;
+  let Icon: React.ElementType = Volume2;
   // Use LoadingSpinner component instead of Loader2 icon
-  const SpinnerIcon = (props: any) => <LoadingSpinner {...props} className="w-4 h-4" />;
+  const SpinnerIcon = (props: React.ComponentProps<typeof LoadingSpinner>) => <LoadingSpinner {...props} className="w-4 h-4" />;
 
   if (isLoading) Icon = SpinnerIcon;
   else if (isPlaying) Icon = WaveformIcon;
-  else if (isPlaying) Icon = Square; // Fallback
 
   return (
     <RibbonButton 

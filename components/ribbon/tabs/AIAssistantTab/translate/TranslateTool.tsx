@@ -27,7 +27,8 @@ export const TranslateTool: React.FC = () => {
   // Reset dropdown state when menu closes to ensure smooth first-time animation on reopen
   useEffect(() => {
     if (activeMenu !== menuId) {
-        setIsLangOpen(false);
+        const t = setTimeout(() => setIsLangOpen(false), 0);
+        return () => clearTimeout(t);
     }
   }, [activeMenu]);
 

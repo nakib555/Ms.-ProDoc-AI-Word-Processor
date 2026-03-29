@@ -55,7 +55,7 @@ const Ribbon: React.FC<RibbonProps> = ({
         }, 50);
         return () => clearTimeout(timer);
      } else {
-        setHeight(0);
+        setTimeout(() => setHeight(0), 0);
      }
   }, [activeTab]);
 

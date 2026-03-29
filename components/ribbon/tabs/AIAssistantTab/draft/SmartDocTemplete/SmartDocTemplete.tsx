@@ -43,9 +43,12 @@ export const SmartDocTemplateTool: React.FC = () => {
 
   useEffect(() => {
       if (!isActive) {
-          setShowBuilder(false);
-          // Reset to a default when menu is closed to ensure clean state on reopen
-          setSelectedStyle('Professional');
+          const t = setTimeout(() => {
+              setShowBuilder(false);
+              // Reset to a default when menu is closed to ensure clean state on reopen
+              setSelectedStyle('Professional');
+          }, 0);
+          return () => clearTimeout(t);
       }
   }, [isActive]);
 

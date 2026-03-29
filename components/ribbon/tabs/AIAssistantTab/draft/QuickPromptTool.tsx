@@ -89,7 +89,8 @@ export const QuickPromptTool: React.FC = () => {
   // Ensure we don't stay in Refine mode if content is empty (e.g. deleted all)
   useEffect(() => {
       if (!hasContent && action === 'refine') {
-          setAction('insert');
+          const t = setTimeout(() => setAction('insert'), 0);
+          return () => clearTimeout(t);
       }
   }, [hasContent, action]);
 

@@ -18,9 +18,11 @@ export const MobileSelectionToolbar: React.FC = () => {
     // Clear selection when mode is deactivated
     useEffect(() => {
         if (!selectionMode) {
-            setIsExtending(false);
+            setTimeout(() => {
+                setIsExtending(false);
+                setSelectionAction(null);
+            }, 0);
             window.getSelection()?.removeAllRanges();
-            setSelectionAction(null);
         }
     }, [selectionMode, setSelectionAction]);
 
@@ -31,14 +33,14 @@ export const MobileSelectionToolbar: React.FC = () => {
         e.stopPropagation();
         
         const sel = window.getSelection();
-        // @ts-ignore - 'modify' is standard in WebKit/Blink/Gecko for caret movement
+        // @ts-expect-error - 'modify' is standard in WebKit/Blink/Gecko for caret movement
         if (sel && sel.modify) {
             const type = isExtending ? 'extend' : 'move';
             const granularity = (direction === 'left' || direction === 'right') ? 'character' : 'line';
             const dir = (direction === 'left' || direction === 'up') ? 'backward' : 'forward';
             
             try {
-                // @ts-ignore
+                // @ts-expect-error - 'modify' is standard in WebKit/Blink/Gecko for caret movement
                 sel.modify(type, dir, granularity);
             } catch (err) {
                 console.warn("Cursor movement not supported", err);

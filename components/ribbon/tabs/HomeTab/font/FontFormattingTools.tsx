@@ -25,7 +25,7 @@ export const FontFormattingTools: React.FC = () => {
 
     switch(type) {
         case 'sentence':
-            newText = text.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, c => c.toUpperCase());
+            newText = text.toLowerCase().replace(/(^\s*\w|[.!?]\s*\w)/g, c => c.toUpperCase());
             break;
         case 'lower':
             newText = text.toLowerCase();

@@ -2,11 +2,18 @@
 import { PageConfig } from '../types';
 import { PAGE_SIZES } from '../constants';
 
+export interface PrintOptions {
+    range: 'all' | 'current' | 'custom';
+    pages?: string;
+    currentPage?: number;
+}
+
 export const generatePdfPrint = async (
     content: string, 
     config: PageConfig, 
     headerContent: string, 
-    footerContent: string
+    footerContent: string,
+    options: PrintOptions = { range: 'all' }
 ): Promise<void> => {
     try {
         const { size, orientation, margins } = config;
@@ -31,6 +38,45 @@ export const generatePdfPrint = async (
 
         const sizeCss = `${widthIn}in ${heightIn}in`;
 
+        // Generate page visibility CSS
+        let pageVisibilityCss = '';
+        
+        if (options.range === 'current' && options.currentPage !== undefined) {
+            // Show only current page (0-based index)
+            const pageIndex = options.currentPage - 1;
+            pageVisibilityCss = `
+                .prodoc-page-wrapper { display: none !important; }
+                .prodoc-page-wrapper[data-page-index="${pageIndex}"] { display: block !important; }
+            `;
+        } else if (options.range === 'custom' && options.pages) {
+            // Parse custom range (e.g., "1-3, 5")
+            const pagesToShow = new Set<number>();
+            const parts = options.pages.split(',').map(p => p.trim());
+            
+            parts.forEach(part => {
+                if (part.includes('-')) {
+                    const [start, end] = part.split('-').map(n => parseInt(n, 10));
+                    if (!isNaN(start) && !isNaN(end)) {
+                        for (let i = start; i <= end; i++) pagesToShow.add(i - 1);
+                    }
+                } else {
+                    const page = parseInt(part, 10);
+                    if (!isNaN(page)) pagesToShow.add(page - 1);
+                }
+            });
+
+            if (pagesToShow.size > 0) {
+                const selectors = Array.from(pagesToShow)
+                    .map(i => `.prodoc-page-wrapper[data-page-index="${i}"]`)
+                    .join(',\n');
+                
+                pageVisibilityCss = `
+                    .prodoc-page-wrapper { display: none !important; }
+                    ${selectors} { display: block !important; }
+                `;
+            }
+        }
+
         // Create a style element for print-specific overrides
         const styleEl = document.createElement('style');
         styleEl.id = 'native-print-style';
@@ -41,6 +87,21 @@ export const generatePdfPrint = async (
             }
             
             @media print {
+                /* Force white background and black text globally for print */
+                html, body, #root, .print-layout-mode, .prodoc-page-wrapper, .prodoc-page-sheet {
+                    background-color: white !important;
+                    background: white !important;
+                    color: black !important;
+                }
+
+                /* Ensure text colors are black for print and backgrounds transparent */
+                .prodoc-editor, .prodoc-editor * {
+                    color: black !important;
+                    background-color: transparent !important;
+                    text-shadow: none !important;
+                    box-shadow: none !important;
+                }
+
                 /* Hide everything by default */
                 body > * {
                     display: none !important;
@@ -68,7 +129,7 @@ export const generatePdfPrint = async (
                 }
 
                 /* Hide UI elements explicitly */
-                .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .copilot-sidebar, .mobile-selection-toolbar {
+                .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .copilot-sidebar, .mobile-selection-toolbar, .ProseMirror-selectednode {
                     display: none !important;
                 }
                 
@@ -103,6 +164,9 @@ export const generatePdfPrint = async (
                     content-visibility: visible !important;
                     contain-intrinsic-size: auto !important;
                 }
+
+                /* Apply page visibility rules */
+                ${pageVisibilityCss}
                 
                 /* Target the page sheet */
                 .prodoc-page-sheet {
@@ -116,9 +180,7 @@ export const generatePdfPrint = async (
                     background: white !important;
                 }
 
-                /* Ensure text colors are black for print */
                 .prodoc-editor {
-                    color: black !important;
                     column-count: ${config.columns || 1} !important;
                     column-gap: ${config.columnGap || 0.5}in !important;
                     column-fill: auto !important;
@@ -133,24 +195,27 @@ export const generatePdfPrint = async (
             }
         `;
         
+        // Remove existing print style if any
+        const existingStyle = document.getElementById('native-print-style');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+
         document.head.appendChild(styleEl);
         
-        // Give time for styles to apply
+        // Give time for styles to apply and layout to stabilize
         setTimeout(() => {
             window.print();
-        }, 100);
-        
-        const cleanup = () => {
-            if (document.head.contains(styleEl)) {
-                document.head.removeChild(styleEl);
-            }
-            window.removeEventListener('afterprint', cleanup);
-        };
-        
-        window.addEventListener('afterprint', cleanup);
-        
-        // Fallback cleanup
-        setTimeout(cleanup, 5000); 
+            
+            // Cleanup after print dialog closes (or after a delay if non-blocking)
+            // Note: In many browsers window.print() is blocking, so this runs after dialog closes.
+            // In others, it might run immediately. We use a small delay to be safe.
+            setTimeout(() => {
+                 if (document.head.contains(styleEl)) {
+                    document.head.removeChild(styleEl);
+                }
+            }, 500);
+        }, 250); // Increased delay to ensure styles apply
 
     } catch (e) {
         console.error("Print Error:", e);

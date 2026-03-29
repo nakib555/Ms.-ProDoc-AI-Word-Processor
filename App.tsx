@@ -20,7 +20,7 @@ const AppContent: React.FC = () => {
   // Automatically switch away from AI Assistant tab if in Web Layout
   useEffect(() => {
     if (viewMode === 'web' && activeTab === RibbonTab.AI_ASSISTANT) {
-        setActiveTab(RibbonTab.HOME);
+        setTimeout(() => setActiveTab(RibbonTab.HOME), 0);
     }
   }, [viewMode, activeTab]);
 
