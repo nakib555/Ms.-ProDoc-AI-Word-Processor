@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, X, Sparkles, Copy, RefreshCw, StopCircle } from 'lucide-react';
-import { useEditor } from '../contexts/EditorContext';
+import { Send, X, Sparkles, Copy, StopCircle } from 'lucide-react';
+import { useEditor } from '../hooks/useEditor';
 import { chatWithDocumentStream } from '../services/geminiService';
 
 interface Message {
@@ -19,7 +19,6 @@ export const CopilotSidebar: React.FC = () => {
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -53,9 +52,10 @@ export const CopilotSidebar: React.FC = () => {
                 m.id === modelMsgId ? { ...m, text: accumulatedText } : m
             ));
         }
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : "Failed to generate response.";
         setMessages(prev => prev.map(m => 
-            m.id === modelMsgId ? { ...m, text: `Error: ${e.message || "Failed to generate response."}` } : m
+            m.id === modelMsgId ? { ...m, text: `Error: ${errorMessage}` } : m
         ));
     } finally {
         setIsGenerating(false);

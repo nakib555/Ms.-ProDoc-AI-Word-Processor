@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, Replace, ArrowRight, ChevronRight } from 'lucide-react';
 
 interface FindReplaceDialogProps {
@@ -21,6 +21,23 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
   const [wholeWord, setWholeWord] = useState(false);
   const [useRegex, setUseRegex] = useState(false);
   const [message, setMessage] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dialogRef.current && !dialogRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -167,7 +184,7 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-28 right-4 sm:right-10 z-50 w-80 sm:w-96 bg-white rounded-lg shadow-2xl border border-slate-200 animate-in slide-in-from-top-2 overflow-hidden font-sans text-slate-700">
+    <div ref={dialogRef} className="fixed top-28 right-4 sm:right-10 z-50 w-80 sm:w-96 bg-white rounded-lg shadow-2xl border border-slate-200 animate-in slide-in-from-top-2 overflow-hidden font-sans text-slate-700">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100 select-none">
         <div className="flex gap-4 text-sm font-semibold">

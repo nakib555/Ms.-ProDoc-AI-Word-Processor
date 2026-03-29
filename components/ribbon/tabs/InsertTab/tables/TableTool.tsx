@@ -1,15 +1,17 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, TableProperties, PenLine } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useInsertTab } from '../InsertTabContext';
 import { DropdownButton } from '../common/InsertTools';
 import { MenuPortal } from '../../../common/MenuPortal';
 import { TableGridPicker } from './TableGridPicker';
+import { InsertTableDialog } from './InsertTableDialog';
 
 export const TableTool: React.FC = () => {
   const { executeCommand } = useEditor();
   const { activeMenu, menuPos, closeMenu } = useInsertTab();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleTableInsert = (rows: number, cols: number) => {
     if(rows > 0 && cols > 0) {
@@ -38,14 +40,19 @@ export const TableTool: React.FC = () => {
          <MenuPortal id="table_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width="auto">
              <TableGridPicker onInsert={handleTableInsert} />
              <div className="border-t border-slate-100 mt-1 pt-1">
-                 <button className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs text-slate-700 flex items-center gap-2 group" onClick={() => { alert("Insert Table Dialog"); closeMenu(); }}>
+                 <button className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs text-slate-700 flex items-center gap-2 group" onClick={() => { setIsDialogOpen(true); closeMenu(); }}>
                     <TableProperties size={14} className="text-slate-500 group-hover:text-blue-600"/> Insert Table...
                  </button>
-                 <button className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs text-slate-700 flex items-center gap-2 group" onClick={() => { alert("Draw Table"); closeMenu(); }}>
+                 <button className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs text-slate-700 flex items-center gap-2 group" onClick={() => { alert("Draw Table is not supported yet."); closeMenu(); }}>
                     <PenLine size={14} className="text-slate-500 group-hover:text-orange-600"/> Draw Table
                  </button>
              </div>
          </MenuPortal>
+         <InsertTableDialog 
+             isOpen={isDialogOpen} 
+             onClose={() => setIsDialogOpen(false)} 
+             onInsert={handleTableInsert} 
+         />
     </>
   );
 };

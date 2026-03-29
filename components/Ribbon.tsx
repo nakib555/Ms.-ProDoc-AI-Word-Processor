@@ -5,7 +5,7 @@ import { RibbonTabBar } from './ribbon/RibbonTabBar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Helper for safe lazy loading
-const safeLazy = (importPromise: Promise<any>, name: string) => 
+const safeLazy = (importPromise: Promise<Record<string, React.ComponentType<any>>>, name: string) => 
     React.lazy(() => importPromise.then(m => ({ default: m[name] || (() => <div className="p-2 text-xs text-red-500">Failed to load {name}</div>) })));
 
 // Lazy Load Tabs

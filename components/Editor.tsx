@@ -1,10 +1,10 @@
 
 import React, { useCallback, useRef, useState, useLayoutEffect } from 'react';
-import { useEditor } from '../contexts/EditorContext';
+import { useEditor } from '../hooks/useEditor';
 import { MiniToolbar } from './MiniToolbar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { PrintLayoutView } from './ribbon/tabs/ViewTab/views/PrintLayoutView';
-import { WebLayoutView } from './ribbon/tabs/ViewTab/views/WebLayoutTool';
+import { WebLayoutView } from './ribbon/tabs/ViewTab/views/WebLayoutView';
 import { ReadLayoutView } from './ribbon/tabs/ViewTab/views/ReadLayoutView';
 
 const ResponsiveContainer = ({ children }: { children: (size: { width: number, height: number }) => React.ReactNode }) => {

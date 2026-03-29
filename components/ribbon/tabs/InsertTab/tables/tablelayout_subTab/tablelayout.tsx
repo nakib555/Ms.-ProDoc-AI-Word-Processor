@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { RibbonSection } from '../../../../common/RibbonSection';
 import { RibbonButton } from '../../../../common/RibbonButton';
 import { 
@@ -10,9 +10,12 @@ import {
   Maximize, Minimize
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
+import { TablePropertiesDialog } from '../TablePropertiesDialog';
 
 export const TableLayoutTab: React.FC = () => {
   const { executeCommand } = useEditor();
+  const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
+  const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null);
 
   // --- Helper Functions ---
   const runOnCell = (fn: (cell: HTMLTableCellElement) => void) => {
@@ -185,13 +188,20 @@ export const TableLayoutTab: React.FC = () => {
       }
   });
 
+  const openProperties = () => {
+      runOnTable((table) => {
+          setActiveTable(table);
+          setIsPropertiesOpen(true);
+      });
+  };
+
   return (
     <>
       <RibbonSection title="Table">
           <div className="flex h-full items-center">
               <RibbonButton icon={MousePointer2} label="Select" onClick={() => executeCommand('selectAll')} />
               <RibbonButton icon={Grid} label="View Gridlines" onClick={() => {}} />
-              <RibbonButton icon={TableProperties} label="Properties" onClick={() => alert('Table Properties')} />
+              <RibbonButton icon={TableProperties} label="Properties" onClick={openProperties} />
           </div>
       </RibbonSection>
 
@@ -299,6 +309,15 @@ export const TableLayoutTab: React.FC = () => {
               </button>
           </div>
       </RibbonSection>
+
+      <TablePropertiesDialog 
+        isOpen={isPropertiesOpen} 
+        onClose={() => {
+            setIsPropertiesOpen(false);
+            setActiveTable(null);
+        }} 
+        table={activeTable} 
+      />
     </>
   );
 };

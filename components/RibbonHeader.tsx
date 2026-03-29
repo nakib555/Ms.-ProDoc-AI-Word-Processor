@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Menu, MoreHorizontal, Cloud, FilePlus } from 'lucide-react';
-import { useEditor } from '../../contexts/EditorContext';
+import { useEditor } from '../hooks/useEditor';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 interface RibbonHeaderProps {

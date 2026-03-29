@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
-import { useEditor } from '../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../hooks/useEditor';
 import { PageConfig } from '../../../../../types';
 import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
@@ -298,7 +298,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setFooterContent,
     editorRef,
     setZoom,
-    zoomMode
+    zoomMode,
+    setZoomMode
   } = useEditor();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
@@ -307,11 +308,56 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   
   const cursorRestorationRef = useRef<number | null>(null);
 
+  // Calculate effective zoom for "Fixed Viewport at 100%" logic
+  const effectiveZoom = useMemo(() => {
+    if (zoomMode !== 'custom' || zoom !== 100 || width <= 0) return zoom;
+
+    const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
+    let pageWidth = 0;
+
+    if (activePageConfig.size === 'Custom' && activePageConfig.customWidth) {
+        pageWidth = activePageConfig.customWidth * 96;
+    } else {
+        const base = PAGE_SIZES[activePageConfig.size as string] || PAGE_SIZES['Letter'];
+        pageWidth = activePageConfig.orientation === 'portrait' ? base.width : base.height;
+    }
+
+    const padding = 64;
+    const availableWidth = width - padding;
+    
+    if (availableWidth < pageWidth) {
+        return (availableWidth / pageWidth) * 100;
+    }
+    
+    return zoom;
+  }, [zoom, zoomMode, width, pagesData, currentPage, pageConfig]);
+
   // Refs for Pinch-to-Zoom
   const touchDistRef = useRef<number>(0);
   const startZoomRef = useRef<number>(0);
 
-  // Dynamic Zoom Logic
+  // Scroll Wheel Zoom (Ctrl + Wheel)
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (zoomMode !== 'custom') setZoomMode('custom');
+        
+        const delta = -e.deltaY;
+        const factor = delta > 0 ? 1.1 : 0.9;
+        const newZoom = Math.min(500, Math.max(10, zoom * factor));
+        setZoom(newZoom);
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [zoom, setZoom, zoomMode, setZoomMode]);
+
+  // Dynamic Zoom Logic for Fit modes
   useEffect(() => {
       if (zoomMode === 'custom') return;
       if (width <= 0 || height <= 0) return;
@@ -504,8 +550,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           }
           if (w > max) max = w;
       });
-      return Math.max(width, (max * (zoom / 100)) + 64);
-  }, [pagesData, zoom, width]);
+      return Math.max(width, (max * (effectiveZoom / 100)) + 64);
+  }, [pagesData, effectiveZoom, width]);
 
   return (
     <div 
@@ -522,7 +568,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
          >
              <div style={{ width: maxPageWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
                  <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
-                    <Ruler pageConfig={activePageConfig} zoom={zoom} />
+                    <Ruler pageConfig={activePageConfig} zoom={effectiveZoom} />
                  </div>
              </div>
          </div>
@@ -530,7 +576,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
        <div 
           ref={setRefs}
-          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+          className={`flex-1 relative ${zoomMode === 'fit-page' ? 'overflow-hidden' : 'overflow-auto'} scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent`}
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
           style={{ scrollBehavior: 'auto' }} 
@@ -551,7 +597,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                         const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
                         baseH = config.orientation === 'portrait' ? base.height : base.width;
                     }
-                    const scaledHeight = baseH * (zoom / 100);
+                    const scaledHeight = baseH * (effectiveZoom / 100);
 
                     return (
                         <div 
@@ -568,7 +614,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                                 totalPages={pagesData.length}
                                 content={pageData.html}
                                 config={pageData.config}
-                                zoom={zoom}
+                                zoom={effectiveZoom}
                                 showFormattingMarks={showFormattingMarks}
                                 onContentChange={handlePageUpdate}
                                 onFocus={(e) => handlePageFocus(index, e)}

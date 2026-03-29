@@ -2,7 +2,7 @@
 import React from 'react';
 import { BookOpen } from 'lucide-react';
 import { RibbonButton } from '../../../../common/RibbonButton';
-import { useEditor } from '../../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../../hooks/useEditor';
 
 export const ReadModeTool: React.FC = () => {
   const { setViewMode } = useEditor();

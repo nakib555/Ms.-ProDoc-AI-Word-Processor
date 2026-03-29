@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MousePointer2, ArrowLeft, ArrowUp, ArrowDown, ArrowRight, X, Check } from 'lucide-react';
-import { useEditor } from '../contexts/EditorContext';
+import { useEditor } from '../hooks/useEditor';
 
 export const MobileSelectionToolbar: React.FC = () => {
     const { 

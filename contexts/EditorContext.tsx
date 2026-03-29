@@ -1,8 +1,7 @@
 
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react';
 import { useEditor as useTipTapEditor, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Paragraph from '@tiptap/extension-paragraph';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
@@ -15,84 +14,13 @@ import Placeholder from '@tiptap/extension-placeholder';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import { Node, mergeAttributes } from '@tiptap/core';
+
+import { CustomParagraph } from '../extensions/CustomParagraph';
+import { PageBreakExtension } from '../extensions/PageBreakExtension';
 
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
-import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
-
-// Custom Paragraph Extension for Indent/Spacing
-const CustomParagraph = Paragraph.extend({
-  addAttributes() {
-    return {
-      indent: {
-        default: 0,
-        parseHTML: element => element.style.marginLeft ? parseInt(element.style.marginLeft) : 0,
-        renderHTML: attributes => {
-            if (!attributes.indent) return {};
-            return { style: `margin-left: ${attributes.indent}px` };
-        },
-      },
-      marginRight: {
-        default: 0,
-        parseHTML: element => element.style.marginRight ? parseInt(element.style.marginRight) : 0,
-        renderHTML: attributes => {
-            if (!attributes.marginRight) return {};
-            return { style: `margin-right: ${attributes.marginRight}px` };
-        },
-      },
-      spacingBefore: {
-        default: 0,
-        parseHTML: element => element.style.marginTop ? parseInt(element.style.marginTop) : 0,
-        renderHTML: attributes => {
-            if (!attributes.spacingBefore) return {};
-            return { style: `margin-top: ${attributes.spacingBefore}px` };
-        },
-      },
-      spacingAfter: {
-        default: 0, // Default paragraph spacing
-        parseHTML: element => element.style.marginBottom ? parseInt(element.style.marginBottom) : 0,
-        renderHTML: attributes => {
-            if (!attributes.spacingAfter) return {};
-            return { style: `margin-bottom: ${attributes.spacingAfter}px` };
-        },
-      },
-    };
-  },
-});
-
-// Custom Page Break Extension
-const PageBreakExtension = Node.create({
-  name: 'pageBreak',
-  group: 'block',
-  atom: true,
-  draggable: true,
-  
-  parseHTML() {
-    return [
-      { tag: 'div', getAttrs: (node) => (node as HTMLElement).classList.contains('prodoc-page-break') && null },
-      { tag: 'hr', getAttrs: (node) => (node as HTMLElement).style.pageBreakAfter === 'always' && null }
-    ];
-  },
-  
-  renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { class: 'prodoc-page-break', 'data-type': 'page-break' })];
-  },
-  
-  addCommands() {
-    return {
-      setPageBreak: () => ({ chain }) => {
-        return chain().insertContent({ type: this.name }).run();
-      },
-    };
-  },
-
-  addKeyboardShortcuts() {
-    return {
-      'Mod-Enter': () => this.editor.commands.setPageBreak(),
-    }
-  },
-});
+import { DEFAULT_CONTENT, MARGIN_PRESETS } from '../constants';
 
 // Define custom types for TipTap integration
 export interface EditorContextType {
@@ -119,7 +47,7 @@ export interface EditorContextType {
   setPageConfig: React.Dispatch<React.SetStateAction<PageConfig>>;
   showPageSetup: boolean;
   setShowPageSetup: React.Dispatch<React.SetStateAction<boolean>>;
-  pageDimensions: any;
+  pageDimensions: { width: number; height: number };
   registerContainer: (node: HTMLDivElement | null) => void;
   showRuler: boolean;
   setShowRuler: React.Dispatch<React.SetStateAction<boolean>>;
@@ -177,11 +105,11 @@ export interface EditorContextType {
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
   hasActiveSelection: boolean;
   
-  selectionAction: any | null;
-  setSelectionAction: React.Dispatch<React.SetStateAction<any | null>>;
+  selectionAction: { label?: string; onComplete: () => void } | null;
+  setSelectionAction: React.Dispatch<React.SetStateAction<{ label?: string; onComplete: () => void } | null>>;
 }
 
-const EditorContext = createContext<EditorContextType | undefined>(undefined);
+export const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [documentTitle, setDocumentTitle] = useState("Untitled Document");
@@ -215,7 +143,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [hasActiveSelection, setHasActiveSelection] = useState(false);
-  const [selectionAction, setSelectionAction] = useState<any | null>(null);
+  const [selectionAction, setSelectionAction] = useState<{ label?: string; onComplete: () => void } | null>(null);
 
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
@@ -304,7 +232,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'insertOrderedList': editor.chain().focus().toggleOrderedList().run(); break;
         case 'formatBlock': 
             if (value === 'P') editor.chain().focus().setParagraph().run();
-            else if (value?.startsWith('H')) editor.chain().focus().toggleHeading({ level: parseInt(value.charAt(1)) as any }).run();
+            else if (value?.startsWith('H')) editor.chain().focus().toggleHeading({ level: parseInt(value.charAt(1)) as 1 | 2 | 3 | 4 | 5 | 6 }).run();
             else if (value === 'BLOCKQUOTE') editor.chain().focus().toggleBlockquote().run();
             break;
         case 'insertImage': editor.chain().focus().setImage({ src: value! }).run(); break;
@@ -324,7 +252,10 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             setZoomMode('custom');
             setZoom(100); 
             break;
-        case 'fitPage': setZoomMode('fit-page'); break;
+        case 'fitPage': 
+            setZoomMode('custom');
+            setZoom(100);
+            break;
         case 'fitWidth': setZoomMode('fit-width'); break;
         case 'save': manualSave(); break;
         case 'pageBreak': editor.chain().focus().setPageBreak().run(); break;
@@ -342,21 +273,21 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [editor, manualSave]);
 
   // Legacy style compatibility functions
-  const applyAdvancedStyle = (styles: React.CSSProperties) => {
+  const applyAdvancedStyle = (_styles: React.CSSProperties) => {
       // Basic implementation for demo
       // In a real TipTap integration, this would map CSS to extension attributes
   };
 
-  const applyBlockStyle = (styles: React.CSSProperties) => {
+  const applyBlockStyle = (_styles: React.CSSProperties) => {
      // Placeholder
   };
   
-  const handlePasteSpecial = useCallback(async (type: 'keep-source' | 'merge' | 'text-only') => {}, []); // TipTap handles paste
+  const handlePasteSpecial = useCallback(async (_type: 'keep-source' | 'merge' | 'text-only') => {}, []); // TipTap handles paste
 
   const pageDimensions = useMemo(() => ({ width: 816, height: 1056 }), []); // Default Letter
   
-  const addCustomStyle = useCallback((name: string) => {}, []);
-  const applyCustomStyle = useCallback((style: CustomStyle) => {}, []);
+  const addCustomStyle = useCallback((_name: string) => {}, []);
+  const applyCustomStyle = useCallback((_style: CustomStyle) => {}, []);
   const applyAdvancedStyleCallback = useCallback((styles: React.CSSProperties) => applyAdvancedStyle(styles), []);
   const applyBlockStyleCallback = useCallback((styles: React.CSSProperties) => applyBlockStyle(styles), []);
   const setIsAIProcessing = useCallback((v: boolean) => setAiState(v ? 'thinking' : 'idle'), []);
@@ -480,12 +411,4 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
     </EditorContext.Provider>
   );
-};
-
-export const useEditor = () => {
-  const context = useContext(EditorContext);
-  if (!context) {
-    throw new Error('useEditor must be used within an EditorProvider');
-  }
-  return context;
 };

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, AArrowUp, AArrowDown } from 'lucide-react';
-import { useEditor } from '../../../../../contexts/EditorContext';
+import { useEditor } from '../../../../../hooks/useEditor';
 import { useHomeTab } from '../HomeTabContext';
 import { MenuPortal } from '../../../common/MenuPortal';
 import { ToolBtn } from '../common/HomeTools';

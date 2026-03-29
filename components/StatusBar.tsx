@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText } from 'lucide-react';
-import { useEditor } from '../contexts/EditorContext';
+import { useEditor } from '../hooks/useEditor';
 import { useTheme } from '../contexts/ThemeContext';
 import { getDocumentStats } from '../utils/textUtils';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -173,13 +173,12 @@ const StatusBar: React.FC = () => {
                 
                 <button 
                     onClick={() => {
-                        // Cycle zoom modes on click
-                        if (zoomMode === 'custom') setZoomMode('fit-width');
-                        else if (zoomMode === 'fit-width') setZoomMode('fit-page');
-                        else setZoomMode('custom');
+                        // Reset zoom to 100% on click
+                        setZoomMode('custom');
+                        setZoom(100);
                     }}
                     className="w-8 sm:w-16 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs hover:text-blue-400 transition-colors"
-                    title={`Current: ${zoomMode === 'custom' ? 'Custom' : zoomMode === 'fit-width' ? 'Fit Width' : 'Fit Page'} (Click to cycle)`}
+                    title={`Current: ${zoomMode === 'custom' ? 'Custom' : zoomMode === 'fit-width' ? 'Fit Width' : 'Fit Page'} (Click to reset to 100%)`}
                 >
                     {zoomMode === 'fit-width' ? 'Fit W' : zoomMode === 'fit-page' ? 'Fit P' : `${Number(zoom).toFixed(0)}%`}
                 </button>
