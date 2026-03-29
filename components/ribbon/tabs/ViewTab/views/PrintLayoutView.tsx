@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { PageConfig } from '../../../../../types';
 import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
@@ -299,7 +299,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     editorRef,
     setZoom,
     zoomMode,
-    setZoomMode
+    viewportBaseZoom,
+    setViewportBaseZoom
   } = useEditor();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
@@ -308,58 +309,12 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   
   const cursorRestorationRef = useRef<number | null>(null);
 
-  // Calculate effective zoom for "Fixed Viewport at 100%" logic
-  const effectiveZoom = useMemo(() => {
-    if (zoomMode !== 'custom' || zoom !== 100 || width <= 0) return zoom;
-
-    const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
-    let pageWidth = 0;
-
-    if (activePageConfig.size === 'Custom' && activePageConfig.customWidth) {
-        pageWidth = activePageConfig.customWidth * 96;
-    } else {
-        const base = PAGE_SIZES[activePageConfig.size as string] || PAGE_SIZES['Letter'];
-        pageWidth = activePageConfig.orientation === 'portrait' ? base.width : base.height;
-    }
-
-    const padding = 64;
-    const availableWidth = width - padding;
-    
-    if (availableWidth < pageWidth) {
-        return (availableWidth / pageWidth) * 100;
-    }
-    
-    return zoom;
-  }, [zoom, zoomMode, width, pagesData, currentPage, pageConfig]);
-
   // Refs for Pinch-to-Zoom
   const touchDistRef = useRef<number>(0);
   const startZoomRef = useRef<number>(0);
 
-  // Scroll Wheel Zoom (Ctrl + Wheel)
+  // Dynamic Zoom Logic (Recalculate viewportBaseZoom)
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        if (zoomMode !== 'custom') setZoomMode('custom');
-        
-        const delta = -e.deltaY;
-        const factor = delta > 0 ? 1.1 : 0.9;
-        const newZoom = Math.min(500, Math.max(10, zoom * factor));
-        setZoom(newZoom);
-      }
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, [zoom, setZoom, zoomMode, setZoomMode]);
-
-  // Dynamic Zoom Logic for Fit modes
-  useEffect(() => {
-      if (zoomMode === 'custom') return;
       if (width <= 0 || height <= 0) return;
 
       const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
@@ -384,25 +339,32 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       const availableWidth = Math.max(100, width - padding);
       const availableHeight = Math.max(100, height - padding);
 
-      let newZoom = 100;
+      // We always calculate the "Fit Page" zoom as our 100% base
+      const zoomW = (availableWidth / pageWidth) * 100;
+      const zoomH = (availableHeight / pageHeight) * 100;
+      const fitPageZoom = Math.min(zoomW, zoomH);
+      const fitWidthZoom = zoomW;
 
-      if (zoomMode === 'fit-width') {
-          newZoom = (availableWidth / pageWidth) * 100;
-      } else if (zoomMode === 'fit-page') {
-          const zoomW = (availableWidth / pageWidth) * 100;
-          const zoomH = (availableHeight / pageHeight) * 100;
-          newZoom = Math.min(zoomW, zoomH);
-      }
-
-      // Clamp zoom
-      newZoom = Math.max(10, Math.min(500, newZoom));
+      // Clamp fitPageZoom
+      const clampedFitPageZoom = Math.max(10, Math.min(500, fitPageZoom));
       
-      // Only update if significantly different to avoid loops
-      if (Math.abs(newZoom - zoom) > 1) {
-          setZoom(newZoom);
+      // Update viewportBaseZoom if significantly different
+      if (Math.abs(clampedFitPageZoom - viewportBaseZoom) > 0.1) {
+          setViewportBaseZoom(clampedFitPageZoom);
       }
 
-  }, [width, height, zoomMode, pageConfig, currentPage, pagesData, zoom, setZoom]);
+      // Update zoom state based on mode
+      if (zoomMode === 'fit-page') {
+          if (Math.abs(zoom - 100) > 0.1) setZoom(100);
+      } else if (zoomMode === 'fit-width') {
+          const targetZoom = (fitWidthZoom / clampedFitPageZoom) * 100;
+          if (Math.abs(zoom - targetZoom) > 0.1) setZoom(targetZoom);
+      }
+
+  }, [width, height, pageConfig, currentPage, pagesData, viewportBaseZoom, setViewportBaseZoom, zoomMode, zoom, setZoom]);
+
+  // Actual scale used for rendering
+  const actualZoom = useMemo(() => (zoom / 100) * viewportBaseZoom, [zoom, viewportBaseZoom]);
 
   useEffect(() => {
     let isMounted = true;
@@ -550,8 +512,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           }
           if (w > max) max = w;
       });
-      return Math.max(width, (max * (effectiveZoom / 100)) + 64);
-  }, [pagesData, effectiveZoom, width]);
+      return Math.max(width, (max * (actualZoom / 100)) + 64);
+  }, [pagesData, actualZoom, width]);
 
   return (
     <div 
@@ -568,7 +530,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
          >
              <div style={{ width: maxPageWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
                  <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
-                    <Ruler pageConfig={activePageConfig} zoom={effectiveZoom} />
+                    <Ruler pageConfig={activePageConfig} zoom={actualZoom} />
                  </div>
              </div>
          </div>
@@ -576,7 +538,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
        <div 
           ref={setRefs}
-          className={`flex-1 relative ${zoomMode === 'fit-page' ? 'overflow-hidden' : 'overflow-auto'} scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent`}
+          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
           style={{ scrollBehavior: 'auto' }} 
@@ -597,7 +559,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                         const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
                         baseH = config.orientation === 'portrait' ? base.height : base.width;
                     }
-                    const scaledHeight = baseH * (effectiveZoom / 100);
+                    const scaledHeight = baseH * (actualZoom / 100);
 
                     return (
                         <div 
@@ -614,7 +576,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                                 totalPages={pagesData.length}
                                 content={pageData.html}
                                 config={pageData.config}
-                                zoom={effectiveZoom}
+                                zoom={actualZoom}
                                 showFormattingMarks={showFormattingMarks}
                                 onContentChange={handlePageUpdate}
                                 onFocus={(e) => handlePageFocus(index, e)}
