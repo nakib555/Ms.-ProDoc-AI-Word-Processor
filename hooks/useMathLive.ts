@@ -110,7 +110,7 @@ export const useMathLive = (content: string, containerRef: React.RefObject<HTMLE
             
             if (direction === 'forward' || direction === 'right') {
                 // Move to after wrapper
-                const nextNode = wrapper.nextSibling;
+                let nextNode = wrapper.nextSibling;
                 // If next is a text node starting with ZWS, jump over it
                 if (nextNode && nextNode.nodeType === Node.TEXT_NODE && nextNode.textContent?.startsWith('\u200B')) {
                     range.setStart(nextNode, 1);
@@ -121,7 +121,7 @@ export const useMathLive = (content: string, containerRef: React.RefObject<HTMLE
                 }
             } else if (direction === 'backward' || direction === 'left') {
                 // Move to before wrapper
-                const prevNode = wrapper.previousSibling;
+                let prevNode = wrapper.previousSibling;
                 // If prev is a text node ending with ZWS, jump before it
                 if (prevNode && prevNode.nodeType === Node.TEXT_NODE && prevNode.textContent?.endsWith('\u200B')) {
                     const len = prevNode.textContent!.length;

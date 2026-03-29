@@ -9,7 +9,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
-  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom, isKeyboardLocked, setIsKeyboardLocked, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
+  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom, isKeyboardLocked, setIsKeyboardLocked, selectionMode, setSelectionMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
@@ -26,7 +26,6 @@ const StatusBar: React.FC = () => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (zoomMode !== 'custom') setZoomMode('custom');
       const direction = e.deltaY > 0 ? -1 : 1;
       setZoom(prev => {
         const next = prev + (direction * 5); // Faster scroll zoom
@@ -39,7 +38,7 @@ const StatusBar: React.FC = () => {
     return () => {
       el.removeEventListener('wheel', handleWheel);
     };
-  }, [viewMode, setZoom, zoomMode, setZoomMode]);
+  }, [viewMode, setZoom]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -145,16 +144,7 @@ const StatusBar: React.FC = () => {
                 title="Scroll to Zoom"
             >
                 <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
-                <button 
-                    onClick={() => {
-                        if (zoomMode !== 'custom') setZoomMode('custom');
-                        setZoom(z => Math.max(10, z - 10));
-                    }} 
-                    className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" 
-                    title="Zoom Out"
-                >
-                    <Minus size={14} />
-                </button>
+                <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom Out"><Minus size={14} /></button>
                 
                 <div className="items-center gap-2 group relative hidden md:flex">
                     <input 
@@ -162,38 +152,14 @@ const StatusBar: React.FC = () => {
                         min="10" 
                         max="500" 
                         value={zoom} 
-                        onChange={(e) => {
-                            if (zoomMode !== 'custom') setZoomMode('custom');
-                            setZoom(Number(e.target.value));
-                        }}
+                        onChange={(e) => setZoom(Number(e.target.value))}
                         className="w-16 sm:w-24 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400"
                         title="Zoom Level"
                     />
                 </div>
+                <span className="w-8 sm:w-12 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs">{Number(zoom).toFixed(1)}%</span>
                 
-                <button 
-                    onClick={() => {
-                        // Cycle zoom modes on click
-                        if (zoomMode === 'custom') setZoomMode('fit-width');
-                        else if (zoomMode === 'fit-width') setZoomMode('fit-page');
-                        else setZoomMode('custom');
-                    }}
-                    className="w-8 sm:w-16 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs hover:text-blue-400 transition-colors"
-                    title={`Current: ${zoomMode === 'custom' ? 'Custom' : zoomMode === 'fit-width' ? 'Fit Width' : 'Fit Page'} (Click to cycle)`}
-                >
-                    {zoomMode === 'fit-width' ? 'Fit W' : zoomMode === 'fit-page' ? 'Fit P' : `${Number(zoom).toFixed(0)}%`}
-                </button>
-                
-                <button 
-                    onClick={() => {
-                        if (zoomMode !== 'custom') setZoomMode('custom');
-                        setZoom(z => Math.min(500, z + 10));
-                    }} 
-                    className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" 
-                    title="Zoom In"
-                >
-                    <Plus size={14} />
-                </button>
+                <button onClick={() => setZoom(z => Math.min(500, z + 10))} className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" title="Zoom In"><Plus size={14} /></button>
             </div>
           </div>
         </div>

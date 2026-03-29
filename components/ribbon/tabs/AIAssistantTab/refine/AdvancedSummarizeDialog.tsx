@@ -62,7 +62,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
   
-  useEditor();
+  const { } = useEditor();
 
   useEffect(() => {
     if (isOpen) {
@@ -132,9 +132,7 @@ export const AdvancedSummarizeDialog: React.FC<AdvancedSummarizeDialogProps> = (
              const html = jsonToHtml(repaired);
              setResult(html);
              return;
-          } catch (_e) {
-              // ignore
-          }
+          } catch (e) {}
 
           console.error("JSON Parse Error", parseError);
           // Fallback HTML handling

@@ -23,20 +23,15 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (isOpen) {
-        const t = setTimeout(() => {
-            setMode(initialMode);
-            setMessage('');
-        }, 0);
-        return () => clearTimeout(t);
-    }
+    setMode(initialMode);
+    setMessage('');
   }, [initialMode, isOpen]);
 
   // Helper to get all matches in the editor
   const getAllMatches = useCallback(() => {
     if (!editorRef.current || !findText) return [];
 
-    const flags = matchCase ? 'g' : 'gi';
+    let flags = matchCase ? 'g' : 'gi';
     let patternSource = findText;
 
     if (!useRegex) {
@@ -50,7 +45,7 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
     let regex;
     try {
       regex = new RegExp(patternSource, flags);
-    } catch (_e) {
+    } catch (e) {
       setMessage('Invalid Regex');
       return [];
     }

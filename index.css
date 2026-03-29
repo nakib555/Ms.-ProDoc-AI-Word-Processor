@@ -208,25 +208,4 @@
   .prodoc-section-break {
       display: none;
   }
-  
-  /* Hide header/footer placeholders in print */
-  .prodoc-header:empty::before,
-  .prodoc-footer:empty::before {
-    content: none !important;
-  }
-}
-
-/* Header/Footer Placeholders */
-.prodoc-header:empty::before {
-  content: 'Header';
-  color: #cbd5e1; /* slate-300 */
-  pointer-events: none;
-  font-style: italic;
-}
-
-.prodoc-footer:empty::before {
-  content: 'Footer';
-  color: #cbd5e1;
-  pointer-events: none;
-  font-style: italic;
 }

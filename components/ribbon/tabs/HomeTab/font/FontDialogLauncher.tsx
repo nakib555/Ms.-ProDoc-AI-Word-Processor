@@ -95,45 +95,42 @@ export const FontDialogLauncher: React.FC = () => {
   // Auto-detect current style on open
   useEffect(() => {
     if (isOpen && editorRef.current) {
-        const t = setTimeout(() => {
-            const sel = window.getSelection();
-            if (sel && sel.rangeCount > 0) {
-                let node = sel.anchorNode;
-                if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            let node = sel.anchorNode;
+            if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            
+            if (node && editorRef.current.contains(node)) {
+                const computed = window.getComputedStyle(node as HTMLElement);
+                const fFamily = computed.fontFamily.split(',')[0].replace(/['"]/g, '');
+                setFont(fFamily || 'Calibri');
                 
-                if (node && editorRef.current && editorRef.current.contains(node)) {
-                    const computed = window.getComputedStyle(node as HTMLElement);
-                    const fFamily = computed.fontFamily.split(',')[0].replace(/['"]/g, '');
-                    setFont(fFamily || 'Calibri');
-                    
-                    const fontSizePx = parseFloat(computed.fontSize);
-                    if (!isNaN(fontSizePx)) {
-                        setSize(Math.round(pxToPt(fontSizePx)).toString());
-                    } else {
-                        setSize('11');
-                    }
-
-                    // Handle semantic colors (currentcolor)
-                    if (computed.color && computed.color !== 'currentcolor') {
-                        // Simple RGB to Hex conversion or keep rgb string
-                        // For input[type=color] we need hex
-                        // Simplified: We assume defaults or rely on user to pick new
-                        // setColor(...) - skipping complex rgb->hex for brevity in this UI demo
-                    }
-                    
-                    const isBold = parseInt(computed.fontWeight) >= 700 || computed.fontWeight === 'bold';
-                    const isItalic = computed.fontStyle === 'italic';
-                    
-                    if (isBold && isItalic) setFontStyle('Bold Italic');
-                    else if (isBold) setFontStyle('Bold');
-                    else if (isItalic) setFontStyle('Italic');
-                    else setFontStyle('Regular');
-
-                    setStrikethrough(computed.textDecorationLine.includes('line-through'));
+                const fontSizePx = parseFloat(computed.fontSize);
+                if (!isNaN(fontSizePx)) {
+                    setSize(Math.round(pxToPt(fontSizePx)).toString());
+                } else {
+                    setSize('11');
                 }
+
+                // Handle semantic colors (currentcolor)
+                if (computed.color && computed.color !== 'currentcolor') {
+                    // Simple RGB to Hex conversion or keep rgb string
+                    // For input[type=color] we need hex
+                    // Simplified: We assume defaults or rely on user to pick new
+                    // setColor(...) - skipping complex rgb->hex for brevity in this UI demo
+                }
+                
+                const isBold = parseInt(computed.fontWeight) >= 700 || computed.fontWeight === 'bold';
+                const isItalic = computed.fontStyle === 'italic';
+                
+                if (isBold && isItalic) setFontStyle('Bold Italic');
+                else if (isBold) setFontStyle('Bold');
+                else if (isItalic) setFontStyle('Italic');
+                else setFontStyle('Regular');
+
+                setStrikethrough(computed.textDecorationLine.includes('line-through'));
             }
-        }, 0);
-        return () => clearTimeout(t);
+        }
     }
   }, [isOpen, editorRef]);
 

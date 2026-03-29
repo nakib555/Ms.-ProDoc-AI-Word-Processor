@@ -33,52 +33,83 @@ export const WriteWithAITool: React.FC = () => {
   const [savedRange, setSavedRange] = useState<Range | null>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleOpen = () => {
-    if (aiState !== 'idle') return;
+  useEffect(() => {
+    if (isOpen) {
+        const selection = window.getSelection();
+        
+        // Check for active selection (for Edit mode)
+        const hasSel = !!(selection && selection.rangeCount > 0 && !selection.isCollapsed);
+        setHasSelection(hasSel);
 
-    const selection = window.getSelection();
-    
-    // Check for active selection (for Edit mode)
-    const hasSel = !!(selection && selection.rangeCount > 0 && !selection.isCollapsed);
-    setHasSelection(hasSel);
-
-    // Check for any content in document
-    const hasText = editorRef.current && editorRef.current.innerText.trim().length > 0;
-    setHasContent(!!hasText);
-    
-    // Check for cursor presence (for Insert mode)
-    let isCursorInEditor = false;
-    if (selection && selection.rangeCount > 0 && editorRef.current) {
-        const range = selection.getRangeAt(0);
-        isCursorInEditor = editorRef.current.contains(range.startContainer);
-        if (isCursorInEditor) {
-            setSavedRange(range.cloneRange());
+        // Check for any content in document
+        const hasText = editorRef.current && editorRef.current.innerText.trim().length > 0;
+        setHasContent(!!hasText);
+        
+        // Check for cursor presence (for Insert mode)
+        let isCursorInEditor = false;
+        if (selection && selection.rangeCount > 0 && editorRef.current) {
+            const range = selection.getRangeAt(0);
+            isCursorInEditor = editorRef.current.contains(range.startContainer);
+            if (isCursorInEditor) {
+                setSavedRange(range.cloneRange());
+            }
         }
-    }
-    setCanInsert(isCursorInEditor);
+        setCanInsert(isCursorInEditor);
 
-    // Default mode logic
-    if (hasSel) {
-        setMode('edit');
-    } else if (isCursorInEditor) {
-        setMode('insert');
-    } else {
-        setMode('replace');
+        // Default mode logic: 
+        // 1. If selection exists -> Edit
+        // 2. If no selection but cursor valid -> Insert
+        // 3. Else -> Replace (New Doc)
+        if (hasSel) {
+            setMode('edit');
+        } else if (isCursorInEditor) {
+            setMode('insert');
+        } else {
+            setMode('replace');
+        }
+        
+        setPrompt('');
+        
+        // Focus textarea on open
+        setTimeout(() => textAreaRef.current?.focus(), 100);
     }
-    
-    setPrompt('');
-    setIsOpen(true);
-    
-    // Focus textarea on open
-    setTimeout(() => textAreaRef.current?.focus(), 100);
+  }, [isOpen, editorRef]);
+
+  const handleGenerate = () => {
+    if (prompt.trim()) {
+        const enhancedPrompt = `[Tone: ${tone}] ${prompt}`;
+        const operation = mode === 'edit' ? 'edit_content' : 'generate_content';
+        
+        // Pass useSelection: true if we are in edit mode, even if no selection (implies full doc refine)
+        performAIAction(operation, enhancedPrompt, { 
+            mode: mode === 'replace' ? 'replace' : 'insert',
+            useSelection: mode === 'edit'
+        }, savedRange); 
+        
+        setIsOpen(false);
+    }
   };
+
+  let Icon: React.ElementType = Sparkles;
+  let label = "Write with AI";
+  let className = "text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50/50 border border-indigo-100";
+
+  if (aiState === 'thinking') {
+      Icon = SpinningLoader;
+      label = "Thinking...";
+      className = "text-amber-600 bg-amber-50 border border-amber-200 cursor-wait";
+  } else if (aiState === 'writing') {
+      Icon = PenLine;
+      label = "Writing...";
+      className = "text-green-600 bg-green-50 border border-green-200 animate-pulse cursor-wait";
+  }
 
   return (
     <>
         <RibbonButton 
             icon={Icon} 
             label={label} 
-            onClick={handleOpen} 
+            onClick={() => { if(aiState === 'idle') setIsOpen(true); }} 
             title="Generate content, create tables, or edit text with AI"
             className={className}
         />

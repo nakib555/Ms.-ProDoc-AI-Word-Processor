@@ -101,11 +101,10 @@ export const AdvancedShortenDialog: React.FC<AdvancedShortenDialogProps> = ({
     let instruction = "";
     
     switch(strategy) {
-        case 'percent': {
+        case 'percent':
             const level = intensity < 30 ? "Slightly" : intensity > 70 ? "Heavily" : "Moderately";
             instruction += `Shorten the text by approximately ${intensity}%. Level: ${level} reduction. `;
             break;
-        }
         case 'summary':
             instruction += `Create an ultra-short summary (1-3 sentences) capturing the essence. `;
             break;

@@ -346,7 +346,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   useEffect(() => {
       const activePageEl = document.getElementById(`prodoc-editor-${currentPage}`);
       if (activePageEl && editorRef) {
-          // eslint-disable-next-line
           (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = activePageEl as HTMLDivElement;
       }
   }, [currentPage, editorRef, pagesData]);
@@ -367,7 +366,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const handlePageFocus = useCallback((index: number, e: React.FocusEvent<HTMLDivElement>) => {
       setCurrentPage(index + 1);
       if (editorRef) {
-          // eslint-disable-next-line
           (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = e.currentTarget;
       }
   }, [setCurrentPage, editorRef]);

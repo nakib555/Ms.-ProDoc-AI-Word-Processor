@@ -71,10 +71,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         }
     }
     
-    setPosition(prev => {
-        if (prev && prev.top === top && prev.left === left && prev.maxHeight === maxHeightStr) return prev;
-        return { top, left, maxHeight: maxHeightStr };
-    });
+    setPosition({ top, left, maxHeight: maxHeightStr });
   }, [isOpen, triggerElement, menuPos]);
 
   // Use layout effect to measure and position before paint to avoid flickering

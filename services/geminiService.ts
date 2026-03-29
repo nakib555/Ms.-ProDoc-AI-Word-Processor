@@ -168,7 +168,7 @@ export const streamAIContent = async function* (
     }
   } catch (error) {
     console.error("[Gemini Service] Stream Error:", error);
-    throw new Error(formatGeminiError(error), { cause: error });
+    throw new Error(formatGeminiError(error));
   }
 };
 
@@ -211,7 +211,7 @@ export const chatWithDocumentStream = async function* (
     }
   } catch (error) {
     console.error("[Gemini Service] Chat Error:", error);
-    throw new Error(formatGeminiError(error), { cause: error });
+    throw new Error(formatGeminiError(error));
   }
 };
 
@@ -263,6 +263,6 @@ export const generateAIImage = async (prompt: string): Promise<string | null> =>
     return null;
   } catch (error: any) {
     console.error("[Gemini Service] Image Gen Error:", error);
-    throw new Error(formatGeminiError(error), { cause: error });
+    throw new Error(formatGeminiError(error));
   }
 };

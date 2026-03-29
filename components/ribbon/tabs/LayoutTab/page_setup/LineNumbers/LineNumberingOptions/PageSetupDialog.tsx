@@ -26,10 +26,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const t = setTimeout(() => {
-        setLocalConfig(JSON.parse(JSON.stringify(config)));
-      }, 0);
-      return () => clearTimeout(t);
+      setLocalConfig(JSON.parse(JSON.stringify(config)));
     }
   }, [isOpen, config]);
 
@@ -54,7 +51,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
     };
 
     let effectiveLeft = previewMargins.left;
-    const effectiveRight = previewMargins.right;
+    let effectiveRight = previewMargins.right;
     let effectiveTop = previewMargins.top;
 
     if (!isMirroredOrBookFold && hasGutter) {

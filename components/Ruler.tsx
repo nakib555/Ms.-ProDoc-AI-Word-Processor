@@ -26,7 +26,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom, onDou
   const margins = useMemo(() => {
     const m = pageConfig.margins;
     let left = m.left * 96;
-    const right = m.right * 96;
+    let right = m.right * 96;
     
     // Add gutter to left for simplified global ruler view
     left += m.gutter * 96;

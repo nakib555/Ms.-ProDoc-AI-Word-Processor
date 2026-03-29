@@ -149,36 +149,28 @@ export class LiveService {
       try {
         this.processor.disconnect();
         this.processor.onaudioprocess = null;
-      } catch (_e) {
-        // ignore
-      }
+      } catch (e) {}
       this.processor = null;
     }
 
     if (this.source) {
       try {
         this.source.disconnect();
-      } catch (_e) {
-        // ignore
-      }
+      } catch (e) {}
       this.source = null;
     }
 
     if (this.stream) {
       try {
         this.stream.getTracks().forEach(track => track.stop());
-      } catch (_e) {
-        // ignore
-      }
+      } catch (e) {}
       this.stream = null;
     }
 
     if (this.audioContext) {
       try {
         this.audioContext.close();
-      } catch (_e) {
-        // ignore
-      }
+      } catch (e) {}
       this.audioContext = null;
     }
   }

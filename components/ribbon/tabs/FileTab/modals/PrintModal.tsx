@@ -408,11 +408,7 @@ const PrintSettingsPanel: React.FC<{
     isPreparing: boolean;
     closeModal: () => void;
     isMobile?: boolean;
-    printRange: 'all' | 'current' | 'custom';
-    setPrintRange: (range: 'all' | 'current' | 'custom') => void;
-    customPages: string;
-    setCustomPages: (pages: string) => void;
-}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages }) => {
+}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile }) => {
     
     const handleSettingChange = (key: keyof PageConfig | 'marginPreset', value: any) => {
       setLocalConfig(prev => {
@@ -474,36 +470,6 @@ const PrintSettingsPanel: React.FC<{
                         icon={Printer}
                         disabled
                     />
-                </div>
-
-                <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
-
-                <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pages</h3>
-                    <PrintSelect
-                        label="Print Range"
-                        value={printRange}
-                        onChange={(v: any) => setPrintRange(v)}
-                        options={[
-                            { value: 'all', label: 'Print All Pages' },
-                            { value: 'current', label: 'Print Current Page' },
-                            { value: 'custom', label: 'Custom Range' }
-                        ]}
-                        icon={FileText}
-                    />
-                    
-                    {printRange === 'custom' && (
-                        <div className="animate-in slide-in-from-top-2 duration-200">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Pages (e.g., 1-3, 5)</label>
-                            <input 
-                                type="text" 
-                                value={customPages}
-                                onChange={(e) => setCustomPages(e.target.value)}
-                                placeholder="e.g. 1-5, 8, 11-13"
-                                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
-                            />
-                        </div>
-                    )}
                 </div>
 
                 <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
@@ -573,7 +539,7 @@ const PrintSettingsPanel: React.FC<{
 };
 
 export const PrintModal: React.FC = () => {
-  const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle, setPageConfig, currentPage, viewMode, setViewMode } = useEditor();
+  const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle, setPageConfig } = useEditor();
   const { closeModal } = useFileTab();
   
   const [mobileTab, setMobileTab] = useState<'settings' | 'preview'>('settings');
@@ -582,10 +548,6 @@ export const PrintModal: React.FC = () => {
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
   const [copies, setCopies] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
-  
-  // Print Range State
-  const [printRange, setPrintRange] = useState<'all' | 'current' | 'custom'>('all');
-  const [customPages, setCustomPages] = useState('');
 
   useEffect(() => {
       const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -605,67 +567,15 @@ export const PrintModal: React.FC = () => {
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
       
-      // Ensure we are in print layout mode for correct DOM structure
-      if (viewMode !== 'print') {
-          setViewMode('print');
-          // Wait for view transition
-          await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
       // Update global config to match local print settings so the editor reflects the print layout
       setPageConfig(localConfig);
       
       // Wait for editor to re-render with new config
-      // Increased delay to ensure pagination and layout are fully updated before print dialog opens
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      await generatePdfPrint(
-          content, 
-          localConfig, 
-          headerContent, 
-          footerContent, 
-          { 
-              range: printRange, 
-              pages: customPages,
-              currentPage: currentPage
-          }
-      );
+      await generatePdfPrint(content, localConfig, headerContent, footerContent);
       setIsPreparingPrint(false);
   };
-
-  // Filter pages for preview
-  const getFilteredPages = () => {
-      if (printRange === 'all') return previewPages;
-      
-      if (printRange === 'current') {
-          // currentPage is 1-based
-          const pageIndex = (currentPage || 1) - 1;
-          return previewPages.filter((_, i) => i === pageIndex);
-      }
-      
-      if (printRange === 'custom') {
-          const pagesToShow = new Set<number>();
-          const parts = customPages.split(',').map(p => p.trim());
-          
-          parts.forEach(part => {
-              if (part.includes('-')) {
-                  const [start, end] = part.split('-').map(n => parseInt(n, 10));
-                  if (!isNaN(start) && !isNaN(end)) {
-                      for (let i = start; i <= end; i++) pagesToShow.add(i - 1);
-                  }
-              } else {
-                  const page = parseInt(part, 10);
-                  if (!isNaN(page)) pagesToShow.add(page - 1);
-              }
-          });
-          
-          return previewPages.filter((_, i) => pagesToShow.has(i));
-      }
-      
-      return previewPages;
-  };
-
-  const filteredPreviewPages = getFilteredPages();
 
   return (
     <div 
@@ -716,10 +626,6 @@ export const PrintModal: React.FC = () => {
                 isPreparing={isPreparingPrint}
                 closeModal={closeModal}
                 isMobile={isMobile}
-                printRange={printRange}
-                setPrintRange={setPrintRange}
-                customPages={customPages}
-                setCustomPages={setCustomPages}
             />
         </div>
 
@@ -729,7 +635,7 @@ export const PrintModal: React.FC = () => {
         `}>
             {isMobile ? (
                 <MobilePrintPreview 
-                    pages={filteredPreviewPages}
+                    pages={previewPages}
                     headerContent={headerContent}
                     footerContent={footerContent}
                     isPreparing={isPreparingPrint}
@@ -738,7 +644,7 @@ export const PrintModal: React.FC = () => {
                 />
             ) : (
                 <DesktopPrintPreview 
-                    pages={filteredPreviewPages}
+                    pages={previewPages}
                     headerContent={headerContent}
                     footerContent={footerContent}
                     isPreparing={isPreparingPrint}
