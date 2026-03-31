@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { CheckboxItem } from '../common/ViewTools';
 
 export const RulerCheckTool: React.FC = () => {

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { List, ListOrdered, ListTree } from 'lucide-react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { ToolBtn } from '../common/HomeTools';
 
 export const ListTools: React.FC = () => {

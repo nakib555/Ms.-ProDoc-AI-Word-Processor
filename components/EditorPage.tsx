@@ -3,7 +3,7 @@ import React, { useRef, useLayoutEffect, useEffect, useState } from 'react';
 import { PageConfig, EditingArea } from '../types';
 import { PAGE_SIZES } from '../constants';
 import { useMathLive } from '../hooks/useMathLive';
-import { useEditor } from '../hooks/useEditor';
+import { useEditor } from '../contexts/EditorContext';
 
 interface EditorPageProps {
   content: string;

@@ -2,7 +2,7 @@
 import React from 'react';
 import { BubbleMenu } from '@tiptap/react';
 import { Bold, Italic, Underline, Highlighter, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
-import { useEditor } from '../hooks/useEditor';
+import { useEditor } from '../contexts/EditorContext';
 
 export const MiniToolbar: React.FC = () => {
   const { editor } = useEditor();

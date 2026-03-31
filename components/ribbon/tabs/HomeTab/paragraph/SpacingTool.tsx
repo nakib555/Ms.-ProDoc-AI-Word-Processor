@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ArrowUpDown } from 'lucide-react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { useHomeTab } from '../HomeTabContext';
 import { MenuPortal } from '../../../common/MenuPortal';
 import { DropdownToolBtn } from '../common/HomeTools';

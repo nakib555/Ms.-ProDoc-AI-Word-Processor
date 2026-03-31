@@ -23,7 +23,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
 }) => {
   const isOpen = activeMenu === id;
   const menuRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{top: number, left: number, maxHeight?: string} | null>(null);
+  const [position, setPosition] = useState<{top: number, left: number, maxHeight?: string, maxWidth?: string} | null>(null);
 
   // Helper to calculate position ensuring it stays on screen
   const calculatePosition = React.useCallback(() => {
@@ -31,15 +31,18 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
 
     let top = 0;
     let left = 0;
+    let triggerHeight = 0;
     
     // 1. Determine anchor point
     if (triggerElement) {
         const triggerRect = triggerElement.getBoundingClientRect();
         top = triggerRect.bottom + 4;
         left = triggerRect.left;
+        triggerHeight = triggerRect.height;
     } else if (menuPos) {
         top = menuPos.top;
         left = menuPos.left;
+        triggerHeight = 60; // Approximate height of ribbon buttons
     } else {
         return; // No anchor
     }
@@ -47,35 +50,66 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     let maxHeightStr = '80vh';
+    const maxWidthStr = `${viewportWidth - 20}px`;
 
     // 2. Adjust for viewport boundaries
     if (menuRef.current) {
         const menuRect = menuRef.current.getBoundingClientRect();
+        let menuWidth = menuRect.width;
+        const menuHeight = menuRect.height;
         
+        if (menuWidth > viewportWidth - 20) {
+            menuWidth = viewportWidth - 20;
+        }
+
         // Horizontal Constraint (Right Edge)
-        if (left + menuRect.width > viewportWidth - 10) {
-              left = viewportWidth - menuRect.width - 10;
+        if (left + menuWidth > viewportWidth - 10) {
+            if (triggerElement) {
+                const triggerRect = triggerElement.getBoundingClientRect();
+                left = triggerRect.right - menuWidth;
+            }
+            
+            // If it STILL overflows (or if no triggerElement), force it to viewport edge
+            if (left + menuWidth > viewportWidth - 10) {
+                left = viewportWidth - menuWidth - 10;
+            }
         }
         
         // Horizontal Constraint (Left Edge)
         if (left < 10) left = 10;
 
-        // Vertical Constraint (Bottom Edge)
-        // If menu goes off-screen bottom, constrain height
-        const availableHeight = viewportHeight - top - 10;
-        
-        if (availableHeight < 150) {
-             maxHeightStr = `${Math.max(150, availableHeight)}px`;
+        // Vertical Constraint
+        const spaceBelow = viewportHeight - top - 10;
+        const spaceAbove = top - triggerHeight - 20;
+
+        if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+            // Place above
+            top = top - triggerHeight - menuHeight - 8;
+            if (top < 10) {
+                top = 10;
+                maxHeightStr = `${spaceAbove}px`;
+            } else {
+                maxHeightStr = `min(80vh, ${spaceAbove}px)`;
+            }
         } else {
-             maxHeightStr = `min(80vh, ${availableHeight}px)`;
+            // Place below
+            if (spaceBelow < 150) {
+                maxHeightStr = `${Math.max(150, spaceBelow)}px`;
+            } else {
+                maxHeightStr = `min(80vh, ${spaceBelow}px)`;
+            }
         }
     }
     
     setPosition(prev => {
-        if (prev && prev.top === top && prev.left === left && prev.maxHeight === maxHeightStr) return prev;
-        return { top, left, maxHeight: maxHeightStr };
+        if (prev && prev.top === top && prev.left === left && prev.maxHeight === maxHeightStr && prev.maxWidth === maxWidthStr) return prev;
+        return { top, left, maxHeight: maxHeightStr, maxWidth: maxWidthStr };
     });
   }, [isOpen, triggerElement, menuPos]);
+
+  if (!isOpen && position !== null) {
+      setPosition(null);
+  }
 
   // Use layout effect to measure and position before paint to avoid flickering
   useLayoutEffect(() => {
@@ -109,11 +143,13 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
   const style: React.CSSProperties = {
       position: 'fixed',
       width: typeof width === 'number' ? `${width}px` : width,
+      maxWidth: position?.maxWidth || `calc(100vw - 20px)`,
       maxHeight: position?.maxHeight || '80vh',
       overflowY: 'auto',
+      overflowX: 'auto',
       zIndex: 9999,
-      top: position ? position.top : (menuPos?.top || 0),
-      left: position ? position.left : (menuPos?.left || 0),
+      top: position ? position.top : 0,
+      left: position ? position.left : 0,
       opacity: position ? 1 : 0, 
       pointerEvents: position ? 'auto' : 'none',
       transition: 'opacity 0.1s ease-out'

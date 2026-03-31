@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { ToolBtn } from '../common/HomeTools';
 
 export const AlignmentTools: React.FC = () => {

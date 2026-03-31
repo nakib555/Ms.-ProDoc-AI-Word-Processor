@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const ReadLayoutView: React.FC = () => {
   const { content, readConfig } = useEditor();

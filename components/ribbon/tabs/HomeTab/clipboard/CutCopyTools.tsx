@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Scissors, Copy, Paintbrush } from 'lucide-react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const CutCopyTools: React.FC = () => {
   const { executeCommand } = useEditor();

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Clipboard, ChevronDown, ArrowDownAZ, FileText } from 'lucide-react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { useHomeTab } from '../HomeTabContext';
 import { MenuPortal } from '../../../common/MenuPortal';
 

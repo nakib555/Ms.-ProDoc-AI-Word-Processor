@@ -1,6 +1,6 @@
 
 import React, { useCallback, useRef, useState, useLayoutEffect } from 'react';
-import { useEditor } from '../hooks/useEditor';
+import { useEditor } from '../contexts/EditorContext';
 import { MiniToolbar } from './MiniToolbar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { PrintLayoutView } from './ribbon/tabs/ViewTab/views/PrintLayoutView';

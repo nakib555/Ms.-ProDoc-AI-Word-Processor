@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
-import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText } from 'lucide-react';
+import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText, Droplets } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getDocumentStats } from '../utils/textUtils';
@@ -102,10 +102,10 @@ const StatusBar: React.FC = () => {
 
             <button 
                 onClick={toggleTheme}
-                className="text-slate-400 hover:text-yellow-400 transition-colors p-1"
-                title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                className={`transition-colors p-1 ${theme === 'ocean' ? 'text-blue-400 hover:text-blue-300' : 'text-slate-400 hover:text-yellow-400'}`}
+                title={theme === 'light' ? "Switch to Dark Mode" : theme === 'dark' ? "Switch to Ocean Mode" : "Switch to Light Mode"}
             >
-                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                {theme === 'light' ? <Moon size={14} /> : theme === 'dark' ? <Droplets size={14} /> : <Sun size={14} />}
             </button>
 
             {/* View Modes - Desktop (Grouped) */}

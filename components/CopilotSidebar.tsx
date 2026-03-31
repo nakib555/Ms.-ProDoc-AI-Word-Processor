@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, X, Sparkles, Copy, StopCircle } from 'lucide-react';
-import { useEditor } from '../hooks/useEditor';
+import { useEditor } from '../contexts/EditorContext';
 import { chatWithDocumentStream } from '../services/geminiService';
 
 interface Message {

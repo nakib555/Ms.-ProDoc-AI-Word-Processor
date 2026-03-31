@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Bold, Italic, Underline, Strikethrough, Subscript, Superscript
 } from 'lucide-react';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 import { ToolBtn, GroupRow } from '../common/HomeTools';
 
 export const StandardFormattingTools: React.FC = () => {

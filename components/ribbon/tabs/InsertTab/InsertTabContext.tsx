@@ -7,6 +7,7 @@ interface InsertTabContextType {
   toggleMenu: (id: string) => void;
   closeMenu: () => void;
   registerTrigger: (id: string, el: any) => void;
+  getTriggerElement: (id: string) => HTMLElement | null;
 }
 
 const InsertTabContext = createContext<InsertTabContextType | undefined>(undefined);
@@ -19,6 +20,8 @@ export const InsertTabProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const registerTrigger = (id: string, el: HTMLElement | null) => {
     triggerRefs.current[id] = el;
   };
+
+  const getTriggerElement = (id: string) => triggerRefs.current[id] || null;
 
   const toggleMenu = (menuId: string) => {
     if (activeMenu === menuId) {
@@ -42,7 +45,7 @@ export const InsertTabProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   return (
-    <InsertTabContext.Provider value={{ activeMenu, menuPos, toggleMenu, closeMenu, registerTrigger }}>
+    <InsertTabContext.Provider value={{ activeMenu, menuPos, toggleMenu, closeMenu, registerTrigger, getTriggerElement }}>
       {children}
     </InsertTabContext.Provider>
   );

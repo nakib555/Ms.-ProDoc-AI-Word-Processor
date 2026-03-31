@@ -2,7 +2,7 @@
 import React from 'react';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();

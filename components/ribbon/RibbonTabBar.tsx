@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { RibbonTab } from '../../types';
-import { useEditor } from '../../hooks/useEditor';
+import { useEditor } from '../../contexts/EditorContext';
 import { 
   ChevronLeft, ChevronRight,
   FileText, Home, Blocks, PenTool, Palette,

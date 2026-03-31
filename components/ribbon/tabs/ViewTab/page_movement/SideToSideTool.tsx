@@ -2,7 +2,7 @@
 import React from 'react';
 import { MoveHorizontal } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
-import { useEditor } from '../../../../../hooks/useEditor';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const SideToSideTool: React.FC = () => {
   const { pageMovement, setPageMovement } = useEditor();
