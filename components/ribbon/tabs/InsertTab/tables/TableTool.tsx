@@ -21,7 +21,7 @@ export const TableTool: React.FC = () => {
             for (let i = 0; i < rows; i++) {
                 html += '<tr>';
                 for (let j = 0; j < cols; j++) {
-                    html += '<td style="border: 1px solid #cbd5e1; padding: 8px; min-width: 50px;"><br></td>';
+                    html += '<td style="border: 1px solid #000000; padding: 8px; min-width: 50px;"><br></td>';
                 }
                 html += '</tr>';
             }

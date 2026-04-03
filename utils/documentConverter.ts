@@ -65,7 +65,7 @@ const parseMarkdownToHtml = (text: string): string => {
                 cells.forEach(cell => {
                     // Recurse for inline styles inside cells
                     const cellContent = parseMarkdownToHtml(cell.trim()); 
-                    tableHtml += `<td style="border:1px solid #cbd5e1; padding:8px;">${cellContent}</td>`;
+                    tableHtml += `<td style="border:1px solid #000000; padding:8px;">${cellContent}</td>`;
                 });
                 tableHtml += '</tr>';
 
