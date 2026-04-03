@@ -11,6 +11,7 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
+import Gapcursor from '@tiptap/extension-gapcursor';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextStyle from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
@@ -265,6 +266,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       TableRow,
       TableHeader,
       TableCell,
+      Gapcursor,
       Placeholder.configure({ placeholder: 'Start typing...' }),
       TextStyle,
       Color,
@@ -321,7 +323,15 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (value === 'transparent') editor.chain().focus().unsetHighlight().run();
             else editor.chain().focus().toggleHighlight({ color: value }).run(); 
             break;
-        case 'insertHTML': editor.chain().focus().insertContent(value!).run(); break;
+        case 'insertTable': 
+            if (value) {
+                const { rows, cols } = JSON.parse(value);
+                editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+            }
+            break;
+        case 'insertHTML': 
+            document.execCommand('insertHTML', false, value!); 
+            break;
         case 'insertText': editor.chain().focus().insertContent(value!).run(); break;
         case 'selectAll': editor.chain().focus().selectAll().run(); break;
         case 'removeFormat': editor.chain().focus().unsetAllMarks().clearNodes().run(); break;

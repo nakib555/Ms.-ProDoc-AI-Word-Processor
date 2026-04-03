@@ -15,18 +15,22 @@ export const TableTool: React.FC = () => {
 
   const handleTableInsert = (rows: number, cols: number) => {
     if(rows > 0 && cols > 0) {
-        let html = '<table style="width: 100%; border-collapse: collapse; margin: 1em 0;"><thead><tr>';
-        for(let c=0; c<cols; c++) html += `<th style="border: 1px solid #cbd5e1; padding: 8px; background: #f1f5f9; text-align: left; font-weight: 600;">Header ${c+1}</th>`;
-        html += '</tr></thead><tbody>';
-        for(let r=0; r<rows; r++) {
-            html += '<tr>';
-            for(let c=0; c<cols; c++) html += `<td style="border: 1px solid #cbd5e1; padding: 8px;">Cell</td>`;
-            html += '</tr>';
-        }
-        html += '</tbody></table><p><br/></p>';
-        executeCommand('insertHTML', html);
+        closeMenu();
+        setTimeout(() => {
+            let html = '<table style="width:100%; border-collapse: collapse;"><tbody>';
+            for (let i = 0; i < rows; i++) {
+                html += '<tr>';
+                for (let j = 0; j < cols; j++) {
+                    html += '<td style="border: 1px solid #cbd5e1; padding: 8px; min-width: 50px;"><br></td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table><p><br></p>';
+            executeCommand('insertHTML', html);
+        }, 10);
+    } else {
+        closeMenu();
     }
-    closeMenu();
   };
 
   return (
