@@ -605,7 +605,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         style={{ width: `${widthIn * scale}in`, height: `${heightIn * scale}in` }}
     >
         <div 
-            className={`prodoc-page-sheet absolute inset-0 bg-white overflow-hidden ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
+            className={`prodoc-page-sheet absolute inset-0 bg-white overflow-clip ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
             style={{
                 transform: `scale(${scale})`, transformOrigin: 'top left',
                 width: `${widthIn}in`, height: `${heightIn}in`,
@@ -638,14 +638,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             </div>
 
             {config.watermark && (
-                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0">
+                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-clip z-0">
                      <div className="transform -rotate-45 text-slate-300/40 font-bold text-[8rem] whitespace-nowrap select-none" style={{ color: 'rgba(0,0,0,0.08)' }}>{config.watermark}</div>
                  </div>
             )}
 
             {/* Body */}
             <div 
-                className={`relative w-full h-full overflow-hidden transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
+                className={`relative w-full h-full overflow-clip transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
                 style={{ ...getVerticalAlignStyle() }}
                 onDoubleClick={onBodyDoubleClick} onMouseDown={(e) => e.stopPropagation()} 
             >

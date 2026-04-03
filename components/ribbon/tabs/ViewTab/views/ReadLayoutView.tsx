@@ -30,7 +30,7 @@ export const ReadLayoutView: React.FC = () => {
   return (
     <div 
         className="fixed inset-0 z-40 overflow-y-auto transition-colors duration-500 ease-out animate-in fade-in scroll-smooth"
-        style={{ backgroundColor: theme.bg }}
+        style={{ backgroundColor: theme.bg, willChange: 'transform' }}
     >
         <div 
             className="mx-auto min-h-screen py-20 px-5 md:px-12 md:py-24 transition-all duration-500 ease-in-out"

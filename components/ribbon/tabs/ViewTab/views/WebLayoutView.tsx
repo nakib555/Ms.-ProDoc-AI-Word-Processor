@@ -43,6 +43,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
     <div 
       className="flex-1 w-full overflow-y-auto bg-slate-100 dark:bg-slate-900 p-8 flex flex-col items-center"
       onClick={onPageClick}
+      style={{ willChange: 'transform' }}
     >
       <div 
         ref={editorRef}

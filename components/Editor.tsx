@@ -29,7 +29,7 @@ const ResponsiveContainer = ({ children }: { children: (size: { width: number, h
     }, []);
 
     return (
-        <div ref={ref} className="w-full h-full overflow-hidden relative">
+        <div ref={ref} className="w-full h-full overflow-clip relative">
             {children(size)}
         </div>
     );
@@ -63,7 +63,7 @@ const Editor: React.FC = () => {
         </div>
         
         {viewMode === 'print' ? (
-            <div className="flex-1 h-full w-full print-layout-mode overflow-hidden flex flex-col">
+            <div className="flex-1 h-full w-full print-layout-mode overflow-clip flex flex-col">
                 <ResponsiveContainer>
                     {({ height, width }) => (
                         <PrintLayoutView 
@@ -81,7 +81,7 @@ const Editor: React.FC = () => {
                 </ResponsiveContainer>
             </div>
         ) : (
-            <div className="flex-1 h-full w-full web-layout-mode overflow-hidden flex flex-col">
+            <div className="flex-1 h-full w-full web-layout-mode overflow-clip flex flex-col">
                 <WebLayoutView 
                     editorRef={editorRef}
                     content={content}

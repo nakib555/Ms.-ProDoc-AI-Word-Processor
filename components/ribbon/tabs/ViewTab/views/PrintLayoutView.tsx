@@ -541,7 +541,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
-          style={{ scrollBehavior: 'auto' }} 
+          style={{ scrollBehavior: 'auto', willChange: 'transform' }} 
        >
            <div 
                 className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} py-8 gap-8`}
