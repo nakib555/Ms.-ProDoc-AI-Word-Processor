@@ -23,6 +23,18 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        chunkSizeWarningLimit: 1500,
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              vendor: ['react', 'react-dom'],
+              lucide: ['lucide-react'],
+              mathlive: ['mathlive']
+            }
+          }
+        }
       }
     };
 });
