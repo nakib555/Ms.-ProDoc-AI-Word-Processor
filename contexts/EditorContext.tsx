@@ -173,9 +173,6 @@ export interface EditorContextType {
   setZoomMode: React.Dispatch<React.SetStateAction<'custom' | 'fit-width' | 'fit-page'>>;
 
   // Viewport Base Zoom (for relative zoom)
-  viewportBaseZoom: number;
-  setViewportBaseZoom: React.Dispatch<React.SetStateAction<number>>;
-
   // Selection Mode
   selectionMode: boolean;
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -193,8 +190,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [lastModified, setLastModified] = useState(() => new Date());
   const [wordCount, setWordCount] = useState(0);
   const [zoom, setZoom] = useState(100);
-  const [zoomMode, setZoomMode] = useState<'custom' | 'fit-width' | 'fit-page'>('fit-page');
-  const [viewportBaseZoom, setViewportBaseZoom] = useState(100);
+  const [zoomMode, setZoomMode] = useState<'custom' | 'fit-width' | 'fit-page'>('custom');
   const [viewMode, setViewMode] = useState<ViewMode>('print'); // 'print' acts as our main view now
   const [pageMovement, setPageMovement] = useState<PageMovement>('vertical');
   const [showRuler, setShowRuler] = useState(true);
@@ -387,8 +383,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setZoom,
     zoomMode,
     setZoomMode,
-    viewportBaseZoom,
-    setViewportBaseZoom,
     viewMode,
     setViewMode,
     pageMovement,
@@ -453,7 +447,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     wordCount,
     zoom,
     zoomMode,
-    viewportBaseZoom,
     viewMode,
     pageMovement,
     readConfig,
