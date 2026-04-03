@@ -53,9 +53,10 @@ const StatusBar: React.FC = () => {
     <>
         <div 
           onMouseDown={handleMouseDown}
-          className="h-9 bg-[#0f172a] dark:bg-[#0f172a] text-slate-400 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 border-t border-slate-800 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] overflow-hidden transition-colors duration-300"
+          className="h-9 sm:h-auto min-h-[2.25rem] bg-[#0f172a] dark:bg-[#0f172a] text-slate-400 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 border-t border-slate-800 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-colors duration-300 box-content"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0">
+          <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0 h-full">
             <div className="flex items-center gap-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
                 <Layout size={14} className="shrink-0" />
                 <span className="hidden sm:inline">{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>

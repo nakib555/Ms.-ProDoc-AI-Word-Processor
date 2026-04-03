@@ -31,11 +31,11 @@ const AppContent: React.FC = () => {
   const isReadMode = viewMode === 'read';
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-white dark:bg-[#020617] overflow-clip text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div className="h-[100dvh] flex flex-col bg-white dark:bg-[#020617] overflow-hidden text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
       {isReadMode && <ReadModeToolbar />}
 
-      <div className="flex flex-col flex-1 overflow-clip relative">
+      <div className="flex flex-col flex-1 overflow-hidden relative">
         {!isReadMode && (
             <ErrorBoundary>
                 <div className="no-print">
@@ -47,8 +47,8 @@ const AppContent: React.FC = () => {
             </ErrorBoundary>
         )}
         
-        <div className="flex-1 flex overflow-clip relative z-0 w-full">
-          <div className="flex-1 flex flex-col overflow-clip relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300">
+        <div className="flex-1 flex overflow-hidden relative z-0 w-full">
+          <div className="flex-1 flex flex-col overflow-hidden relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300">
             <ErrorBoundary>
                 <Editor />
             </ErrorBoundary>
@@ -74,11 +74,11 @@ const AppContent: React.FC = () => {
         </div>
       </div>
 
-      <div className="no-print">
+      <div className="no-print flex-shrink-0">
         <MobileSelectionToolbar />
       </div>
       {!isReadMode && (
-        <div className="no-print">
+        <div className="no-print flex-shrink-0">
             <StatusBar />
         </div>
       )}

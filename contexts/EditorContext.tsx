@@ -191,8 +191,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [wordCount, setWordCount] = useState(0);
   const [zoom, setZoom] = useState(100);
   const [zoomMode, setZoomMode] = useState<'custom' | 'fit-width' | 'fit-page'>('custom');
-  const [viewMode, setViewMode] = useState<ViewMode>('print'); // 'print' acts as our main view now
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'web';
+    return 'print';
+  });
   const [pageMovement, setPageMovement] = useState<PageMovement>('vertical');
+
   const [showRuler, setShowRuler] = useState(true);
   const [showFormattingMarks, setShowFormattingMarks] = useState(false);
   const [activeElementType, setActiveElementType] = useState<ActiveElementType>('text');
