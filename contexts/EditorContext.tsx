@@ -289,66 +289,94 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [editor]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
-    if (!editor) return;
+    let nativeCommandExecuted = false;
 
-    editor.chain().focus();
+    // Focus the editorRef if it's not already focused
+    if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
+        editorRef.current.focus();
+    }
 
     switch (command) {
-        case 'bold': editor.chain().focus().toggleBold().run(); break;
-        case 'italic': editor.chain().focus().toggleItalic().run(); break;
-        case 'underline': editor.chain().focus().toggleUnderline().run(); break;
-        case 'strikeThrough': editor.chain().focus().toggleStrike().run(); break;
-        case 'justifyLeft': editor.chain().focus().setTextAlign('left').run(); break;
-        case 'justifyCenter': editor.chain().focus().setTextAlign('center').run(); break;
-        case 'justifyRight': editor.chain().focus().setTextAlign('right').run(); break;
-        case 'justifyFull': editor.chain().focus().setTextAlign('justify').run(); break;
-        case 'insertUnorderedList': editor.chain().focus().toggleBulletList().run(); break;
-        case 'insertOrderedList': editor.chain().focus().toggleOrderedList().run(); break;
+        case 'bold': document.execCommand('bold'); nativeCommandExecuted = true; break;
+        case 'italic': document.execCommand('italic'); nativeCommandExecuted = true; break;
+        case 'underline': document.execCommand('underline'); nativeCommandExecuted = true; break;
+        case 'strikeThrough': document.execCommand('strikeThrough'); nativeCommandExecuted = true; break;
+        case 'justifyLeft': document.execCommand('justifyLeft'); nativeCommandExecuted = true; break;
+        case 'justifyCenter': document.execCommand('justifyCenter'); nativeCommandExecuted = true; break;
+        case 'justifyRight': document.execCommand('justifyRight'); nativeCommandExecuted = true; break;
+        case 'justifyFull': document.execCommand('justifyFull'); nativeCommandExecuted = true; break;
+        case 'insertUnorderedList': document.execCommand('insertUnorderedList'); nativeCommandExecuted = true; break;
+        case 'insertOrderedList': document.execCommand('insertOrderedList'); nativeCommandExecuted = true; break;
         case 'formatBlock': 
-            if (value === 'P') editor.chain().focus().setParagraph().run();
-            else if (value?.startsWith('H')) editor.chain().focus().toggleHeading({ level: parseInt(value.charAt(1)) as any }).run();
-            else if (value === 'BLOCKQUOTE') editor.chain().focus().toggleBlockquote().run();
+            document.execCommand('formatBlock', false, value);
+            nativeCommandExecuted = true;
             break;
-        case 'insertImage': editor.chain().focus().setImage({ src: value! }).run(); break;
-        case 'createLink': editor.chain().focus().setLink({ href: value! }).run(); break;
-        case 'undo': editor.chain().focus().undo().run(); break;
-        case 'redo': editor.chain().focus().redo().run(); break;
-        case 'foreColor': editor.chain().focus().setColor(value!).run(); break;
+        case 'insertImage': document.execCommand('insertImage', false, value); nativeCommandExecuted = true; break;
+        case 'createLink': document.execCommand('createLink', false, value); nativeCommandExecuted = true; break;
+        case 'undo': document.execCommand('undo'); nativeCommandExecuted = true; break;
+        case 'redo': document.execCommand('redo'); nativeCommandExecuted = true; break;
+        case 'foreColor': document.execCommand('foreColor', false, value); nativeCommandExecuted = true; break;
         case 'hiliteColor': 
-            if (value === 'transparent') editor.chain().focus().unsetHighlight().run();
-            else editor.chain().focus().toggleHighlight({ color: value }).run(); 
+            if (value === 'transparent') document.execCommand('hiliteColor', false, 'transparent');
+            else document.execCommand('hiliteColor', false, value); 
+            nativeCommandExecuted = true;
             break;
         case 'insertTable': 
             if (value) {
                 const { rows, cols } = JSON.parse(value);
-                editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+                let tableHTML = '<table border="1" style="width: 100%; border-collapse: collapse;"><tbody>';
+                for (let i = 0; i < rows; i++) {
+                    tableHTML += '<tr>';
+                    for (let j = 0; j < cols; j++) {
+                        tableHTML += '<td style="padding: 8px;"><br></td>';
+                    }
+                    tableHTML += '</tr>';
+                }
+                tableHTML += '</tbody></table><p><br></p>';
+                document.execCommand('insertHTML', false, tableHTML);
+                nativeCommandExecuted = true;
             }
             break;
         case 'insertHTML': 
             document.execCommand('insertHTML', false, value!); 
+            nativeCommandExecuted = true;
             break;
-        case 'insertText': editor.chain().focus().insertContent(value!).run(); break;
-        case 'selectAll': editor.chain().focus().selectAll().run(); break;
-        case 'removeFormat': editor.chain().focus().unsetAllMarks().clearNodes().run(); break;
+        case 'insertText': document.execCommand('insertText', false, value!); nativeCommandExecuted = true; break;
+        case 'selectAll': document.execCommand('selectAll'); nativeCommandExecuted = true; break;
+        case 'removeFormat': document.execCommand('removeFormat'); nativeCommandExecuted = true; break;
         case 'zoomReset': 
             setZoomMode('fit-page');
             break;
         case 'fitPage': setZoomMode('fit-page'); break;
         case 'fitWidth': setZoomMode('fit-width'); break;
         case 'save': manualSave(); break;
-        case 'pageBreak': editor.chain().focus().setPageBreak().run(); break;
+        case 'pageBreak': 
+            document.execCommand('insertHTML', false, '<div class="prodoc-page-break" data-type="page-break" style="page-break-after: always;"><hr></div><p><br></p>');
+            nativeCommandExecuted = true;
+            break;
         case 'cut': 
             document.execCommand('cut');
+            nativeCommandExecuted = true;
             break;
         case 'copy':
              document.execCommand('copy');
+             nativeCommandExecuted = true;
              break;
         case 'formatPainter':
              // Placeholder for format painter state logic
              break;
-        default: console.warn(`Command ${command} not implemented in TipTap mapping`);
+        default: console.warn(`Command ${command} not implemented`);
     }
-  }, [editor, manualSave]);
+
+    if (nativeCommandExecuted && editorRef.current) {
+        const newHtml = editorRef.current.innerHTML;
+        if (editor) {
+            editor.commands.setContent(newHtml);
+        }
+        const event = new Event('input', { bubbles: true });
+        editorRef.current.dispatchEvent(event);
+    }
+  }, [editor, manualSave, editorRef]);
 
   // Legacy style compatibility functions
   const applyAdvancedStyle = (styles: React.CSSProperties) => {
