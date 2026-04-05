@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MousePointer2, ArrowLeft, ArrowUp, ArrowDown, ArrowRight, X, Check } from 'lucide-react';
+import { MousePointer2, ArrowLeft, ArrowUp, ArrowDown, ArrowRight, X, Check, Copy, Scissors, ClipboardPaste } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 
 export const MobileSelectionToolbar: React.FC = () => {
@@ -9,7 +9,9 @@ export const MobileSelectionToolbar: React.FC = () => {
         setSelectionMode,
         setIsKeyboardLocked,
         selectionAction,
-        setSelectionAction
+        setSelectionAction,
+        executeCommand,
+        handlePasteSpecial
     } = useEditor();
     
     // Local state for "Extend" mode (Shift key behavior)
@@ -61,7 +63,7 @@ export const MobileSelectionToolbar: React.FC = () => {
     const navBtnClass = "flex items-center justify-center w-9 h-9 rounded-full bg-slate-100/50 dark:bg-slate-700/50 hover:bg-white dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-sm border border-slate-200/50 dark:border-slate-600 active:scale-90 transition-all touch-manipulation active:bg-blue-50 dark:active:bg-blue-900/30 active:text-blue-600 dark:active:text-blue-400";
 
     return (
-        <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[15] flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 dark:border-slate-700/50 ring-1 ring-black/5 animate-in slide-in-from-bottom-10 fade-in duration-300 select-none">
+        <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[15] flex items-center gap-2 px-3 py-2 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-white/50 dark:border-slate-700/50 ring-1 ring-black/5 animate-in slide-in-from-bottom-10 fade-in duration-300 select-none max-w-[95vw] overflow-x-auto no-scrollbar">
             
             {/* Selection Toggle (Shift Behavior) */}
             <button 
@@ -110,6 +112,33 @@ export const MobileSelectionToolbar: React.FC = () => {
                     className={navBtnClass}
                 >
                     <ArrowRight size={16} strokeWidth={2.5} />
+                </button>
+            </div>
+
+            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+            
+            {/* Clipboard Actions */}
+            <div className="flex items-center gap-1">
+                <button 
+                    onClick={() => { executeCommand('cut'); setSelectionMode(false); }}
+                    className={navBtnClass}
+                    title="Cut"
+                >
+                    <Scissors size={16} strokeWidth={2} />
+                </button>
+                <button 
+                    onClick={() => { executeCommand('copy'); setSelectionMode(false); }}
+                    className={navBtnClass}
+                    title="Copy"
+                >
+                    <Copy size={16} strokeWidth={2} />
+                </button>
+                <button 
+                    onClick={() => { handlePasteSpecial('keep-source'); setSelectionMode(false); }}
+                    className={navBtnClass}
+                    title="Paste"
+                >
+                    <ClipboardPaste size={16} strokeWidth={2} />
                 </button>
             </div>
 

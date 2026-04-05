@@ -73,7 +73,7 @@ export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom, onDou
   return (
     <div 
       onDoubleClick={onDoubleClick}
-      className="h-6 bg-[#D1D5DB] border-b border-slate-300 flex items-end relative select-none no-print z-10 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] origin-top-left cursor-default"
+      className="h-6 bg-[#D1D5DB] border-b border-slate-300 flex items-end relative select-none no-print z-10 shadow-sm origin-top-left cursor-default transition-all duration-300 ease-in-out"
       title="Double-click to open Page Setup"
       style={{ 
         width: `${width}px`,

@@ -601,11 +601,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   return (
     <div 
-        className="prodoc-page-wrapper relative group transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)] mx-auto origin-top"
+        className="prodoc-page-container relative group mx-auto origin-top transition-all duration-300 ease-in-out"
         style={{ width: `${widthIn * scale}in`, height: `${heightIn * scale}in` }}
     >
         <div 
-            className={`prodoc-page-sheet absolute inset-0 bg-white overflow-clip ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
+            className={`prodoc-page-sheet absolute inset-0 bg-white overflow-clip transition-all duration-300 ease-in-out ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
             style={{
                 transform: `scale(${scale})`, transformOrigin: 'top left',
                 width: `${widthIn}in`, height: `${heightIn}in`,
