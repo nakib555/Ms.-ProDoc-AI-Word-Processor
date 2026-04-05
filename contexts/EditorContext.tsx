@@ -137,6 +137,7 @@ export interface EditorContextType {
   applyBlockStyle: (styles: React.CSSProperties) => void;
   handlePasteSpecial: (type: 'keep-source' | 'merge' | 'text-only') => Promise<void>;
   activeElementType: ActiveElementType;
+  setActiveElementType: React.Dispatch<React.SetStateAction<ActiveElementType>>;
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
@@ -380,12 +381,45 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Legacy style compatibility functions
   const applyAdvancedStyle = (styles: React.CSSProperties) => {
-      // Basic implementation for demo
-      // In a real TipTap integration, this would map CSS to extension attributes
+      if (styles.fontFamily) {
+          document.execCommand('fontName', false, styles.fontFamily);
+      }
+      if (styles.fontSize) {
+          // Fallback trick for exact font sizes in contentEditable
+          document.execCommand('fontSize', false, '7');
+          const fonts = document.querySelectorAll('font[size="7"]');
+          fonts.forEach(f => {
+              f.removeAttribute('size');
+              f.style.fontSize = styles.fontSize as string;
+          });
+      }
+      
+      if (editorRef.current) {
+          const event = new Event('input', { bubbles: true });
+          editorRef.current.dispatchEvent(event);
+      }
   };
 
   const applyBlockStyle = (styles: React.CSSProperties) => {
-     // Placeholder
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      
+      let node = selection.anchorNode;
+      if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      
+      while (node && node !== editorRef.current) {
+          const el = node as HTMLElement;
+          if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'LI', 'TD', 'TH'].includes(el.tagName)) {
+              Object.assign(el.style, styles);
+              break;
+          }
+          node = node.parentElement;
+      }
+      
+      if (editorRef.current) {
+          const event = new Event('input', { bubbles: true });
+          editorRef.current.dispatchEvent(event);
+      }
   };
   
   const handlePasteSpecial = useCallback(async (type: 'keep-source' | 'merge' | 'text-only') => {}, []); // TipTap handles paste
@@ -443,6 +477,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     applyBlockStyle: applyBlockStyleCallback,
     handlePasteSpecial,
     activeElementType,
+    setActiveElementType,
     currentPage,
     setCurrentPage,
     totalPages,
@@ -496,6 +531,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     applyBlockStyleCallback,
     handlePasteSpecial,
     activeElementType,
+    setActiveElementType,
     currentPage,
     totalPages,
     showCopilot,

@@ -29,7 +29,11 @@ export const TableDesignTab: React.FC = () => {
     }
     
     if (node && (node.nodeName === 'TD' || node.nodeName === 'TH')) {
+        const editorEl = node.closest('.prodoc-editor');
         node.style.backgroundColor = color;
+        if (editorEl) {
+            editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+        }
     }
   };
 
@@ -42,7 +46,33 @@ export const TableDesignTab: React.FC = () => {
     while(node && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
         node = node.parentNode as HTMLElement;
     }
-    if (node) Object.assign(node.style, style);
+    if (node && (node.nodeName === 'TD' || node.nodeName === 'TH')) {
+        const editorEl = node.closest('.prodoc-editor');
+        Object.assign(node.style, style);
+        if (editorEl) {
+            editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+  };
+
+  const runOnTable = (fn: (table: HTMLTableElement) => void) => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      let node = selection.anchorNode as HTMLElement;
+      while(node && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
+          node = node.parentNode as HTMLElement;
+          if (!node || node.nodeName === 'BODY') return;
+      }
+      if (node) {
+          const table = node.closest('table');
+          if (table) {
+              const editorEl = table.closest('.prodoc-editor');
+              fn(table);
+              if (editorEl) {
+                  editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+          }
+      }
   };
 
   return (
@@ -61,19 +91,19 @@ export const TableDesignTab: React.FC = () => {
       <RibbonSection title="Table Styles">
          <div className="flex items-center gap-1 h-full px-1 overflow-x-auto no-scrollbar max-w-[300px]">
              {/* Style Previews */}
-             <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBlockStyle({borderCollapse:'collapse', border:'1px solid #000'})} className="h-14 w-16 border border-slate-300 bg-white hover:ring-2 ring-blue-400 grid grid-rows-4 p-1 gap-[1px]">
+             <button onMouseDown={(e) => e.preventDefault()} onClick={() => runOnTable(t => Object.assign(t.style, {borderCollapse:'collapse', border:'1px solid #000'}))} className="h-14 w-16 border border-slate-300 bg-white hover:ring-2 ring-blue-400 grid grid-rows-4 p-1 gap-[1px]">
                  <div className="bg-slate-800 row-span-1"></div>
                  <div className="bg-slate-100 row-span-1"></div>
                  <div className="bg-white row-span-1"></div>
                  <div className="bg-slate-100 row-span-1"></div>
              </button>
-             <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBlockStyle({borderCollapse:'collapse', border:'none'})} className="h-14 w-16 border border-slate-300 bg-white hover:ring-2 ring-blue-400 grid grid-rows-4 p-1 gap-[1px]">
+             <button onMouseDown={(e) => e.preventDefault()} onClick={() => runOnTable(t => Object.assign(t.style, {borderCollapse:'collapse', border:'none'}))} className="h-14 w-16 border border-slate-300 bg-white hover:ring-2 ring-blue-400 grid grid-rows-4 p-1 gap-[1px]">
                  <div className="bg-blue-600 row-span-1"></div>
                  <div className="bg-blue-50 row-span-1"></div>
                  <div className="bg-white row-span-1"></div>
                  <div className="bg-blue-50 row-span-1"></div>
              </button>
-             <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBlockStyle({borderCollapse:'collapse', border:'2px solid #333'})} className="h-14 w-16 border border-slate-300 bg-white hover:ring-2 ring-blue-400 grid grid-rows-4 p-1 gap-[1px]">
+             <button onMouseDown={(e) => e.preventDefault()} onClick={() => runOnTable(t => Object.assign(t.style, {borderCollapse:'collapse', border:'2px solid #333'}))} className="h-14 w-16 border border-slate-300 bg-white hover:ring-2 ring-blue-400 grid grid-rows-4 p-1 gap-[1px]">
                  <div className="bg-orange-500 row-span-1"></div>
                  <div className="bg-orange-50 row-span-1"></div>
                  <div className="bg-white row-span-1"></div>

@@ -26,7 +26,13 @@ export const TableLayoutTab: React.FC = () => {
           node = node.parentNode as HTMLElement;
           if (!node || node.nodeName === 'BODY') return;
       }
-      if (node) fn(node as HTMLTableCellElement);
+      if (node) {
+          const editorEl = node.closest('.prodoc-editor');
+          fn(node as HTMLTableCellElement);
+          if (editorEl) {
+              editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+      }
   };
 
   const runOnRow = (fn: (row: HTMLTableRowElement) => void) => {

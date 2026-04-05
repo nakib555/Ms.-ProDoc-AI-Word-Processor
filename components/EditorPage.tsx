@@ -172,7 +172,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
-  const { isKeyboardLocked, selectionMode, undo, redo } = useEditor();
+  const { isKeyboardLocked, selectionMode, undo, redo, setActiveElementType } = useEditor();
 
   const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
 
@@ -327,6 +327,37 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       }
     }
   }, [content, pageNumber, totalPages, selectedImage]);
+
+  // Track selection to update active element type (e.g., for showing Table tabs)
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (!editorRef.current) return;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      
+      const node = selection.anchorNode;
+      if (!node) return;
+      
+      // Only process if the selection is inside THIS page's editor
+      if (!editorRef.current.contains(node)) return;
+      
+      const element = node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : node.parentElement;
+      if (!element) return;
+      
+      if (element.closest('table')) {
+          setActiveElementType('table');
+      } else if (element.tagName === 'IMG' || element.closest('img')) {
+          setActiveElementType('image');
+      } else if (element.closest('math-field') || element.closest('.math-inline') || element.closest('.math-display')) {
+          setActiveElementType('equation');
+      } else {
+          setActiveElementType('text');
+      }
+    };
+    
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, [setActiveElementType]);
 
   // Sync Header
   useEffect(() => {
@@ -601,11 +632,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   return (
     <div 
-        className="prodoc-page-container relative group mx-auto origin-top transition-all duration-300 ease-in-out"
+        className="prodoc-page-container relative group mx-auto origin-top"
         style={{ width: `${widthIn * scale}in`, height: `${heightIn * scale}in` }}
     >
         <div 
-            className={`prodoc-page-sheet absolute inset-0 bg-white overflow-clip transition-all duration-300 ease-in-out ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
+            className={`prodoc-page-sheet absolute inset-0 bg-white overflow-clip ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
             style={{
                 transform: `scale(${scale})`, transformOrigin: 'top left',
                 width: `${widthIn}in`, height: `${heightIn}in`,
