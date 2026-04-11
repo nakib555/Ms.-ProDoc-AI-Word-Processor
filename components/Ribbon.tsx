@@ -122,7 +122,7 @@ const Ribbon: React.FC<RibbonProps> = ({
       >
          <div 
             ref={scrollContainerRef}
-            className="h-full w-full overflow-x-auto overflow-y-hidden no-scrollbar"
+            className="h-full w-full overflow-x-auto overflow-y-hidden no-scrollbar touch-pan-x"
          >
             <div 
                 ref={contentRef}

@@ -23,7 +23,7 @@ export const ListTools: React.FC = () => {
     document.addEventListener('mouseup', checkList);
     document.addEventListener('keyup', checkList);
     
-    checkList();
+    setTimeout(checkList, 0);
     
     return () => {
       document.removeEventListener('selectionchange', checkList);

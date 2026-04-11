@@ -43,6 +43,13 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
   useEffect(() => {
     const handleSelectionChange = () => {
       if (!editorRef.current) return;
+      
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl.tagName.toLowerCase() === 'math-field' && editorRef.current.contains(activeEl)) {
+          setActiveElementType('equation');
+          return;
+      }
+
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
       
@@ -67,7 +74,20 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
     };
     
     document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+    
+    const handleFocusIn = (e: FocusEvent) => {
+        const target = e.target as HTMLElement;
+        if (target && target.tagName && target.tagName.toLowerCase() === 'math-field' && editorRef.current?.contains(target)) {
+            setActiveElementType('equation');
+        }
+    };
+    
+    document.addEventListener('focusin', handleFocusIn);
+    
+    return () => {
+        document.removeEventListener('selectionchange', handleSelectionChange);
+        document.removeEventListener('focusin', handleFocusIn);
+    };
   }, [setActiveElementType, editorRef]);
 
   const scale = zoom / 100;

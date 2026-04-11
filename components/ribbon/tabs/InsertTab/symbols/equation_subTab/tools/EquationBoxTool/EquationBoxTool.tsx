@@ -8,7 +8,13 @@ export const EquationBoxTool: React.FC = () => {
   const { executeCommand } = useEditor();
   
   // Insert structured Equation Box
-  const insertStructure = (html: string) => executeCommand('insertHTML', html);
+  const insertStructure = (html: string) => {
+      executeCommand('insertHTML', html);
+      setTimeout(() => {
+          const event = new CustomEvent('prodoc:switchTab', { detail: 'equation' });
+          window.dispatchEvent(event);
+      }, 100);
+  };
 
   // Use zero-width spaces (&#8203;) around the wrapper
   const boxHtml = `&#8203;<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type equation here."></math-field><span class="equation-dropdown">▼</span></span>&#8203;`;

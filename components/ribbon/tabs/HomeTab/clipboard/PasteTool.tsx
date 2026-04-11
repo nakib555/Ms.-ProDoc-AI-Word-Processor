@@ -15,7 +15,7 @@ export const PasteTool: React.FC = () => {
         <div className="flex flex-col items-center w-[52px] md:w-[68px] h-full">
             <button 
                 onClick={() => handlePasteSpecial('keep-source')}
-                className="flex flex-col items-center justify-center flex-1 w-full rounded-t-lg hover:bg-slate-100 active:bg-blue-50 transition-colors pt-1.5 pb-0.5"
+                className="flex flex-col items-center justify-center flex-1 w-full rounded-t-lg hover:bg-slate-100 active:bg-blue-50 transition-colors"
                 title="Paste (Ctrl+V)"
             >
                 <Clipboard className="w-6 h-6 text-blue-600 dark:text-blue-500" strokeWidth={1.5} />

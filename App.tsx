@@ -28,10 +28,21 @@ const AppContent: React.FC = () => {
     setActiveTab(prev => prev === tab ? null : tab);
   }, []);
 
+  useEffect(() => {
+      const handleSwitchTab = (e: Event) => {
+          const customEvent = e as CustomEvent;
+          if (customEvent.detail) {
+              setActiveTab(customEvent.detail as RibbonTab);
+          }
+      };
+      window.addEventListener('prodoc:switchTab', handleSwitchTab);
+      return () => window.removeEventListener('prodoc:switchTab', handleSwitchTab);
+  }, []);
+
   const isReadMode = viewMode === 'read';
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-white dark:bg-[#020617] overflow-hidden text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div className="fixed inset-0 flex flex-col bg-white dark:bg-[#020617] overflow-hidden text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
       {isReadMode && <ReadModeToolbar />}
 

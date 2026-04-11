@@ -28,7 +28,7 @@ export const AlignmentTools: React.FC = () => {
     document.addEventListener('keyup', checkAlign);
     
     // Initial check
-    checkAlign();
+    setTimeout(checkAlign, 0);
     
     return () => {
       document.removeEventListener('selectionchange', checkAlign);

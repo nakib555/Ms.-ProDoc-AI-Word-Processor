@@ -332,6 +332,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   useEffect(() => {
     const handleSelectionChange = () => {
       if (!editorRef.current) return;
+      
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl.tagName.toLowerCase() === 'math-field' && editorRef.current.contains(activeEl)) {
+          setActiveElementType('equation');
+          return;
+      }
+
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
       
@@ -356,7 +363,21 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     };
     
     document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+    
+    // Also listen for focusin/focusout to catch math-field focus which might not trigger selectionchange
+    const handleFocusIn = (e: FocusEvent) => {
+        const target = e.target as HTMLElement;
+        if (target && target.tagName && target.tagName.toLowerCase() === 'math-field' && editorRef.current?.contains(target)) {
+            setActiveElementType('equation');
+        }
+    };
+    
+    document.addEventListener('focusin', handleFocusIn);
+    
+    return () => {
+        document.removeEventListener('selectionchange', handleSelectionChange);
+        document.removeEventListener('focusin', handleFocusIn);
+    };
   }, [setActiveElementType]);
 
   // Sync Header
@@ -690,7 +711,6 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     contentEditable={isBodyEditable}
                     inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
                     onInput={handleInput} onKeyDown={handleKeyDown} onFocus={onFocus} onClick={handleEditorClick}
-                    onContextMenu={(e) => selectionMode && e.preventDefault()}
                     onPointerDown={handleSmartPointerDown} onPointerMove={handleSmartPointerMove} onPointerUp={handleSmartPointerUp} onPointerCancel={handleSmartPointerUp}
                     suppressContentEditableWarning={true}
                     style={{ 

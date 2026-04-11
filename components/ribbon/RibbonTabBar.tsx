@@ -198,7 +198,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
 
       <div 
         ref={scrollContainerRef}
-        className="flex px-2 md:px-4 overflow-x-auto overflow-y-hidden no-scrollbar w-full items-end gap-1 scroll-smooth"
+        className="flex px-2 md:px-4 overflow-x-auto overflow-y-hidden no-scrollbar w-full items-end gap-1 scroll-smooth touch-pan-x"
       >
         {Object.keys(TAB_CONFIG).map((key) => {
           const tab = key as RibbonTab;

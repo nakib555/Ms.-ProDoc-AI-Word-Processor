@@ -14,6 +14,11 @@ export const EquationTool: React.FC = () => {
       // Using zero-width spaces (&#8203;) for seamless cursor boundary
       const html = `&#8203;<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type equation here."></math-field><span class="equation-dropdown">▼</span></span>&#8203;`;
       executeCommand('insertHTML', html);
+      
+      setTimeout(() => {
+          const event = new CustomEvent('prodoc:switchTab', { detail: 'equation' });
+          window.dispatchEvent(event);
+      }, 100);
   };
 
   return (

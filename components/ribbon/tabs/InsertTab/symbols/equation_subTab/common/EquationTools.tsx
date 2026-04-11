@@ -46,6 +46,7 @@ const SymbolBtn: React.FC<{ symbol: string, onClick: () => void }> = ({ symbol, 
 const TabButton: React.FC<{ label: string, active: boolean, onClick: () => void, className?: string }> = ({ label, active, onClick, className = '' }) => (
     <button
         onClick={(e) => { e.stopPropagation(); onClick(); }}
+        onMouseDown={(e) => e.preventDefault()}
         className={`px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all whitespace-nowrap rounded-lg flex-shrink-0 outline-none select-none border ${
             active 
             ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm border-slate-200 dark:border-slate-600 ring-1 ring-black/[0.02]' 
@@ -100,6 +101,16 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
         return 'min(320px, 95vw)';
     };
 
+    const insertSymbol = (symbol: string) => {
+        const activeEl = document.activeElement;
+        const isMathField = activeEl?.tagName.toLowerCase() === 'math-field';
+        if (isMathField) {
+            (activeEl as any).executeCommand(['insert', symbol, { focus: true }]);
+        } else {
+            executeCommand('insertText', symbol);
+        }
+    };
+
     return (
         <>
             <button
@@ -144,11 +155,11 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </HorizontalScrollContainer>
                             <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
-                                    {opTab === 'Binary' && symbols.slice(0, 18).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
-                                    {opTab === 'Relational' && symbols.slice(18, 61).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
-                                    {opTab === 'N-ary' && symbols.slice(61, 82).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
-                                    {opTab === 'Adv. Binary' && symbols.slice(82, 114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
-                                    {opTab === 'Adv. Relational' && symbols.slice(114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
+                                    {opTab === 'Binary' && symbols.slice(0, 18).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {opTab === 'Relational' && symbols.slice(18, 61).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {opTab === 'N-ary' && symbols.slice(61, 82).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {opTab === 'Adv. Binary' && symbols.slice(82, 114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {opTab === 'Adv. Relational' && symbols.slice(114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
                                 </div>
                             </div>
                         </div>
@@ -164,7 +175,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                                         <SymbolBtn 
                                             key={i} 
                                             symbol={s} 
-                                            onClick={() => { executeCommand('insertText', s); closeMenu(); }} 
+                                            onClick={() => { insertSymbol(s); closeMenu(); }} 
                                         />
                                     ))}
                                 </div>
@@ -179,9 +190,9 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </HorizontalScrollContainer>
                             <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
-                                    {scriptTab === 'Scripts' && symbols.slice(0, 52).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
-                                    {scriptTab === 'Frakturs' && symbols.slice(52, 104).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
-                                    {scriptTab === 'Double-Struck' && symbols.slice(104, 156).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />)}
+                                    {scriptTab === 'Scripts' && symbols.slice(0, 52).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {scriptTab === 'Frakturs' && symbols.slice(52, 104).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {scriptTab === 'Double-Struck' && symbols.slice(104, 156).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
                                 </div>
                             </div>
                         </div>
@@ -189,7 +200,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                         <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                             <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                 {symbols.map((s, i) => (
-                                    <SymbolBtn key={i} symbol={s} onClick={() => { executeCommand('insertText', s); closeMenu(); }} />
+                                    <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />
                                 ))}
                             </div>
                         </div>
@@ -289,6 +300,7 @@ export const StructureDropdown: React.FC<{
                                                     insertMathStructure(item.insertValue); 
                                                     closeMenu(); 
                                                 }}
+                                                onMouseDown={(e) => e.preventDefault()}
                                                 className="
                                                     group relative flex flex-col items-center justify-center 
                                                     aspect-[1.4/1] rounded-xl transition-all duration-200 ease-out

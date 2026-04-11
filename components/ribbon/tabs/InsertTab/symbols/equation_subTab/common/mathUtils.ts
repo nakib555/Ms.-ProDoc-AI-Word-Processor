@@ -13,5 +13,16 @@ export const insertMathStructure = (latex: string) => {
     // Use zero-width spaces (&#8203;) around the wrapper to ensure a cursor position exists without extra visual space
     const html = `&#8203;<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field>${safeLatex}</math-field><span class="equation-dropdown">▼</span></span>&#8203;`;
     document.execCommand('insertHTML', false, html);
+    
+    // Trigger input event to update state
+    const editorEl = document.querySelector('.prodoc-editor');
+    if (editorEl) {
+        editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    setTimeout(() => {
+        const event = new CustomEvent('prodoc:switchTab', { detail: 'equation' });
+        window.dispatchEvent(event);
+    }, 100);
   }
 };

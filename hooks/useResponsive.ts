@@ -9,10 +9,6 @@ export const useResponsive = (initialViewMode: ViewMode) => {
     const checkMobile = () => {
        const mobile = window.innerWidth < 768;
        setIsMobile(mobile);
-       
-       if (mobile) {
-           setViewMode('web');
-       }
     };
     
     checkMobile();

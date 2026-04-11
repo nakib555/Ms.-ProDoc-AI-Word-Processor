@@ -94,6 +94,40 @@ const PageBreakExtension = Node.create({
   },
 });
 
+// Custom Math Extension to prevent TipTap from stripping equation boxes
+const MathExtension = Node.create({
+  name: 'mathEquation',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  
+  addAttributes() {
+    return {
+      latex: {
+        default: '',
+        parseHTML: element => {
+          const mathField = element.querySelector('math-field');
+          return mathField ? (mathField.getAttribute('value') || mathField.textContent || '') : '';
+        },
+      }
+    };
+  },
+
+  parseHTML() {
+    return [
+      { tag: 'span.equation-wrapper' },
+    ];
+  },
+  
+  renderHTML({ HTMLAttributes }) {
+    return ['span', mergeAttributes(HTMLAttributes, { class: 'equation-wrapper', contenteditable: 'false' }), 
+      ['span', { class: 'equation-handle' }, '⋮⋮'],
+      ['math-field', { placeholder: 'Type equation here.', value: HTMLAttributes.latex || '' }, HTMLAttributes.latex || ''],
+      ['span', { class: 'equation-dropdown' }, '▼']
+    ];
+  },
+});
+
 // Define custom types for TipTap integration
 export interface EditorContextType {
   editor: Editor | null;
@@ -268,6 +302,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       Color,
       Highlight.configure({ multicolor: true }),
       PageBreakExtension,
+      MathExtension,
     ],
     content: DEFAULT_CONTENT,
     onUpdate: ({ editor }) => {
@@ -336,6 +371,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 tableHTML += '</tbody></table><p><br></p>';
                 document.execCommand('insertHTML', false, tableHTML);
                 nativeCommandExecuted = true;
+                
+                // Switch to table design tab after a short delay to allow selection to update
+                setTimeout(() => {
+                    const event = new CustomEvent('prodoc:switchTab', { detail: 'table-design' });
+                    window.dispatchEvent(event);
+                }, 100);
             }
             break;
         case 'insertHTML': 
