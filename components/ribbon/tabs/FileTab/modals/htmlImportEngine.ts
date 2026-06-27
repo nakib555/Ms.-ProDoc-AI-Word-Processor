@@ -200,6 +200,26 @@ export class HTMLImportEngine {
             }
         });
 
+        // Page break / Section break parsing from HTML page-break styling properties
+        this.doc.querySelectorAll('*').forEach(el => {
+            const htmlEl = el as HTMLElement;
+            const style = htmlEl.getAttribute('style') || '';
+            if (style.includes('page-break-after: always') || style.includes('page-break-before: always') || style.includes('break-after: page') || style.includes('break-before: page')) {
+                const pageBreak = this.doc.createElement('div');
+                pageBreak.className = 'prodoc-section-break';
+                pageBreak.setAttribute('data-type', 'nextPage');
+                pageBreak.setAttribute('contenteditable', 'false');
+                pageBreak.style.borderTop = '2px dashed #94a3b8';
+                pageBreak.style.margin = '1.5em 0';
+                pageBreak.style.color = '#64748b';
+                pageBreak.style.fontSize = '10px';
+                pageBreak.style.textAlign = 'center';
+                pageBreak.style.userSelect = 'none';
+                pageBreak.textContent = '::: Section Break (Next Page) :::';
+                htmlEl.parentNode?.insertBefore(pageBreak, htmlEl.nextSibling);
+            }
+        });
+
         // Standardize margins for paragraphs
         this.doc.querySelectorAll('p').forEach(p => {
             const htmlP = p as HTMLElement;
@@ -208,27 +228,69 @@ export class HTMLImportEngine {
                 htmlP.style.marginBottom = '8pt';
             }
             if (!htmlP.style.lineHeight) {
-                htmlP.style.lineHeight = '1.15';
+                htmlP.style.lineHeight = '1.25';
             }
         });
     }
 
     private normalizeTypography() {
-        // In OOXML, text runs have specific font families and sizes.
-        // We ensure all text has a baseline font if not specified, 
-        // though our editor's CSS handles defaults.
-        
-        // Convert rem/em to px/pt if possible? For now, standardizing some common patterns.
+        // Convert rem/em to standard pt sizes for document consistency
         const allElements = this.doc.querySelectorAll('*');
         allElements.forEach(el => {
             const htmlEl = el as HTMLElement;
             
-            // Standardize font-weight: bold into <strong> tags (Run properties)
-            if (htmlEl.style.fontWeight === 'bold' || parseInt(htmlEl.style.fontWeight) >= 600) {
-                if (htmlEl.tagName !== 'STRONG' && htmlEl.tagName !== 'H1' && htmlEl.tagName !== 'H2' && htmlEl.tagName !== 'H3' && htmlEl.tagName !== 'H4') {
-                    // It's just a styled element, we keep the style, but maybe we could wrap contents.
-                    // For now, inline style is fine as our editor handles inline font-weight.
+            // Map common font-family styles or set defaults
+            const font = htmlEl.style.fontFamily;
+            if (!font) {
+                htmlEl.style.fontFamily = 'Inter, system-ui, sans-serif';
+            }
+
+            // Convert rem/em/percent to px/pt
+            const fontSize = htmlEl.style.fontSize;
+            if (fontSize) {
+                if (fontSize.endsWith('rem')) {
+                    const val = parseFloat(fontSize) * 12; // 1rem = 12pt approx
+                    htmlEl.style.fontSize = `${val}pt`;
+                } else if (fontSize.endsWith('em')) {
+                    const val = parseFloat(fontSize) * 11; // 1em = 11pt approx
+                    htmlEl.style.fontSize = `${val}pt`;
+                } else if (fontSize === 'xx-large') {
+                    htmlEl.style.fontSize = '24pt';
+                } else if (fontSize === 'x-large') {
+                    htmlEl.style.fontSize = '18pt';
+                } else if (fontSize === 'large') {
+                    htmlEl.style.fontSize = '14pt';
+                } else if (fontSize === 'medium') {
+                    htmlEl.style.fontSize = '11pt';
+                } else if (fontSize === 'small') {
+                    htmlEl.style.fontSize = '9pt';
                 }
+            } else {
+                // If it's a heading, give standard Word-like sizes
+                if (htmlEl.tagName === 'H1') {
+                    htmlEl.style.fontSize = '22pt';
+                    htmlEl.style.fontWeight = 'bold';
+                    htmlEl.style.marginTop = '12pt';
+                    htmlEl.style.marginBottom = '6pt';
+                    htmlEl.style.color = '#1e3a8a'; // Deep blue slate for titles
+                } else if (htmlEl.tagName === 'H2') {
+                    htmlEl.style.fontSize = '16pt';
+                    htmlEl.style.fontWeight = 'bold';
+                    htmlEl.style.marginTop = '12pt';
+                    htmlEl.style.marginBottom = '4pt';
+                    htmlEl.style.color = '#1e40af';
+                } else if (htmlEl.tagName === 'H3') {
+                    htmlEl.style.fontSize = '13pt';
+                    htmlEl.style.fontWeight = 'bold';
+                    htmlEl.style.marginTop = '8pt';
+                    htmlEl.style.marginBottom = '2pt';
+                    htmlEl.style.color = '#1e40af';
+                }
+            }
+
+            // Standardize line height
+            if (!htmlEl.style.lineHeight) {
+                htmlEl.style.lineHeight = '1.25';
             }
         });
     }
@@ -239,15 +301,23 @@ export class HTMLImportEngine {
             // Ensure tables have standard OOXML-like borders if they lack them
             table.style.borderCollapse = 'collapse';
             table.style.width = table.style.width || '100%';
+            table.style.marginTop = table.style.marginTop || '12pt';
+            table.style.marginBottom = table.style.marginBottom || '12pt';
             
             const cells = table.querySelectorAll('td, th');
             cells.forEach(cell => {
                 const htmlCell = cell as HTMLElement;
                 if (!htmlCell.style.border) {
-                    htmlCell.style.border = '1px solid #e2e8f0'; // Default border for editor visibility
+                    htmlCell.style.border = '1px solid #cbd5e1'; // Word-like slate border
                 }
                 if (!htmlCell.style.padding) {
-                    htmlCell.style.padding = '4px 8px';
+                    htmlCell.style.padding = '6px 10px'; // Professional margins
+                }
+                if (htmlCell.tagName === 'TH') {
+                    if (!htmlCell.style.backgroundColor) {
+                        htmlCell.style.backgroundColor = '#f1f5f9'; // Clean header shade
+                    }
+                    htmlCell.style.fontWeight = 'bold';
                 }
             });
         });
@@ -297,21 +367,80 @@ export class HTMLImportEngine {
     }
 
     private normalizeForms() {
-        // Convert form elements to visually similar editable spans or 
-        // leave them as standard form inputs depending on what the editor supports.
-        // For standard OOXML, checkboxes are special characters or form fields.
-        const inputs = this.doc.querySelectorAll('input[type="checkbox"]');
-        inputs.forEach(input => {
+        // Convert checkboxes to Wingdings/symbol boxes
+        const checkboxes = this.doc.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(input => {
             const htmlInput = input as HTMLInputElement;
             const span = this.doc.createElement('span');
-            // OOXML Checkbox representation
             span.innerHTML = htmlInput.checked ? '☒' : '☐';
             span.style.fontFamily = 'Segoe UI Symbol, sans-serif';
             span.style.fontSize = '1.2em';
+            span.style.marginRight = '4px';
+            span.style.verticalAlign = 'middle';
             input.parentNode?.replaceChild(span, input);
         });
+
+        // Convert radio buttons
+        const radios = this.doc.querySelectorAll('input[type="radio"]');
+        radios.forEach(input => {
+            const htmlInput = input as HTMLInputElement;
+            const span = this.doc.createElement('span');
+            span.innerHTML = htmlInput.checked ? '🔘' : '⚪';
+            span.style.fontSize = '1.1em';
+            span.style.marginRight = '4px';
+            span.style.verticalAlign = 'middle';
+            input.parentNode?.replaceChild(span, input);
+        });
+
+        // Convert text inputs & textareas into elegant inline spans with standard placeholders/underlines
+        const textFields = this.doc.querySelectorAll('input[type="text"], input:not([type]), textarea');
+        textFields.forEach(input => {
+            const htmlInput = input as HTMLInputElement;
+            const span = this.doc.createElement('span');
+            const valueText = htmlInput.value || htmlInput.placeholder || '_______________________';
+            span.textContent = valueText;
+            span.style.borderBottom = '1px solid #94a3b8';
+            span.style.paddingBottom = '1px';
+            span.style.color = htmlInput.value ? '#334155' : '#94a3b8';
+            span.style.fontStyle = htmlInput.value ? 'normal' : 'italic';
+            span.style.margin = '0 4px';
+            input.parentNode?.replaceChild(span, input);
+        });
+
+        // Convert selects into dropdown styling representation
+        const selects = this.doc.querySelectorAll('select');
+        selects.forEach(select => {
+            const htmlSelect = select as HTMLSelectElement;
+            const span = this.doc.createElement('span');
+            const activeOption = htmlSelect.options[htmlSelect.selectedIndex]?.text || htmlSelect.options[0]?.text || 'Select...';
+            span.textContent = `${activeOption} ▾`;
+            span.style.border = '1px solid #cbd5e1';
+            span.style.padding = '2px 8px';
+            span.style.borderRadius = '4px';
+            span.style.backgroundColor = '#f8fafc';
+            span.style.fontSize = '0.9em';
+            span.style.margin = '0 4px';
+            select.parentNode?.replaceChild(span, select);
+        });
+
+        // Convert buttons into elegant Word-like button borders
+        const buttons = this.doc.querySelectorAll('button');
+        buttons.forEach(button => {
+            const htmlButton = button as HTMLButtonElement;
+            const span = this.doc.createElement('span');
+            span.textContent = htmlButton.textContent || 'Button';
+            span.style.border = '1px solid #94a3b8';
+            span.style.padding = '4px 12px';
+            span.style.borderRadius = '4px';
+            span.style.backgroundColor = '#f1f5f9';
+            span.style.fontWeight = '500';
+            span.style.fontSize = '0.95em';
+            span.style.margin = '0 4px';
+            span.style.display = 'inline-block';
+            button.parentNode?.replaceChild(span, button);
+        });
         
-        // Disable other inputs so they don't break contenteditable behavior
+        // Disable other remaining inputs so they don't break contenteditable behavior
         this.doc.querySelectorAll('input, select, textarea, button').forEach(el => {
             (el as HTMLElement).setAttribute('contenteditable', 'false');
         });

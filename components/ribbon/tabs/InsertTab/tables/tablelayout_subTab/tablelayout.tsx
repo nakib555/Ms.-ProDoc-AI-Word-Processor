@@ -242,6 +242,54 @@ export const TableLayoutTab: React.FC = () => {
       });
   };
 
+  const applyHeaderShading = (color: string) => runOnTable((table) => {
+      const rows = Array.from(table.rows);
+      if (rows.length > 0) {
+          const firstRow = rows[0];
+          Array.from(firstRow.cells).forEach((c) => {
+              const cell = c as HTMLTableCellElement;
+              cell.style.backgroundColor = color;
+              if (color && color !== 'transparent') {
+                  // If dark header, make text white, otherwise default text color
+                  if (color === '#1e293b' || color === '#1e3a8a' || color === '#115e59') {
+                      cell.style.color = '#ffffff';
+                      cell.style.fontWeight = 'bold';
+                  } else {
+                      cell.style.color = '#1e293b';
+                      cell.style.fontWeight = 'bold';
+                  }
+              } else {
+                  cell.style.color = '';
+              }
+          });
+      }
+  });
+
+  const applyAlternatingShading = (color: string) => runOnTable((table) => {
+      const rows = Array.from(table.rows);
+      rows.forEach((row, rowIndex) => {
+          if (rowIndex === 0) return; // Skip header row to avoid conflict
+          const cells = Array.from(row.cells);
+          cells.forEach((c) => {
+              const cell = c as HTMLTableCellElement;
+              if (rowIndex % 2 === 1) { // Alternated lines
+                  cell.style.backgroundColor = color;
+              } else {
+                  cell.style.backgroundColor = '';
+              }
+          });
+      });
+  });
+
+  const clearTableShading = () => runOnTable((table) => {
+      const cells = table.querySelectorAll('td, th');
+      cells.forEach((c) => {
+          const cell = c as HTMLTableCellElement;
+          cell.style.backgroundColor = '';
+          cell.style.color = '';
+      });
+  });
+
   return (
     <>
       <RibbonSection title="Table">
@@ -249,6 +297,81 @@ export const TableLayoutTab: React.FC = () => {
               <RibbonButton icon={MousePointer2} label="Select" onClick={() => executeCommand('selectAll')} />
               <RibbonButton icon={Grid} label="View Gridlines" onClick={() => {}} />
               <RibbonButton icon={TableProperties} label="Properties" onClick={openProperties} />
+          </div>
+      </RibbonSection>
+
+      <RibbonSection title="Table Styles">
+          <div className="flex flex-col gap-1 px-1 h-full justify-center min-w-[150px]">
+              {/* Header Shading Row */}
+              <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-500 font-medium w-[45px] leading-tight">Header:</span>
+                  <div className="flex items-center gap-1">
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-800" 
+                          title="Dark Slate Header"
+                          onClick={() => applyHeaderShading('#1e293b')} 
+                      />
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-900" 
+                          title="Navy Header"
+                          onClick={() => applyHeaderShading('#1e3a8a')} 
+                      />
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-100" 
+                          title="Light Grey Header"
+                          onClick={() => applyHeaderShading('#f1f5f9')} 
+                      />
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-teal-800" 
+                          title="Teal Header"
+                          onClick={() => applyHeaderShading('#115e59')} 
+                      />
+                  </div>
+              </div>
+
+              {/* Alternating Shading Row */}
+              <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-500 font-medium w-[45px] leading-tight">Zebra:</span>
+                  <div className="flex items-center gap-1">
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-50" 
+                          title="Zebra Light Grey"
+                          onClick={() => applyAlternatingShading('#f8fafc')} 
+                      />
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-50" 
+                          title="Zebra Soft Blue"
+                          onClick={() => applyAlternatingShading('#eff6ff')} 
+                      />
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-emerald-50" 
+                          title="Zebra Soft Green"
+                          onClick={() => applyAlternatingShading('#ecfdf5')} 
+                      />
+                      <button 
+                          onMouseDown={(e) => e.preventDefault()} 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-amber-50" 
+                          title="Zebra Soft Amber"
+                          onClick={() => applyAlternatingShading('#fffbeb')} 
+                      />
+                  </div>
+              </div>
+
+              {/* Reset Option */}
+              <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="text-[9px] text-red-600 dark:text-red-400 hover:underline text-left font-medium"
+                  onClick={clearTableShading}
+              >
+                  Clear Shading
+              </button>
           </div>
       </RibbonSection>
 
