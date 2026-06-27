@@ -11,10 +11,10 @@ interface Message {
   isStreaming?: boolean;
 }
 
-export const CopilotSidebar: React.FC = () => {
-  const { showCopilot, setShowCopilot, content, executeCommand, viewMode } = useEditor();
+export const AIAssistantSidebar: React.FC = () => {
+  const { showAssistant, setShowAssistant, content, executeCommand, viewMode } = useEditor();
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', role: 'model', text: "Hi! I'm Copilot. I can help you write, summarize, or edit this document. What would you like to do?" }
+    { id: '1', role: 'model', text: "Hi! I'm your AI Assistant. I can help you write, summarize, or edit this document. What would you like to do?" }
   ]);
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -82,17 +82,17 @@ export const CopilotSidebar: React.FC = () => {
       }
   };
 
-  if (!showCopilot || viewMode === 'web') return null;
+  if (!showAssistant || viewMode === 'web') return null;
 
   return (
-    <div className="w-[350px] bg-white dark:bg-[#1e293b] border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-xl z-20 transition-all duration-300">
+    <div className="h-full w-[350px] bg-white dark:bg-[#1e293b] border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-xl z-20 transition-all duration-300">
         {/* Header */}
         <div className="h-12 flex items-center justify-between px-4 border-b border-slate-100 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
                 <Sparkles size={18} className="text-purple-600 fill-purple-100 dark:fill-purple-900/30" />
-                <span>Copilot</span>
+                <span>AI Assistant</span>
             </div>
-            <button onClick={() => setShowCopilot(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+            <button onClick={() => setShowAssistant(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
                 <X size={18} />
             </button>
         </div>
@@ -132,7 +132,7 @@ export const CopilotSidebar: React.FC = () => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ask Copilot..."
+                    placeholder="Ask AI Assistant..."
                     className="w-full pl-4 pr-10 py-3 bg-slate-50 dark:bg-[#0f172a] border-none rounded-xl resize-none outline-none focus:ring-2 focus:ring-purple-500/30 text-sm text-slate-700 dark:text-slate-200 shadow-inner max-h-32 min-h-[50px]"
                     rows={1}
                     style={{ minHeight: '50px' }}

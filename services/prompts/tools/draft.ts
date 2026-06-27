@@ -1,8 +1,8 @@
 
 import { PRODOC_JSON_SCHEMA, MASTER_STYLE_GUIDE } from '../schemas';
 
-// MASTER MS WORD AI PROMPT
-export const MASTER_MS_WORD_WITH_USER_INSTRUCTION = `
+// MASTER WORD PROCESSOR AI PROMPT
+export const MASTER_WORD_PROCESSOR_WITH_USER_INSTRUCTION = `
 You are a world-class Document Designer.
 Your task is to generate visually stunning content using a Hybrid Markdown + HTML approach.
 
@@ -41,7 +41,7 @@ export const getAutoDetectTemplatePrompt = () => {
 
 export const getGenerateContentPrompt = (userInstruction: string) => {
   return `
-      ${MASTER_MS_WORD_WITH_USER_INSTRUCTION}
+      ${MASTER_WORD_PROCESSOR_WITH_USER_INSTRUCTION}
       USER INSTRUCTION: "${userInstruction}"
       
       TASK: Generate content. Use Markdown for structure and HTML <span style> for visual flair.
@@ -53,7 +53,7 @@ export const getGenerateContentPrompt = (userInstruction: string) => {
 
 export const getEditContentPrompt = (instruction: string) => {
   return `
-      ${MASTER_MS_WORD_WITH_USER_INSTRUCTION}
+      ${MASTER_WORD_PROCESSOR_WITH_USER_INSTRUCTION}
       EDIT INSTRUCTION: "${instruction}"
 
       TASK: Rewrite the input text. Maintain the Hybrid Markdown/HTML format.

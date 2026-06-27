@@ -26,10 +26,10 @@ export const ThemesTool: React.FC = () => {
         />
         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={200}>
             <div className="p-2 grid grid-cols-1 gap-1 max-h-[60vh] overflow-y-auto">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Office</div>
-                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Calibri', 'Calibri')}>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Standard</div>
+                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Inter', 'Inter')}>
                     <div className="w-8 h-8 bg-blue-600 rounded shadow-sm"></div>
-                    <div><div className="text-xs font-semibold text-slate-700">Office</div><div className="text-[10px] text-slate-500">Calibri / Calibri</div></div>
+                    <div><div className="text-xs font-semibold text-slate-700">Default</div><div className="text-[10px] text-slate-500">Inter / Inter</div></div>
                 </button>
                 <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Arial', 'Arial')}>
                     <div className="w-8 h-8 bg-emerald-600 rounded shadow-sm"></div>

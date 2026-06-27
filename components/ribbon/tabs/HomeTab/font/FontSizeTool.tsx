@@ -7,7 +7,7 @@ import { MenuPortal } from '../../../common/MenuPortal';
 import { ToolBtn } from '../common/HomeTools';
 import { ptToPx, pxToPt } from '../../../../../utils/textUtils';
 
-// Standard Word Font Sizes (Points)
+// Standard Font Sizes (Points)
 const STD_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72];
 
 export const FontSizeTool: React.FC = () => {

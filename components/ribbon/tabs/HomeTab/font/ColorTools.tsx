@@ -104,7 +104,7 @@ export const ColorTools: React.FC = () => {
       closeMenu();
   };
 
-  // Button click uses the "last chosen" highlight color (Word behavior), or yellow default
+  // Button click uses the "last chosen" highlight color (standard behavior), or yellow default
   const applyCurrentHighlight = () => {
       const colorToApply = highlightColor;
       setDetectedHighlight(colorToApply);

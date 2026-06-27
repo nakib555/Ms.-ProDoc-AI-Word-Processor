@@ -176,8 +176,8 @@ export interface EditorContextType {
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
-  showCopilot: boolean;
-  setShowCopilot: React.Dispatch<React.SetStateAction<boolean>>;
+  showAssistant: boolean;
+  setShowAssistant: React.Dispatch<React.SetStateAction<boolean>>;
   
   // AI State
   aiState: 'idle' | 'thinking' | 'writing';
@@ -236,7 +236,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [showCopilot, setShowCopilot] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
   const [aiState, setAiState] = useState<'idle' | 'thinking' | 'writing'>('idle');
   
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
@@ -523,8 +523,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentPage,
     totalPages,
     setTotalPages,
-    showCopilot,
-    setShowCopilot,
+    showAssistant,
+    setShowAssistant,
     aiState,
     setAiState,
     isAIProcessing: aiState !== 'idle',
@@ -575,7 +575,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveElementType,
     currentPage,
     totalPages,
-    showCopilot,
+    showAssistant,
     aiState,
     setIsAIProcessing,
     activeEditingArea,

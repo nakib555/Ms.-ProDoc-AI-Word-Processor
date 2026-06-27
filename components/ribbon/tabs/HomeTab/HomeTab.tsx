@@ -9,6 +9,7 @@ import { ParagraphGroup } from './paragraph/ParagraphGroup';
 import { StylesGroup } from './styles/StylesGroup';
 import { EditingGroup } from './editing/EditingGroup';
 import { VoiceGroup } from './voice/VoiceGroup';
+import { AssistantGroup } from './AssistantGroup';
 
 export const HomeTab: React.FC = () => {
   return (
@@ -24,6 +25,8 @@ export const HomeTab: React.FC = () => {
        <EditingGroup />
        <RibbonSeparator />
        <VoiceGroup />
+       <RibbonSeparator />
+       <AssistantGroup />
     </HomeTabProvider>
   );
 };

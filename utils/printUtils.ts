@@ -129,7 +129,7 @@ export const generatePdfPrint = async (
                 }
 
                 /* Hide UI elements explicitly */
-                .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .copilot-sidebar, .mobile-selection-toolbar, .ProseMirror-selectednode {
+                .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .ai-assistant-sidebar, .mobile-selection-toolbar, .ProseMirror-selectednode {
                     display: none !important;
                 }
                 

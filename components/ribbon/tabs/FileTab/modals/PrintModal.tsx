@@ -247,7 +247,7 @@ const renderPageContent = (
                     <div 
                         className="prodoc-editor w-full h-full outline-none text-lg leading-loose break-words"
                         style={{
-                            fontFamily: 'Calibri, Inter, sans-serif',
+                            fontFamily: 'Inter, sans-serif',
                             color: '#000000',
                             flex: cfg.verticalAlign === 'justify' ? '1 1 auto' : undefined
                         }}
@@ -425,7 +425,7 @@ const PrintSettingsPanel: React.FC<{
     };
 
     const formatPresetLabel = (preset: string) => {
-        if (preset === 'office2003') return 'Office 2003 Default';
+        if (preset === 'classic') return 'Classic Default';
         if (preset === 'apa') return 'APA Style';
         if (preset === 'mla') return 'MLA Style';
         if (preset === 'chicago') return 'Chicago Style';

@@ -45,19 +45,17 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
     // For contextual tabs, use the passed color class. For normal tabs, use slate when inactive, specific color when active/hover.
     const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-100';
     const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : configColor;
-    
-    const activeBg = 'bg-white dark:bg-[#1e293b]';
 
     return (
         <button
             onClick={onClick}
             onMouseDown={(e) => e.preventDefault()}
             className={`
-              px-3 py-2.5 text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap relative group flex-shrink-0 flex items-center gap-2
+              px-3.5 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center gap-2 mx-0.5 my-1
               ${isActive 
-                ? `${activeBg} ${activeColor} z-10 translate-y-[1px] pb-3 font-semibold shadow-[0_-1px_3px_rgba(0,0,0,0.05)] dark:shadow-none` 
-                : `${baseColor} mb-0.5`}
-              ${isContextual ? 'border-t-2 border-t-current' : ''}
+                ? `bg-white text-slate-900 dark:bg-slate-800 dark:text-white shadow-sm font-semibold` 
+                : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/50`}
+              ${isContextual ? 'border border-current' : 'border border-transparent'}
             `}
         >
             {Icon && (
@@ -68,14 +66,6 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
               />
             )}
             <span>{label}</span>
-            
-            {isActive && (
-               <>
-                 <div className="absolute bottom-0 left-0 right-0 h-3 bg-white dark:bg-[#1e293b] z-20"></div>
-                 <div className="absolute bottom-0 -left-2 w-2 h-2 bg-transparent shadow-[2px_2px_0_#fff] dark:shadow-[2px_2px_0_#1e293b] rounded-br-full z-20 pointer-events-none"></div>
-                 <div className="absolute bottom-0 -right-2 w-2 h-2 bg-transparent shadow-[-2px_2px_0_#fff] dark:shadow-[-2px_2px_0_#1e293b] rounded-bl-full z-20 pointer-events-none"></div>
-               </>
-            )}
         </button>
     );
 });
@@ -182,14 +172,14 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
 
   return (
-    <div className="relative flex items-end bg-[#0f172a] dark:bg-[#0f172a] pt-1 flex-shrink-0 z-20 w-full group select-none border-b border-white/10 dark:border-slate-800">
+    <div className="relative flex items-center bg-slate-50 dark:bg-[#0f172a] pt-2 pb-2 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200 dark:border-slate-800">
        <div 
-          className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-8 bg-gradient-to-r from-[#0f172a] dark:from-[#0f172a] via-[#0f172a]/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-8 bg-gradient-to-r from-slate-50 dark:from-[#0f172a] via-slate-50/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >
            <button 
               onClick={() => scroll('left')}
               onMouseDown={(e) => e.preventDefault()}
-              className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-800 hover:bg-slate-700 dark:hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
+              className="p-1.5 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all"
               aria-label="Scroll left"
            >
               <ChevronLeft size={16} strokeWidth={2.5} />
@@ -198,7 +188,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
 
       <div 
         ref={scrollContainerRef}
-        className="flex px-2 md:px-4 overflow-x-auto overflow-y-hidden no-scrollbar w-full items-end gap-1 scroll-smooth touch-pan-x"
+        className="flex px-2 md:px-4 overflow-x-auto overflow-y-hidden no-scrollbar w-full items-center gap-1 scroll-smooth touch-pan-x"
       >
         {Object.keys(TAB_CONFIG).map((key) => {
           const tab = key as RibbonTab;
@@ -244,12 +234,12 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       </div>
 
        <div 
-          className={`absolute right-0 top-0 bottom-0 z-30 flex items-center pr-1 pl-8 bg-gradient-to-l from-[#0f172a] dark:from-[#0f172a] via-[#0f172a]/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showRightArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute right-0 top-0 bottom-0 z-30 flex items-center pr-1 pl-8 bg-gradient-to-l from-slate-50 dark:from-[#0f172a] via-slate-50/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showRightArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >
            <button 
               onClick={() => scroll('right')}
               onMouseDown={(e) => e.preventDefault()}
-              className="p-1.5 rounded-full bg-slate-800 dark:bg-slate-800 hover:bg-slate-700 dark:hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-600 dark:border-slate-700 shadow-lg active:scale-95 mb-0.5 transition-all"
+              className="p-1.5 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all"
               aria-label="Scroll right"
            >
               <ChevronRight size={16} strokeWidth={2.5} />

@@ -5,7 +5,7 @@ import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
 import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
-import { CopilotSidebar } from './components/CopilotSidebar';
+import { AIAssistantSidebar } from './components/AIAssistantSidebar';
 import { RibbonTab } from './types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
@@ -79,8 +79,8 @@ const AppContent: React.FC = () => {
             )}
           </div>
           
-          <div className="no-print">
-            <CopilotSidebar />
+          <div className="no-print flex-shrink-0 h-full">
+            <AIAssistantSidebar />
           </div>
         </div>
       </div>

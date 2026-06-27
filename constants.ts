@@ -226,7 +226,7 @@ export const MARGIN_PRESETS: Record<string, MarginValues> = {
   moderate: { top: 1.0, bottom: 1.0, left: 0.75, right: 0.75, gutter: 0 },
   wide: { top: 1.0, bottom: 1.0, left: 2.0, right: 2.0, gutter: 0 },
   mirrored: { top: 1.0, bottom: 1.0, left: 1.25, right: 1.0, gutter: 0 },
-  office2003: { top: 1.0, bottom: 1.0, left: 1.25, right: 1.25, gutter: 0 },
+  classic: { top: 1.0, bottom: 1.0, left: 1.25, right: 1.25, gutter: 0 },
   
   // Extended Presets
   academicStandard: { top: 1.0, bottom: 1.0, left: 1.5, right: 1.0, gutter: 0 },

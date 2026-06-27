@@ -11,7 +11,7 @@ import { ShowGroup } from './show/ShowGroup';
 import { ZoomGroup } from './zoom/ZoomGroup';
 import { WindowGroup } from './window/WindowGroup';
 import { MacrosGroup } from './macros/MacrosGroup';
-import { SharePointGroup } from './sharepoint/SharePointGroup';
+import { DocumentPropertiesGroup } from './sharepoint/DocumentPropertiesGroup';
 
 export const ViewTab: React.FC = () => {
   return (
@@ -30,7 +30,7 @@ export const ViewTab: React.FC = () => {
       <RibbonSeparator />
       <MacrosGroup />
       <RibbonSeparator />
-      <SharePointGroup />
+      <DocumentPropertiesGroup />
     </ViewTabProvider>
   );
 };

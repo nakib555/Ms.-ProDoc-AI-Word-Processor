@@ -122,7 +122,7 @@ export const QuickPromptTool: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full justify-center gap-1.5 px-2 min-w-[320px] max-w-[420px]">
+    <div className="flex flex-col h-full justify-center gap-1.5 px-2 min-w-[240px] w-full max-w-[320px]">
         {/* Output Action Selector */}
         <div className="flex items-center gap-2">
             <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">

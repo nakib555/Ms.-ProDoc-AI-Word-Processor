@@ -99,7 +99,7 @@ export type ApplyToType = 'wholeDocument' | 'thisSection' | 'thisPointForward';
 export type SheetsPerBookletType = 'all' | '16' | '8' | '4' | '2';
 
 export type MarginPreset = 
-  | 'normal' | 'narrow' | 'moderate' | 'wide' | 'mirrored' | 'office2003' 
+  | 'normal' | 'narrow' | 'moderate' | 'wide' | 'mirrored' | 'classic' 
   | 'academicStandard' | 'apa' | 'mla' | 'chicago' | 'thesisTopHeavy' | 'thesisBalanced' 
   | 'corporateClean' | 'executiveLetter' | 'novelBook' | 'magazineLayout' | 'heavyBinding' 
   | 'narrowHeader' | 'wideBottom' | 'symmetricalWide' | 'legalFormat' | 'formDocument' 
@@ -148,7 +148,7 @@ export interface PageConfig {
   sectionStart?: 'newpage' | 'continuous' | 'even' | 'odd';
   differentOddEven?: boolean;
   differentFirstPage?: boolean;
-  multiplePages?: MultiplePagesType; // MS Word style page layout
+  multiplePages?: MultiplePagesType; // Standard page layout
   mirrorMargins?: boolean; // Legacy helper, derived from multiplePages usually
   applyTo?: ApplyToType;
   sheetsPerBooklet?: SheetsPerBookletType;

@@ -32,7 +32,7 @@ export const MarginsTool: React.FC = () => {
   };
 
   const formatLabel = (key: string) => {
-      if (key === 'office2003') return 'Office 2003 Default';
+      if (key === 'classic') return 'Classic Default';
       if (key === 'apa') return 'APA';
       if (key === 'mla') return 'MLA';
       if (key === 'chicago') return 'Chicago';
@@ -50,7 +50,7 @@ export const MarginsTool: React.FC = () => {
       if (key === 'moderate') { icon = MoveVertical; colorClass = "text-orange-500"; }
       if (key === 'wide') { icon = ArrowLeftRight; colorClass = "text-purple-500"; }
       if (key === 'mirrored') { icon = ArrowRightLeft; colorClass = "text-indigo-500"; }
-      if (key === 'office2003') { icon = Monitor; colorClass = "text-sky-500"; }
+      if (key === 'classic') { icon = Monitor; colorClass = "text-sky-500"; }
 
       return {
         id: key,

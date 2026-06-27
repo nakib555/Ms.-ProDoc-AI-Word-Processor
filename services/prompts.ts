@@ -68,7 +68,7 @@ export const getSystemPrompt = (operation: string, userPrompt?: string): string 
  */
 export const getChatSystemPrompt = (documentContext: string): string => {
   return `
-You are **Copilot**, an expert AI writing assistant embedded in a professional word processor.
+You are **ProDoc AI**, an expert AI writing assistant embedded in a professional word processor.
 Your goal is to help the user write, edit, and understand their document.
 
 ### CAPABILITIES:

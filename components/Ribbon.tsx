@@ -112,7 +112,7 @@ const Ribbon: React.FC<RibbonProps> = ({
   return (
     <div 
       onMouseDown={handleMouseDown}
-      className="flex flex-col z-20 no-print relative shadow-sm bg-slate-900 dark:bg-[#0f172a] transition-colors duration-300"
+      className="flex flex-col z-20 no-print relative shadow-sm bg-slate-50 dark:bg-[#0f172a] transition-colors duration-300"
     >
       <RibbonTabBar activeTab={activeTab} onTabChange={onTabChange} />
 

@@ -4,6 +4,7 @@ import { RibbonSeparator } from '../../common/RibbonSeparator';
 import { AIAssistantTabProvider } from './AIAssistantTabContext';
 
 // Groups
+import { ChatGroup } from './draft/ChatGroup';
 import { RefineGroup } from './refine/RefineGroup';
 import { DraftGroup } from './draft/DraftGroup';
 import { TranslateGroup } from './translate/TranslateGroup';
@@ -13,6 +14,8 @@ import { SettingsGroup } from './settings/SettingsGroup';
 export const AIAssistantTab: React.FC = () => {
   return (
     <AIAssistantTabProvider>
+       <ChatGroup />
+       <RibbonSeparator />
        <DraftGroup />
        <RibbonSeparator />
        <RefineGroup />
