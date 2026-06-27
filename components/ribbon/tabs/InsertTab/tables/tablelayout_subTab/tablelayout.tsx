@@ -7,7 +7,7 @@ import {
   ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine,
   Merge, Split, Scaling, AlignLeft, AlignCenter, AlignRight,
   AlignJustify, ArrowDownAZ, Type, Calculator, TableProperties,
-  Maximize, Minimize
+  Maximize, Minimize, Sparkles
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 import { TablePropertiesDialog } from '../TablePropertiesDialog';
@@ -290,6 +290,138 @@ export const TableLayoutTab: React.FC = () => {
       });
   });
 
+  const autoFormatTable = () => runOnTable((table) => {
+      const rows = Array.from(table.rows);
+      if (rows.length === 0) return;
+
+      let totalCells = 0;
+      let numericCells = 0;
+      let filledCells = 0;
+      let totalLength = 0;
+
+      // Matches numbers, percentages, currency, and scientific notation
+      const numericRegex = /^\s*[-+]?\$?\s*?\(?\s*?\d{1,3}(,\d{3})*(\.\d+)?\s*?%?\s*?\)?\s*$/;
+
+      rows.forEach((row) => {
+          const cells = Array.from(row.cells);
+          cells.forEach((cell) => {
+              totalCells++;
+              const text = cell.textContent?.trim() || '';
+              if (text) {
+                  filledCells++;
+                  totalLength += text.length;
+                  if (numericRegex.test(text)) {
+                      numericCells++;
+                  }
+              }
+          });
+      });
+
+      const numericRatio = filledCells > 0 ? numericCells / filledCells : 0;
+      const density = totalCells > 0 ? totalLength / totalCells : 0;
+
+      // Clear previous styles to avoid overlays
+      const allCells = table.querySelectorAll('td, th');
+      allCells.forEach((c) => {
+          const cell = c as HTMLTableCellElement;
+          cell.style.backgroundColor = '';
+          cell.style.color = '';
+          cell.style.fontWeight = '';
+          cell.style.textAlign = '';
+          cell.style.border = '1px solid #cbd5e1';
+          cell.style.padding = '6px 10px';
+      });
+
+      if (numericRatio >= 0.35) {
+          // Quantitative/Financial dense style
+          const firstRow = rows[0];
+          if (firstRow) {
+              Array.from(firstRow.cells).forEach((c) => {
+                  const cell = c as HTMLTableCellElement;
+                  cell.style.backgroundColor = '#1e3a8a'; // Deep Navy Blue
+                  cell.style.color = '#ffffff';
+                  cell.style.fontWeight = 'bold';
+              });
+          }
+
+          rows.forEach((row, rowIndex) => {
+              if (rowIndex === 0) return;
+              const zebraColor = rowIndex % 2 === 1 ? '#f8fafc' : '';
+              const isLastRow = rowIndex === rows.length - 1;
+              const rowText = row.textContent?.toLowerCase() || '';
+              const isTotalsRow = isLastRow && (rowText.includes('total') || rowText.includes('sum') || rowText.includes('average'));
+
+              Array.from(row.cells).forEach((c) => {
+                  const cell = c as HTMLTableCellElement;
+                  if (zebraColor) {
+                      cell.style.backgroundColor = zebraColor;
+                  }
+                  
+                  const cellText = cell.textContent?.trim() || '';
+                  if (numericRegex.test(cellText)) {
+                      cell.style.textAlign = 'right';
+                  } else {
+                      cell.style.textAlign = 'left';
+                  }
+
+                  if (isTotalsRow) {
+                      cell.style.fontWeight = 'bold';
+                      cell.style.borderTop = '2px double #475569';
+                      cell.style.borderBottom = '2px double #475569';
+                      cell.style.backgroundColor = '#f1f5f9';
+                  }
+              });
+          });
+      } else if (density > 15) {
+          // Editorial/Text Specification layout style
+          const firstRow = rows[0];
+          if (firstRow) {
+              Array.from(firstRow.cells).forEach((c) => {
+                  const cell = c as HTMLTableCellElement;
+                  cell.style.backgroundColor = '#0f766e'; // Dark Teal
+                  cell.style.color = '#ffffff';
+                  cell.style.fontWeight = 'bold';
+              });
+          }
+
+          rows.forEach((row, rowIndex) => {
+              if (rowIndex === 0) return;
+              const zebraColor = rowIndex % 2 === 1 ? '#f0fdfa' : '';
+              Array.from(row.cells).forEach((c) => {
+                  const cell = c as HTMLTableCellElement;
+                  if (zebraColor) {
+                      cell.style.backgroundColor = zebraColor;
+                  }
+                  cell.style.textAlign = 'left';
+                  cell.style.padding = '8px 12px';
+              });
+          });
+      } else {
+          // Clean Simple layout style
+          const firstRow = rows[0];
+          if (firstRow) {
+              Array.from(firstRow.cells).forEach((c) => {
+                  const cell = c as HTMLTableCellElement;
+                  cell.style.backgroundColor = '#f1f5f9';
+                  cell.style.color = '#0f172a';
+                  cell.style.fontWeight = 'bold';
+              });
+          }
+
+          rows.forEach((row, rowIndex) => {
+              if (rowIndex === 0) return;
+              const zebraColor = rowIndex % 2 === 1 ? '#f8fafc' : '';
+              Array.from(row.cells).forEach((c) => {
+                  const cell = c as HTMLTableCellElement;
+                  if (zebraColor) {
+                      cell.style.backgroundColor = zebraColor;
+                  }
+                  cell.style.textAlign = 'center';
+              });
+          });
+      }
+  });
+
   return (
     <>
       <RibbonSection title="Table">
@@ -301,8 +433,15 @@ export const TableLayoutTab: React.FC = () => {
       </RibbonSection>
 
       <RibbonSection title="Table Styles">
-          <div className="flex flex-col gap-1 px-1 h-full justify-center min-w-[150px]">
-              {/* Header Shading Row */}
+          <div className="flex h-full items-center gap-1">
+              <RibbonButton 
+                  icon={Sparkles} 
+                  label="Auto-Format" 
+                  onClick={autoFormatTable}
+              />
+              <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
+              <div className="flex flex-col gap-1 px-1 h-full justify-center min-w-[150px]">
+                  {/* Header Shading Row */}
               <div className="flex items-center gap-1">
                   <span className="text-[10px] text-slate-500 font-medium w-[45px] leading-tight">Header:</span>
                   <div className="flex items-center gap-1">
@@ -372,6 +511,7 @@ export const TableLayoutTab: React.FC = () => {
               >
                   Clear Shading
               </button>
+          </div>
           </div>
       </RibbonSection>
 
