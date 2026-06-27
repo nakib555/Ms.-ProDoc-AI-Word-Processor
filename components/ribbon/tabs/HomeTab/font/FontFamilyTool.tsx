@@ -9,8 +9,8 @@ import { FONTS } from '../../../../../constants';
 export const FontFamilyTool: React.FC = () => {
   const { applyAdvancedStyle, editorRef } = useEditor();
   const { activeMenu, toggleMenu, closeMenu, menuPos, registerTrigger } = useHomeTab();
-  const [currentFont, setCurrentFont] = useState('Arial');
-  const [inputValue, setInputValue] = useState('Arial');
+  const [currentFont, setCurrentFont] = useState('Inter');
+  const [inputValue, setInputValue] = useState('Inter');
   const [isMixed, setIsMixed] = useState(false);
   const menuId = 'font_family';
   const inputRef = useRef<HTMLInputElement>(null);

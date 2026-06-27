@@ -32,7 +32,7 @@ export const SaveAsModal: React.FC = () => {
     <meta charset="utf-8">
     <title>${documentTitle}</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
+        body { font-family: Inter, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }
         table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }
         th, td { border: 1px solid #ddd; padding: 8px; }
         img { max-width: 100%; height: auto; }

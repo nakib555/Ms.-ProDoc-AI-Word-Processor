@@ -2,7 +2,9 @@
 import { RibbonTab, MarginValues } from './types';
 
 export const FONTS = [
-  'Arial', 'Inter', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Noto Serif'
+  'Arial', 'Inter', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Noto Serif',
+  'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Oswald', 'Raleway', 'Poppins', 'Nunito',
+  'Playfair Display', 'Merriweather', 'Lora', 'PT Sans', 'PT Serif'
 ];
 
 export const FONT_SIZES = [

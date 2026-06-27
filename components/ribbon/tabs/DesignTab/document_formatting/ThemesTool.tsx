@@ -31,31 +31,31 @@ export const ThemesTool: React.FC = () => {
                     <div className="w-8 h-8 bg-blue-600 rounded shadow-sm"></div>
                     <div><div className="text-xs font-semibold text-slate-700">Default</div><div className="text-[10px] text-slate-500">Inter / Inter</div></div>
                 </button>
-                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Arial', 'Arial')}>
+                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Roboto', 'Roboto')}>
                     <div className="w-8 h-8 bg-emerald-600 rounded shadow-sm"></div>
-                    <div><div className="text-xs font-semibold text-slate-700">Facet</div><div className="text-[10px] text-slate-500">Arial / Arial</div></div>
+                    <div><div className="text-xs font-semibold text-slate-700">Facet</div><div className="text-[10px] text-slate-500">Roboto / Roboto</div></div>
                 </button>
-                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Georgia', 'Georgia')}>
+                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Merriweather', 'Merriweather')}>
                     <div className="w-8 h-8 bg-purple-600 rounded shadow-sm"></div>
-                    <div><div className="text-xs font-semibold text-slate-700">Integral</div><div className="text-[10px] text-slate-500">Georgia / Georgia</div></div>
+                    <div><div className="text-xs font-semibold text-slate-700">Integral</div><div className="text-[10px] text-slate-500">Merriweather / Merriweather</div></div>
                 </button>
                 
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 mt-2">Custom</div>
-                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Verdana', 'Verdana')}>
+                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Nunito', 'Nunito')}>
                     <div className="w-8 h-8 bg-slate-500 rounded shadow-sm"></div>
-                    <div><div className="text-xs font-semibold text-slate-700">Simple</div><div className="text-[10px] text-slate-500">Verdana / Verdana</div></div>
+                    <div><div className="text-xs font-semibold text-slate-700">Simple</div><div className="text-[10px] text-slate-500">Nunito / Nunito</div></div>
                 </button>
-                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Trebuchet MS', 'Trebuchet MS')}>
+                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Oswald', 'Oswald')}>
                     <div className="w-8 h-8 bg-teal-600 rounded shadow-sm"></div>
-                    <div><div className="text-xs font-semibold text-slate-700">Distinct</div><div className="text-[10px] text-slate-500">Trebuchet / Trebuchet</div></div>
+                    <div><div className="text-xs font-semibold text-slate-700">Distinct</div><div className="text-[10px] text-slate-500">Oswald / Oswald</div></div>
                 </button>
-                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Garamond', 'Garamond')}>
+                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('PT Serif', 'PT Serif')}>
                     <div className="w-8 h-8 bg-amber-800 rounded shadow-sm"></div>
-                    <div><div className="text-xs font-semibold text-slate-700">Traditional</div><div className="text-[10px] text-slate-500">Garamond / Garamond</div></div>
+                    <div><div className="text-xs font-semibold text-slate-700">Traditional</div><div className="text-[10px] text-slate-500">PT Serif / PT Serif</div></div>
                 </button>
-                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Arial Black', 'Arial')}>
+                <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 rounded text-left" onClick={() => applyTheme('Montserrat', 'Montserrat')}>
                     <div className="w-8 h-8 bg-gray-900 rounded shadow-sm"></div>
-                    <div><div className="text-xs font-semibold text-slate-700">Strong</div><div className="text-[10px] text-slate-500">Arial Black / Arial</div></div>
+                    <div><div className="text-xs font-semibold text-slate-700">Strong</div><div className="text-[10px] text-slate-500">Montserrat / Montserrat</div></div>
                 </button>
             </div>
         </MenuPortal>

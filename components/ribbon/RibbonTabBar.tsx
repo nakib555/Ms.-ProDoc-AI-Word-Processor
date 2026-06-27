@@ -15,7 +15,7 @@ interface RibbonTabBarProps {
 }
 
 const TAB_CONFIG: Record<string, { icon: React.ElementType, label?: string, color: string }> = {
-  [RibbonTab.FILE]: { icon: FileText, color: 'text-blue-600 dark:text-blue-400' },
+  [RibbonTab.FILE]: { icon: FileText, color: 'text-slate-700 dark:text-slate-300' },
   [RibbonTab.HOME]: { icon: Home, color: 'text-indigo-600 dark:text-indigo-400' },
   [RibbonTab.INSERT]: { icon: Blocks, color: 'text-purple-600 dark:text-purple-400' },
   [RibbonTab.DRAW]: { icon: PenTool, color: 'text-pink-600 dark:text-pink-400' },
@@ -43,7 +43,7 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
     const configColor = TAB_CONFIG[tabId]?.color || 'text-slate-500';
     
     // For contextual tabs, use the passed color class. For normal tabs, use slate when inactive, specific color when active/hover.
-    const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-400 hover:text-slate-100';
+    const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100';
     const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : configColor;
 
     return (
@@ -54,14 +54,14 @@ const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContext
               px-3.5 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center gap-2 mx-0.5 my-1
               ${isActive 
                 ? `bg-white text-slate-900 dark:bg-slate-800 dark:text-white shadow-sm font-semibold` 
-                : `${baseColor} hover:bg-slate-800/50 dark:hover:bg-slate-800/50`}
+                : `${baseColor} hover:bg-slate-200/50 dark:hover:bg-slate-800/50`}
               ${isContextual ? 'border border-current' : 'border border-transparent'}
             `}
         >
             {Icon && (
               <Icon 
                 size={16} 
-                className={`transition-colors duration-200 ${isActive ? 'text-current' : isContextual ? 'text-current' : configColor} ${!isActive && !isContextual ? 'opacity-70 group-hover:opacity-100 group-hover:text-white' : ''}`}
+                className={`transition-colors duration-200 ${isActive ? 'text-current' : isContextual ? 'text-current' : configColor} ${!isActive && !isContextual ? 'opacity-70 group-hover:opacity-100' : ''}`}
                 strokeWidth={isActive ? 2.5 : 2}
               />
             )}
