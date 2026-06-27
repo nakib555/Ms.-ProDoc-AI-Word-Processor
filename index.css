@@ -105,6 +105,15 @@
   width: 100%;
 }
 
+/* Smooth transitions for table modifications like Insert/Delete Rows or Columns */
+.prodoc-editor table.is-resizing,
+.prodoc-editor table.is-resizing tbody,
+.prodoc-editor table.is-resizing tr,
+.prodoc-editor table.is-resizing td,
+.prodoc-editor table.is-resizing th {
+  transition: width 0.25s ease-out, height 0.25s ease-out, background-color 0.2s ease, border-color 0.2s ease;
+}
+
 .ProseMirror td,
 .ProseMirror th,
 .prodoc-editor td,

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 import { TablePropertiesDialog } from '../TablePropertiesDialog';
+import { BorderTool } from './BorderTool';
 
 export const TableLayoutTab: React.FC = () => {
   const { executeCommand } = useEditor();
@@ -51,13 +52,39 @@ export const TableLayoutTab: React.FC = () => {
 
   // --- Actions ---
 
-  const deleteRow = () => runOnRow((row) => row.remove());
+  const withResizeTransition = (fn: (table: HTMLTableElement) => void) => {
+      runOnTable((table) => {
+          table.classList.add('is-resizing');
+          fn(table);
+          setTimeout(() => {
+              table.classList.remove('is-resizing');
+          }, 50);
+      });
+  };
+
+  const deleteRow = () => withResizeTransition((table) => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      let node = selection.anchorNode as HTMLElement;
+      while(node && node.nodeName !== 'TR') {
+          node = node.parentNode as HTMLElement;
+          if (!node || node.nodeName === 'BODY') return;
+      }
+      if (node && node.nodeName === 'TR') {
+          node.remove();
+      }
+  });
   
-  const deleteCol = () => runOnCell((cell) => {
-      const row = cell.parentNode as HTMLTableRowElement;
-      const table = row.closest('table');
-      const index = cell.cellIndex;
-      if (table) {
+  const deleteCol = () => withResizeTransition((table) => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      let node = selection.anchorNode as HTMLElement;
+      while(node && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
+          node = node.parentNode as HTMLElement;
+          if (!node || node.nodeName === 'BODY') return;
+      }
+      if (node) {
+          const index = (node as HTMLTableCellElement).cellIndex;
           for (let i = 0; i < table.rows.length; i++) {
               if (table.rows[i].cells[index]) table.rows[i].deleteCell(index);
           }
@@ -66,30 +93,44 @@ export const TableLayoutTab: React.FC = () => {
 
   const deleteTable = () => runOnTable((table) => table.remove());
 
-  const insertRow = (where: 'above' | 'below') => runOnRow((row) => {
-      const newRow = row.parentNode!.insertBefore(row.cloneNode(true), where === 'above' ? row : row.nextSibling);
-      Array.from(newRow.childNodes).forEach((c: any) => c.innerHTML = '<br>');
+  const insertRow = (where: 'above' | 'below') => withResizeTransition((table) => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      let node = selection.anchorNode as HTMLElement;
+      while(node && node.nodeName !== 'TR') {
+          node = node.parentNode as HTMLElement;
+          if (!node || node.nodeName === 'BODY') return;
+      }
+      if (node && node.nodeName === 'TR') {
+          const row = node as HTMLTableRowElement;
+          const newRow = row.parentNode!.insertBefore(row.cloneNode(true), where === 'above' ? row : row.nextSibling);
+          Array.from(newRow.childNodes).forEach((c: any) => c.innerHTML = '<br>');
+      }
   });
 
-  const insertCol = (where: 'left' | 'right') => runOnCell((cell) => {
-      const index = cell.cellIndex;
-      const table = cell.closest('table');
-      if (!table) return;
-
-      for (let i = 0; i < table.rows.length; i++) {
-          const row = table.rows[i];
-          // Simple handling: insert at same index. 
-          // Note: Complex rowspans/colspans require a more robust matrix engine.
-          const targetIndex = where === 'left' ? index : index + 1;
-          if (targetIndex <= row.cells.length) {
-              const newCell = row.insertCell(targetIndex);
-              newCell.innerHTML = '<br>';
-              // Copy basic styles from neighbor
-              const neighbor = row.cells[index];
-              if (neighbor) {
-                  newCell.style.border = neighbor.style.border;
-                  newCell.style.padding = neighbor.style.padding;
-                  newCell.style.backgroundColor = neighbor.style.backgroundColor;
+  const insertCol = (where: 'left' | 'right') => withResizeTransition((table) => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      let node = selection.anchorNode as HTMLElement;
+      while(node && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
+          node = node.parentNode as HTMLElement;
+          if (!node || node.nodeName === 'BODY') return;
+      }
+      if (node) {
+          const cell = node as HTMLTableCellElement;
+          const index = cell.cellIndex;
+          for (let i = 0; i < table.rows.length; i++) {
+              const row = table.rows[i];
+              const targetIndex = where === 'left' ? index : index + 1;
+              if (targetIndex <= row.cells.length) {
+                  const newCell = row.insertCell(targetIndex);
+                  newCell.innerHTML = '<br>';
+                  const neighbor = row.cells[index];
+                  if (neighbor) {
+                      newCell.style.border = neighbor.style.border;
+                      newCell.style.padding = neighbor.style.padding;
+                      newCell.style.backgroundColor = neighbor.style.backgroundColor;
+                  }
               }
           }
       }
@@ -277,6 +318,10 @@ export const TableLayoutTab: React.FC = () => {
                 </button>
               </div>
           </div>
+      </RibbonSection>
+
+      <RibbonSection title="Borders">
+          <BorderTool />
       </RibbonSection>
 
       <RibbonSection title="Alignment">

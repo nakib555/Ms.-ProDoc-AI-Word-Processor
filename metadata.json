@@ -1,6 +1,6 @@
 {
-  "name": "ProDoc AI - Modern Word Processor",
-  "description": "A production-grade, feature-rich word processor. Features a familiar ribbon interface, rich text editing, document formatting, and integrated AI for smart writing assistance.",
+  "name": "Doc Writer",
+  "description": "A modern, feature-rich word processor with a clean interface, rich text editing, document formatting, and integrated AI for smart writing assistance.",
   "requestFramePermissions": [
     "clipboard-read",
     "microphone"

@@ -135,6 +135,151 @@ const ResizerOverlay: React.FC<{
     );
 };
 
+const TableResizerOverlay: React.FC<{
+    target: HTMLTableElement;
+    container: HTMLElement;
+    scale: number;
+    onUpdate: () => void;
+}> = ({ target, container, scale, onUpdate }) => {
+    const [handles, setHandles] = useState<{cols: any[], rows: any[]}>({ cols: [], rows: [] });
+    const [isResizing, setIsResizing] = useState(false);
+
+    useEffect(() => {
+        if (isResizing) return;
+        const updateHandles = () => {
+             const containerRect = container.getBoundingClientRect();
+             const tableRect = target.getBoundingClientRect();
+             
+             const cols = [];
+             if (target.rows.length > 0) {
+                 const firstRow = target.rows[0];
+                 for (let i = 0; i < firstRow.cells.length; i++) {
+                     const cell = firstRow.cells[i];
+                     const cellRect = cell.getBoundingClientRect();
+                     cols.push({
+                         index: i,
+                         left: (cellRect.right - containerRect.left) / scale,
+                         top: (tableRect.top - containerRect.top) / scale,
+                         height: tableRect.height / scale,
+                         cell
+                     });
+                 }
+             }
+
+             const rows = [];
+             for (let i = 0; i < target.rows.length; i++) {
+                 const row = target.rows[i];
+                 const rowRect = row.getBoundingClientRect();
+                 rows.push({
+                     index: i,
+                     left: (tableRect.left - containerRect.left) / scale,
+                     top: (rowRect.bottom - containerRect.top) / scale,
+                     width: tableRect.width / scale,
+                     row
+                 });
+             }
+             
+             setHandles({ cols, rows });
+        };
+        
+        updateHandles();
+        
+        const observer = new MutationObserver(updateHandles);
+        observer.observe(target, { attributes: true, childList: true, subtree: true });
+        window.addEventListener('resize', updateHandles);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', updateHandles);
+        };
+    }, [target, container, scale, isResizing]);
+
+    const handleColMouseDown = (e: React.MouseEvent, cell: HTMLTableCellElement) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+        
+        const startX = e.clientX;
+        const startWidth = cell.offsetWidth;
+        const tableStartWidth = target.offsetWidth;
+
+        const handleMouseMove = (ev: MouseEvent) => {
+            const deltaX = (ev.clientX - startX) / scale;
+            const newWidth = Math.max(20, startWidth + deltaX);
+            cell.style.width = `${newWidth}px`;
+            // Setting the column width using `<col>` or directly on the cell
+            target.style.width = `${tableStartWidth + (newWidth - startWidth)}px`;
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            onUpdate();
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    };
+
+    const handleRowMouseDown = (e: React.MouseEvent, row: HTMLTableRowElement) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+        
+        const startY = e.clientY;
+        const startHeight = row.offsetHeight;
+
+        const handleMouseMove = (ev: MouseEvent) => {
+            const deltaY = (ev.clientY - startY) / scale;
+            const newHeight = Math.max(20, startHeight + deltaY);
+            row.style.height = `${newHeight}px`;
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            onUpdate();
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+    };
+
+    return (
+        <div className="absolute z-50 pointer-events-none" style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
+            {handles.cols.map((col, i) => (
+                <div
+                    key={`col-${i}`}
+                    className="absolute bg-blue-500 opacity-0 hover:opacity-50 pointer-events-auto transition-opacity"
+                    style={{
+                        left: col.left - 3,
+                        top: col.top,
+                        width: 7,
+                        height: col.height,
+                        cursor: 'col-resize'
+                    }}
+                    onMouseDown={(e) => handleColMouseDown(e, col.cell)}
+                />
+            ))}
+            {handles.rows.map((row, i) => (
+                <div
+                    key={`row-${i}`}
+                    className="absolute bg-blue-500 opacity-0 hover:opacity-50 pointer-events-auto transition-opacity"
+                    style={{
+                        left: row.left,
+                        top: row.top - 3,
+                        width: row.width,
+                        height: 7,
+                        cursor: 'row-resize'
+                    }}
+                    onMouseDown={(e) => handleRowMouseDown(e, row.row)}
+                />
+            ))}
+        </div>
+    );
+};
+
 const getTextLength = (node: Node): number => {
     if (node.nodeType === Node.TEXT_NODE) return (node.nodeValue || "").length;
     if (node.nodeType === Node.ELEMENT_NODE) {
@@ -175,6 +320,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const { isKeyboardLocked, selectionMode, undo, redo, setActiveElementType } = useEditor();
 
   const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
+  const [selectedTable, setSelectedTable] = useState<HTMLTableElement | null>(null);
 
   // Smart Selection Refs
   const wordPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -237,6 +383,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
          e.stopPropagation();
      } else {
          setSelectedImage(null);
+     }
+     
+     const table = target.closest('table');
+     if (table) {
+         setSelectedTable(table as HTMLTableElement);
+     } else {
+         setSelectedTable(null);
      }
   };
 
@@ -564,6 +717,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const handlePageClick = (e: React.MouseEvent) => {
       if (e.target !== selectedImage) setSelectedImage(null);
+      if (!((e.target as HTMLElement).closest('table'))) setSelectedTable(null);
       if (selectionMode) return;
       if (editorRef.current && !editorRef.current.contains(e.target as Node) && !isHeaderFooterMode) {
           editorRef.current.focus();
@@ -727,6 +881,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 />
                 {selectedImage && editorElement && (
                     <ResizerOverlay target={selectedImage} container={editorElement} scale={1} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
+                )}
+                {selectedTable && editorElement && (
+                    <TableResizerOverlay target={selectedTable} container={editorElement} scale={1} onUpdate={handleImageUpdate} />
                 )}
             </div>
 

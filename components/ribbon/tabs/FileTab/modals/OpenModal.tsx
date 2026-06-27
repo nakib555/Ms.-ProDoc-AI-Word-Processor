@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import { FolderOpen, FileText } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
+import { importHtmlToEditor } from './htmlImportEngine';
 
 export const OpenModal: React.FC = () => {
   const { setContent, setDocumentTitle } = useEditor();
@@ -16,7 +17,14 @@ export const OpenModal: React.FC = () => {
     const reader = new FileReader();
     reader.onload = (event) => {
       if (event.target?.result) {
-        setContent(event.target.result as string);
+        let content = event.target.result as string;
+        
+        // If it's an HTML file, run it through the HTML Import Engine (Phase 1 & 2)
+        if (file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm')) {
+            content = importHtmlToEditor(content);
+        }
+        
+        setContent(content);
         setDocumentTitle(file.name.replace(/\.[^/.]+$/, ""));
         closeModal();
       }
