@@ -44,7 +44,7 @@ const ResizerOverlay: React.FC<{
 
     useEffect(() => {
         const updateRect = () => {
-            const containerRect = container.getBoundingClientRect();
+            const containerRect = container.parentElement!.getBoundingClientRect();
             const targetRect = target.getBoundingClientRect();
             
             setRect({
@@ -143,11 +143,11 @@ const TableResizerOverlay: React.FC<{
 }> = ({ target, container, scale, onUpdate }) => {
     const [handles, setHandles] = useState<{cols: any[], rows: any[]}>({ cols: [], rows: [] });
     const [isResizing, setIsResizing] = useState(false);
+    const [activeHandle, setActiveHandle] = useState<{type: 'col'|'row', index: number} | null>(null);
 
     useEffect(() => {
-        if (isResizing) return;
         const updateHandles = () => {
-             const containerRect = container.getBoundingClientRect();
+             const containerRect = container.parentElement!.getBoundingClientRect();
              const tableRect = target.getBoundingClientRect();
              
              const cols = [];
@@ -185,33 +185,75 @@ const TableResizerOverlay: React.FC<{
         updateHandles();
         
         const observer = new MutationObserver(updateHandles);
-        observer.observe(target, { attributes: true, childList: true, subtree: true });
+        observer.observe(target, { attributes: true, childList: true, subtree: true, characterData: true });
+        
+        const resizeObserver = new ResizeObserver(updateHandles);
+        resizeObserver.observe(target);
+        
         window.addEventListener('resize', updateHandles);
         return () => {
             observer.disconnect();
+            resizeObserver.disconnect();
             window.removeEventListener('resize', updateHandles);
         };
     }, [target, container, scale, isResizing]);
 
-    const handleColMouseDown = (e: React.MouseEvent, cell: HTMLTableCellElement) => {
+    const handleColMouseDown = (e: React.MouseEvent, cell: HTMLTableCellElement, index: number) => {
         e.preventDefault();
         e.stopPropagation();
         setIsResizing(true);
+        setActiveHandle({ type: 'col', index });
+        // eslint-disable-next-line react-hooks/immutability
+        document.body.style.cursor = 'col-resize';
+        
+        // eslint-disable-next-line react-hooks/immutability
+        target.style.tableLayout = 'fixed';
+        if (!target.style.width) {
+            // eslint-disable-next-line react-hooks/immutability
+            target.style.width = `${target.offsetWidth}px`;
+        }
         
         const startX = e.clientX;
         const startWidth = cell.offsetWidth;
+        const nextCell = cell.parentElement?.children[index + 1] as HTMLTableCellElement | null;
+        const nextStartWidth = nextCell ? nextCell.offsetWidth : 0;
         const tableStartWidth = target.offsetWidth;
 
         const handleMouseMove = (ev: MouseEvent) => {
             const deltaX = (ev.clientX - startX) / scale;
-            const newWidth = Math.max(20, startWidth + deltaX);
-            cell.style.width = `${newWidth}px`;
-            // Setting the column width using `<col>` or directly on the cell
-            target.style.width = `${tableStartWidth + (newWidth - startWidth)}px`;
+            
+            if (nextCell) {
+                const newWidth = Math.max(20, startWidth + deltaX);
+                const newNextWidth = Math.max(20, nextStartWidth - (newWidth - startWidth));
+                const actualWidth = startWidth + (nextStartWidth - newNextWidth);
+                
+                for (let i = 0; i < target.rows.length; i++) {
+                    const row = target.rows[i];
+                    if (row.cells[index]) row.cells[index].style.width = `${actualWidth}px`;
+                    if (row.cells[index + 1]) row.cells[index + 1].style.width = `${newNextWidth}px`;
+                }
+            } else {
+                const newWidth = Math.max(20, startWidth + deltaX);
+                const maxTableWidth = container.offsetWidth;
+                let newTableWidth = tableStartWidth + (newWidth - startWidth);
+                if (newTableWidth > maxTableWidth) {
+                    newTableWidth = maxTableWidth;
+                }
+                const actualNewWidth = newTableWidth - tableStartWidth + startWidth;
+
+                target.style.width = `${newTableWidth}px`;
+                for (let i = 0; i < target.rows.length; i++) {
+                    const row = target.rows[i];
+                    if (row.cells[index]) row.cells[index].style.width = `${actualNewWidth}px`;
+                }
+            }
         };
 
         const handleMouseUp = () => {
             setIsResizing(false);
+            setActiveHandle(null);
+            // eslint-disable-next-line react-hooks/immutability
+            document.body.style.cursor = '';
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
             onUpdate();
@@ -221,10 +263,13 @@ const TableResizerOverlay: React.FC<{
         window.addEventListener('mouseup', handleMouseUp);
     };
 
-    const handleRowMouseDown = (e: React.MouseEvent, row: HTMLTableRowElement) => {
+    const handleRowMouseDown = (e: React.MouseEvent, row: HTMLTableRowElement, index: number) => {
         e.preventDefault();
         e.stopPropagation();
         setIsResizing(true);
+        setActiveHandle({ type: 'row', index });
+        // eslint-disable-next-line react-hooks/immutability
+        document.body.style.cursor = 'row-resize';
         
         const startY = e.clientY;
         const startHeight = row.offsetHeight;
@@ -237,6 +282,9 @@ const TableResizerOverlay: React.FC<{
 
         const handleMouseUp = () => {
             setIsResizing(false);
+            setActiveHandle(null);
+            // eslint-disable-next-line react-hooks/immutability
+            document.body.style.cursor = '';
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
             onUpdate();
@@ -251,29 +299,29 @@ const TableResizerOverlay: React.FC<{
             {handles.cols.map((col, i) => (
                 <div
                     key={`col-${i}`}
-                    className="absolute bg-blue-500 opacity-0 hover:opacity-50 pointer-events-auto transition-opacity"
+                    className={`absolute bg-blue-500 pointer-events-auto transition-opacity ${activeHandle?.type === 'col' && activeHandle.index === col.index ? 'opacity-50' : 'opacity-0 hover:opacity-50'}`}
                     style={{
-                        left: col.left - 3,
+                        left: col.left - 5,
                         top: col.top,
-                        width: 7,
+                        width: 11,
                         height: col.height,
                         cursor: 'col-resize'
                     }}
-                    onMouseDown={(e) => handleColMouseDown(e, col.cell)}
+                    onMouseDown={(e) => handleColMouseDown(e, col.cell, col.index)}
                 />
             ))}
             {handles.rows.map((row, i) => (
                 <div
                     key={`row-${i}`}
-                    className="absolute bg-blue-500 opacity-0 hover:opacity-50 pointer-events-auto transition-opacity"
+                    className={`absolute bg-blue-500 pointer-events-auto transition-opacity ${activeHandle?.type === 'row' && activeHandle.index === row.index ? 'opacity-50' : 'opacity-0 hover:opacity-50'}`}
                     style={{
                         left: row.left,
-                        top: row.top - 3,
+                        top: row.top - 5,
                         width: row.width,
-                        height: 7,
+                        height: 11,
                         cursor: 'row-resize'
                     }}
-                    onMouseDown={(e) => handleRowMouseDown(e, row.row)}
+                    onMouseDown={(e) => handleRowMouseDown(e, row.row, row.index)}
                 />
             ))}
         </div>
@@ -321,6 +369,19 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
   const [selectedTable, setSelectedTable] = useState<HTMLTableElement | null>(null);
+  const [tables, setTables] = useState<HTMLTableElement[]>([]);
+
+  useEffect(() => {
+      if (editorRef.current) {
+          const updateTables = () => {
+              setTables(Array.from(editorRef.current!.querySelectorAll('table')));
+          };
+          updateTables();
+          const observer = new MutationObserver(updateTables);
+          observer.observe(editorRef.current, { childList: true, subtree: true });
+          return () => observer.disconnect();
+      }
+  }, [content]);
 
   // Smart Selection Refs
   const wordPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -880,11 +941,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     }}
                 />
                 {selectedImage && editorElement && (
-                    <ResizerOverlay target={selectedImage} container={editorElement} scale={1} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
+                    <ResizerOverlay target={selectedImage} container={editorElement} scale={scale} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
                 )}
-                {selectedTable && editorElement && (
-                    <TableResizerOverlay target={selectedTable} container={editorElement} scale={1} onUpdate={handleImageUpdate} />
-                )}
+                {editorElement && tables.map((t, i) => (
+                    <TableResizerOverlay key={`table-resizer-${i}`} target={t} container={editorElement} scale={scale} onUpdate={handleImageUpdate} />
+                ))}
             </div>
 
             {/* Footer Area */}

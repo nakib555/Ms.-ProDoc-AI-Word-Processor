@@ -220,6 +220,15 @@ export interface EditorContextType {
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useEffect(() => {
+    try {
+      document.execCommand('enableObjectResizing', false, 'false');
+      document.execCommand('enableInlineTableEditing', false, 'false');
+    } catch (e) {
+      // Ignored if not supported
+    }
+  }, []);
+
   const [documentTitle, setDocumentTitle] = useState("Untitled Document");
   const [creationDate] = useState(() => new Date());
   const [lastModified, setLastModified] = useState(() => new Date());

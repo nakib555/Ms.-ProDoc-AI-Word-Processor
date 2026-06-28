@@ -156,6 +156,7 @@ const splitBlock = (
         if (splitIndex === rows.length) return { keep: originalNode.cloneNode(true) as HTMLElement, move: null };
         for (let i = 0; i < splitIndex; i++) keepTable.appendChild(rows[i].cloneNode(true));
         for (let i = splitIndex; i < rows.length; i++) moveTable.appendChild(rows[i].cloneNode(true));
+        keepTable.setAttribute('data-split-bottom', 'true');
         moveTable.setAttribute('data-continuation', 'true');
         return { keep: keepTable, move: moveTable };
     }
@@ -264,6 +265,7 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           const prev = splitTable.previousElementSibling;
           if (prev && prev.tagName === 'TABLE') {
               while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
+              prev.removeAttribute('data-split-bottom');
               splitTable.remove();
           } else {
               splitTable.removeAttribute('data-continuation');

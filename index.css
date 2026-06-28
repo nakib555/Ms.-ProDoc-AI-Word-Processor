@@ -140,6 +140,30 @@
   text-align: left;
 }
 
+/* Hide bottom border for the first part of a split table */
+.prodoc-editor table[data-split-bottom="true"],
+.ProseMirror table[data-split-bottom="true"] {
+  border-bottom: none !important;
+}
+.prodoc-editor table[data-split-bottom="true"] tr:last-child td,
+.prodoc-editor table[data-split-bottom="true"] tr:last-child th,
+.ProseMirror table[data-split-bottom="true"] tr:last-child td,
+.ProseMirror table[data-split-bottom="true"] tr:last-child th {
+  border-bottom: none !important;
+}
+
+/* Hide top border for the continuation of a split table */
+.prodoc-editor table[data-continuation="true"],
+.ProseMirror table[data-continuation="true"] {
+  border-top: none !important;
+}
+.prodoc-editor table[data-continuation="true"] tr:first-child td,
+.prodoc-editor table[data-continuation="true"] tr:first-child th,
+.ProseMirror table[data-continuation="true"] tr:first-child td,
+.ProseMirror table[data-continuation="true"] tr:first-child th {
+  border-top: none !important;
+}
+
 .ProseMirror .selectedCell:after,
 .prodoc-editor .selectedCell:after {
   background: rgba(200, 200, 255, 0.4);

@@ -208,6 +208,7 @@ export const TableLayoutTab: React.FC = () => {
   });
 
   const autoFit = (mode: 'contents' | 'window') => runOnTable((table) => {
+      table.classList.add('is-resizing');
       if (mode === 'window') {
           table.style.width = '100%';
           table.style.tableLayout = 'fixed';
@@ -215,24 +216,35 @@ export const TableLayoutTab: React.FC = () => {
           table.style.width = 'auto';
           table.style.tableLayout = 'auto';
       }
+      setTimeout(() => {
+          table.classList.remove('is-resizing');
+      }, 300);
   });
 
   const distributeRows = () => runOnTable((table) => {
+      table.classList.add('is-resizing');
       const rows = Array.from(table.rows);
       // Calculate max height
       let maxH = 0;
       rows.forEach(r => maxH = Math.max(maxH, r.getBoundingClientRect().height));
       // Apply to all
       rows.forEach(r => r.style.height = `${maxH}px`);
+      setTimeout(() => {
+          table.classList.remove('is-resizing');
+      }, 300);
   });
 
   const distributeCols = () => runOnTable((table) => {
+      table.classList.add('is-resizing');
       // Simple equal distribution for first row cells
       if (table.rows.length > 0) {
           const cells = Array.from(table.rows[0].cells);
           const pct = 100 / cells.length;
           cells.forEach(c => c.style.width = `${pct}%`);
       }
+      setTimeout(() => {
+          table.classList.remove('is-resizing');
+      }, 300);
   });
 
   const openProperties = () => {
