@@ -301,9 +301,9 @@ const TableResizerOverlay: React.FC<{
                     key={`col-${i}`}
                     className={`absolute bg-blue-500 pointer-events-auto transition-opacity ${activeHandle?.type === 'col' && activeHandle.index === col.index ? 'opacity-50' : 'opacity-0 hover:opacity-50'}`}
                     style={{
-                        left: col.left - 5,
+                        left: col.left - (5 / scale),
                         top: col.top,
-                        width: 11,
+                        width: Math.max(5, 11 / scale),
                         height: col.height,
                         cursor: 'col-resize'
                     }}
@@ -316,9 +316,9 @@ const TableResizerOverlay: React.FC<{
                     className={`absolute bg-blue-500 pointer-events-auto transition-opacity ${activeHandle?.type === 'row' && activeHandle.index === row.index ? 'opacity-50' : 'opacity-0 hover:opacity-50'}`}
                     style={{
                         left: row.left,
-                        top: row.top - 5,
+                        top: row.top - (5 / scale),
                         width: row.width,
-                        height: 11,
+                        height: Math.max(5, 11 / scale),
                         cursor: 'row-resize'
                     }}
                     onMouseDown={(e) => handleRowMouseDown(e, row.row, row.index)}

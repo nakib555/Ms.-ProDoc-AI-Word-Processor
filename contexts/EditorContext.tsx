@@ -128,6 +128,87 @@ const MathExtension = Node.create({
   },
 });
 
+// Custom Table extensions to preserve styles
+const CustomTableRow = TableRow.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      height: {
+        default: null,
+        parseHTML: element => element.style.height || null,
+        renderHTML: attributes => {
+          if (!attributes.height) return {};
+          return { style: `height: ${attributes.height}` };
+        },
+      }
+    };
+  }
+});
+
+const CustomTableCell = TableCell.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: element => element.style.width || null,
+        renderHTML: attributes => {
+          if (!attributes.width) return {};
+          return { style: `width: ${attributes.width}` };
+        },
+      },
+      verticalAlign: {
+        default: null,
+        parseHTML: element => element.style.verticalAlign || null,
+        renderHTML: attributes => {
+          if (!attributes.verticalAlign) return {};
+          return { style: `vertical-align: ${attributes.verticalAlign}` };
+        },
+      }
+    };
+  }
+});
+
+const CustomTableHeader = TableHeader.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: null,
+        parseHTML: element => element.style.width || null,
+        renderHTML: attributes => {
+          if (!attributes.width) return {};
+          return { style: `width: ${attributes.width}` };
+        },
+      },
+      verticalAlign: {
+        default: null,
+        parseHTML: element => element.style.verticalAlign || null,
+        renderHTML: attributes => {
+          if (!attributes.verticalAlign) return {};
+          return { style: `vertical-align: ${attributes.verticalAlign}` };
+        },
+      }
+    };
+  }
+});
+
+const CustomTable = Table.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      }
+    };
+  }
+});
+
 // Define custom types for TipTap integration
 export interface EditorContextType {
   editor: Editor | null;
@@ -302,10 +383,10 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Underline,
       Link.configure({ openOnClick: false }),
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
+      CustomTable.configure({ resizable: true }),
+      CustomTableRow,
+      CustomTableHeader,
+      CustomTableCell,
       Placeholder.configure({ placeholder: 'Start typing...' }),
       TextStyle,
       Color,
