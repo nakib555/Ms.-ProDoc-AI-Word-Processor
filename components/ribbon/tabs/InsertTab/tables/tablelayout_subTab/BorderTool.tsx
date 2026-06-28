@@ -64,6 +64,7 @@ export const BorderTool: React.FC = () => {
 
   const setBorder = (side: 'all' | 'top' | 'bottom' | 'left' | 'right' | 'none') => {
       runOnTable((table) => {
+          table.classList.add('is-border-updating');
           const cells = table.querySelectorAll('td, th');
           cells.forEach((c) => {
               const cell = c as HTMLTableCellElement;
@@ -79,6 +80,9 @@ export const BorderTool: React.FC = () => {
                   if (side === 'right') cell.style.borderRight = styleStr;
               }
           });
+          setTimeout(() => {
+              table.classList.remove('is-border-updating');
+          }, 300);
       });
       closeMenu();
   };
@@ -148,6 +152,19 @@ export const BorderTool: React.FC = () => {
                     onChange={(e) => setBorderColor(e.target.value)}
                     className="w-20 h-6 p-0 border-0 rounded cursor-pointer"
                 />
+            </div>
+
+            <div className="h-px bg-slate-200 dark:bg-slate-700 my-1 mx-2"></div>
+            <div className="font-semibold text-slate-700 dark:text-slate-300 px-2 py-1 text-[10px] uppercase tracking-wider">Preview</div>
+            <div className="mx-2 my-1 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-md flex items-center justify-center">
+                <div 
+                    className="w-full py-3.5 bg-white dark:bg-slate-800 text-[10px] text-slate-500 dark:text-slate-400 font-medium text-center rounded shadow-sm transition-all duration-150"
+                    style={{
+                        border: `${borderWidth} solid ${borderColor}`,
+                    }}
+                >
+                    Border Preview ({borderWidth})
+                </div>
             </div>
         </div>
       </MenuPortal>

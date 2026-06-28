@@ -114,6 +114,12 @@
   transition: width 0.25s ease-out, height 0.25s ease-out, background-color 0.2s ease, border-color 0.2s ease;
 }
 
+/* Smooth transitions for border updates via BorderTool */
+.prodoc-editor table.is-border-updating td,
+.prodoc-editor table.is-border-updating th {
+  transition: border 0.2s ease, border-color 0.2s ease, border-width 0.2s ease, border-style 0.2s ease;
+}
+
 .ProseMirror td,
 .ProseMirror th,
 .prodoc-editor td,
