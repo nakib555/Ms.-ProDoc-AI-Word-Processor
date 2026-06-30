@@ -105,6 +105,23 @@
   width: 100%;
 }
 
+/* Lock table and cell width during selection or active formula interaction modes */
+.smart-selection-active table,
+.smart-selection-active td,
+.smart-selection-active th,
+table:has(.animate-pulse),
+table:has([data-formula-bg]),
+table:has([data-formula-outline]) {
+  table-layout: fixed !important;
+}
+
+/* Prevent any transition-induced shrinking on active/pulsing/highlighted cells */
+.animate-pulse,
+[data-formula-bg],
+[data-formula-outline] {
+  transition: none !important;
+}
+
 /* Smooth transitions for table modifications like Insert/Delete Rows or Columns */
 .prodoc-editor table.is-resizing,
 .prodoc-editor table.is-resizing tbody,

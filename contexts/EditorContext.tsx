@@ -133,6 +133,14 @@ const CustomTableRow = TableRow.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      },
       height: {
         default: null,
         parseHTML: element => element.style.height || null,
@@ -149,6 +157,14 @@ const CustomTableCell = TableCell.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      },
       width: {
         default: null,
         parseHTML: element => element.style.width || null,
@@ -173,6 +189,14 @@ const CustomTableHeader = TableHeader.extend({
   addAttributes() {
     return {
       ...this.parent?.(),
+      style: {
+        default: null,
+        parseHTML: element => element.getAttribute('style'),
+        renderHTML: attributes => {
+          if (!attributes.style) return {};
+          return { style: attributes.style };
+        },
+      },
       width: {
         default: null,
         parseHTML: element => element.style.width || null,
@@ -198,10 +222,13 @@ const CustomTable = Table.extend({
     return {
       ...this.parent?.(),
       style: {
-        default: null,
-        parseHTML: element => element.getAttribute('style'),
+        default: 'width: 100%; border-collapse: collapse;',
+        parseHTML: element => element.getAttribute('style') || 'width: 100%; border-collapse: collapse;',
         renderHTML: attributes => {
-          if (!attributes.style) return {};
+          if (!attributes.style) return { style: 'width: 100%; border-collapse: collapse;' };
+          if (!attributes.style.includes('width')) {
+             return { style: attributes.style + '; width: 100%; border-collapse: collapse;' };
+          }
           return { style: attributes.style };
         },
       }

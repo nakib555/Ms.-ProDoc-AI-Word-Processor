@@ -29,6 +29,7 @@
     "@tiptap/starter-kit": "^2.2.4",
     "clsx": "^2.1.0",
     "hot-formula-parser": "^4.0.0",
+    "hyperformula": "^3.3.0",
     "lucide-react": "^0.554.0",
     "mathlive": "^0.101.0",
     "pagedjs": "^0.4.3",

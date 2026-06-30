@@ -18,6 +18,7 @@ export const TableLayoutTab: React.FC = () => {
   const { executeCommand } = useEditor();
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
   const [isFormulaOpen, setIsFormulaOpen] = useState(false);
+  const [isAutoFitOpen, setIsAutoFitOpen] = useState(false);
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null);
   const [activeCell, setActiveCell] = useState<HTMLTableCellElement | null>(null);
 
@@ -210,14 +211,38 @@ export const TableLayoutTab: React.FC = () => {
       }
   });
 
-  const autoFit = (mode: 'contents' | 'window') => runOnTable((table) => {
+  const autoFit = (mode: 'contents' | 'window' | 'fixed') => runOnTable((table) => {
       table.classList.add('is-resizing');
       if (mode === 'window') {
           table.style.width = '100%';
           table.style.tableLayout = 'fixed';
-      } else {
+          for (let i = 0; i < table.rows.length; i++) {
+              const row = table.rows[i];
+              for (let j = 0; j < row.cells.length; j++) {
+                  row.cells[j].style.width = '';
+              }
+          }
+      } else if (mode === 'contents') {
           table.style.width = 'auto';
           table.style.tableLayout = 'auto';
+          for (let i = 0; i < table.rows.length; i++) {
+              const row = table.rows[i];
+              for (let j = 0; j < row.cells.length; j++) {
+                  row.cells[j].style.width = '';
+              }
+          }
+      } else if (mode === 'fixed') {
+          table.style.tableLayout = 'fixed';
+          // Lock current width of columns
+          for (let i = 0; i < table.rows.length; i++) {
+              const row = table.rows[i];
+              for (let j = 0; j < row.cells.length; j++) {
+                  const cell = row.cells[j];
+                  if (!cell.style.width) {
+                      cell.style.width = `${cell.offsetWidth}px`;
+                  }
+              }
+          }
       }
       setTimeout(() => {
           table.classList.remove('is-resizing');
@@ -576,13 +601,53 @@ export const TableLayoutTab: React.FC = () => {
 
       <RibbonSection title="Cell Size">
           <div className="flex h-full items-center gap-2 px-1">
-              <div className="flex flex-col gap-1">
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => autoFit('contents')}>
-                    <Minimize size={14}/> AutoFit Contents
-                </button>
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => autoFit('window')}>
-                    <Maximize size={14}/> AutoFit Window
-                </button>
+              <div className="relative flex items-center h-full">
+                  <RibbonButton 
+                      icon={TableProperties} 
+                      label="AutoFit" 
+                      hasArrow 
+                      onClick={() => setIsAutoFitOpen(!isAutoFitOpen)} 
+                  />
+                  {isAutoFitOpen && (
+                      <>
+                          <div 
+                              className="fixed inset-0 z-40" 
+                              onClick={() => setIsAutoFitOpen(false)}
+                          />
+                          <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                              <button 
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                                  onClick={() => {
+                                      autoFit('contents');
+                                      setIsAutoFitOpen(false);
+                                  }}
+                              >
+                                  <Minimize size={14} className="text-slate-500 dark:text-slate-400" />
+                                  <span className="font-medium">AutoFit Contents</span>
+                              </button>
+                              <button 
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                                  onClick={() => {
+                                      autoFit('window');
+                                      setIsAutoFitOpen(false);
+                                  }}
+                              >
+                                  <Maximize size={14} className="text-slate-500 dark:text-slate-400" />
+                                  <span className="font-medium">AutoFit Window</span>
+                              </button>
+                              <button 
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                                  onClick={() => {
+                                      autoFit('fixed');
+                                      setIsAutoFitOpen(false);
+                                  }}
+                              >
+                                  <Grid size={14} className="text-slate-500 dark:text-slate-400" />
+                                  <span className="font-medium">Fixed Column Width</span>
+                              </button>
+                          </div>
+                      </>
+                  )}
               </div>
               
               <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
