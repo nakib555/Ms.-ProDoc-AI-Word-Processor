@@ -11,12 +11,15 @@ import {
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 import { TablePropertiesDialog } from '../TablePropertiesDialog';
+import { TableFormulaDialog } from '../TableFormulaDialog';
 import { BorderTool } from './BorderTool';
 
 export const TableLayoutTab: React.FC = () => {
   const { executeCommand } = useEditor();
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
+  const [isFormulaOpen, setIsFormulaOpen] = useState(false);
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null);
+  const [activeCell, setActiveCell] = useState<HTMLTableCellElement | null>(null);
 
   // --- Helper Functions ---
   const runOnCell = (fn: (cell: HTMLTableCellElement) => void) => {
@@ -630,7 +633,15 @@ export const TableLayoutTab: React.FC = () => {
               <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => {}}>
                   <Type size={14}/> Convert to Text
               </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => {}}>
+              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => {
+                  runOnTable((table) => {
+                      runOnCell((cell) => {
+                          setActiveTable(table);
+                          setActiveCell(cell);
+                          setIsFormulaOpen(true);
+                      });
+                  });
+              }}>
                   <Calculator size={14}/> Formula
               </button>
           </div>
@@ -643,6 +654,17 @@ export const TableLayoutTab: React.FC = () => {
             setActiveTable(null);
         }} 
         table={activeTable} 
+      />
+
+      <TableFormulaDialog
+        isOpen={isFormulaOpen}
+        onClose={() => {
+            setIsFormulaOpen(false);
+            setActiveTable(null);
+            setActiveCell(null);
+        }}
+        table={activeTable}
+        activeCell={activeCell}
       />
     </>
   );

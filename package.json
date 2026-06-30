@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "@radix-ui/react-dialog": "^1.1.17",
     "@tiptap/extension-color": "^2.2.4",
     "@tiptap/extension-highlight": "^2.2.4",
     "@tiptap/extension-image": "^2.2.4",
@@ -27,6 +28,7 @@
     "@tiptap/react": "^2.2.4",
     "@tiptap/starter-kit": "^2.2.4",
     "clsx": "^2.1.0",
+    "hot-formula-parser": "^4.0.0",
     "lucide-react": "^0.554.0",
     "mathlive": "^0.101.0",
     "pagedjs": "^0.4.3",
