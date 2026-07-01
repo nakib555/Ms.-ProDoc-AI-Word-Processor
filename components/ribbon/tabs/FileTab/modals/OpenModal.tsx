@@ -1,36 +1,86 @@
 
-import React, { useRef } from 'react';
-import { FolderOpen, FileText } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { FolderOpen, FileText, Loader2 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
 import { importHtmlToEditor } from './htmlImportEngine';
+import { importDocxToEditor } from '../../../../../utils/docxImportEngine';
 
 export const OpenModal: React.FC = () => {
   const { setContent, setDocumentTitle } = useEditor();
   const { closeModal } = useFileTab();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState<{ active: boolean; percent: number; status: string }>({
+    active: false,
+    percent: 0,
+    status: ''
+  });
 
   const handleOpenFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const isDocx = file.name.toLowerCase().endsWith('.docx');
+
+    setLoading({ active: true, percent: 5, status: 'Initializing file read...' });
+
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       if (event.target?.result) {
-        let content = event.target.result as string;
-        
-        // If it's an HTML file, run it through the HTML Import Engine (Phase 1 & 2)
-        if (file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm')) {
-            content = importHtmlToEditor(content);
+        try {
+          let content = '';
+          if (isDocx) {
+            content = await importDocxToEditor(
+              event.target.result as ArrayBuffer,
+              (percent, status) => {
+                setLoading({ active: true, percent, status });
+              }
+            );
+          } else {
+            content = event.target.result as string;
+            // If it's an HTML file, run it through the HTML Import Engine (Phase 1 & 2)
+            if (file.name.toLowerCase().endsWith('.html') || file.name.toLowerCase().endsWith('.htm')) {
+                content = importHtmlToEditor(content);
+            }
+          }
+          
+          setContent(content);
+          setDocumentTitle(file.name.replace(/\.[^/.]+$/, ""));
+          setLoading({ active: false, percent: 0, status: '' });
+          closeModal();
+        } catch (error: any) {
+          console.error("Failed to parse file:", error);
+          setLoading({ active: false, percent: 0, status: '' });
+          alert("Could not open this file: " + (error?.message || "Unknown error"));
         }
-        
-        setContent(content);
-        setDocumentTitle(file.name.replace(/\.[^/.]+$/, ""));
-        closeModal();
       }
     };
-    reader.readAsText(file);
+
+    if (isDocx) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
+
+  if (loading.active) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 min-h-[250px] space-y-4 animate-in fade-in duration-200">
+        <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+        <div className="text-center">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Importing Document</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">{loading.status}</p>
+        </div>
+        <div className="w-full max-w-xs bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+          <div 
+            className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+            style={{ width: `${loading.percent}%` }}
+          />
+        </div>
+        <span className="text-[10px] font-mono text-slate-400">{loading.percent}% Complete</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -40,12 +90,12 @@ export const OpenModal: React.FC = () => {
       >
         <FolderOpen size={40} className="text-slate-400 group-hover:text-blue-500 mb-3 transition-colors" strokeWidth={1.5} />
         <h3 className="text-base font-semibold text-slate-700 group-hover:text-blue-700">Browse Files</h3>
-        <p className="text-slate-500 text-xs mt-1 text-center">Support for .txt, .html, .md</p>
+        <p className="text-slate-500 text-xs mt-1 text-center">Support for .docx, .txt, .html, .md</p>
         <input 
           type="file" 
           ref={fileInputRef} 
           className="hidden" 
-          accept=".txt,.html,.md" 
+          accept=".docx,.txt,.html,.md" 
           onChange={handleOpenFile}
         />
       </div>

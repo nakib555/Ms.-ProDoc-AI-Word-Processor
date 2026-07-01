@@ -1,9 +1,14 @@
 
+/* eslint-disable react-hooks/immutability */
 import React, { useRef, useLayoutEffect, useEffect, useState } from 'react';
 import { PageConfig, EditingArea } from '../types';
 import { PAGE_SIZES } from '../constants';
 import { useMathLive } from '../hooks/useMathLive';
 import { useEditor } from '../contexts/EditorContext';
+import { 
+  ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine,
+  Trash2, Settings, Merge, Split, LayoutGrid, ArrowUpDown
+} from 'lucide-react';
 
 interface EditorPageProps {
   content: string;
@@ -382,6 +387,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   setFirstFooterContent
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [editorElement, setEditorElement] = useState<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
@@ -391,6 +397,116 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
   const [selectedTable, setSelectedTable] = useState<HTMLTableElement | null>(null);
   const [tables, setTables] = useState<HTMLTableElement[]>([]);
+
+  // Custom Table Context Menu State
+  const [contextMenu, setContextMenu] = useState<{
+      visible: boolean;
+      x: number;
+      y: number;
+      cell: HTMLTableCellElement | null;
+      table: HTMLTableElement | null;
+  }>({
+      visible: false,
+      x: 0,
+      y: 0,
+      cell: null,
+      table: null
+  });
+
+  // Keyboard navigation for context menu
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  // Table Column Sort States
+  const [isSortModalOpen, setIsSortModalOpen] = useState(false);
+  const [sortColIndex, setSortColIndex] = useState(0);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortExcludeHeader, setSortExcludeHeader] = useState(true);
+  const [sortType, setSortType] = useState<'auto' | 'text' | 'number'>('auto');
+
+  // Table Properties Modal States
+  const [isTablePropertiesOpen, setIsTablePropertiesOpen] = useState(false);
+  const [propertiesTable, setPropertiesTable] = useState<HTMLTableElement | null>(null);
+  const [tableWidth, setTableWidth] = useState('100%');
+  const [cellPadding, setCellPadding] = useState('medium');
+  const [tableAlign, setTableAlign] = useState('left');
+  const [borderColor, setBorderColor] = useState('#cbd5e1');
+  const [borderWidth, setBorderWidth] = useState('1px');
+  const [zebraStriping, setZebraStriping] = useState(false);
+  const [headerColor, setHeaderColor] = useState('transparent');
+
+  useEffect(() => {
+      if (propertiesTable) {
+          const currentWidth = propertiesTable.style.width || '100%';
+          setTableWidth(currentWidth);
+
+          const marginL = propertiesTable.style.marginLeft;
+          const marginR = propertiesTable.style.marginRight;
+          if (marginL === 'auto' && marginR === 'auto') {
+              setTableAlign('center');
+          } else if (marginL === 'auto') {
+              setTableAlign('right');
+          } else {
+              setTableAlign('left');
+          }
+
+          const firstCell = propertiesTable.querySelector('td, th') as HTMLTableCellElement | null;
+          if (firstCell) {
+              const pad = firstCell.style.padding;
+              if (pad.includes('4px') || pad === '4px 8px') setCellPadding('small');
+              else if (pad.includes('12px') || pad === '12px 16px') setCellPadding('large');
+              else setCellPadding('medium');
+
+              const border = firstCell.style.border;
+              if (border) {
+                  if (border.includes('2px')) setBorderWidth('2px');
+                  else setBorderWidth('1px');
+
+                  if (border.includes('rgb') || border.includes('#')) {
+                      if (border.includes('3b82f6') || border.includes('rgb(59, 130, 246)')) setBorderColor('#3b82f6');
+                      else if (border.includes('ef4444') || border.includes('rgb(239, 68, 68)')) setBorderColor('#ef4444');
+                      else if (border.includes('22c55e') || border.includes('rgb(34, 197, 94)')) setBorderColor('#22c55e');
+                      else setBorderColor('#cbd5e1');
+                  }
+              }
+          }
+
+          const firstRow = propertiesTable.rows[0];
+          if (firstRow && firstRow.cells.length > 0) {
+              const bg = firstRow.cells[0].style.backgroundColor;
+              if (bg && bg !== 'transparent') {
+                  if (bg.includes('f1f5f9') || bg.includes('rgb(241, 245, 249)')) setHeaderColor('#f1f5f9');
+                  else if (bg.includes('eff6ff') || bg.includes('rgb(239, 246, 255)')) setHeaderColor('#eff6ff');
+                  else if (bg.includes('fee2e2') || bg.includes('rgb(254, 226, 226)')) setHeaderColor('#fee2e2');
+                  else if (bg.includes('f0fdf4') || bg.includes('rgb(240, 253, 244)')) setHeaderColor('#f0fdf4');
+                  else setHeaderColor(bg);
+              } else {
+                  setHeaderColor('transparent');
+              }
+          }
+
+          let hasZebra = false;
+          if (propertiesTable.rows.length > 2) {
+              const secondRowBg = propertiesTable.rows[2]?.style.backgroundColor;
+              if (secondRowBg && (secondRowBg.includes('f8fafc') || secondRowBg.includes('rgb(248, 250, 252)'))) {
+                  hasZebra = true;
+              }
+          }
+          setZebraStriping(hasZebra);
+      }
+  }, [propertiesTable]);
+
+  useEffect(() => {
+      const handleClose = () => {
+          setContextMenu(prev => prev.visible ? { ...prev, visible: false } : prev);
+      };
+      window.addEventListener('click', handleClose);
+      window.addEventListener('scroll', handleClose, true);
+      return () => {
+          window.removeEventListener('click', handleClose);
+          window.removeEventListener('scroll', handleClose, true);
+      };
+  }, []);
 
   useEffect(() => {
       if (editorRef.current) {
@@ -403,6 +519,413 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           return () => observer.disconnect();
       }
   }, [content]);
+
+  // --- Table Actions & Context Menu Handlers ---
+  const handleContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      const cell = target.closest('td, th') as HTMLTableCellElement | null;
+      if (cell) {
+          e.preventDefault();
+          const table = cell.closest('table') as HTMLTableElement | null;
+          
+          // Estimate the dimensions of the context menu to prevent overflowing edges
+          const menuWidth = 220;
+          const menuHeight = 440; // Max height estimate with options
+          
+          let clickX = e.clientX;
+          let clickY = e.clientY;
+          
+          // Adjust for viewport screen boundaries (safe scroll & viewport prevention)
+          const viewportPadding = window.innerWidth < 640 ? 8 : 16;
+          
+          if (clickX + menuWidth + viewportPadding > window.innerWidth) {
+              clickX = window.innerWidth - menuWidth - viewportPadding;
+          }
+          if (clickY + menuHeight + viewportPadding > window.innerHeight) {
+              clickY = window.innerHeight - menuHeight - viewportPadding;
+          }
+          
+          setContextMenu({
+              visible: true,
+              x: Math.max(viewportPadding, clickX),
+              y: Math.max(viewportPadding, clickY),
+              cell,
+              table
+          });
+      }
+  };
+
+  // Focus & Click outside for context menu
+  useEffect(() => {
+      const handleOutsideClick = (e: MouseEvent) => {
+          if (contextMenu.visible && contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+              setContextMenu(prev => ({ ...prev, visible: false }));
+          }
+      };
+      
+      const handleGlobalKeyDown = (e: KeyboardEvent) => {
+          if (!contextMenu.visible) return;
+          
+          if (e.key === 'Escape') {
+              e.preventDefault();
+              setContextMenu(prev => ({ ...prev, visible: false }));
+              editorRef.current?.focus();
+          }
+      };
+
+      document.addEventListener('mousedown', handleOutsideClick);
+      document.addEventListener('keydown', handleGlobalKeyDown);
+      return () => {
+          document.removeEventListener('mousedown', handleOutsideClick);
+          document.removeEventListener('keydown', handleGlobalKeyDown);
+      };
+  }, [contextMenu.visible]);
+
+  // Maintain focus and set initial item focus
+  useEffect(() => {
+      if (contextMenu.visible && contextMenuRef.current) {
+          const timer = setTimeout(() => {
+              contextMenuRef.current?.focus();
+              const buttons = contextMenuRef.current?.querySelectorAll('button');
+              if (buttons && buttons.length > 0) {
+                  setFocusedIndex(0);
+                  (buttons[0] as HTMLButtonElement).focus();
+              }
+          }, 50);
+          return () => clearTimeout(timer);
+      } else {
+          setFocusedIndex(-1);
+      }
+  }, [contextMenu.visible]);
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!contextMenu.visible || !contextMenuRef.current) return;
+      
+      const buttons = Array.from(contextMenuRef.current.querySelectorAll('button')) as HTMLButtonElement[];
+      if (buttons.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextIndex = (focusedIndex + 1) % buttons.length;
+          setFocusedIndex(nextIndex);
+          buttons[nextIndex]?.focus();
+      } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prevIndex = (focusedIndex - 1 + buttons.length) % buttons.length;
+          setFocusedIndex(prevIndex);
+          buttons[prevIndex]?.focus();
+      } else if (e.key === 'Tab') {
+          e.preventDefault();
+          const nextIndex = e.shiftKey
+              ? (focusedIndex - 1 + buttons.length) % buttons.length
+              : (focusedIndex + 1) % buttons.length;
+          setFocusedIndex(nextIndex);
+          buttons[nextIndex]?.focus();
+      }
+  };
+
+  const handleSortColumn = () => {
+      const cell = contextMenu.cell;
+      const table = contextMenu.table;
+      if (!cell || !table) return;
+      
+      setSortColIndex(cell.cellIndex);
+      setIsSortModalOpen(true);
+  };
+
+  const applySortColumn = () => {
+      const table = contextMenu.table;
+      if (!table) return;
+
+      table.classList.add('is-resizing');
+
+      // Convert rows to array
+      const allRows = Array.from(table.rows);
+      
+      // Separate rows to sort vs. keep
+      const headerOffset = sortExcludeHeader ? 1 : 0;
+      const keepRows = allRows.slice(0, headerOffset);
+      const rowsToSort = allRows.slice(headerOffset);
+
+      rowsToSort.sort((rowA, rowB) => {
+          const cellA = rowA.cells[sortColIndex];
+          const cellB = rowB.cells[sortColIndex];
+          const textA = cellA ? cellA.textContent?.trim() || '' : '';
+          const textB = cellB ? cellB.textContent?.trim() || '' : '';
+
+          if (sortType === 'number' || (sortType === 'auto' && !isNaN(parseFloat(textA)) && !isNaN(parseFloat(textB)))) {
+              const numA = parseFloat(textA);
+              const numB = parseFloat(textB);
+              if (!isNaN(numA) && !isNaN(numB)) {
+                  return sortDirection === 'asc' ? numA - numB : numB - numA;
+              }
+          }
+
+          // Otherwise sort as text
+          return sortDirection === 'asc'
+              ? textA.localeCompare(textB, undefined, { numeric: true, sensitivity: 'base' })
+              : textB.localeCompare(textA, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      // Re-append rows in sorted order
+      const firstSortRow = rowsToSort[0] || keepRows[0];
+      const parent = firstSortRow ? firstSortRow.parentNode : table;
+      if (parent) {
+          // Clear sorted region from DOM
+          rowsToSort.forEach(row => row.remove());
+          // Then append the sorted rows back
+          rowsToSort.forEach(row => parent.appendChild(row));
+      }
+
+      setTimeout(() => {
+          table.classList.remove('is-resizing');
+      }, 50);
+
+      setIsSortModalOpen(false);
+
+      if (onContentChange && editorRef.current) {
+          onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      }
+  };
+
+  const insertRow = (where: 'above' | 'below') => {
+      const cell = contextMenu.cell;
+      const table = contextMenu.table;
+      if (!cell || !table) return;
+      const row = cell.parentNode as HTMLTableRowElement;
+      if (row) {
+          table.classList.add('is-resizing');
+          const newRow = row.parentNode!.insertBefore(row.cloneNode(true), where === 'above' ? row : row.nextSibling);
+          Array.from(newRow.childNodes).forEach((c: any) => c.innerHTML = '<br>');
+          setTimeout(() => {
+              table.classList.remove('is-resizing');
+          }, 50);
+          if (onContentChange && editorRef.current) {
+              onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+          }
+      }
+  };
+
+  const insertCol = (where: 'left' | 'right') => {
+      const cell = contextMenu.cell;
+      const table = contextMenu.table;
+      if (!cell || !table) return;
+      table.classList.add('is-resizing');
+      const index = cell.cellIndex;
+      for (let i = 0; i < table.rows.length; i++) {
+          const row = table.rows[i];
+          const targetIndex = where === 'left' ? index : index + 1;
+          if (targetIndex <= row.cells.length) {
+              const newCell = row.insertCell(targetIndex);
+              newCell.innerHTML = '<br>';
+              const neighbor = row.cells[index];
+              if (neighbor) {
+                  newCell.style.border = neighbor.style.border;
+                  newCell.style.padding = neighbor.style.padding;
+                  newCell.style.backgroundColor = neighbor.style.backgroundColor;
+              }
+          }
+      }
+      setTimeout(() => {
+          table.classList.remove('is-resizing');
+      }, 50);
+      if (onContentChange && editorRef.current) {
+          onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      }
+  };
+
+  const mergeCells = () => {
+      const cell = contextMenu.cell;
+      if (!cell) return;
+      const nextSibling = cell.nextElementSibling as HTMLTableCellElement;
+      if (nextSibling) {
+          const currentColSpan = cell.colSpan || 1;
+          const nextColSpan = nextSibling.colSpan || 1;
+          cell.colSpan = currentColSpan + nextColSpan;
+          if (nextSibling.innerText.trim()) {
+              cell.innerHTML += " " + nextSibling.innerHTML;
+          }
+          nextSibling.remove();
+          if (onContentChange && editorRef.current) {
+              onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+          }
+      }
+  };
+
+  const splitCells = () => {
+      const cell = contextMenu.cell;
+      if (!cell) return;
+      const colspan = cell.colSpan;
+      if (colspan > 1) {
+          cell.colSpan = Math.floor(colspan / 2);
+          const newCell = cell.cloneNode(true) as HTMLTableCellElement;
+          newCell.colSpan = Math.ceil(colspan / 2);
+          newCell.innerHTML = "<br>";
+          cell.parentNode?.insertBefore(newCell, cell.nextSibling);
+      } else {
+          const newCell = cell.cloneNode(true) as HTMLTableCellElement;
+          newCell.innerHTML = "<br>";
+          cell.parentNode?.insertBefore(newCell, cell.nextSibling);
+      }
+      if (onContentChange && editorRef.current) {
+          onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      }
+  };
+
+  const deleteRow = () => {
+      const cell = contextMenu.cell;
+      const table = contextMenu.table;
+      if (!cell || !table) return;
+      const row = cell.parentNode as HTMLTableRowElement;
+      if (row) {
+          table.classList.add('is-resizing');
+          row.remove();
+          setTimeout(() => {
+              table.classList.remove('is-resizing');
+          }, 50);
+          if (onContentChange && editorRef.current) {
+              onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+          }
+      }
+  };
+
+  const deleteCol = () => {
+      const cell = contextMenu.cell;
+      const table = contextMenu.table;
+      if (!cell || !table) return;
+      table.classList.add('is-resizing');
+      const index = cell.cellIndex;
+      for (let i = 0; i < table.rows.length; i++) {
+          if (table.rows[i].cells[index]) table.rows[i].deleteCell(index);
+      }
+      setTimeout(() => {
+          table.classList.remove('is-resizing');
+      }, 50);
+      if (onContentChange && editorRef.current) {
+          onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      }
+  };
+
+  const deleteTable = () => {
+      const table = contextMenu.table;
+      if (table) {
+          table.remove();
+          if (onContentChange && editorRef.current) {
+              onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+          }
+      }
+  };
+
+  const showProperties = () => {
+      if (contextMenu.table) {
+          setPropertiesTable(contextMenu.table);
+          setIsTablePropertiesOpen(true);
+      }
+  };
+
+  const handleContextAction = (action: string) => {
+      setContextMenu(prev => ({ ...prev, visible: false }));
+      switch (action) {
+          case 'insertRowAbove':
+              insertRow('above');
+              break;
+          case 'insertRowBelow':
+              insertRow('below');
+              break;
+          case 'insertColLeft':
+              insertCol('left');
+              break;
+          case 'insertColRight':
+              insertCol('right');
+              break;
+          case 'mergeCells':
+              mergeCells();
+              break;
+          case 'splitCells':
+              splitCells();
+              break;
+          case 'deleteRow':
+              deleteRow();
+              break;
+          case 'deleteCol':
+              deleteCol();
+              break;
+          case 'deleteTable':
+              deleteTable();
+              break;
+          case 'properties':
+              showProperties();
+              break;
+          case 'sortColumn':
+              handleSortColumn();
+              break;
+          default:
+              break;
+      }
+  };
+
+  const applyProperties = () => {
+      if (!propertiesTable) return;
+
+      propertiesTable.style.width = tableWidth;
+
+      if (tableAlign === 'center') {
+          propertiesTable.style.marginLeft = 'auto';
+          propertiesTable.style.marginRight = 'auto';
+      } else if (tableAlign === 'right') {
+          propertiesTable.style.marginLeft = 'auto';
+          propertiesTable.style.marginRight = '0';
+      } else {
+          propertiesTable.style.marginLeft = '0';
+          propertiesTable.style.marginRight = 'auto';
+      }
+
+      const cells = Array.from(propertiesTable.querySelectorAll('td, th')) as HTMLTableCellElement[];
+      cells.forEach((cell) => {
+          if (cellPadding === 'small') {
+              cell.style.padding = '4px 8px';
+          } else if (cellPadding === 'large') {
+              cell.style.padding = '12px 16px';
+          } else {
+              cell.style.padding = '8px 12px';
+          }
+
+          if (borderColor === 'none') {
+              cell.style.border = 'none';
+          } else {
+              cell.style.border = `${borderWidth} solid ${borderColor}`;
+          }
+      });
+
+      const firstRow = propertiesTable.rows[0];
+      if (firstRow) {
+          Array.from(firstRow.cells).forEach((cell: any) => {
+              cell.style.backgroundColor = headerColor;
+          });
+      }
+
+      for (let i = 1; i < propertiesTable.rows.length; i++) {
+          const row = propertiesTable.rows[i];
+          const isEven = i % 2 === 0;
+          Array.from(row.cells).forEach((cell: any) => {
+              if (zebraStriping && isEven) {
+                  cell.style.backgroundColor = '#f8fafc';
+              } else if (zebraStriping) {
+                  cell.style.backgroundColor = 'transparent';
+              } else {
+                  if (cell.style.backgroundColor === 'rgb(248, 250, 252)' || cell.style.backgroundColor === '#f8fafc') {
+                      cell.style.backgroundColor = 'transparent';
+                  }
+              }
+          });
+      }
+
+      setIsTablePropertiesOpen(false);
+
+      if (onContentChange && editorRef.current) {
+          onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      }
+  };
 
   // Smart Selection Refs
   const wordPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -889,6 +1412,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   return (
     <div 
+        ref={containerRef}
         className="prodoc-page-container relative group mx-auto origin-top"
         style={{ width: `${widthIn * scale}in`, height: `${heightIn * scale}in` }}
     >
@@ -949,6 +1473,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                     contentEditable={isBodyEditable}
                     inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
                     onInput={handleInput} onKeyDown={handleKeyDown} onFocus={onFocus} onClick={handleEditorClick}
+                    onContextMenu={handleContextMenu}
                     onPointerDown={handleSmartPointerDown} onPointerMove={handleSmartPointerMove} onPointerUp={handleSmartPointerUp} onPointerCancel={handleSmartPointerUp}
                     suppressContentEditableWarning={true}
                     style={{ 
@@ -992,7 +1517,448 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                  </div>
             </div>
         </div>
-    </div>
+        
+        {/* Context Menu Overlay */}
+        <div 
+            ref={contextMenuRef}
+            tabIndex={-1}
+            id="table-context-menu"
+            className={`fixed z-[9999] bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 min-w-[200px] text-sm max-h-[80vh] overflow-y-auto outline-none transition-all duration-200 ease-out origin-top-left ${
+                contextMenu.visible 
+                    ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' 
+                    : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
+            }`}
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+            onClick={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.preventDefault()}
+            onKeyDown={handleMenuKeyDown}
+        >
+            <div id="table-context-menu-title" className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none border-b border-slate-100 dark:border-slate-700/50 mb-1">
+                Table Actions
+            </div>
+            
+            <button 
+                id="tcm-btn-insert-row-above"
+                onClick={() => handleContextAction('insertRowAbove')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <ArrowUpToLine size={15} className="text-slate-400" />
+                <span>Insert Row Above</span>
+            </button>
+            <button 
+                id="tcm-btn-insert-row-below"
+                onClick={() => handleContextAction('insertRowBelow')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <ArrowDownToLine size={15} className="text-slate-400" />
+                <span>Insert Row Below</span>
+            </button>
+            <button 
+                id="tcm-btn-insert-col-left"
+                onClick={() => handleContextAction('insertColLeft')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <ArrowLeftToLine size={15} className="text-slate-400" />
+                <span>Insert Column Left</span>
+            </button>
+            <button 
+                id="tcm-btn-insert-col-right"
+                onClick={() => handleContextAction('insertColRight')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <ArrowRightToLine size={15} className="text-slate-400" />
+                <span>Insert Column Right</span>
+            </button>
+            
+            <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
+            
+            <button 
+                id="tcm-btn-merge-cells"
+                onClick={() => handleContextAction('mergeCells')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <Merge size={15} className="text-slate-400" />
+                <span>Merge Cells (Right)</span>
+            </button>
+            <button 
+                id="tcm-btn-split-cells"
+                onClick={() => handleContextAction('splitCells')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <Split size={15} className="text-slate-400" />
+                <span>Split Cells</span>
+            </button>
+            
+            <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
+            
+            <button 
+                id="tcm-btn-delete-row"
+                onClick={() => handleContextAction('deleteRow')}
+                className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
+            >
+                <Trash2 size={15} className="text-red-400" />
+                <span>Delete Row</span>
+            </button>
+            <button 
+                id="tcm-btn-delete-col"
+                onClick={() => handleContextAction('deleteCol')}
+                className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
+            >
+                <Trash2 size={15} className="text-red-400" />
+                <span>Delete Column</span>
+            </button>
+            <button 
+                id="tcm-btn-delete-table"
+                onClick={() => handleContextAction('deleteTable')}
+                className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
+            >
+                <Trash2 size={15} className="text-red-400" />
+                <span>Delete Table</span>
+            </button>
+            
+            <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
+
+            <button 
+                id="tcm-btn-sort-col"
+                onClick={() => handleContextAction('sortColumn')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <ArrowUpDown size={15} className="text-slate-400" />
+                <span>Sort Column</span>
+            </button>
+            
+            <button 
+                id="tcm-btn-properties"
+                onClick={() => handleContextAction('properties')}
+                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+            >
+                <Settings size={15} className="text-slate-400" />
+                <span>Table Properties</span>
+            </button>
+        </div>
+
+        {/* Beautiful Table Properties Dialog Modal */}
+        {isTablePropertiesOpen && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div 
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3">
+                        <div className="flex items-center gap-2">
+                            <LayoutGrid className="w-5 h-5 text-indigo-600" />
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Table Properties</h2>
+                        </div>
+                        <button 
+                            onClick={() => setIsTablePropertiesOpen(false)}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1">
+                        {/* Table Information */}
+                        {propertiesTable && (
+                            <div className="text-xs font-mono bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-150 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 flex justify-around">
+                                <div><span className="text-slate-400">Rows:</span> {propertiesTable.rows.length}</div>
+                                <div><span className="text-slate-400">Columns:</span> {propertiesTable.rows[0]?.cells.length || 0}</div>
+                            </div>
+                        )}
+
+                        {/* Table Width */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Table Width
+                            </label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[
+                                    { label: 'Full', value: '100%' },
+                                    { label: '75%', value: '75%' },
+                                    { label: '50%', value: '50%' },
+                                    { label: 'Auto', value: 'auto' }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setTableWidth(opt.value)}
+                                        className={`py-1.5 px-3 rounded-lg text-sm border font-medium transition-all ${
+                                            tableWidth === opt.value
+                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                : 'bg-white dark:bg-slate-700/30 border-slate-200 dark:border-slate-650 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Alignment */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Alignment
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { label: 'Left', value: 'left' },
+                                    { label: 'Center', value: 'center' },
+                                    { label: 'Right', value: 'right' }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setTableAlign(opt.value)}
+                                        className={`py-1.5 px-3 rounded-lg text-sm border font-medium transition-all ${
+                                            tableAlign === opt.value
+                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                : 'bg-white dark:bg-slate-700/30 border-slate-200 dark:border-slate-650 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Cell Padding */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Cell Padding
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { label: 'Small', value: 'small' },
+                                    { label: 'Medium', value: 'medium' },
+                                    { label: 'Large', value: 'large' }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setCellPadding(opt.value)}
+                                        className={`py-1.5 px-3 rounded-lg text-sm border font-medium transition-all ${
+                                            cellPadding === opt.value
+                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                : 'bg-white dark:bg-slate-700/30 border-slate-200 dark:border-slate-650 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Header Background Color */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Header Row Background
+                            </label>
+                            <div className="grid grid-cols-5 gap-2">
+                                {[
+                                    { label: 'None', value: 'transparent' },
+                                    { label: 'Slate', value: '#f1f5f9' },
+                                    { label: 'Blue', value: '#eff6ff' },
+                                    { label: 'Red', value: '#fee2e2' },
+                                    { label: 'Green', value: '#f0fdf4' }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setHeaderColor(opt.value)}
+                                        className={`py-1 px-1 rounded-lg text-xs border transition-all truncate font-medium ${
+                                            headerColor === opt.value
+                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                : 'bg-white dark:bg-slate-700/30 border-slate-200 dark:border-slate-650 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Borders */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    Border Color
+                                </label>
+                                <select
+                                    value={borderColor}
+                                    onChange={(e) => setBorderColor(e.target.value)}
+                                    className="w-full text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    <option value="#cbd5e1">Slate Gray</option>
+                                    <option value="#3b82f6">Ocean Blue</option>
+                                    <option value="#ef4444">Coral Red</option>
+                                    <option value="#22c55e">Emerald Green</option>
+                                    <option value="none">No Borders</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                    Border Width
+                                </label>
+                                <select
+                                    value={borderWidth}
+                                    disabled={borderColor === 'none'}
+                                    onChange={(e) => setBorderWidth(e.target.value)}
+                                    className="w-full text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                                >
+                                    <option value="1px">Thin (1px)</option>
+                                    <option value="2px">Thick (2px)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Zebra Striping toggle */}
+                        <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                Alternating Zebra Striping
+                            </span>
+                            <button
+                                onClick={() => setZebraStriping(!zebraStriping)}
+                                className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                                    zebraStriping ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
+                                }`}
+                            >
+                                <div
+                                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                        zebraStriping ? 'translate-x-4' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-6 border-t border-slate-100 dark:border-slate-700 pt-3">
+                        <button 
+                            onClick={() => setIsTablePropertiesOpen(false)}
+                            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={applyProperties}
+                            className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors"
+                        >
+                            Apply Properties
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Beautiful Table Column Sort Modal */}
+        {isSortModalOpen && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                <div 
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3">
+                        <div className="flex items-center gap-2">
+                            <ArrowUpDown className="w-5 h-5 text-indigo-600" />
+                            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Sort Column</h2>
+                        </div>
+                        <button 
+                            onClick={() => setIsSortModalOpen(false)}
+                            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <div className="text-xs font-mono bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-150 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 flex justify-around">
+                            <div><span className="text-slate-400">Sorting Column:</span> #{sortColIndex + 1}</div>
+                        </div>
+
+                        {/* Sort Direction */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Sort Order
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    { label: 'Ascending (A-Z, 1-9)', value: 'asc' },
+                                    { label: 'Descending (Z-A, 9-1)', value: 'desc' }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setSortDirection(opt.value as 'asc' | 'desc')}
+                                        className={`py-2 px-3 rounded-lg text-sm border font-medium transition-all text-center ${
+                                            sortDirection === opt.value
+                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                : 'bg-white dark:bg-slate-700/30 border-slate-200 dark:border-slate-650 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Data Type Selection */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                                Data Type
+                            </label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { label: 'Auto', value: 'auto' },
+                                    { label: 'Text', value: 'text' },
+                                    { label: 'Number', value: 'number' }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => setSortType(opt.value as 'auto' | 'text' | 'number')}
+                                        className={`py-1.5 px-3 rounded-lg text-sm border font-medium transition-all ${
+                                            sortType === opt.value
+                                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                                : 'bg-white dark:bg-slate-700/30 border-slate-200 dark:border-slate-650 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Exclude Header Row */}
+                        <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
+                            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                Exclude First Row (Header Row)
+                            </span>
+                            <button
+                                onClick={() => setSortExcludeHeader(!sortExcludeHeader)}
+                                className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                                    sortExcludeHeader ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
+                                }`}
+                            >
+                                <div
+                                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                        sortExcludeHeader ? 'translate-x-4' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-6 border-t border-slate-100 dark:border-slate-700 pt-3">
+                        <button 
+                            onClick={() => setIsSortModalOpen(false)}
+                            className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={applySortColumn}
+                            className="px-4 py-2 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors"
+                        >
+                            Sort
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+        </div>
   );
 };
 
