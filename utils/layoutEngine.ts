@@ -154,8 +154,19 @@ const splitBlock = (
         }
 
         if (splitIndex === rows.length) return { keep: originalNode.cloneNode(true) as HTMLElement, move: null };
+        
         for (let i = 0; i < splitIndex; i++) keepTable.appendChild(rows[i].cloneNode(true));
+        
+        // If repeat header row option is enabled, prepend a copy of the first row to the split table
+        const repeatHeader = originalNode.getAttribute('data-repeat-header') === 'true';
+        if (repeatHeader && rows.length > 0 && splitIndex > 0 && splitIndex < rows.length) {
+            const headerRow = rows[0].cloneNode(true) as HTMLTableRowElement;
+            headerRow.setAttribute('data-repeated-header-row', 'true');
+            moveTable.appendChild(headerRow);
+        }
+
         for (let i = splitIndex; i < rows.length; i++) moveTable.appendChild(rows[i].cloneNode(true));
+        
         keepTable.setAttribute('data-split-bottom', 'true');
         moveTable.setAttribute('data-continuation', 'true');
         return { keep: keepTable, move: moveTable };
@@ -262,6 +273,10 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
 
       const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
       splitTables.forEach(splitTable => {
+          // Remove any repeated headers in the split part before merging back
+          const repeatedHeaders = Array.from(splitTable.querySelectorAll('tr[data-repeated-header-row="true"]'));
+          repeatedHeaders.forEach(row => row.remove());
+
           const prev = splitTable.previousElementSibling;
           if (prev && prev.tagName === 'TABLE') {
               while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
@@ -350,6 +365,16 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) { flushPage(); i--; continue; }
 
           const nodeH = sandbox.measure(node);
+          
+          // Keep Together logic for tables:
+          const isTable = node.tagName === 'TABLE';
+          const keepTogether = isTable && node.getAttribute('data-keep-together') === 'true';
+          if (keepTogether && currentH > 0 && currentH + nodeH > effectiveHeight - SAFETY_BUFFER) {
+              flushPage();
+              i--;
+              continue;
+          }
+
           if (currentH + nodeH > effectiveHeight - SAFETY_BUFFER) {
               const remainingSpace = Math.max(0, effectiveHeight - currentH);
               

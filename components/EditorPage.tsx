@@ -1,13 +1,14 @@
 
 /* eslint-disable react-hooks/immutability */
 import React, { useRef, useLayoutEffect, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PageConfig, EditingArea } from '../types';
 import { PAGE_SIZES } from '../constants';
 import { useMathLive } from '../hooks/useMathLive';
 import { useEditor } from '../contexts/EditorContext';
 import { 
   ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine,
-  Trash2, Settings, Merge, Split, LayoutGrid, ArrowUpDown
+  Trash2, Settings, Merge, Split, LayoutGrid, ArrowUpDown, Plus
 } from 'lucide-react';
 
 interface EditorPageProps {
@@ -434,6 +435,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const [borderWidth, setBorderWidth] = useState('1px');
   const [zebraStriping, setZebraStriping] = useState(false);
   const [headerColor, setHeaderColor] = useState('transparent');
+  const [repeatHeader, setRepeatHeader] = useState(false);
+  const [keepTogether, setKeepTogether] = useState(false);
 
   useEffect(() => {
       if (propertiesTable) {
@@ -493,11 +496,21 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               }
           }
           setZebraStriping(hasZebra);
+
+          const repHeader = propertiesTable.getAttribute('data-repeat-header') === 'true';
+          setRepeatHeader(repHeader);
+
+          const keepTog = propertiesTable.getAttribute('data-keep-together') === 'true';
+          setKeepTogether(keepTog);
       }
   }, [propertiesTable]);
 
   useEffect(() => {
-      const handleClose = () => {
+      const handleClose = (e: Event) => {
+          // Prevent closing if the scroll event is originating from inside the context menu itself
+          if (e.type === 'scroll' && contextMenuRef.current && contextMenuRef.current.contains(e.target as Node)) {
+              return;
+          }
           setContextMenu(prev => prev.visible ? { ...prev, visible: false } : prev);
       };
       window.addEventListener('click', handleClose);
@@ -530,25 +543,31 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           
           // Estimate the dimensions of the context menu to prevent overflowing edges
           const menuWidth = 220;
-          const menuHeight = 440; // Max height estimate with options
+          const menuHeight = 430; // Highly accurate estimate of context menu height
           
           let clickX = e.clientX;
           let clickY = e.clientY;
           
-          // Adjust for viewport screen boundaries (safe scroll & viewport prevention)
           const viewportPadding = window.innerWidth < 640 ? 8 : 16;
           
+          // Detect horizontal overflow and flip left if necessary
           if (clickX + menuWidth + viewportPadding > window.innerWidth) {
-              clickX = window.innerWidth - menuWidth - viewportPadding;
+              clickX = clickX - menuWidth;
           }
+          
+          // Detect vertical overflow and flip upward if necessary
           if (clickY + menuHeight + viewportPadding > window.innerHeight) {
-              clickY = window.innerHeight - menuHeight - viewportPadding;
+              clickY = clickY - menuHeight;
           }
+          
+          // Ensure it stays safely inside screen boundaries (safety clamp)
+          const safeX = Math.max(viewportPadding, Math.min(clickX, window.innerWidth - menuWidth - viewportPadding));
+          const safeY = Math.max(viewportPadding, Math.min(clickY, window.innerHeight - menuHeight - viewportPadding));
           
           setContextMenu({
               visible: true,
-              x: Math.max(viewportPadding, clickX),
-              y: Math.max(viewportPadding, clickY),
+              x: safeX,
+              y: safeY,
               cell,
               table
           });
@@ -570,6 +589,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               e.preventDefault();
               setContextMenu(prev => ({ ...prev, visible: false }));
               editorRef.current?.focus();
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+              // Prevent browser window from scrolling when context menu is active
+              e.preventDefault();
           }
       };
 
@@ -604,23 +626,33 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       const buttons = Array.from(contextMenuRef.current.querySelectorAll('button')) as HTMLButtonElement[];
       if (buttons.length === 0) return;
 
+      const activeEl = document.activeElement as HTMLButtonElement;
+      const currentActiveIndex = buttons.indexOf(activeEl);
+      const activeIndex = currentActiveIndex >= 0 ? currentActiveIndex : (focusedIndex >= 0 ? focusedIndex : 0);
+
       if (e.key === 'ArrowDown') {
           e.preventDefault();
-          const nextIndex = (focusedIndex + 1) % buttons.length;
+          e.stopPropagation();
+          const nextIndex = (activeIndex + 1) % buttons.length;
           setFocusedIndex(nextIndex);
           buttons[nextIndex]?.focus();
+          buttons[nextIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else if (e.key === 'ArrowUp') {
           e.preventDefault();
-          const prevIndex = (focusedIndex - 1 + buttons.length) % buttons.length;
+          e.stopPropagation();
+          const prevIndex = (activeIndex - 1 + buttons.length) % buttons.length;
           setFocusedIndex(prevIndex);
           buttons[prevIndex]?.focus();
+          buttons[prevIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else if (e.key === 'Tab') {
           e.preventDefault();
+          e.stopPropagation();
           const nextIndex = e.shiftKey
-              ? (focusedIndex - 1 + buttons.length) % buttons.length
-              : (focusedIndex + 1) % buttons.length;
+              ? (activeIndex - 1 + buttons.length) % buttons.length
+              : (activeIndex + 1) % buttons.length;
           setFocusedIndex(nextIndex);
           buttons[nextIndex]?.focus();
+          buttons[nextIndex]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
   };
 
@@ -918,6 +950,18 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                   }
               }
           });
+      }
+
+      if (repeatHeader) {
+          propertiesTable.setAttribute('data-repeat-header', 'true');
+      } else {
+          propertiesTable.removeAttribute('data-repeat-header');
+      }
+
+      if (keepTogether) {
+          propertiesTable.setAttribute('data-keep-together', 'true');
+      } else {
+          propertiesTable.removeAttribute('data-keep-together');
       }
 
       setIsTablePropertiesOpen(false);
@@ -1519,127 +1563,126 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         </div>
         
         {/* Context Menu Overlay */}
-        <div 
-            ref={contextMenuRef}
-            tabIndex={-1}
-            id="table-context-menu"
-            className={`fixed z-[9999] bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 min-w-[200px] text-sm max-h-[80vh] overflow-y-auto outline-none transition-all duration-200 ease-out origin-top-left ${
-                contextMenu.visible 
-                    ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' 
-                    : 'opacity-0 -translate-y-2 scale-95 pointer-events-none'
-            }`}
-            style={{ left: contextMenu.x, top: contextMenu.y }}
-            onClick={(e) => e.stopPropagation()}
-            onContextMenu={(e) => e.preventDefault()}
-            onKeyDown={handleMenuKeyDown}
-        >
-            <div id="table-context-menu-title" className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none border-b border-slate-100 dark:border-slate-700/50 mb-1">
-                Table Actions
-            </div>
-            
-            <button 
-                id="tcm-btn-insert-row-above"
-                onClick={() => handleContextAction('insertRowAbove')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+        {contextMenu.visible && createPortal(
+            <div 
+                ref={contextMenuRef}
+                tabIndex={-1}
+                id="table-context-menu"
+                className="fixed z-[99999] bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 min-w-[200px] text-sm max-h-[min(430px,calc(100vh-32px))] overflow-y-auto outline-none transition-all duration-200 ease-out origin-top-left"
+                style={{ left: contextMenu.x, top: contextMenu.y }}
+                onClick={(e) => e.stopPropagation()}
+                onContextMenu={(e) => e.preventDefault()}
+                onKeyDown={handleMenuKeyDown}
             >
-                <ArrowUpToLine size={15} className="text-slate-400" />
-                <span>Insert Row Above</span>
-            </button>
-            <button 
-                id="tcm-btn-insert-row-below"
-                onClick={() => handleContextAction('insertRowBelow')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
-            >
-                <ArrowDownToLine size={15} className="text-slate-400" />
-                <span>Insert Row Below</span>
-            </button>
-            <button 
-                id="tcm-btn-insert-col-left"
-                onClick={() => handleContextAction('insertColLeft')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
-            >
-                <ArrowLeftToLine size={15} className="text-slate-400" />
-                <span>Insert Column Left</span>
-            </button>
-            <button 
-                id="tcm-btn-insert-col-right"
-                onClick={() => handleContextAction('insertColRight')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
-            >
-                <ArrowRightToLine size={15} className="text-slate-400" />
-                <span>Insert Column Right</span>
-            </button>
-            
-            <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
-            
-            <button 
-                id="tcm-btn-merge-cells"
-                onClick={() => handleContextAction('mergeCells')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
-            >
-                <Merge size={15} className="text-slate-400" />
-                <span>Merge Cells (Right)</span>
-            </button>
-            <button 
-                id="tcm-btn-split-cells"
-                onClick={() => handleContextAction('splitCells')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
-            >
-                <Split size={15} className="text-slate-400" />
-                <span>Split Cells</span>
-            </button>
-            
-            <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
-            
-            <button 
-                id="tcm-btn-delete-row"
-                onClick={() => handleContextAction('deleteRow')}
-                className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
-            >
-                <Trash2 size={15} className="text-red-400" />
-                <span>Delete Row</span>
-            </button>
-            <button 
-                id="tcm-btn-delete-col"
-                onClick={() => handleContextAction('deleteCol')}
-                className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
-            >
-                <Trash2 size={15} className="text-red-400" />
-                <span>Delete Column</span>
-            </button>
-            <button 
-                id="tcm-btn-delete-table"
-                onClick={() => handleContextAction('deleteTable')}
-                className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
-            >
-                <Trash2 size={15} className="text-red-400" />
-                <span>Delete Table</span>
-            </button>
-            
-            <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
-
-            <button 
-                id="tcm-btn-sort-col"
-                onClick={() => handleContextAction('sortColumn')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
-            >
-                <ArrowUpDown size={15} className="text-slate-400" />
-                <span>Sort Column</span>
-            </button>
-            
-            <button 
-                id="tcm-btn-properties"
-                onClick={() => handleContextAction('properties')}
-                className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
-            >
-                <Settings size={15} className="text-slate-400" />
-                <span>Table Properties</span>
-            </button>
-        </div>
+                <div id="table-context-menu-title" className="px-3 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none border-b border-slate-100 dark:border-slate-700/50 mb-1">
+                    Table Actions
+                </div>
+                
+                <button 
+                    id="tcm-btn-insert-row-above"
+                    onClick={() => handleContextAction('insertRowAbove')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <Plus size={15} className="text-emerald-500 dark:text-emerald-400" />
+                    <span>Insert Row Above</span>
+                </button>
+                <button 
+                    id="tcm-btn-insert-row-below"
+                    onClick={() => handleContextAction('insertRowBelow')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <Plus size={15} className="text-emerald-500 dark:text-emerald-400" />
+                    <span>Insert Row Below</span>
+                </button>
+                <button 
+                    id="tcm-btn-insert-col-left"
+                    onClick={() => handleContextAction('insertColLeft')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <Plus size={15} className="text-emerald-500 dark:text-emerald-400" />
+                    <span>Insert Column Left</span>
+                </button>
+                <button 
+                    id="tcm-btn-insert-col-right"
+                    onClick={() => handleContextAction('insertColRight')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <Plus size={15} className="text-emerald-500 dark:text-emerald-400" />
+                    <span>Insert Column Right</span>
+                </button>
+                
+                <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
+                
+                <button 
+                    id="tcm-btn-merge-cells"
+                    onClick={() => handleContextAction('mergeCells')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <Merge size={15} className="text-blue-500 dark:text-blue-400" />
+                    <span>Merge Cells (Right)</span>
+                </button>
+                <button 
+                    id="tcm-btn-split-cells"
+                    onClick={() => handleContextAction('splitCells')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <Split size={15} className="text-blue-500 dark:text-blue-400" />
+                    <span>Split Cells</span>
+                </button>
+                
+                <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
+                
+                <button 
+                    id="tcm-btn-delete-row"
+                    onClick={() => handleContextAction('deleteRow')}
+                    className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
+                >
+                    <Trash2 size={15} className="text-red-500 dark:text-red-400" />
+                    <span>Delete Row</span>
+                </button>
+                <button 
+                    id="tcm-btn-delete-col"
+                    onClick={() => handleContextAction('deleteCol')}
+                    className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
+                >
+                    <Trash2 size={15} className="text-red-500 dark:text-red-400" />
+                    <span>Delete Column</span>
+                </button>
+                <button 
+                    id="tcm-btn-delete-table"
+                    onClick={() => handleContextAction('deleteTable')}
+                    className="w-full text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 text-red-600 dark:text-red-400"
+                >
+                    <Trash2 size={15} className="text-red-500 dark:text-red-400" />
+                    <span>Delete Table</span>
+                </button>
+                
+                <div className="border-t border-slate-100 dark:border-slate-700/50 my-1" />
+                
+                <button 
+                    id="tcm-btn-sort-col"
+                    onClick={() => handleContextAction('sortColumn')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <ArrowUpDown size={15} className="text-indigo-500 dark:text-indigo-400" />
+                    <span>Sort Column</span>
+                </button>
+                
+                <button 
+                    id="tcm-btn-properties"
+                    onClick={() => handleContextAction('properties')}
+                    className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 text-slate-700 dark:text-slate-200"
+                >
+                    <Settings size={15} className="text-slate-500 dark:text-slate-400" />
+                    <span>Table Properties</span>
+                </button>
+            </div>,
+            document.body
+        )}
 
         {/* Beautiful Table Properties Dialog Modal */}
-        {isTablePropertiesOpen && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        {isTablePropertiesOpen && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div 
                     className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
                     onClick={(e) => e.stopPropagation()}
@@ -1825,6 +1868,54 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                                 />
                             </button>
                         </div>
+
+                        {/* Repeat Header toggle */}
+                        <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
+                            <div className="pr-4">
+                                <span className="block text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                    Repeat Header Row on Every Page
+                                </span>
+                                <span className="block text-xs text-slate-400">
+                                    Repeats first row of table at top of subsequent pages
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setRepeatHeader(!repeatHeader)}
+                                className={`w-10 h-6 flex shrink-0 items-center rounded-full p-1 cursor-pointer transition-colors ${
+                                    repeatHeader ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
+                                }`}
+                            >
+                                <div
+                                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                        repeatHeader ? 'translate-x-4' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Keep Together toggle */}
+                        <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
+                            <div className="pr-4">
+                                <span className="block text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                    Keep Entire Table on Single Page
+                                </span>
+                                <span className="block text-xs text-slate-400">
+                                    Forces entire table to next page if it doesn't fit
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setKeepTogether(!keepTogether)}
+                                className={`w-10 h-6 flex shrink-0 items-center rounded-full p-1 cursor-pointer transition-colors ${
+                                    keepTogether ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
+                                }`}
+                            >
+                                <div
+                                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                                        keepTogether ? 'translate-x-4' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
                     </div>
                     
                     <div className="flex justify-end gap-2 mt-6 border-t border-slate-100 dark:border-slate-700 pt-3">
@@ -1842,12 +1933,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         </button>
                     </div>
                 </div>
-            </div>
+            </div>,
+            document.body
         )}
 
         {/* Beautiful Table Column Sort Modal */}
-        {isSortModalOpen && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+        {isSortModalOpen && createPortal(
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div 
                     className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
                     onClick={(e) => e.stopPropagation()}
@@ -1956,7 +2048,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                         </button>
                     </div>
                 </div>
-            </div>
+            </div>,
+            document.body
         )}
         </div>
   );
