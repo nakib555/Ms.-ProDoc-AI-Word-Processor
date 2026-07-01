@@ -149,6 +149,43 @@ table:has([data-formula-outline]) {
   vertical-align: top;
 }
 
+/* Custom table layout and text wrapping overrides */
+.prodoc-editor table,
+.ProseMirror table {
+  margin: 8px 0;
+}
+
+/* Clear floats on block elements if wrapping is disabled */
+table[style*="clear: both"] {
+  clear: both !important;
+  float: none !important;
+  display: table !important;
+}
+
+/* Floating table wrappers to allow wrapping around table */
+table[style*="float: left"] {
+  float: left !important;
+  display: table !important;
+  margin-right: 16px !important;
+  margin-bottom: 8px !important;
+  clear: none !important;
+}
+
+table[style*="float: right"] {
+  float: right !important;
+  display: table !important;
+  margin-left: 16px !important;
+  margin-bottom: 8px !important;
+  clear: none !important;
+}
+
+/* Prevent splitting of table rows */
+tr.table-row-keep-together,
+.table-row-keep-together tr {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
 .ProseMirror th,
 .prodoc-editor th {
   background-color: #f1f3f5;
