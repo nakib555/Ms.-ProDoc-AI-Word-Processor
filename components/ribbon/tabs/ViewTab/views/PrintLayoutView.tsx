@@ -298,7 +298,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setFooterContent,
     editorRef,
     setZoom,
-    zoomMode
+    zoomMode,
+    isTableResizing
   } = useEditor();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
@@ -357,6 +358,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   useEffect(() => {
     let isMounted = true;
     
+    const delay = isTableResizing ? 0 : 200;
+    
     const timer = setTimeout(() => {
         if (!isMounted) return;
         
@@ -374,13 +377,13 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
              }
         });
         
-    }, 200);
+    }, delay);
 
     return () => { 
         isMounted = false; 
         clearTimeout(timer);
     };
-  }, [content, pageConfig, setTotalPages]);
+  }, [content, pageConfig, setTotalPages, isTableResizing]);
 
   useLayoutEffect(() => {
       if (cursorRestorationRef.current !== null) {

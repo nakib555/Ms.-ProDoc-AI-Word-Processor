@@ -20,6 +20,7 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
+import { jsonDocumentToHtml, htmlToJSONDocument } from '../utils/documentModel';
 import { importDocxToEditor } from '../utils/docxImportEngine';
 import { importHtmlToEditor } from '../components/ribbon/tabs/FileTab/modals/htmlImportEngine';
 import { marked } from 'marked';
@@ -289,6 +290,8 @@ export interface EditorContextType {
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
   showAssistant: boolean;
   setShowAssistant: React.Dispatch<React.SetStateAction<boolean>>;
+  showJsonInspector: boolean;
+  setShowJsonInspector: React.Dispatch<React.SetStateAction<boolean>>;
   
   // AI State
   aiState: 'idle' | 'thinking' | 'writing';
@@ -313,6 +316,8 @@ export interface EditorContextType {
   // Keyboard Lock
   isKeyboardLocked: boolean;
   isTableResizerEnabled: boolean;
+  isTableResizing: boolean;
+  setIsTableResizing: React.Dispatch<React.SetStateAction<boolean>>;
   setIsTableResizerEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   setIsKeyboardLocked: React.Dispatch<React.SetStateAction<boolean>>;
 
@@ -367,6 +372,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [showJsonInspector, setShowJsonInspector] = useState(false);
   const [aiState, setAiState] = useState<'idle' | 'thinking' | 'writing'>('idle');
   const [importState, setImportState] = useState<{ active: boolean; percent: number; status: string }>({
     active: false,
@@ -386,6 +392,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
   const [isTableResizerEnabled, setIsTableResizerEnabled] = useState(false);
+  const [isTableResizing, setIsTableResizing] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [hasActiveSelection, setHasActiveSelection] = useState(false);
   const [selectionAction, setSelectionAction] = useState<any | null>(null);
@@ -407,6 +414,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     applyTo: 'wholeDocument',
     sheetsPerBooklet: 'all'
   });
+
+  const pageConfigRef = useRef(pageConfig);
+  useEffect(() => {
+    pageConfigRef.current = pageConfig;
+  }, [pageConfig]);
 
   const [readConfig, setReadConfig] = useState<ReadModeConfig>({
     theme: 'light',
@@ -444,7 +456,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     onUpdate: ({ editor }) => {
       setWordCount(editor.storage.characterCount?.words?.() || 0);
       setLastModified(new Date());
-      triggerAutoSave(documentTitleRef.current, editor.getHTML());
+      triggerAutoSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current);
     },
     onSelectionUpdate: ({ editor }) => {
         setHasActiveSelection(!editor.state.selection.empty);
@@ -529,7 +541,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'fitWidth': setZoomMode('fit-width'); break;
         case 'save': 
             if (editor) {
-                manualSave(documentTitleRef.current, editor.getHTML()); 
+                manualSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current); 
             }
             break;
         case 'pageBreak': 
@@ -639,6 +651,21 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         } else if (extension === 'md') {
           setImportState({ active: true, percent: 50, status: 'Parsing Markdown content...' });
           htmlContent = await marked.parse(textContent);
+        } else if (extension === 'json') {
+          setImportState({ active: true, percent: 50, status: 'Parsing JSON Document Model...' });
+          try {
+            const parsed = JSON.parse(textContent);
+            if (parsed.type === 'document' && parsed.pages) {
+              htmlContent = jsonDocumentToHtml(parsed);
+              if (parsed.pageConfig) {
+                setPageConfig(parsed.pageConfig);
+              }
+            } else {
+              htmlContent = `<p>${textContent}</p>`;
+            }
+          } catch (e) {
+            htmlContent = `<p>${textContent}</p>`;
+          }
         } else {
           setImportState({ active: true, percent: 50, status: 'Processing plain text...' });
           htmlContent = textContent.split('\n').map(line => `<p>${line}</p>`).join('');
@@ -655,6 +682,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       try {
         const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
         savedDocs[nameWithoutExt] = {
+          documentModel: htmlToJSONDocument(htmlContent, nameWithoutExt, pageConfig),
           content: htmlContent,
           lastModified: new Date().toISOString()
         };
@@ -678,7 +706,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setImportState({ active: false, percent: 0, status: '' });
       alert("Could not open this file: " + (error?.message || "Unknown error"));
     }
-  }, [editor, setDocumentTitle]);
+  }, [editor, setDocumentTitle, pageConfig, setPageConfig, setImportState]);
 
   const pageDimensions = useMemo(() => ({ width: 816, height: 1056 }), []); // Default Letter
   
@@ -740,6 +768,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTotalPages,
     showAssistant,
     setShowAssistant,
+    showJsonInspector,
+    setShowJsonInspector,
     aiState,
     setAiState,
     isAIProcessing: aiState !== 'idle',
@@ -756,6 +786,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setFirstFooterContent,
     isKeyboardLocked,
     isTableResizerEnabled,
+    isTableResizing,
+    setIsTableResizing,
     setIsTableResizerEnabled,
     setIsKeyboardLocked,
     selectionMode,
@@ -795,6 +827,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     currentPage,
     totalPages,
     showAssistant,
+    showJsonInspector,
     aiState,
     setIsAIProcessing,
     activeEditingArea,
@@ -804,6 +837,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     firstFooterContent,
     isKeyboardLocked,
     isTableResizerEnabled,
+    isTableResizing,
     selectionMode,
     hasActiveSelection,
     selectionAction,

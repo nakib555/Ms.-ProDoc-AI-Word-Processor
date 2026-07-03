@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/immutability, @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
+import { useEditor } from '../../contexts/EditorContext';
 
 interface TableResizerOverlayProps {
   target: HTMLTableElement;
@@ -7,6 +8,53 @@ interface TableResizerOverlayProps {
   scale: number;
   onUpdate: () => void;
 }
+
+const getLogicalTableAndRowIndex = (targetTable: HTMLTableElement, targetRow: HTMLTableRowElement) => {
+  const allPageTables = Array.from(document.querySelectorAll('.prodoc-page-wrapper table'));
+  
+  let logicalTableIndex = -1;
+  let logicalRowIndex = -1;
+  
+  let currentLogicalTableIndex = -1;
+  let currentRowCountInLogicalTable = 0;
+  
+  for (let t = 0; t < allPageTables.length; t++) {
+    const tbl = allPageTables[t] as HTMLTableElement;
+    const isContinuation = tbl.getAttribute('data-continuation') === 'true';
+    
+    if (!isContinuation) {
+      currentLogicalTableIndex++;
+      currentRowCountInLogicalTable = 0;
+    }
+    
+    if (tbl === targetTable) {
+      logicalTableIndex = currentLogicalTableIndex;
+      const rows = Array.from(tbl.rows);
+      let localRowIndex = 0;
+      for (let r = 0; r < rows.length; r++) {
+        if (rows[r] === targetRow) {
+          logicalRowIndex = currentRowCountInLogicalTable + localRowIndex;
+          break;
+        }
+        if (rows[r].getAttribute('data-repeated-header-row') !== 'true') {
+          localRowIndex++;
+        }
+      }
+      break;
+    }
+    
+    const rows = Array.from(tbl.rows);
+    let validRowsCount = 0;
+    for (let r = 0; r < rows.length; r++) {
+      if (rows[r].getAttribute('data-repeated-header-row') !== 'true') {
+        validRowsCount++;
+      }
+    }
+    currentRowCountInLogicalTable += validRowsCount;
+  }
+  
+  return { logicalTableIndex, logicalRowIndex };
+};
 
 export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
   target,
@@ -17,6 +65,8 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
   const [handles, setHandles] = useState<{ cols: any[]; rows: any[] }>({ cols: [], rows: [] });
   const [isResizing, setIsResizing] = useState(false);
   const [activeHandle, setActiveHandle] = useState<{ type: 'col' | 'row'; index: number } | null>(null);
+  
+  const { content, setContent, setIsTableResizing } = useEditor();
 
   useEffect(() => {
     const updateHandles = () => {
@@ -76,7 +126,14 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
   const handleColPointerDown = (e: React.PointerEvent<HTMLDivElement>, cell: HTMLTableCellElement, index: number) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const firstRow = target.rows[0];
+    if (!firstRow) return;
+    const { logicalTableIndex } = getLogicalTableAndRowIndex(target, firstRow);
+    if (logicalTableIndex === -1) return;
+
     setIsResizing(true);
+    setIsTableResizing(true);
     setActiveHandle({ type: 'col', index });
     document.body.style.cursor = 'col-resize';
     
@@ -97,39 +154,86 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     const nextCell = cell.parentElement?.children[index + 1] as HTMLTableCellElement | null;
     const nextStartWidth = nextCell ? nextCell.offsetWidth : 0;
     const tableStartWidth = target.offsetWidth;
+    const initialContent = content;
 
     const handlePointerMove = (ev: PointerEvent) => {
       const deltaX = (ev.clientX - startX) / scale;
       
+      let actualWidth = startWidth;
+      let newNextWidth = nextStartWidth;
+      let newTableWidth = tableStartWidth;
+      let actualNewWidth = startWidth;
+
       if (nextCell) {
         const newWidth = Math.max(20, startWidth + deltaX);
-        const newNextWidth = Math.max(20, nextStartWidth - (newWidth - startWidth));
-        const actualWidth = startWidth + (nextStartWidth - newNextWidth);
+        newNextWidth = Math.max(20, nextStartWidth - (newWidth - startWidth));
+        actualWidth = startWidth + (nextStartWidth - newNextWidth);
         
         for (let i = 0; i < target.rows.length; i++) {
-          const row = target.rows[i];
-          if (row.cells[index]) row.cells[index].style.width = `${actualWidth}px`;
-          if (row.cells[index + 1]) row.cells[index + 1].style.width = `${newNextWidth}px`;
+          const r = target.rows[i];
+          if (r.cells[index]) r.cells[index].style.width = `${actualWidth}px`;
+          if (r.cells[index + 1]) r.cells[index + 1].style.width = `${newNextWidth}px`;
         }
       } else {
         const newWidth = Math.max(20, startWidth + deltaX);
         const maxTableWidth = container.offsetWidth;
-        let newTableWidth = tableStartWidth + (newWidth - startWidth);
+        newTableWidth = tableStartWidth + (newWidth - startWidth);
         if (newTableWidth > maxTableWidth) {
           newTableWidth = maxTableWidth;
         }
-        const actualNewWidth = newTableWidth - tableStartWidth + startWidth;
+        actualNewWidth = newTableWidth - tableStartWidth + startWidth;
 
         target.style.width = `${newTableWidth}px`;
         for (let i = 0; i < target.rows.length; i++) {
-          const row = target.rows[i];
-          if (row.cells[index]) row.cells[index].style.width = `${actualNewWidth}px`;
+          const r = target.rows[i];
+          if (r.cells[index]) r.cells[index].style.width = `${actualNewWidth}px`;
         }
+      }
+
+      // Update global HTML content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(initialContent, 'text/html');
+      const body = doc.body;
+
+      const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
+      splitTables.forEach(splitTable => {
+          const repeatedHeaders = Array.from(splitTable.querySelectorAll('tr[data-repeated-header-row="true"]'));
+          repeatedHeaders.forEach(rh => rh.remove());
+          
+          const prev = splitTable.previousElementSibling;
+          if (prev && prev.tagName === 'TABLE' && prev.getAttribute('data-split-bottom') === 'true') {
+              while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
+              prev.removeAttribute('data-split-bottom');
+              splitTable.remove();
+          } else {
+              splitTable.removeAttribute('data-continuation');
+          }
+      });
+
+      const tables = Array.from(body.querySelectorAll('table'));
+      const tbl = tables[logicalTableIndex];
+      if (tbl) {
+          if (nextCell) {
+              for (let i = 0; i < tbl.rows.length; i++) {
+                  const r = tbl.rows[i];
+                  if (r.cells[index]) r.cells[index].style.width = `${actualWidth}px`;
+                  if (r.cells[index + 1]) r.cells[index + 1].style.width = `${newNextWidth}px`;
+              }
+          } else {
+              tbl.style.width = `${newTableWidth}px`;
+              for (let i = 0; i < tbl.rows.length; i++) {
+                  const r = tbl.rows[i];
+                  if (r.cells[index]) r.cells[index].style.width = `${actualNewWidth}px`;
+              }
+          }
+          const updatedContent = body.innerHTML;
+          setContent(updatedContent);
       }
     };
 
     const handlePointerUp = () => {
       setIsResizing(false);
+      setIsTableResizing(false);
       setActiveHandle(null);
       document.body.style.cursor = '';
       target.classList.remove('is-dragging');
@@ -145,7 +249,12 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
   const handleRowPointerDown = (e: React.PointerEvent<HTMLDivElement>, row: HTMLTableRowElement, index: number) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    const { logicalTableIndex, logicalRowIndex } = getLogicalTableAndRowIndex(target, row);
+    if (logicalTableIndex === -1 || logicalRowIndex === -1) return;
+
     setIsResizing(true);
+    setIsTableResizing(true);
     setActiveHandle({ type: 'row', index });
     document.body.style.cursor = 'row-resize';
     
@@ -158,15 +267,45 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     target.classList.add('is-dragging');
     const startY = e.clientY;
     const startHeight = row.offsetHeight;
+    const initialContent = content;
 
     const handlePointerMove = (ev: PointerEvent) => {
       const deltaY = (ev.clientY - startY) / scale;
       const newHeight = Math.max(20, startHeight + deltaY);
       row.style.height = `${newHeight}px`;
+
+      // Parse the initial content, merge split tables, set row height, and update global content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(initialContent, 'text/html');
+      const body = doc.body;
+
+      const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
+      splitTables.forEach(splitTable => {
+          const repeatedHeaders = Array.from(splitTable.querySelectorAll('tr[data-repeated-header-row="true"]'));
+          repeatedHeaders.forEach(rh => rh.remove());
+          
+          const prev = splitTable.previousElementSibling;
+          if (prev && prev.tagName === 'TABLE' && prev.getAttribute('data-split-bottom') === 'true') {
+              while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
+              prev.removeAttribute('data-split-bottom');
+              splitTable.remove();
+          } else {
+              splitTable.removeAttribute('data-continuation');
+          }
+      });
+
+      const tables = Array.from(body.querySelectorAll('table'));
+      const tbl = tables[logicalTableIndex];
+      if (tbl && tbl.rows[logicalRowIndex]) {
+          tbl.rows[logicalRowIndex].style.height = `${newHeight}px`;
+          const updatedContent = body.innerHTML;
+          setContent(updatedContent);
+      }
     };
 
     const handlePointerUp = () => {
       setIsResizing(false);
+      setIsTableResizing(false);
       setActiveHandle(null);
       document.body.style.cursor = '';
       target.classList.remove('is-dragging');

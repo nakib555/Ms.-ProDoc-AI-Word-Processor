@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { FolderOpen, FileText, Loader2, Trash2, Clock, Database } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
+import { htmlToJSONDocument, jsonDocumentToHtml } from '../../../../../utils/documentModel';
 
 export const OpenModal: React.FC = () => {
   const { setContent, setDocumentTitle, importFile, importState } = useEditor();
@@ -15,7 +16,7 @@ export const OpenModal: React.FC = () => {
     try {
       const stored = localStorage.getItem('recent_documents');
       if (stored) {
-        setRecentDocs(JSON.parse(stored));
+        setTimeout(() => setRecentDocs(JSON.parse(stored)), 0);
       } else {
         // Seed default items for a premium out-of-the-box experience
         const defaultDocs = [
@@ -24,22 +25,37 @@ export const OpenModal: React.FC = () => {
         ];
         
         const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
+        const defaultPageConfig = {
+          size: 'Letter' as const,
+          orientation: 'portrait' as const,
+          marginPreset: 'normal' as const,
+          margins: { top: 1, bottom: 1, left: 1, right: 1, gutter: 0 },
+          background: 'none' as const,
+          headerDistance: 0.5,
+          footerDistance: 0.5,
+          verticalAlign: 'top' as const
+        };
+
         if (!savedDocs['Quarterly Report']) {
+          const htmlContent = `<h1>Quarterly Report</h1><p>Welcome to your <strong>Quarterly Report</strong>. This document was generated automatically to showcase your offline storage capability.</p><table style="width:100%; border-collapse:collapse; margin:12pt 0;"><tr style="background-color: #f1f5f9;"><th style="border: 1px solid #cbd5e1; padding: 6px 10px;">Quarter</th><th style="border: 1px solid #cbd5e1; padding: 6px 10px;">Performance</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Q1</td><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Excellent (+12%)</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Q2</td><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Strong (+8%)</td></tr></table><p>Feel free to edit this report or import your own documents!</p>`;
           savedDocs['Quarterly Report'] = {
-            content: `<h1>Quarterly Report</h1><p>Welcome to your <strong>Quarterly Report</strong>. This document was generated automatically to showcase your offline storage capability.</p><table style="width:100%; border-collapse:collapse; margin:12pt 0;"><tr style="background-color: #f1f5f9;"><th style="border: 1px solid #cbd5e1; padding: 6px 10px;">Quarter</th><th style="border: 1px solid #cbd5e1; padding: 6px 10px;">Performance</th></tr><tr><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Q1</td><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Excellent (+12%)</td></tr><tr><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Q2</td><td style="border: 1px solid #cbd5e1; padding: 6px 10px;">Strong (+8%)</td></tr></table><p>Feel free to edit this report or import your own documents!</p>`,
+            documentModel: htmlToJSONDocument(htmlContent, 'Quarterly Report', defaultPageConfig),
+            content: htmlContent,
             lastModified: new Date().toISOString()
           };
         }
         if (!savedDocs['Meeting Notes']) {
+          const htmlContent = `<h3>Meeting Notes</h3><p>- Discussed Q3 product strategy.</p><p>- Aligned on marketing targets.</p><p>- Next steps: finalize implementation details and test local persistence.</p>`;
           savedDocs['Meeting Notes'] = {
-            content: `<h3>Meeting Notes</h3><p>- Discussed Q3 product strategy.</p><p>- Aligned on marketing targets.</p><p>- Next steps: finalize implementation details and test local persistence.</p>`,
+            documentModel: htmlToJSONDocument(htmlContent, 'Meeting Notes', defaultPageConfig),
+            content: htmlContent,
             lastModified: new Date().toISOString()
           };
         }
         
         localStorage.setItem('saved_documents', JSON.stringify(savedDocs));
         localStorage.setItem('recent_documents', JSON.stringify(defaultDocs));
-        setRecentDocs(defaultDocs);
+        setTimeout(() => setRecentDocs(defaultDocs), 0);
       }
     } catch (e) {
       console.error('Failed to load recent documents:', e);
@@ -65,7 +81,12 @@ export const OpenModal: React.FC = () => {
       const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
       const doc = savedDocs[name];
       if (doc) {
-        setContent(doc.content);
+        if (doc.documentModel) {
+          const html = jsonDocumentToHtml(doc.documentModel);
+          setContent(html);
+        } else {
+          setContent(doc.content);
+        }
         setDocumentTitle(name);
         closeModal();
       } else {
@@ -100,12 +121,12 @@ export const OpenModal: React.FC = () => {
       >
         <FolderOpen size={40} className="text-slate-400 group-hover:text-blue-500 mb-3 transition-colors" strokeWidth={1.5} />
         <h3 className="text-base font-semibold text-slate-700 group-hover:text-blue-700">Browse Files</h3>
-        <p className="text-slate-500 text-xs mt-1 text-center">Support for .docx, .txt, .html, .md</p>
+        <p className="text-slate-500 text-xs mt-1 text-center">Support for .docx, .txt, .html, .md, .json</p>
         <input 
            type="file" 
            ref={fileInputRef} 
            className="hidden" 
-           accept=".docx,.txt,.html,.md" 
+           accept=".docx,.txt,.html,.md,.json" 
            onChange={handleOpenFile} 
         />
       </div>

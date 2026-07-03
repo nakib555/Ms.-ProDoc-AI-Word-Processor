@@ -5,7 +5,8 @@ import {
   FileText, FileType, Printer, ChevronDown, 
   LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download,
   Image as ImageIcon,
-  Monitor
+  Monitor,
+  Sparkles, Calendar, AlertCircle
 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
@@ -15,6 +16,7 @@ import { PageConfig, ExportType } from '../../../../../types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { generatePdfPrint } from '../../../../../utils/printUtils';
 import TurndownService from 'turndown';
+import { htmlToJSONDocument } from '../../../../../utils/documentModel';
 
 // --- UI Components ---
 
@@ -410,6 +412,208 @@ const MobilePrintPreview: React.FC<{
     );
 };
 
+const SmartFileNameInput: React.FC<{
+    exportType: ExportType;
+}> = ({ exportType }) => {
+    const { documentTitle, setDocumentTitle, content } = useEditor();
+    const [showWarning, setShowWarning] = useState(false);
+    const [warningChar, setWarningChar] = useState('');
+
+    const suggestTitleFromContent = (htmlContent: string): string => {
+        if (!htmlContent) return '';
+        const temp = document.createElement('div');
+        temp.innerHTML = htmlContent;
+        
+        // Look for headings first: h1, h2, h3
+        const headings = temp.querySelectorAll('h1, h2, h3');
+        for (let i = 0; i < headings.length; i++) {
+            const text = headings[i].textContent?.trim();
+            if (text) {
+                return text.substring(0, 50).replace(/[\s\n]+/g, ' ');
+            }
+        }
+        
+        // Look for strong or p tags with actual content
+        const paragraphs = temp.querySelectorAll('p, strong, div');
+        for (let i = 0; i < paragraphs.length; i++) {
+            const text = paragraphs[i].textContent?.trim();
+            if (text && text.length > 3) {
+                return text.substring(0, 50).replace(/[\s\n]+/g, ' ');
+            }
+        }
+        
+        return '';
+    };
+
+    const handleSuggest = () => {
+        const suggestion = suggestTitleFromContent(content);
+        if (suggestion) {
+            const sanitized = suggestion.replace(/[\\/:*?"<>|]/g, '');
+            setDocumentTitle(sanitized);
+        } else {
+            setDocumentTitle("Untitled Document");
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let val = e.target.value;
+        const invalidChars = /[\\/:*?"<>|]/g;
+        if (invalidChars.test(val)) {
+            const matched = val.match(invalidChars);
+            if (matched) {
+                setWarningChar(Array.from(new Set(matched)).join(' '));
+                setShowWarning(true);
+                setTimeout(() => setShowWarning(false), 4000);
+            }
+            val = val.replace(invalidChars, '');
+        }
+        
+        if (val.length > 80) {
+            val = val.substring(0, 80);
+        }
+        setDocumentTitle(val);
+    };
+
+    const handleBlur = () => {
+        if (!documentTitle.trim()) {
+            setDocumentTitle("Untitled Document");
+        } else {
+            setDocumentTitle(documentTitle.trim());
+        }
+    };
+
+    const toTitleCase = (str: string) => {
+        return str
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    };
+
+    const toSnakeCase = (str: string) => {
+        return str
+            .replace(/[\s-]+/g, '_')
+            .replace(/_+/g, '_')
+            .toLowerCase()
+            .trim();
+    };
+
+    const toKebabCase = (str: string) => {
+        return str
+            .replace(/[\s_]+/g, '-')
+            .replace(/-+/g, '-')
+            .toLowerCase()
+            .trim();
+    };
+
+    const toggleDateSuffix = (name: string) => {
+        const dateRegex = /_?\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(name)) {
+            return name.replace(dateRegex, '').trim();
+        } else {
+            const today = new Date().toISOString().split('T')[0]; // "YYYY-MM-DD"
+            const cleaned = name.trim();
+            return `${cleaned}_${today}`;
+        }
+    };
+
+    const ext = exportType === 'pdf' ? 'pdf'
+              : exportType === 'doc' ? 'doc'
+              : exportType === 'rtf' ? 'rtf'
+              : exportType === 'html' ? 'html'
+              : exportType === 'txt' ? 'txt'
+              : exportType === 'md' ? 'md'
+              : 'json';
+
+    return (
+        <div className="space-y-2">
+            <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">File Name</label>
+                <button
+                    type="button"
+                    onClick={handleSuggest}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+                    title="Extract smart name from the content"
+                >
+                    <Sparkles size={11} className="text-blue-500 animate-pulse shrink-0" />
+                    Auto Suggest
+                </button>
+            </div>
+            
+            <div className="relative">
+                <input 
+                    type="text" 
+                    value={documentTitle}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="Document Title"
+                    className="w-full pl-4 pr-16 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-400 shadow-sm"
+                    maxLength={80}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider text-slate-400 bg-slate-100 dark:bg-slate-700 dark:text-slate-300 rounded-md border border-slate-200/50 dark:border-slate-600 pointer-events-none select-none">
+                    .{ext}
+                </span>
+            </div>
+
+            {showWarning && (
+                <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400 font-medium animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle size={12} className="shrink-0 text-amber-500" />
+                    <span>Special character "{warningChar}" omitted for file safety.</span>
+                </div>
+            )}
+
+            {/* Smart Format Toolbar */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+                <button
+                    type="button"
+                    onClick={() => setDocumentTitle(toTitleCase(documentTitle))}
+                    className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/50 dark:border-slate-700/50 rounded-lg text-[10px] font-medium text-slate-500 dark:text-slate-400 transition-colors"
+                    title="Convert filename to Title Case"
+                >
+                    Aa Title Case
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setDocumentTitle(toSnakeCase(documentTitle))}
+                    className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/50 dark:border-slate-700/50 rounded-lg text-[10px] font-medium text-slate-500 dark:text-slate-400 transition-colors"
+                    title="Convert filename to snake_case"
+                >
+                    a_b snake_case
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setDocumentTitle(toKebabCase(documentTitle))}
+                    className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/50 dark:border-slate-700/50 rounded-lg text-[10px] font-medium text-slate-500 dark:text-slate-400 transition-colors"
+                    title="Convert filename to kebab-case"
+                >
+                    a-b kebab-case
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setDocumentTitle(toggleDateSuffix(documentTitle))}
+                    className={`px-2.5 py-1 border rounded-lg text-[10px] font-medium transition-all flex items-center gap-1 ${
+                        /_?\d{4}-\d{2}-\d{2}$/.test(documentTitle)
+                            ? 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-semibold'
+                            : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200/50 dark:border-slate-700/50 text-slate-500 dark:text-slate-400'
+                    }`}
+                    title="Toggle current date suffix"
+                >
+                    <Calendar size={10} />
+                    {/_?\d{4}-\d{2}-\d{2}$/.test(documentTitle) ? 'Remove Date' : 'Add Date'}
+                </button>
+            </div>
+            
+            {documentTitle.length >= 60 && (
+                <div className="text-[9px] text-right text-slate-400 font-mono animate-in fade-in">
+                    {documentTitle.length}/80 chars
+                </div>
+            )}
+        </div>
+    );
+};
+
 const PrintSettingsPanel: React.FC<{
     localConfig: PageConfig;
     setLocalConfig: (fn: (prev: PageConfig) => PageConfig) => void;
@@ -482,16 +686,7 @@ const PrintSettingsPanel: React.FC<{
                 {/* File Details Section */}
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">File Details</h3>
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">File Name</label>
-                        <input 
-                            type="text" 
-                            value={documentTitle}
-                            onChange={(e) => setDocumentTitle(e.target.value)}
-                            placeholder="Document Title"
-                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-400 shadow-sm"
-                        />
-                    </div>
+                    <SmartFileNameInput exportType={exportType} />
                     
                     <PrintSelect
                         label="Save as Type"
@@ -724,11 +919,8 @@ export const PrintModal: React.FC = () => {
                   mime = 'text/markdown';
                   ext = 'md';
               } else if (exportType === 'json') {
-                  data = JSON.stringify({
-                      title: documentTitle,
-                      content: content,
-                      date: new Date().toISOString()
-                  }, null, 2);
+                  const docModel = htmlToJSONDocument(content, documentTitle, pageConfig);
+                  data = JSON.stringify(docModel, null, 2);
                   mime = 'application/json';
                   ext = 'json';
               } else if (exportType === 'rtf') {
