@@ -462,3 +462,15 @@ math-field {
 .prodoc-editor table.is-dragging th {
   transition: none !important;
 }
+
+.comment-highlight {
+  background-color: #fef08a; /* Yellow-200 */
+  border-bottom: 2px solid #eab308; /* Yellow-500 */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.comment-highlight.active-comment {
+  background-color: #fde047; /* Yellow-300 */
+  border-bottom: 2px solid #ca8a04; /* Yellow-600 */
+}

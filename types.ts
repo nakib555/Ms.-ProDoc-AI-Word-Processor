@@ -190,7 +190,7 @@ export interface ExportOptions {
   fileName?: string;
   metadata?: Record<string, string>;
   quality?: 'high' | 'medium' | 'low';
-  customAdjustments?: Record<string, any>;
+  customAdjustments?: Record<string, unknown>;
 }
 
 export interface DocumentAdjustments {

@@ -20,10 +20,12 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
-import { jsonDocumentToHtml, htmlToJSONDocument } from '../utils/documentModel';
+import { jsonDocumentToHtml, htmlToJSONDocument, DocumentComment } from '../utils/documentModel';
 import { importDocxToEditor } from '../utils/docxImportEngine';
 import { importHtmlToEditor } from '../components/ribbon/tabs/FileTab/modals/htmlImportEngine';
 import { marked } from 'marked';
+import { IdentityExtension } from '../components/editor/extensions/IdentityExtension';
+import { CommentExtension } from '../components/editor/extensions/CommentExtension';
 
 // Custom Paragraph Extension for Indent/Spacing
 const CustomParagraph = Paragraph.extend({
@@ -320,6 +322,17 @@ export interface EditorContextType {
   setIsTableResizing: React.Dispatch<React.SetStateAction<boolean>>;
   setIsTableResizerEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   setIsKeyboardLocked: React.Dispatch<React.SetStateAction<boolean>>;
+  
+  // Comments
+  comments: DocumentComment[];
+  setComments: React.Dispatch<React.SetStateAction<DocumentComment[]>>;
+  activeCommentId: string | null;
+  setActiveCommentId: React.Dispatch<React.SetStateAction<string | null>>;
+  showComments: boolean;
+  setShowComments: React.Dispatch<React.SetStateAction<boolean>>;
+  addComment: (text: string) => void;
+  resolveComment: (id: string) => void;
+  removeComment: (id: string) => void;
 
   // Zoom Mode
   zoomMode: 'custom' | 'fit-width' | 'fit-page';
@@ -374,6 +387,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [showAssistant, setShowAssistant] = useState(false);
   const [showJsonInspector, setShowJsonInspector] = useState(false);
   const [aiState, setAiState] = useState<'idle' | 'thinking' | 'writing'>('idle');
+  const [comments, setComments] = useState<DocumentComment[]>([]);
+  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [showComments, setShowComments] = useState(false);
   const [importState, setImportState] = useState<{ active: boolean; percent: number; status: string }>({
     active: false,
     percent: 0,
@@ -451,6 +467,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       Highlight.configure({ multicolor: true }),
       PageBreakExtension,
       MathExtension,
+      IdentityExtension,
+      CommentExtension,
     ],
     content: DEFAULT_CONTENT,
     onUpdate: ({ editor }) => {
@@ -463,6 +481,16 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (editor.isActive('table')) setActiveElementType('table');
         else if (editor.isActive('image')) setActiveElementType('image');
         else setActiveElementType('text');
+
+        // Check for comment marks at selection
+        if (editor.isActive('comment')) {
+            const marks = editor.getAttributes('comment');
+            if (marks && marks.commentId) {
+                setActiveCommentId(marks.commentId);
+            }
+        } else {
+            setActiveCommentId(null);
+        }
     }
   });
 
@@ -717,6 +745,52 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const setIsAIProcessing = useCallback((v: boolean) => setAiState(v ? 'thinking' : 'idle'), []);
   const registerContainer = useCallback((node: HTMLDivElement | null) => { containerRef.current = node; }, []);
 
+  const addComment = useCallback((text: string) => {
+    if (!editor) return;
+    const { from, to } = editor.state.selection;
+    if (from === to) {
+      alert("Please select some text to comment on.");
+      return;
+    }
+    const id = `comment-${Date.now()}`;
+    const anchorId = `anchor-${Date.now()}`;
+    editor.chain().focus().setMark('comment', { commentId: id }).run();
+    setComments(prev => [...prev, {
+      id,
+      anchorId,
+      author: 'Current User', // Stub, we can wire up identity later
+      content: text,
+      createdAt: new Date().toISOString(),
+      resolved: false
+    }]);
+    setShowComments(true);
+  }, [editor]);
+
+  const resolveComment = useCallback((id: string) => {
+    setComments(prev => prev.map(c => c.id === id ? { ...c, resolved: true } : c));
+  }, []);
+
+  const removeComment = useCallback((id: string) => {
+    if (!editor) return;
+    setComments(prev => prev.filter(c => c.id !== id));
+    
+    // Optional: remove mark from the editor if we find it
+    // For now, removing the mark requires traversing the document, which we can simplify:
+    const tr = editor.state.tr;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.marks) {
+        node.marks.forEach(mark => {
+          if (mark.type.name === 'comment' && mark.attrs.commentId === id) {
+            tr.removeMark(pos, pos + node.nodeSize, mark.type);
+          }
+        });
+      }
+    });
+    if (tr.docChanged) {
+      editor.view.dispatch(tr);
+    }
+  }, [editor]);
+
   const contextValue = useMemo(() => ({
     editor,
     content: editor?.getHTML() || '',
@@ -796,7 +870,16 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     selectionAction,
     setSelectionAction,
     importState,
-    importFile
+    importFile,
+    comments,
+    setComments,
+    activeCommentId,
+    setActiveCommentId,
+    showComments,
+    setShowComments,
+    addComment,
+    resolveComment,
+    removeComment
   }), [
     editor,
     setContent,
@@ -842,7 +925,13 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     hasActiveSelection,
     selectionAction,
     importState,
-    importFile
+    importFile,
+    comments,
+    activeCommentId,
+    showComments,
+    addComment,
+    resolveComment,
+    removeComment
   ]);
 
   return (

@@ -5,11 +5,13 @@ import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
 import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
+import { CommentsSidebar } from './components/CommentsSidebar';
 import { AIAssistantSidebar } from './components/AIAssistantSidebar';
 import { JsonDocInspectorSidebar } from './components/JsonDocInspectorSidebar';
 import { RibbonTab } from './types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
+import { DocumentModelProvider } from './contexts/DocumentModelContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/Margins/CustomMargin/PageSetupDialog';
@@ -111,6 +113,9 @@ const AppContent: React.FC = () => {
             <AIAssistantSidebar />
           </div>
           <div className="no-print flex-shrink-0 h-full">
+            <CommentsSidebar />
+          </div>
+          <div className="no-print flex-shrink-0 h-full">
             <JsonDocInspectorSidebar />
           </div>
         </div>
@@ -146,7 +151,9 @@ const App: React.FC = () => {
     <ErrorBoundary>
         <ThemeProvider>
           <EditorProvider>
-            <AppContent />
+            <DocumentModelProvider>
+              <AppContent />
+            </DocumentModelProvider>
           </EditorProvider>
         </ThemeProvider>
     </ErrorBoundary>
