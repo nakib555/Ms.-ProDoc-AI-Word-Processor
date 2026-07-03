@@ -123,11 +123,11 @@ table:has([data-formula-outline]) {
 }
 
 /* Smooth transitions for table modifications like Insert/Delete Rows or Columns */
-.prodoc-editor table.is-resizing,
-.prodoc-editor table.is-resizing tbody,
-.prodoc-editor table.is-resizing tr,
-.prodoc-editor table.is-resizing td,
-.prodoc-editor table.is-resizing th {
+.prodoc-editor table,
+.prodoc-editor table tbody,
+.prodoc-editor table tr,
+.prodoc-editor table td,
+.prodoc-editor table th {
   transition: width 0.25s ease-out, height 0.25s ease-out, background-color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -452,4 +452,13 @@ math-field {
 .theme-ocean.dark .dark\:hover\:bg-slate-700:hover,
 .theme-ocean.dark .dark\:hover\:bg-slate-800:hover {
   background-color: var(--bg-surface-hover) !important;
+}
+
+/* Disable transitions during manual drag to prevent lag */
+.prodoc-editor table.is-dragging,
+.prodoc-editor table.is-dragging tbody,
+.prodoc-editor table.is-dragging tr,
+.prodoc-editor table.is-dragging td,
+.prodoc-editor table.is-dragging th {
+  transition: none !important;
 }

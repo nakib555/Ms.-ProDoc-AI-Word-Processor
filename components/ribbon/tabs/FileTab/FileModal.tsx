@@ -8,7 +8,6 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 const InfoModal = React.lazy(() => import('./modals/InfoModal').then(m => ({ default: m.InfoModal })));
 const NewModal = React.lazy(() => import('./modals/NewModal').then(m => ({ default: m.NewModal })));
 const OpenModal = React.lazy(() => import('./modals/OpenModal').then(m => ({ default: m.OpenModal })));
-const SaveAsModal = React.lazy(() => import('./modals/SaveAsModal').then(m => ({ default: m.SaveAsModal })));
 const PrintModal = React.lazy(() => import('./modals/PrintModal').then(m => ({ default: m.PrintModal })));
 const ShareModal = React.lazy(() => import('./modals/ShareModal').then(m => ({ default: m.ShareModal })));
 
@@ -32,7 +31,7 @@ export const FileModal: React.FC = () => {
             case 'info': return <InfoModal />;
             case 'new': return <NewModal />;
             case 'open': return <OpenModal />;
-            case 'save_as': return <SaveAsModal />;
+            case 'save_as': return <PrintModal />;
             case 'print': return <PrintModal />;
             case 'share': return <ShareModal />;
             default: return null;
@@ -44,12 +43,13 @@ export const FileModal: React.FC = () => {
 
   const getTitle = () => {
       switch(activeModal) {
-          case 'save_as': return 'Save As';
+          case 'save_as': return 'Print & Export';
+          case 'print': return 'Print & Export';
           default: return activeModal;
       }
   };
 
-  const isPrint = activeModal === 'print';
+  const isPrint = activeModal === 'print' || activeModal === 'save_as';
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 no-print" onClick={closeModal}>

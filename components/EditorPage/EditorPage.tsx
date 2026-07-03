@@ -75,7 +75,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
-  const { isKeyboardLocked, selectionMode, undo, redo, setActiveElementType } = useEditor();
+  const { isKeyboardLocked, isTableResizerEnabled, selectionMode, undo, redo, setActiveElementType } = useEditor();
 
   const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
   const [selectedTable, setSelectedTable] = useState<HTMLTableElement | null>(null);
@@ -1573,7 +1573,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           {selectedImage && editorElement && (
             <ResizerOverlay target={selectedImage} container={editorElement} scale={scale} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
           )}
-          {editorElement && tables.map((t, i) => (
+          {!isTableResizerEnabled && editorElement && tables.map((t, i) => (
             <TableResizerOverlay key={`table-resizer-${i}`} target={t} container={editorElement} scale={scale} onUpdate={handleImageUpdate} />
           ))}
         </div>

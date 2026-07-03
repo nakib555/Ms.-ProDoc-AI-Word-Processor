@@ -309,6 +309,8 @@ export interface EditorContextType {
 
   // Keyboard Lock
   isKeyboardLocked: boolean;
+  isTableResizerEnabled: boolean;
+  setIsTableResizerEnabled: React.Dispatch<React.SetStateAction<boolean>>;
   setIsKeyboardLocked: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Zoom Mode
@@ -367,6 +369,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [firstFooterContent, setFirstFooterContent] = useState('<p style="color:#94a3b8">First Page Footer</p>');
   
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
+  const [isTableResizerEnabled, setIsTableResizerEnabled] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [hasActiveSelection, setHasActiveSelection] = useState(false);
   const [selectionAction, setSelectionAction] = useState<any | null>(null);
@@ -657,6 +660,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     firstFooterContent,
     setFirstFooterContent,
     isKeyboardLocked,
+    isTableResizerEnabled,
+    setIsTableResizerEnabled,
     setIsKeyboardLocked,
     selectionMode,
     setSelectionMode,
@@ -701,6 +706,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     firstHeaderContent,
     firstFooterContent,
     isKeyboardLocked,
+    isTableResizerEnabled,
     selectionMode,
     hasActiveSelection,
     selectionAction

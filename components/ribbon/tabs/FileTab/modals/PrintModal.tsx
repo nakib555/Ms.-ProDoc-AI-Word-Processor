@@ -14,6 +14,7 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig } from '../../../../../types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { generatePdfPrint } from '../../../../../utils/printUtils';
+import TurndownService from 'turndown';
 
 // --- UI Components ---
 
@@ -412,8 +413,12 @@ const PrintSettingsPanel: React.FC<{
     setPrintRange: (range: 'all' | 'current' | 'custom') => void;
     customPages: string;
     setCustomPages: (pages: string) => void;
-}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages }) => {
+    exportType: 'pdf' | 'html' | 'txt' | 'md';
+    setExportType: (type: 'pdf' | 'html' | 'txt' | 'md') => void;
+}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType }) => {
     
+    const { documentTitle, setDocumentTitle } = useEditor();
+
     const handleSettingChange = (key: keyof PageConfig | 'marginPreset', value: any) => {
       setLocalConfig(prev => {
           const next = { ...prev, [key]: value };
@@ -455,100 +460,129 @@ const PrintSettingsPanel: React.FC<{
                         onClick={closeModal}
                         className="p-2 -ml-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
                      >
-                         <ArrowLeft size={20} />
+                          <ArrowLeft size={20} />
                      </button>
                      <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                         Print / Download
+                          Print & Export
                      </h2>
                 </div>
             )}
 
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
+                {/* File Details Section */}
                 <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Printer</h3>
-                    <PrintSelect
-                        label="Destination"
-                        value="default"
-                        onChange={() => {}}
-                        options={[{ value: 'default', label: 'Save as PDF' }]}
-                        icon={Printer}
-                        disabled
-                    />
-                </div>
-
-                <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
-
-                <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pages</h3>
-                    <PrintSelect
-                        label="Print Range"
-                        value={printRange}
-                        onChange={(v: any) => setPrintRange(v)}
-                        options={[
-                            { value: 'all', label: 'Print All Pages' },
-                            { value: 'current', label: 'Print Current Page' },
-                            { value: 'custom', label: 'Custom Range' }
-                        ]}
-                        icon={FileText}
-                    />
-                    
-                    {printRange === 'custom' && (
-                        <div className="animate-in slide-in-from-top-2 duration-200">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Pages (e.g., 1-3, 5)</label>
-                            <input 
-                                type="text" 
-                                value={customPages}
-                                onChange={(e) => setCustomPages(e.target.value)}
-                                placeholder="e.g. 1-5, 8, 11-13"
-                                className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
-                            />
-                        </div>
-                    )}
-                </div>
-
-                <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
-
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Page Settings</h3>
-                        <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
-                            <Ruler size={10} /> {getDimensionsDisplay()}
-                        </span>
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">File Details</h3>
+                    <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">File Name</label>
+                        <input 
+                            type="text" 
+                            value={documentTitle}
+                            onChange={(e) => setDocumentTitle(e.target.value)}
+                            placeholder="Document Title"
+                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-400 shadow-sm"
+                        />
                     </div>
                     
                     <PrintSelect
-                        label="Orientation"
-                        value={localConfig.orientation}
-                        onChange={(v: any) => handleSettingChange('orientation', v)}
+                        label="Save as Type"
+                        value={exportType}
+                        onChange={(v: any) => setExportType(v)}
                         options={[
-                            { value: 'portrait', label: 'Portrait Orientation' },
-                            { value: 'landscape', label: 'Landscape Orientation' }
+                            { value: 'pdf', label: 'PDF Document (.pdf)' },
+                            { value: 'html', label: 'Web Page (.html)' },
+                            { value: 'txt', label: 'Plain Text (.txt)' },
+                            { value: 'md', label: 'Markdown (.md)' }
                         ]}
-                        icon={FileType}
-                    />
-
-                    <PrintSelect
-                        label="Paper Size"
-                        value={localConfig.size}
-                        onChange={(v: any) => handleSettingChange('size', v)}
-                        options={PAPER_FORMATS.map(f => ({ 
-                            value: f.id, 
-                            label: `${f.label} (${f.width} x ${f.height})` 
-                        }))}
-                        icon={FileText}
-                    />
-
-                    <PrintSelect
-                        label="Margins"
-                        value={localConfig.marginPreset}
-                        onChange={(v: any) => handleSettingChange('marginPreset', v)}
-                        options={Object.keys(MARGIN_PRESETS).map(m => ({ 
-                            value: m, 
-                            label: formatPresetLabel(m) 
-                        }))}
-                        icon={LayoutTemplate}
+                        icon={Download}
                     />
                 </div>
+
+                <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
+
+                {exportType === 'pdf' ? (
+                    <>
+                        {/* Pages section - PDF only */}
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Pages</h3>
+                            <PrintSelect
+                                label="Print Range"
+                                value={printRange}
+                                onChange={(v: any) => setPrintRange(v)}
+                                options={[
+                                    { value: 'all', label: 'Print All Pages' },
+                                    { value: 'current', label: 'Print Current Page' },
+                                    { value: 'custom', label: 'Custom Range' }
+                                ]}
+                                icon={FileText}
+                            />
+                            
+                            {printRange === 'custom' && (
+                                <div className="animate-in slide-in-from-top-2 duration-200">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Pages (e.g., 1-3, 5)</label>
+                                    <input 
+                                        type="text" 
+                                        value={customPages}
+                                        onChange={(e) => setCustomPages(e.target.value)}
+                                        placeholder="e.g. 1-5, 8, 11-13"
+                                        className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
+
+                        {/* Page Settings section - PDF only */}
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Page Settings</h3>
+                                <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                                    <Ruler size={10} /> {getDimensionsDisplay()}
+                                </span>
+                            </div>
+                            
+                            <PrintSelect
+                                label="Orientation"
+                                value={localConfig.orientation}
+                                onChange={(v: any) => handleSettingChange('orientation', v)}
+                                options={[
+                                    { value: 'portrait', label: 'Portrait Orientation' },
+                                    { value: 'landscape', label: 'Landscape Orientation' }
+                                ]}
+                                icon={FileType}
+                            />
+
+                            <PrintSelect
+                                label="Paper Size"
+                                value={localConfig.size}
+                                onChange={(v: any) => handleSettingChange('size', v)}
+                                options={PAPER_FORMATS.map(f => ({ 
+                                    value: f.id, 
+                                    label: `${f.label} (${f.width} x ${f.height})` 
+                                }))}
+                                icon={FileText}
+                            />
+
+                            <PrintSelect
+                                label="Margins"
+                                value={localConfig.marginPreset}
+                                onChange={(v: any) => handleSettingChange('marginPreset', v)}
+                                options={Object.keys(MARGIN_PRESETS).map(m => ({ 
+                                    value: m, 
+                                    label: formatPresetLabel(m) 
+                                }))}
+                                icon={LayoutTemplate}
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <div className="p-4 bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50 rounded-xl space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <p className="text-xs font-semibold text-blue-700 dark:text-blue-400">Flowable Format Info</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Formats like <strong>{exportType.toUpperCase()}</strong> do not have pagination, margins, or orientation parameters. They will export your document text and structure directly to your computer.
+                        </p>
+                    </div>
+                )}
                 
                 {isMobile && <div className="h-20"></div>}
             </div>
@@ -560,11 +594,27 @@ const PrintSettingsPanel: React.FC<{
                         disabled={isPreparing}
                         className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
-                        {isPreparing ? <LoadingSpinner className="w-5 h-5 text-white"/> : <Download size={20}/>}
-                        <span>{isPreparing ? 'Generating PDF...' : 'Print / Save as PDF'}</span>
+                        {isPreparing ? (
+                            <LoadingSpinner className="w-5 h-5 text-white"/>
+                        ) : (
+                            <Download size={20}/>
+                        )}
+                        <span>
+                            {isPreparing ? (
+                                exportType === 'pdf' ? 'Preparing PDF...' : 'Preparing Export...'
+                            ) : exportType === 'pdf' ? (
+                                'Print / Save as PDF'
+                            ) : exportType === 'html' ? (
+                                'Export Web Page (.html)'
+                            ) : exportType === 'txt' ? (
+                                'Export Plain Text (.txt)'
+                            ) : (
+                                'Export Markdown (.md)'
+                            )}
+                        </span>
                     </button>
                     <p className="text-[10px] text-center text-slate-400">
-                        Uses high-fidelity vector printing
+                        {exportType === 'pdf' ? 'Uses high-fidelity vector printing' : 'Downloads directly to your system'}
                     </p>
                 </div>
             )}
@@ -586,6 +636,7 @@ export const PrintModal: React.FC = () => {
   // Print Range State
   const [printRange, setPrintRange] = useState<'all' | 'current' | 'custom'>('all');
   const [customPages, setCustomPages] = useState('');
+  const [exportType, setExportType] = useState<'pdf' | 'html' | 'txt' | 'md'>('pdf');
 
   useEffect(() => {
       const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -604,33 +655,68 @@ export const PrintModal: React.FC = () => {
 
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
-      
-      // Ensure we are in print layout mode for correct DOM structure
-      if (viewMode !== 'print') {
-          setViewMode('print');
-          // Wait for view transition
-          await new Promise(resolve => setTimeout(resolve, 500));
-      }
-      
-      // Update global config to match local print settings so the editor reflects the print layout
-      setPageConfig(localConfig);
-      
-      // Wait for editor to re-render with new config
-      // Increased delay to ensure pagination and layout are fully updated before print dialog opens
-      await new Promise(resolve => setTimeout(resolve, 800));
+      try {
+          if (exportType === 'pdf') {
+              // Ensure we are in print layout mode for correct DOM structure
+              if (viewMode !== 'print') {
+                  setViewMode('print');
+                  // Wait for view transition
+                  await new Promise(resolve => setTimeout(resolve, 500));
+              }
+              
+              // Update global config to match local print settings so the editor reflects the print layout
+              setPageConfig(localConfig);
+              
+              // Wait for editor to re-render with new config
+              // Increased delay to ensure pagination and layout are fully updated before print dialog opens
+              await new Promise(resolve => setTimeout(resolve, 800));
 
-      await generatePdfPrint(
-          content, 
-          localConfig, 
-          headerContent, 
-          footerContent, 
-          { 
-              range: printRange, 
-              pages: customPages,
-              currentPage: currentPage
+              await generatePdfPrint(
+                  content, 
+                  localConfig, 
+                  headerContent, 
+                  footerContent, 
+                  { 
+                      range: printRange, 
+                      pages: customPages,
+                      currentPage: currentPage
+                  }
+              );
+              closeModal();
+          } else {
+              let data = content;
+              let mime = 'text/html';
+              let ext = 'html';
+              if (exportType === 'html') {
+                  data = `<!DOCTYPE html><html><head>    <meta charset="utf-8">    <title>${documentTitle}</title>    <style>        body { font-family: Inter, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }        table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }        th, td { border: 1px solid #ddd; padding: 8px; }        img { max-width: 100%; height: auto; }        blockquote { border-left: 4px solid #ccc; margin: 0; padding-left: 16px; color: #666; }    </style></head><body>    ${content}</body></html>`;
+              } else if (exportType === 'txt') {
+                  const temp = document.createElement('div');
+                  temp.innerHTML = content;
+                  data = temp.innerText;
+                  mime = 'text/plain';
+                  ext = 'txt';
+              } else if (exportType === 'md') {
+                  const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+                  data = turndownService.turndown(content);
+                  mime = 'text/markdown';
+                  ext = 'md';
+              }
+              const blob = new Blob([data], { type: mime });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${documentTitle || 'document'}.${ext}`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              closeModal();
           }
-      );
-      setIsPreparingPrint(false);
+      } catch (e) {
+          console.error("Export error:", e);
+      } finally {
+          setIsPreparingPrint(false);
+      }
   };
 
   // Filter pages for preview
@@ -720,6 +806,8 @@ export const PrintModal: React.FC = () => {
                 setPrintRange={setPrintRange}
                 customPages={customPages}
                 setCustomPages={setCustomPages}
+                exportType={exportType}
+                setExportType={setExportType}
             />
         </div>
 

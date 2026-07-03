@@ -86,6 +86,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       // ignore
     }
     
+    target.classList.add('is-dragging');
     target.style.tableLayout = 'fixed';
     if (!target.style.width) {
       target.style.width = `${target.offsetWidth}px`;
@@ -131,6 +132,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       setIsResizing(false);
       setActiveHandle(null);
       document.body.style.cursor = '';
+      target.classList.remove('is-dragging');
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       onUpdate();
@@ -153,6 +155,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       // ignore
     }
     
+    target.classList.add('is-dragging');
     const startY = e.clientY;
     const startHeight = row.offsetHeight;
 
@@ -166,6 +169,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       setIsResizing(false);
       setActiveHandle(null);
       document.body.style.cursor = '';
+      target.classList.remove('is-dragging');
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       onUpdate();

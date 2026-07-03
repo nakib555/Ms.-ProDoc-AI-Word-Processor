@@ -188,6 +188,15 @@ export const generatePdfPrint = async (
                     -webkit-hyphens: ${config.hyphenation ? 'auto' : 'none'} !important;
                 }
                 
+                /* Ensure images and SVGs render correctly in print, keeping them as vectors/images */
+                img, svg {
+                    max-width: 100% !important;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+                
                 /* Hide placeholders in print */
                 .is-editor-empty:before {
                     content: none !important;

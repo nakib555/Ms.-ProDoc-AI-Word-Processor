@@ -9,10 +9,11 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
-  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom, isKeyboardLocked, setIsKeyboardLocked, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
+  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
+  const [showMobileTools, setShowMobileTools] = useState(false);
 
   // Calculate stats only when necessary (when dialog is open or about to open)
   const detailedStats = useMemo(() => {
@@ -93,13 +94,33 @@ const StatusBar: React.FC = () => {
             </button>
 
             {/* Keyboard Lock - Only visible on mobile */}
-            <button 
-                onClick={() => setIsKeyboardLocked(!isKeyboardLocked)}
-                className={`md:hidden p-1.5 rounded transition-all flex items-center gap-1 ${isKeyboardLocked ? 'text-red-400 bg-red-900/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-                title={isKeyboardLocked ? "Unlock Keyboard" : "Lock Keyboard (Prevent Typing)"}
-            >
-                {isKeyboardLocked ? <Lock size={14} /> : <Unlock size={14} />}
-            </button>
+            <div className="relative md:hidden flex items-center">
+              {showMobileTools && (
+                <div className="absolute bottom-full right-0 mb-2 p-1.5 bg-slate-800 rounded-lg border border-slate-700 shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 whitespace-nowrap">
+                  <button
+                    onClick={() => { setIsKeyboardLocked(!isKeyboardLocked); setShowMobileTools(false); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isKeyboardLocked ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
+                  >
+                    {isKeyboardLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                    kboard
+                  </button>
+                  <button
+                    onClick={() => { setIsTableResizerEnabled(!isTableResizerEnabled); setShowMobileTools(false); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isTableResizerEnabled ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
+                  >
+                    {isTableResizerEnabled ? <Lock size={12} /> : <Unlock size={12} />}
+                    table resizer
+                  </button>
+                </div>
+              )}
+              <button 
+                  onClick={() => setShowMobileTools(!showMobileTools)}
+                  className={`p-1.5 rounded transition-all flex items-center gap-1 ${showMobileTools || isKeyboardLocked || isTableResizerEnabled ? 'text-blue-400 bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                  title="Mobile Tools"
+              >
+                  {(isKeyboardLocked || isTableResizerEnabled) ? <Lock size={14} /> : <Unlock size={14} />}
+              </button>
+            </div>
 
             <button 
                 onClick={toggleTheme}

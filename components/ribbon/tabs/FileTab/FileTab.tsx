@@ -7,7 +7,7 @@ import { FileModal } from './FileModal';
 import { DocumentGroup } from './document/DocumentGroup';
 import { SaveGroup } from './save/SaveGroup';
 import { ShareGroup } from './share/ShareGroup';
-import { ExportGroup } from './export/ExportGroup';
+import { OutputGroup } from './export/OutputGroup';
 
 export const FileTab: React.FC = () => {
   return (
@@ -18,7 +18,7 @@ export const FileTab: React.FC = () => {
       <RibbonSeparator />
       <ShareGroup />
       <RibbonSeparator />
-      <ExportGroup />
+      <OutputGroup />
       
       {/* Modal Overlay managed by context */}
       <FileModal />
