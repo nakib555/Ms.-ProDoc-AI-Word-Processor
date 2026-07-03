@@ -182,6 +182,25 @@ export interface PaginatorResult {
   pageWidth: number;
 }
 
+export type ExportType = 'pdf' | 'doc' | 'html' | 'txt' | 'md' | 'rtf' | 'json';
+
+export interface ExportOptions {
+  format: ExportType;
+  includeHeaderFooter?: boolean;
+  fileName?: string;
+  metadata?: Record<string, string>;
+  quality?: 'high' | 'medium' | 'low';
+  customAdjustments?: Record<string, any>;
+}
+
+export interface DocumentAdjustments {
+  zoomLevel: number;
+  layoutMode: ViewMode;
+  theme: 'light' | 'dark' | 'system';
+  showFormattingMarks: boolean;
+  showRuler: boolean;
+}
+
 export interface ReadModeConfig {
   theme: 'light' | 'sepia' | 'dark';
   columns: 1 | 2;

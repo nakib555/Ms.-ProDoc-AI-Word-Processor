@@ -11,7 +11,7 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
-import { PageConfig } from '../../../../../types';
+import { PageConfig, ExportType } from '../../../../../types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { generatePdfPrint } from '../../../../../utils/printUtils';
 import TurndownService from 'turndown';
@@ -21,10 +21,11 @@ import TurndownService from 'turndown';
 const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, className = "" }: any) => {
     const [isOpen, setIsOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const [animateClass, setAnimateClass] = useState('');
 
-    const updateLayout = () => {
+    const updateLayout = React.useCallback(() => {
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
@@ -36,13 +37,15 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
             
             const contentHeight = options.length * 40 + 16;
             const idealMaxHeight = 300;
+            const actualRequiredHeight = Math.min(contentHeight, idealMaxHeight);
 
             let top: number | string = rect.bottom + 4;
             let bottom: number | string = 'auto';
-            let maxHeight = Math.min(contentHeight, idealMaxHeight);
+            let maxHeight = actualRequiredHeight;
             let animation = 'zoom-in-95 origin-top';
 
-            if (availableSpaceBelow < 220 && availableSpaceAbove > availableSpaceBelow) {
+            // Smart dropdown logic: flip up if there's not enough space below AND there is more space above
+            if (availableSpaceBelow < actualRequiredHeight && availableSpaceAbove > availableSpaceBelow) {
                 top = 'auto';
                 bottom = viewportHeight - rect.top + 4;
                 maxHeight = Math.min(contentHeight, availableSpaceAbove, idealMaxHeight);
@@ -67,7 +70,7 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
             });
             setAnimateClass(animation);
         }
-    };
+    }, [options.length]);
 
     useLayoutEffect(() => {
         if (isOpen) {
@@ -79,7 +82,7 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
                 window.removeEventListener('resize', updateLayout);
             };
         }
-    }, [isOpen, options.length]);
+    }, [isOpen, updateLayout]);
 
     const toggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -91,8 +94,14 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
 
     useEffect(() => {
         if (!isOpen) return;
-        window.addEventListener('click', close);
-        return () => window.removeEventListener('click', close);
+        const handleOutsideClick = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if (triggerRef.current?.contains(target)) return;
+            if (dropdownRef.current?.contains(target)) return;
+            close();
+        };
+        window.addEventListener('mousedown', handleOutsideClick);
+        return () => window.removeEventListener('mousedown', handleOutsideClick);
     }, [isOpen]);
 
     const selectedLabel = options.find((o: any) => o.value === value)?.label || value;
@@ -117,6 +126,7 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
 
             {isOpen && createPortal(
                 <div 
+                    ref={dropdownRef}
                     className={`fixed z-[9999] bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in duration-100 flex flex-col ${animateClass}`}
                     style={{ 
                         ...dropdownStyle,
@@ -413,8 +423,8 @@ const PrintSettingsPanel: React.FC<{
     setPrintRange: (range: 'all' | 'current' | 'custom') => void;
     customPages: string;
     setCustomPages: (pages: string) => void;
-    exportType: 'pdf' | 'html' | 'txt' | 'md';
-    setExportType: (type: 'pdf' | 'html' | 'txt' | 'md') => void;
+    exportType: ExportType;
+    setExportType: (type: ExportType) => void;
 }> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType }) => {
     
     const { documentTitle, setDocumentTitle } = useEditor();
@@ -489,9 +499,12 @@ const PrintSettingsPanel: React.FC<{
                         onChange={(v: any) => setExportType(v)}
                         options={[
                             { value: 'pdf', label: 'PDF Document (.pdf)' },
+                            { value: 'doc', label: 'Word Document (.doc)' },
+                            { value: 'rtf', label: 'Rich Text Format (.rtf)' },
                             { value: 'html', label: 'Web Page (.html)' },
                             { value: 'txt', label: 'Plain Text (.txt)' },
-                            { value: 'md', label: 'Markdown (.md)' }
+                            { value: 'md', label: 'Markdown (.md)' },
+                            { value: 'json', label: 'JSON Data (.json)' }
                         ]}
                         icon={Download}
                     />
@@ -604,12 +617,18 @@ const PrintSettingsPanel: React.FC<{
                                 exportType === 'pdf' ? 'Preparing PDF...' : 'Preparing Export...'
                             ) : exportType === 'pdf' ? (
                                 'Print / Save as PDF'
+                            ) : exportType === 'doc' ? (
+                                'Export Word Document (.doc)'
+                            ) : exportType === 'rtf' ? (
+                                'Export Rich Text Format (.rtf)'
                             ) : exportType === 'html' ? (
                                 'Export Web Page (.html)'
                             ) : exportType === 'txt' ? (
                                 'Export Plain Text (.txt)'
-                            ) : (
+                            ) : exportType === 'md' ? (
                                 'Export Markdown (.md)'
+                            ) : (
+                                'Export JSON (.json)'
                             )}
                         </span>
                     </button>
@@ -636,7 +655,7 @@ export const PrintModal: React.FC = () => {
   // Print Range State
   const [printRange, setPrintRange] = useState<'all' | 'current' | 'custom'>('all');
   const [customPages, setCustomPages] = useState('');
-  const [exportType, setExportType] = useState<'pdf' | 'html' | 'txt' | 'md'>('pdf');
+  const [exportType, setExportType] = useState<ExportType>('pdf');
 
   useEffect(() => {
       const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -689,6 +708,10 @@ export const PrintModal: React.FC = () => {
               let ext = 'html';
               if (exportType === 'html') {
                   data = `<!DOCTYPE html><html><head>    <meta charset="utf-8">    <title>${documentTitle}</title>    <style>        body { font-family: Inter, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }        table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }        th, td { border: 1px solid #ddd; padding: 8px; }        img { max-width: 100%; height: auto; }        blockquote { border-left: 4px solid #ccc; margin: 0; padding-left: 16px; color: #666; }    </style></head><body>    ${content}</body></html>`;
+              } else if (exportType === 'doc') {
+                  data = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${documentTitle}</title></head><body>${content}</body></html>`;
+                  mime = 'application/msword';
+                  ext = 'doc';
               } else if (exportType === 'txt') {
                   const temp = document.createElement('div');
                   temp.innerHTML = content;
@@ -700,6 +723,21 @@ export const PrintModal: React.FC = () => {
                   data = turndownService.turndown(content);
                   mime = 'text/markdown';
                   ext = 'md';
+              } else if (exportType === 'json') {
+                  data = JSON.stringify({
+                      title: documentTitle,
+                      content: content,
+                      date: new Date().toISOString()
+                  }, null, 2);
+                  mime = 'application/json';
+                  ext = 'json';
+              } else if (exportType === 'rtf') {
+                  // A very basic RTF representation (Fallback, though typically requires a library for complex styling)
+                  const temp = document.createElement('div');
+                  temp.innerHTML = content;
+                  data = `{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}}\r\n\\viewkind4\\uc1\\pard\\lang1033\\f0\\fs22 ${temp.innerText.replace(/\n/g, '\\par\r\n')}}`;
+                  mime = 'application/rtf';
+                  ext = 'rtf';
               }
               const blob = new Blob([data], { type: mime });
               const url = URL.createObjectURL(blob);

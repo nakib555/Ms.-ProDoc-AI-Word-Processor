@@ -20,6 +20,9 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
+import { importDocxToEditor } from '../utils/docxImportEngine';
+import { importHtmlToEditor } from '../components/ribbon/tabs/FileTab/modals/htmlImportEngine';
+import { marked } from 'marked';
 
 // Custom Paragraph Extension for Indent/Spacing
 const CustomParagraph = Paragraph.extend({
@@ -325,6 +328,9 @@ export interface EditorContextType {
   
   selectionAction: any | null;
   setSelectionAction: React.Dispatch<React.SetStateAction<any | null>>;
+  
+  importState: { active: boolean; percent: number; status: string };
+  importFile: (file: File) => Promise<void>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -340,6 +346,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const [documentTitle, setDocumentTitle] = useState("Untitled Document");
+  const documentTitleRef = useRef(documentTitle);
+  useEffect(() => {
+    documentTitleRef.current = documentTitle;
+  }, [documentTitle]);
+
   const [creationDate] = useState(() => new Date());
   const [lastModified, setLastModified] = useState(() => new Date());
   const [wordCount, setWordCount] = useState(0);
@@ -357,6 +368,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [totalPages, setTotalPages] = useState(1);
   const [showAssistant, setShowAssistant] = useState(false);
   const [aiState, setAiState] = useState<'idle' | 'thinking' | 'writing'>('idle');
+  const [importState, setImportState] = useState<{ active: boolean; percent: number; status: string }>({
+    active: false,
+    percent: 0,
+    status: ''
+  });
   
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
   
@@ -428,7 +444,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     onUpdate: ({ editor }) => {
       setWordCount(editor.storage.characterCount?.words?.() || 0);
       setLastModified(new Date());
-      triggerAutoSave();
+      triggerAutoSave(documentTitleRef.current, editor.getHTML());
     },
     onSelectionUpdate: ({ editor }) => {
         setHasActiveSelection(!editor.state.selection.empty);
@@ -511,7 +527,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             break;
         case 'fitPage': setZoomMode('fit-page'); break;
         case 'fitWidth': setZoomMode('fit-width'); break;
-        case 'save': manualSave(); break;
+        case 'save': 
+            if (editor) {
+                manualSave(documentTitleRef.current, editor.getHTML()); 
+            }
+            break;
         case 'pageBreak': 
             document.execCommand('insertHTML', false, '<div class="prodoc-page-break" data-type="page-break" style="page-break-after: always;"><hr></div><p><br></p>');
             nativeCommandExecuted = true;
@@ -584,6 +604,81 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
   
   const handlePasteSpecial = useCallback(async (type: 'keep-source' | 'merge' | 'text-only') => {}, []); // TipTap handles paste
+
+  const importFile = useCallback(async (file: File) => {
+    if (!file) return;
+    const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+    const extension = file.name.split('.').pop()?.toLowerCase();
+
+    setImportState({ active: true, percent: 5, status: 'Initializing file read...' });
+
+    try {
+      let htmlContent = '';
+      if (extension === 'docx') {
+        const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as ArrayBuffer);
+          reader.onerror = () => reject(new Error('Failed to read file as ArrayBuffer'));
+          reader.readAsArrayBuffer(file);
+        });
+
+        htmlContent = await importDocxToEditor(arrayBuffer, (percent, status) => {
+          setImportState({ active: true, percent, status });
+        });
+      } else {
+        const textContent = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file as text'));
+          reader.readAsText(file);
+        });
+
+        if (extension === 'html' || extension === 'htm') {
+          setImportState({ active: true, percent: 50, status: 'Parsing HTML content...' });
+          htmlContent = importHtmlToEditor(textContent);
+        } else if (extension === 'md') {
+          setImportState({ active: true, percent: 50, status: 'Parsing Markdown content...' });
+          htmlContent = await marked.parse(textContent);
+        } else {
+          setImportState({ active: true, percent: 50, status: 'Processing plain text...' });
+          htmlContent = textContent.split('\n').map(line => `<p>${line}</p>`).join('');
+        }
+      }
+
+      setImportState({ active: true, percent: 90, status: 'Injecting content into editor...' });
+      
+      if (editor) {
+        editor.commands.setContent(htmlContent);
+      }
+      setDocumentTitle(nameWithoutExt);
+
+      try {
+        const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
+        savedDocs[nameWithoutExt] = {
+          content: htmlContent,
+          lastModified: new Date().toISOString()
+        };
+        localStorage.setItem('saved_documents', JSON.stringify(savedDocs));
+
+        let recents = JSON.parse(localStorage.getItem('recent_documents') || '[]');
+        recents = recents.filter((r: any) => r.name !== nameWithoutExt);
+        recents.unshift({
+          name: nameWithoutExt,
+          date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          path: 'Uploaded File'
+        });
+        localStorage.setItem('recent_documents', JSON.stringify(recents.slice(0, 10)));
+      } catch (storageErr) {
+        console.error('Failed to save imported document metadata:', storageErr);
+      }
+
+      setImportState({ active: false, percent: 100, status: 'Import completed!' });
+    } catch (error: any) {
+      console.error('Failed to import file:', error);
+      setImportState({ active: false, percent: 0, status: '' });
+      alert("Could not open this file: " + (error?.message || "Unknown error"));
+    }
+  }, [editor, setDocumentTitle]);
 
   const pageDimensions = useMemo(() => ({ width: 816, height: 1056 }), []); // Default Letter
   
@@ -667,7 +762,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSelectionMode,
     hasActiveSelection,
     selectionAction,
-    setSelectionAction
+    setSelectionAction,
+    importState,
+    importFile
   }), [
     editor,
     setContent,
@@ -709,7 +806,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isTableResizerEnabled,
     selectionMode,
     hasActiveSelection,
-    selectionAction
+    selectionAction,
+    importState,
+    importFile
   ]);
 
   return (

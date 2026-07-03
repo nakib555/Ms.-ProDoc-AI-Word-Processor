@@ -5,7 +5,7 @@ export const useAutoSave = () => {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const triggerAutoSave = useCallback(() => {
+  const triggerAutoSave = useCallback((title: string, content: string) => {
     setSaveStatus('unsaved');
     
     if (autoSaveTimerRef.current) {
@@ -15,17 +15,60 @@ export const useAutoSave = () => {
     // Debounce save
     autoSaveTimerRef.current = setTimeout(() => {
       setSaveStatus('saving');
-      // Simulate network delay for saving
+      
+      try {
+        // Save to localStorage
+        const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
+        savedDocs[title] = {
+          content,
+          lastModified: new Date().toISOString(),
+        };
+        localStorage.setItem('saved_documents', JSON.stringify(savedDocs));
+        
+        // Update recent_documents
+        let recents = JSON.parse(localStorage.getItem('recent_documents') || '[]');
+        recents = recents.filter((r: any) => r.name !== title);
+        recents.unshift({
+          name: title,
+          date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          path: 'Local Storage'
+        });
+        localStorage.setItem('recent_documents', JSON.stringify(recents.slice(0, 10)));
+      } catch (err) {
+        console.error('Failed to auto-save to localStorage:', err);
+      }
+
       setTimeout(() => {
         setSaveStatus('saved');
-      }, 1000);
-    }, 2000);
+      }, 500);
+    }, 1500);
   }, []);
 
-  const manualSave = useCallback(() => {
+  const manualSave = useCallback((title: string, content: string) => {
     setSaveStatus('saving');
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    setTimeout(() => setSaveStatus('saved'), 800);
+    
+    try {
+      const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
+      savedDocs[title] = {
+        content,
+        lastModified: new Date().toISOString(),
+      };
+      localStorage.setItem('saved_documents', JSON.stringify(savedDocs));
+      
+      let recents = JSON.parse(localStorage.getItem('recent_documents') || '[]');
+      recents = recents.filter((r: any) => r.name !== title);
+      recents.unshift({
+        name: title,
+        date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        path: 'Local Storage'
+      });
+      localStorage.setItem('recent_documents', JSON.stringify(recents.slice(0, 10)));
+    } catch (err) {
+      console.error('Failed to save to localStorage:', err);
+    }
+
+    setTimeout(() => setSaveStatus('saved'), 500);
   }, []);
 
   return { saveStatus, triggerAutoSave, manualSave, setSaveStatus };
