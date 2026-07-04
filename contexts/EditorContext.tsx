@@ -17,7 +17,7 @@ import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import { Node, mergeAttributes } from '@tiptap/core';
 
-import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea } from '../types';
+import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea, DocumentFootnote, DocumentEndnote } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
 import { jsonDocumentToHtml, htmlToJSONDocument, DocumentComment } from '../utils/documentModel';
@@ -26,6 +26,8 @@ import { importHtmlToEditor } from '../components/ribbon/tabs/FileTab/modals/htm
 import { marked } from 'marked';
 import { IdentityExtension } from '../components/editor/extensions/IdentityExtension';
 import { CommentExtension } from '../components/editor/extensions/CommentExtension';
+import { FootnoteReferenceExtension } from '../components/editor/extensions/FootnoteReferenceExtension';
+import { EndnoteReferenceExtension } from '../components/editor/extensions/EndnoteReferenceExtension';
 
 // Custom Paragraph Extension for Indent/Spacing
 const CustomParagraph = Paragraph.extend({
@@ -334,6 +336,20 @@ export interface EditorContextType {
   resolveComment: (id: string) => void;
   removeComment: (id: string) => void;
 
+  // Footnotes & Endnotes
+  footnotes: DocumentFootnote[];
+  setFootnotes: React.Dispatch<React.SetStateAction<DocumentFootnote[]>>;
+  endnotes: DocumentEndnote[];
+  setEndnotes: React.Dispatch<React.SetStateAction<DocumentEndnote[]>>;
+  addFootnote: () => string;
+  addEndnote: () => string;
+  updateFootnote: (id: string, content: string) => void;
+  updateEndnote: (id: string, content: string) => void;
+  removeFootnote: (id: string) => void;
+  removeEndnote: (id: string) => void;
+  showNotes: boolean;
+  setShowNotes: React.Dispatch<React.SetStateAction<boolean>>;
+
   // Zoom Mode
   zoomMode: 'custom' | 'fit-width' | 'fit-page';
   setZoomMode: React.Dispatch<React.SetStateAction<'custom' | 'fit-width' | 'fit-page'>>;
@@ -349,6 +365,9 @@ export interface EditorContextType {
   
   importState: { active: boolean; percent: number; status: string };
   importFile: (file: File) => Promise<void>;
+  loadDocument: (name: string) => void;
+  pasteProgress: { active: boolean; totalChunks: number; currentChunk: number; percentage: number } | null;
+  setPasteProgress: React.Dispatch<React.SetStateAction<{ active: boolean; totalChunks: number; currentChunk: number; percentage: number } | null>>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -388,13 +407,34 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [showJsonInspector, setShowJsonInspector] = useState(false);
   const [aiState, setAiState] = useState<'idle' | 'thinking' | 'writing'>('idle');
   const [comments, setComments] = useState<DocumentComment[]>([]);
+  const [footnotes, setFootnotes] = useState<DocumentFootnote[]>([]);
+  const [endnotes, setEndnotes] = useState<DocumentEndnote[]>([]);
+
+  const footnotesRef = useRef<DocumentFootnote[]>([]);
+  const endnotesRef = useRef<DocumentEndnote[]>([]);
+
+  useEffect(() => {
+    footnotesRef.current = footnotes;
+  }, [footnotes]);
+
+  useEffect(() => {
+    endnotesRef.current = endnotes;
+  }, [endnotes]);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
   const [showComments, setShowComments] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [importState, setImportState] = useState<{ active: boolean; percent: number; status: string }>({
     active: false,
     percent: 0,
     status: ''
   });
+  
+  const [pasteProgress, setPasteProgress] = useState<{
+    active: boolean;
+    totalChunks: number;
+    currentChunk: number;
+    percentage: number;
+  } | null>(null);
   
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
   
@@ -469,12 +509,157 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       MathExtension,
       IdentityExtension,
       CommentExtension,
+      FootnoteReferenceExtension,
+      EndnoteReferenceExtension,
     ],
     content: DEFAULT_CONTENT,
+    editorProps: {
+      handlePaste: (view, event) => {
+        const text = event.clipboardData?.getData('text/plain') || '';
+        const html = event.clipboardData?.getData('text/html') || '';
+        
+        const threshold = 30000;
+        if (text.length > threshold || html.length > threshold) {
+          event.preventDefault();
+          
+          setPasteProgress({
+            active: true,
+            totalChunks: 1,
+            currentChunk: 0,
+            percentage: 0
+          });
+
+          const chunks: string[] = [];
+
+          if (html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const body = doc.body;
+            
+            const children = Array.from(body.children);
+            if (children.length > 0) {
+              const CHUNK_SIZE = 5;
+              for (let i = 0; i < children.length; i += CHUNK_SIZE) {
+                const group = children.slice(i, i + CHUNK_SIZE);
+                const tempContainer = doc.createElement('div');
+                group.forEach(node => tempContainer.appendChild(node.cloneNode(true)));
+                chunks.push(tempContainer.innerHTML);
+              }
+            } else {
+              const textLines = html.split('\n');
+              const CHUNK_SIZE = 50;
+              for (let i = 0; i < textLines.length; i += CHUNK_SIZE) {
+                chunks.push(textLines.slice(i, i + CHUNK_SIZE).join('\n'));
+              }
+            }
+          } else {
+            const paragraphs = text.split(/\n+/);
+            const CHUNK_SIZE = 30;
+            for (let i = 0; i < paragraphs.length; i += CHUNK_SIZE) {
+              const group = paragraphs.slice(i, i + CHUNK_SIZE);
+              const htmlParagraphs = group.map(p => {
+                const trimmed = p.trim();
+                if (!trimmed) return '';
+                const escaped = trimmed
+                  .replace(/&/g, "&amp;")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;");
+                return `<p>${escaped}</p>`;
+              }).filter(p => p !== '').join('');
+              
+              if (htmlParagraphs) {
+                chunks.push(htmlParagraphs);
+              }
+            }
+          }
+
+          if (chunks.length === 0) {
+            setPasteProgress(null);
+            return true;
+          }
+
+          let currentChunkIdx = 0;
+          const total = chunks.length;
+
+          const insertNextChunk = () => {
+            if (currentChunkIdx >= total) {
+              setPasteProgress(null);
+              return;
+            }
+
+            const chunk = chunks[currentChunkIdx];
+            view.focus();
+            
+            try {
+              const element = document.createElement('div');
+              element.innerHTML = chunk;
+              const domParser = view.state.schema.cached.domParser || (view.state.schema.cached as any).parser;
+              const slice = domParser.parseSlice(element);
+              const transaction = view.state.tr.replaceSelection(slice).scrollIntoView();
+              view.dispatch(transaction);
+            } catch (err) {
+              console.error('ProseMirror chunk parse failed, fallback to insertContent', err);
+              // Fallback
+              try {
+                (view as any).editor?.commands.insertContent(chunk);
+              } catch (e2) {}
+            }
+
+            currentChunkIdx++;
+            const percentage = Math.round((currentChunkIdx / total) * 100);
+            setPasteProgress({
+              active: true,
+              totalChunks: total,
+              currentChunk: currentChunkIdx,
+              percentage
+            });
+
+            if (typeof window.requestIdleCallback === 'function') {
+              window.requestIdleCallback(() => insertNextChunk(), { timeout: 100 });
+            } else {
+              setTimeout(insertNextChunk, 16);
+            }
+          };
+
+          insertNextChunk();
+          return true;
+        }
+        return false;
+      }
+    },
     onUpdate: ({ editor }) => {
       setWordCount(editor.storage.characterCount?.words?.() || 0);
       setLastModified(new Date());
-      triggerAutoSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current);
+
+      // Chronological relabeling of footnotes and endnotes
+      let footnoteCount = 0;
+      let endnoteCount = 0;
+      let relabelChanged = false;
+      const tr = editor.state.tr;
+      
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'footnoteReference') {
+          footnoteCount++;
+          const expectedLabel = String(footnoteCount);
+          if (node.attrs.label !== expectedLabel) {
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, label: expectedLabel });
+            relabelChanged = true;
+          }
+        } else if (node.type.name === 'endnoteReference') {
+          endnoteCount++;
+          const expectedLabel = String.fromCharCode(96 + endnoteCount); // 'a', 'b', 'c'...
+          if (node.attrs.label !== expectedLabel) {
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, label: expectedLabel });
+            relabelChanged = true;
+          }
+        }
+      });
+      
+      if (relabelChanged) {
+        editor.view.dispatch(tr);
+      }
+
+      triggerAutoSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current, footnotesRef.current, endnotesRef.current);
     },
     onSelectionUpdate: ({ editor }) => {
         setHasActiveSelection(!editor.state.selection.empty);
@@ -569,7 +754,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'fitWidth': setZoomMode('fit-width'); break;
         case 'save': 
             if (editor) {
-                manualSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current); 
+                manualSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current, footnotesRef.current, endnotesRef.current); 
             }
             break;
         case 'pageBreak': 
@@ -791,6 +976,97 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [editor]);
 
+  const addFootnote = useCallback(() => {
+    if (!editor) return '';
+    const id = `footnote-${Date.now()}`;
+    editor.chain().focus().insertContent({
+      type: 'footnoteReference',
+      attrs: { noteId: id, label: '' }
+    }).run();
+    setFootnotes(prev => [...prev, { id, content: 'Footnote content' }]);
+    return id;
+  }, [editor]);
+
+  const addEndnote = useCallback(() => {
+    if (!editor) return '';
+    const id = `endnote-${Date.now()}`;
+    editor.chain().focus().insertContent({
+      type: 'endnoteReference',
+      attrs: { noteId: id, label: '' }
+    }).run();
+    setEndnotes(prev => [...prev, { id, content: 'Endnote content' }]);
+    return id;
+  }, [editor]);
+
+  const updateFootnote = useCallback((id: string, content: string) => {
+    setFootnotes(prev => prev.map(f => f.id === id ? { ...f, content } : f));
+  }, []);
+
+  const updateEndnote = useCallback((id: string, content: string) => {
+    setEndnotes(prev => prev.map(e => e.id === id ? { ...e, content } : e));
+  }, []);
+
+  const removeFootnote = useCallback((id: string) => {
+    setFootnotes(prev => prev.filter(f => f.id !== id));
+    if (!editor) return;
+    const tr = editor.state.tr;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'footnoteReference' && node.attrs.noteId === id) {
+        tr.delete(pos, pos + node.nodeSize);
+      }
+    });
+    if (tr.docChanged) {
+      editor.view.dispatch(tr);
+    }
+  }, [editor]);
+
+  const removeEndnote = useCallback((id: string) => {
+    setEndnotes(prev => prev.filter(e => e.id !== id));
+    if (!editor) return;
+    const tr = editor.state.tr;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === 'endnoteReference' && node.attrs.noteId === id) {
+        tr.delete(pos, pos + node.nodeSize);
+      }
+    });
+    if (tr.docChanged) {
+      editor.view.dispatch(tr);
+    }
+  }, [editor]);
+
+  const loadDocument = useCallback((name: string) => {
+    try {
+      const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
+      const doc = savedDocs[name];
+      if (doc) {
+        if (doc.documentModel) {
+          const html = jsonDocumentToHtml(doc.documentModel);
+          setContent(html);
+          if (doc.documentModel.pageConfig) {
+            setPageConfig(doc.documentModel.pageConfig);
+          }
+          if (doc.documentModel.footnotes) {
+            setFootnotes(doc.documentModel.footnotes);
+          } else {
+            setFootnotes([]);
+          }
+          if (doc.documentModel.endnotes) {
+            setEndnotes(doc.documentModel.endnotes);
+          } else {
+            setEndnotes([]);
+          }
+        } else {
+          setContent(doc.content);
+          setFootnotes([]);
+          setEndnotes([]);
+        }
+        setDocumentTitle(name);
+      }
+    } catch (err) {
+      console.error('Failed to load document:', err);
+    }
+  }, [setContent, setPageConfig, setDocumentTitle]);
+
   const contextValue = useMemo(() => ({
     editor,
     content: editor?.getHTML() || '',
@@ -879,7 +1155,22 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setShowComments,
     addComment,
     resolveComment,
-    removeComment
+    removeComment,
+    footnotes,
+    setFootnotes,
+    endnotes,
+    setEndnotes,
+    addFootnote,
+    addEndnote,
+    updateFootnote,
+    updateEndnote,
+    removeFootnote,
+    removeEndnote,
+    loadDocument,
+    showNotes,
+    setShowNotes,
+    pasteProgress,
+    setPasteProgress
   }), [
     editor,
     setContent,
@@ -931,7 +1222,19 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     showComments,
     addComment,
     resolveComment,
-    removeComment
+    removeComment,
+    footnotes,
+    endnotes,
+    addFootnote,
+    addEndnote,
+    updateFootnote,
+    updateEndnote,
+    removeFootnote,
+    removeEndnote,
+    loadDocument,
+    showNotes,
+    setShowNotes,
+    pasteProgress
   ]);
 
   return (

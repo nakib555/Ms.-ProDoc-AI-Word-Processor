@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/immutability, @typescript-eslint/no-explicit-any */
-import React, { useRef, useLayoutEffect, useEffect, useState } from 'react';
+import React, { useRef, useLayoutEffect, useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { PageConfig, EditingArea } from '../../types';
 import { PAGE_SIZES } from '../../constants';
@@ -75,7 +75,40 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const scale = zoom / 100;
-  const { isKeyboardLocked, isTableResizerEnabled, selectionMode, undo, redo, setActiveElementType } = useEditor();
+  const { 
+    isKeyboardLocked, 
+    isTableResizerEnabled, 
+    selectionMode, 
+    undo, 
+    redo, 
+    setActiveElementType,
+    footnotes,
+    updateFootnote,
+    removeFootnote,
+    endnotes,
+    updateEndnote,
+    removeEndnote
+  } = useEditor();
+
+  const pageFootnoteIds = useMemo(() => {
+    if (!content) return [];
+    const regex = /class="[^"]*prodoc-footnote-ref[^"]*"[^>]*data-note-id="([^"]+)"/g;
+    const ids: string[] = [];
+    let match;
+    while ((match = regex.exec(content)) !== null) {
+      if (match[1] && !ids.includes(match[1])) {
+        ids.push(match[1]);
+      }
+    }
+    return ids;
+  }, [content]);
+
+  const pageFootnotes = useMemo(() => {
+    if (!footnotes) return [];
+    return footnotes.filter(f => pageFootnoteIds.includes(f.id));
+  }, [footnotes, pageFootnoteIds]);
+
+  const isLastPage = pageNumber === totalPages;
 
   const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
   const [selectedTable, setSelectedTable] = useState<HTMLTableElement | null>(null);
@@ -1576,6 +1609,68 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           {!isTableResizerEnabled && editorElement && tables.map((t, i) => (
             <TableResizerOverlay key={`table-resizer-${i}`} target={t} container={editorElement} scale={scale} onUpdate={handleImageUpdate} />
           ))}
+
+          {/* Footnotes Section at Bottom of Body */}
+          {pageFootnotes && pageFootnotes.length > 0 && (
+            <div className="mt-auto pt-2 border-t border-slate-300 select-none z-20 print:border-slate-400 w-full" contentEditable={false}>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">Footnotes</div>
+              <div className="space-y-1">
+                {pageFootnotes.map((fn, idx) => (
+                  <div key={fn.id} className="text-xs flex items-start gap-1.5 group/fn py-0.5">
+                    <span className="font-bold text-indigo-600 shrink-0 select-none bg-indigo-50 dark:bg-indigo-950/40 px-1 rounded text-[10px]">
+                      {idx + 1}
+                    </span>
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateFootnote(fn.id, e.currentTarget.textContent || '')}
+                      className="flex-1 outline-none focus:bg-indigo-50/50 dark:focus:bg-indigo-900/10 rounded px-1 min-h-[1.2em] transition-colors cursor-text text-slate-800 dark:text-slate-200"
+                    >
+                      {fn.content}
+                    </div>
+                    <button
+                      onClick={() => removeFootnote(fn.id)}
+                      className="opacity-0 group-hover/fn:opacity-100 text-rose-500 hover:text-rose-700 p-0.5 rounded transition-all text-[10px] uppercase font-bold shrink-0 self-center cursor-pointer"
+                      title="Delete footnote"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Endnotes Section at Bottom of Last Page */}
+          {isLastPage && endnotes && endnotes.length > 0 && (
+            <div className="mt-4 pt-3 border-t-2 border-double border-slate-400 select-none z-20 w-full" contentEditable={false}>
+              <div className="text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase tracking-wider">Endnotes</div>
+              <div className="space-y-1">
+                {endnotes.map((en, idx) => (
+                  <div key={en.id} className="text-xs flex items-start gap-1.5 group/en py-0.5">
+                    <span className="font-bold text-emerald-600 shrink-0 select-none bg-emerald-50 dark:bg-emerald-950/40 px-1 rounded text-[10px]">
+                      {String.fromCharCode(idx + 97)}
+                    </span>
+                    <div
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={(e) => updateEndnote(en.id, e.currentTarget.textContent || '')}
+                      className="flex-1 outline-none focus:bg-emerald-50/50 dark:focus:bg-emerald-900/10 rounded px-1 min-h-[1.2em] transition-colors cursor-text text-slate-800 dark:text-slate-200"
+                    >
+                      {en.content}
+                    </div>
+                    <button
+                      onClick={() => removeEndnote(en.id)}
+                      className="opacity-0 group-hover/en:opacity-100 text-rose-500 hover:text-rose-700 p-0.5 rounded transition-all text-[10px] uppercase font-bold shrink-0 self-center cursor-pointer"
+                      title="Delete endnote"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer Area */}

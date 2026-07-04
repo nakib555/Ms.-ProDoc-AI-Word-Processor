@@ -1,4 +1,4 @@
-import { PageConfig } from '../types';
+import { PageConfig, DocumentFootnote, DocumentEndnote } from '../types';
 import { DocumentStyle, StyleResolver, DocumentStyleSystem } from './styleSystem';
 import { DocumentAnchor } from './anchorEngine';
 
@@ -202,6 +202,8 @@ export interface JSONDocumentModel {
   theme?: Record<string, any>;
   comments?: DocumentComment[];
   bookmarks?: DocumentBookmark[];
+  footnotes?: DocumentFootnote[];
+  endnotes?: DocumentEndnote[];
   operations?: DocumentOperation[];
   revisionHistory?: DocumentRevision[];
 }
@@ -773,6 +775,17 @@ function parseInlineElements(node: Node, parentStyle: TextStyle = {}): (TextRun 
         return;
       }
 
+      // Handle Footnote and Endnote references
+      if (el.classList.contains('prodoc-footnote-ref') || el.classList.contains('prodoc-endnote-ref')) {
+        const isFootnote = el.classList.contains('prodoc-footnote-ref');
+        elements.push({
+          type: isFootnote ? 'footnoteReference' : 'endnoteReference',
+          noteId: el.getAttribute('data-note-id') || '',
+          label: el.getAttribute('data-label') || el.textContent || ''
+        } as any);
+        return;
+      }
+
       // Handle Math / Equations
       if (el.tagName === 'MATH-FIELD' || el.classList.contains('equation-wrapper')) {
         let latex = '';
@@ -938,7 +951,9 @@ export function htmlToJSONDocument(
   title: string,
   pageConfig: PageConfig,
   lastModifiedDate?: Date,
-  creationDate?: Date
+  creationDate?: Date,
+  footnotes?: DocumentFootnote[],
+  endnotes?: DocumentEndnote[]
 ): JSONDocumentModel {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html || '<p><br></p>', 'text/html');
@@ -1001,7 +1016,9 @@ export function htmlToJSONDocument(
       creationDate: creationDate ? creationDate.toISOString() : nowStr
     },
     pageConfig,
-    pages
+    pages,
+    footnotes,
+    endnotes
   };
 }
 
@@ -1069,6 +1086,14 @@ function renderSectionElement(el: SectionElement): string {
           const imgStyles = styleRecordToString(child.style);
           const styleAttr = imgStyles ? ` style="${imgStyles}"` : '';
           return `<img src="${child.src}" alt="${child.alt || ''}"${styleAttr}/>`;
+        }
+        if ((child as any).type === 'footnoteReference') {
+          const attrs = child as any;
+          return `<span class="prodoc-footnote-ref font-bold text-xs select-none text-indigo-600 align-super hover:bg-indigo-100 px-0.5 rounded cursor-pointer transition-colors" data-type="footnote-ref" data-note-id="${attrs.noteId}" data-label="${attrs.label || ''}" contenteditable="false">${attrs.label || '*'}</span>`;
+        }
+        if ((child as any).type === 'endnoteReference') {
+          const attrs = child as any;
+          return `<span class="prodoc-endnote-ref font-bold text-xs select-none text-emerald-600 align-super hover:bg-emerald-100 px-0.5 rounded cursor-pointer transition-colors" data-type="endnote-ref" data-note-id="${attrs.noteId}" data-label="${attrs.label || ''}" contenteditable="false">${attrs.label || '*'}</span>`;
         }
         return '';
       }).join('');

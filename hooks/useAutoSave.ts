@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback } from 'react';
-import { SaveStatus, PageConfig } from '../types';
+import { SaveStatus, PageConfig, DocumentFootnote, DocumentEndnote } from '../types';
 import { htmlToJSONDocument } from '../utils/documentModel';
 
 export const useAutoSave = () => {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const triggerAutoSave = useCallback((title: string, content: string, pageConfig: PageConfig) => {
+  const triggerAutoSave = useCallback((title: string, content: string, pageConfig: PageConfig, footnotes?: DocumentFootnote[], endnotes?: DocumentEndnote[]) => {
     setSaveStatus('unsaved');
     
     if (autoSaveTimerRef.current) {
@@ -19,7 +19,7 @@ export const useAutoSave = () => {
       
       try {
         // Convert to Structured JSON document model
-        const docModel = htmlToJSONDocument(content, title, pageConfig);
+        const docModel = htmlToJSONDocument(content, title, pageConfig, undefined, undefined, footnotes, endnotes);
         
         // Save to localStorage
         const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
@@ -49,12 +49,12 @@ export const useAutoSave = () => {
     }, 1500);
   }, []);
 
-  const manualSave = useCallback((title: string, content: string, pageConfig: PageConfig) => {
+  const manualSave = useCallback((title: string, content: string, pageConfig: PageConfig, footnotes?: DocumentFootnote[], endnotes?: DocumentEndnote[]) => {
     setSaveStatus('saving');
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     
     try {
-      const docModel = htmlToJSONDocument(content, title, pageConfig);
+      const docModel = htmlToJSONDocument(content, title, pageConfig, undefined, undefined, footnotes, endnotes);
       const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
       savedDocs[title] = {
         documentModel: docModel,

@@ -5,7 +5,7 @@ import { useFileTab } from '../FileTabContext';
 import { htmlToJSONDocument, jsonDocumentToHtml } from '../../../../../utils/documentModel';
 
 export const OpenModal: React.FC = () => {
-  const { setContent, setDocumentTitle, importFile, importState } = useEditor();
+  const { loadDocument, importFile, importState } = useEditor();
   const { closeModal } = useFileTab();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,24 +77,8 @@ export const OpenModal: React.FC = () => {
   };
 
   const handleOpenDoc = (name: string) => {
-    try {
-      const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
-      const doc = savedDocs[name];
-      if (doc) {
-        if (doc.documentModel) {
-          const html = jsonDocumentToHtml(doc.documentModel);
-          setContent(html);
-        } else {
-          setContent(doc.content);
-        }
-        setDocumentTitle(name);
-        closeModal();
-      } else {
-        alert("Could not load the selected document.");
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    loadDocument(name);
+    closeModal();
   };
 
   const handleDeleteDoc = (name: string, e: React.MouseEvent) => {

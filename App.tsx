@@ -6,6 +6,7 @@ import StatusBar from './components/StatusBar';
 import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode/ReadModeToolbar';
 import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
 import { CommentsSidebar } from './components/CommentsSidebar';
+import { NotesSidebar } from './components/NotesSidebar';
 import { AIAssistantSidebar } from './components/AIAssistantSidebar';
 import { JsonDocInspectorSidebar } from './components/JsonDocInspectorSidebar';
 import { RibbonTab } from './types';
@@ -114,6 +115,9 @@ const AppContent: React.FC = () => {
           </div>
           <div className="no-print flex-shrink-0 h-full">
             <CommentsSidebar />
+          </div>
+          <div className="no-print flex-shrink-0 h-full">
+            <NotesSidebar />
           </div>
           <div className="no-print flex-shrink-0 h-full">
             <JsonDocInspectorSidebar />

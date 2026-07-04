@@ -207,5 +207,15 @@ export interface ReadModeConfig {
   textScale: number; // 1 is default (100%)
 }
 
+export interface DocumentFootnote {
+  id: string;
+  content: string; // HTML content
+}
+
+export interface DocumentEndnote {
+  id: string;
+  content: string; // HTML content
+}
+
 export type ActiveElementType = 'text' | 'table' | 'image' | 'equation' | 'header' | 'footer' | 'none';
 export type EditingArea = 'body' | 'header' | 'footer';

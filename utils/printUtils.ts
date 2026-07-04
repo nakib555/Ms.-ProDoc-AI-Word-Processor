@@ -6,6 +6,7 @@ export interface PrintOptions {
     range: 'all' | 'current' | 'custom';
     pages?: string;
     currentPage?: number;
+    batchPrintContainerId?: string;
 }
 
 export const generatePdfPrint = async (
@@ -80,6 +81,9 @@ export const generatePdfPrint = async (
         // Create a style element for print-specific overrides
         const styleEl = document.createElement('style');
         styleEl.id = 'native-print-style';
+        
+        const isBatch = !!options.batchPrintContainerId;
+        
         styleEl.innerHTML = `
             @page {
                 size: ${sizeCss};
@@ -107,6 +111,38 @@ export const generatePdfPrint = async (
                     display: none !important;
                 }
 
+                ${isBatch ? `
+                /* Hide normal root workspace completely, show only batch print container */
+                body > #${options.batchPrintContainerId} {
+                    display: block !important;
+                    position: absolute !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    overflow: visible !important;
+                    background: white !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+                
+                body > #${options.batchPrintContainerId} * {
+                    overflow: visible !important;
+                }
+                
+                /* Target the page wrapper inside batch print */
+                body > #${options.batchPrintContainerId} .prodoc-page-wrapper {
+                    break-after: page;
+                    page-break-after: always;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    box-shadow: none !important;
+                    transform: none !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    display: block !important;
+                }
+                ` : `
                 /* Show the root app container but hide its non-editor children via no-print class */
                 body > #root {
                     display: flex !important;
@@ -127,6 +163,7 @@ export const generatePdfPrint = async (
                     margin: 0 !important;
                     padding: 0 !important;
                 }
+                `}
 
                 /* Hide UI elements explicitly */
                 .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .ai-assistant-sidebar, .mobile-selection-toolbar, .ProseMirror-selectednode {

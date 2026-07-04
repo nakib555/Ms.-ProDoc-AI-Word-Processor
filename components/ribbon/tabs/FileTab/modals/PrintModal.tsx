@@ -6,7 +6,7 @@ import {
   LayoutTemplate, Check, ArrowLeft, Sliders, Eye, Ruler, Download,
   Image as ImageIcon,
   Monitor,
-  Sparkles, Calendar, AlertCircle
+  Sparkles, Calendar, AlertCircle, FolderOpen, Database
 } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
@@ -202,14 +202,16 @@ const renderPageContent = (
     const headerDistIn = cfg.headerDistance || 0.5;
     const footerDistIn = cfg.footerDistance || 0.5;
 
-    let printHeader = headerContent;
-    if (printHeader.includes('[Header]')) {
+    let printHeader = (page as any).headerHtml !== undefined ? (page as any).headerHtml : headerContent;
+    if (printHeader && printHeader.includes('[Header]')) {
         printHeader = printHeader.replace('[Header]', '');
     }
     
-    let printFooter = footerContent;
-    printFooter = printFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
-                             .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
+    let printFooter = (page as any).footerHtml !== undefined ? (page as any).footerHtml : footerContent;
+    if (printFooter && !(page as any).footerHtml) {
+        printFooter = printFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
+                                 .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
+    }
 
     const scaledWidth = widthIn * 96 * scale;
     const scaledHeight = heightIn * 96 * scale;
@@ -333,7 +335,19 @@ const DesktopPrintPreview: React.FC<{
                  </div>
              ) : (
                  <div className="flex flex-col gap-8 items-center w-full pb-24">
-                     {pages.map((page, index) => renderPageContent(index, page, headerContent, footerContent, scale))}
+                     {pages.map((page: any, index) => (
+                         <React.Fragment key={index}>
+                             {page.isFirstPageOfDoc && (
+                                 <div className="w-full max-w-[8.5in] flex items-center justify-between px-5 py-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-4 text-xs font-semibold text-indigo-600 dark:text-indigo-400 select-none no-print">
+                                     <span className="flex items-center gap-2 uppercase tracking-wider">
+                                         <FileText size={14} /> Document Start: {page.docTitle}
+                                     </span>
+                                     <span className="text-slate-400 font-mono text-[10px]">{page.config.size} • {page.config.orientation}</span>
+                                 </div>
+                             )}
+                             {renderPageContent(index, page, headerContent, footerContent, scale)}
+                         </React.Fragment>
+                     ))}
                  </div>
              )}
         </div>
@@ -394,7 +408,18 @@ const MobilePrintPreview: React.FC<{
                      </div>
                  ) : (
                      <div className="flex flex-col gap-4 items-center w-full transition-opacity duration-300" style={{ opacity: scale > 0 ? 1 : 0 }}>
-                         {pages.map((page, index) => renderPageContent(index, page, headerContent, footerContent, scale))}
+                         {pages.map((page: any, index) => (
+                              <React.Fragment key={index}>
+                                  {page.isFirstPageOfDoc && (
+                                      <div className="w-full flex items-center justify-between px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-2 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 select-none no-print">
+                                          <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                                              <FileText size={12} /> Start: {page.docTitle}
+                                          </span>
+                                      </div>
+                                  )}
+                                  {renderPageContent(index, page, headerContent, footerContent, scale)}
+                              </React.Fragment>
+                          ))}
                      </div>
                  )}
             </div>
@@ -629,7 +654,9 @@ const PrintSettingsPanel: React.FC<{
     setCustomPages: (pages: string) => void;
     exportType: ExportType;
     setExportType: (type: ExportType) => void;
-}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType }) => {
+    documentScope: 'current' | 'all';
+    setDocumentScope: (scope: 'current' | 'all') => void;
+}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType, documentScope, setDocumentScope }) => {
     
     const { documentTitle, setDocumentTitle } = useEditor();
 
@@ -686,7 +713,19 @@ const PrintSettingsPanel: React.FC<{
                 {/* File Details Section */}
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">File Details</h3>
-                    <SmartFileNameInput exportType={exportType} />
+                    
+                    <PrintSelect
+                        label="Document Scope"
+                        value={documentScope}
+                        onChange={(v: any) => setDocumentScope(v)}
+                        options={[
+                            { value: 'current', label: 'Current Document' },
+                            { value: 'all', label: 'All Saved Documents (Batch)' }
+                        ]}
+                        icon={FolderOpen}
+                    />
+
+                    {documentScope === 'current' && <SmartFileNameInput exportType={exportType} />}
                     
                     <PrintSelect
                         label="Save as Type"
@@ -707,7 +746,19 @@ const PrintSettingsPanel: React.FC<{
 
                 <div className="w-full h-px bg-slate-100 dark:bg-slate-800"></div>
 
-                {exportType === 'pdf' ? (
+                {documentScope === 'all' ? (
+                    <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-xl space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                        <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 flex items-center gap-1.5">
+                            <Database size={13} /> Batch Export Mode Active
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            {exportType === 'pdf' 
+                                ? "All saved documents will be combined into a single continuous print stream, keeping each file's page settings separate."
+                                : `All saved documents will be generated and downloaded as individual .${exportType} files consecutively.`
+                            }
+                        </p>
+                    </div>
+                ) : exportType === 'pdf' ? (
                     <>
                         {/* Pages section - PDF only */}
                         <div className="space-y-4">
@@ -851,6 +902,8 @@ export const PrintModal: React.FC = () => {
   const [printRange, setPrintRange] = useState<'all' | 'current' | 'custom'>('all');
   const [customPages, setCustomPages] = useState('');
   const [exportType, setExportType] = useState<ExportType>('pdf');
+  const [documentScope, setDocumentScope] = useState<'current' | 'all'>('current');
+  const [allSavedDocsPages, setAllSavedDocsPages] = useState<any[]>([]);
 
   useEffect(() => {
       const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -867,80 +920,232 @@ export const PrintModal: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content, localConfig]);
 
+  useEffect(() => {
+    if (documentScope === 'all') {
+      try {
+        const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
+        const pages: any[] = [];
+        
+        Object.keys(savedDocs).forEach(docName => {
+          const doc = savedDocs[docName];
+          const docConfig = doc.documentModel?.pageConfig || localConfig;
+          const result = paginateContent(doc.content || '', docConfig);
+          
+          const docHeader = doc.documentModel?.headerContent || headerContent;
+          const docFooter = doc.documentModel?.footerContent || footerContent;
+          
+          result.pages.forEach((page, pageIdx) => {
+            let pageHeader = docHeader || '';
+            if (pageHeader.includes('[Header]')) {
+              pageHeader = pageHeader.replace('[Header]', '');
+            }
+            
+            let pageFooter = docFooter || '';
+            pageFooter = pageFooter.replace(/\[Page \d+\]/g, `[Page ${pageIdx + 1}]`)
+                                   .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${pageIdx + 1}`);
+            
+            let wIn = 8.5;
+            let hIn = 11;
+            if (docConfig.size === 'Custom' && docConfig.customWidth && docConfig.customHeight) {
+              wIn = docConfig.customWidth;
+              hIn = docConfig.customHeight;
+            } else {
+              const base = PAGE_SIZES[docConfig.size as string] || PAGE_SIZES['Letter'];
+              wIn = docConfig.orientation === 'landscape' ? base.height / 96 : base.width / 96;
+              hIn = docConfig.orientation === 'landscape' ? base.width / 96 : base.height / 96;
+            }
+            
+            pages.push({
+              html: page.html,
+              config: docConfig,
+              docTitle: docName,
+              isFirstPageOfDoc: pageIdx === 0,
+              headerHtml: pageHeader,
+              footerHtml: pageFooter,
+              widthIn: wIn,
+              heightIn: hIn,
+              margins: {
+                top: docConfig.margins.top + (docConfig.gutterPosition === 'top' ? (docConfig.margins.gutter || 0) : 0),
+                bottom: docConfig.margins.bottom,
+                left: docConfig.margins.left + (docConfig.gutterPosition === 'left' ? (docConfig.margins.gutter || 0) : 0),
+                right: docConfig.margins.right
+              },
+              headerDistance: docConfig.headerDistance || 0.5,
+              footerDistance: docConfig.footerDistance || 0.5
+            });
+          });
+        });
+        
+        setAllSavedDocsPages(pages);
+      } catch (e) {
+        console.error("Error paginating all saved docs:", e);
+      }
+    }
+  }, [documentScope, localConfig, headerContent, footerContent]);
+
+  const handleBatchExport = async () => {
+    const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
+    const docNames = Object.keys(savedDocs);
+    if (docNames.length === 0) {
+      alert("No saved documents found to export.");
+      return;
+    }
+
+    setIsPreparingPrint(true);
+    try {
+      for (let i = 0; i < docNames.length; i++) {
+        const name = docNames[i];
+        const doc = savedDocs[name];
+        const currentContent = doc.content || '';
+        const currentTitle = name;
+        const currentConfig = doc.documentModel?.pageConfig || localConfig;
+
+        let data = currentContent;
+        let mime = 'text/html';
+        let fileExt = 'html';
+
+        if (exportType === 'html') {
+          data = `<!DOCTYPE html><html><head>    <meta charset="utf-8">    <title>${currentTitle}</title>    <style>        body { font-family: Inter, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }        table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }        th, td { border: 1px solid #ddd; padding: 8px; }        img { max-width: 100%; height: auto; }        blockquote { border-left: 4px solid #ccc; margin: 0; padding-left: 16px; color: #666; }    </style></head><body>    ${currentContent}</body></html>`;
+        } else if (exportType === 'doc') {
+          data = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${currentTitle}</title></head><body>${currentContent}</body></html>`;
+          mime = 'application/msword';
+          fileExt = 'doc';
+        } else if (exportType === 'txt') {
+          const temp = document.createElement('div');
+          temp.innerHTML = currentContent;
+          data = temp.innerText;
+          mime = 'text/plain';
+          fileExt = 'txt';
+        } else if (exportType === 'md') {
+          const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+          data = turndownService.turndown(currentContent);
+          mime = 'text/markdown';
+          fileExt = 'md';
+        } else if (exportType === 'json') {
+          const docModel = doc.documentModel || htmlToJSONDocument(currentContent, currentTitle, currentConfig);
+          data = JSON.stringify(docModel, null, 2);
+          mime = 'application/json';
+          fileExt = 'json';
+        } else if (exportType === 'rtf') {
+          const temp = document.createElement('div');
+          temp.innerHTML = currentContent;
+          data = `{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}}\r\n\\viewkind4\\uc1\\pard\\lang1033\\f0\\fs22 ${temp.innerText.replace(/\n/g, '\\par\r\n')}}`;
+          mime = 'application/rtf';
+          fileExt = 'rtf';
+        }
+
+        const blob = new Blob([data], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentTitle}.${fileExt}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        if (i < docNames.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+      }
+    } catch (e) {
+      console.error("Batch export error:", e);
+    } finally {
+      setIsPreparingPrint(false);
+    }
+  };
+
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
       try {
           if (exportType === 'pdf') {
-              // Ensure we are in print layout mode for correct DOM structure
-              if (viewMode !== 'print') {
-                  setViewMode('print');
-                  // Wait for view transition
-                  await new Promise(resolve => setTimeout(resolve, 500));
-              }
-              
-              // Update global config to match local print settings so the editor reflects the print layout
-              setPageConfig(localConfig);
-              
-              // Wait for editor to re-render with new config
-              // Increased delay to ensure pagination and layout are fully updated before print dialog opens
-              await new Promise(resolve => setTimeout(resolve, 800));
-
-              await generatePdfPrint(
-                  content, 
-                  localConfig, 
-                  headerContent, 
-                  footerContent, 
-                  { 
-                      range: printRange, 
-                      pages: customPages,
-                      currentPage: currentPage
+              if (documentScope === 'all') {
+                  await generatePdfPrint(
+                      '', 
+                      localConfig, 
+                      '', 
+                      '', 
+                      { 
+                          range: 'all',
+                          batchPrintContainerId: 'prodoc-batch-print-container'
+                      }
+                  );
+                  closeModal();
+              } else {
+                  // Ensure we are in print layout mode for correct DOM structure
+                  if (viewMode !== 'print') {
+                      setViewMode('print');
+                      // Wait for view transition
+                      await new Promise(resolve => setTimeout(resolve, 500));
                   }
-              );
-              closeModal();
-          } else {
-              let data = content;
-              let mime = 'text/html';
-              let ext = 'html';
-              if (exportType === 'html') {
-                  data = `<!DOCTYPE html><html><head>    <meta charset="utf-8">    <title>${documentTitle}</title>    <style>        body { font-family: Inter, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }        table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }        th, td { border: 1px solid #ddd; padding: 8px; }        img { max-width: 100%; height: auto; }        blockquote { border-left: 4px solid #ccc; margin: 0; padding-left: 16px; color: #666; }    </style></head><body>    ${content}</body></html>`;
-              } else if (exportType === 'doc') {
-                  data = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${documentTitle}</title></head><body>${content}</body></html>`;
-                  mime = 'application/msword';
-                  ext = 'doc';
-              } else if (exportType === 'txt') {
-                  const temp = document.createElement('div');
-                  temp.innerHTML = content;
-                  data = temp.innerText;
-                  mime = 'text/plain';
-                  ext = 'txt';
-              } else if (exportType === 'md') {
-                  const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
-                  data = turndownService.turndown(content);
-                  mime = 'text/markdown';
-                  ext = 'md';
-              } else if (exportType === 'json') {
-                  const docModel = htmlToJSONDocument(content, documentTitle, pageConfig);
-                  data = JSON.stringify(docModel, null, 2);
-                  mime = 'application/json';
-                  ext = 'json';
-              } else if (exportType === 'rtf') {
-                  // A very basic RTF representation (Fallback, though typically requires a library for complex styling)
-                  const temp = document.createElement('div');
-                  temp.innerHTML = content;
-                  data = `{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}}\r\n\\viewkind4\\uc1\\pard\\lang1033\\f0\\fs22 ${temp.innerText.replace(/\n/g, '\\par\r\n')}}`;
-                  mime = 'application/rtf';
-                  ext = 'rtf';
+                  
+                  // Update global config to match local print settings so the editor reflects the print layout
+                  setPageConfig(localConfig);
+                  
+                  // Wait for editor to re-render with new config
+                  await new Promise(resolve => setTimeout(resolve, 800));
+     
+                  await generatePdfPrint(
+                      content, 
+                      localConfig, 
+                      headerContent, 
+                      footerContent, 
+                      { 
+                          range: printRange, 
+                          pages: customPages,
+                          currentPage: currentPage
+                      }
+                  );
+                  closeModal();
               }
-              const blob = new Blob([data], { type: mime });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = `${documentTitle || 'document'}.${ext}`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
-              closeModal();
+          } else {
+              if (documentScope === 'all') {
+                  await handleBatchExport();
+                  closeModal();
+              } else {
+                  let data = content;
+                  let mime = 'text/html';
+                  let ext = 'html';
+                  if (exportType === 'html') {
+                      data = `<!DOCTYPE html><html><head>    <meta charset="utf-8">    <title>${documentTitle}</title>    <style>        body { font-family: Inter, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; line-height: 1.6; }        table { border-collapse: collapse; width: 100%; margin-bottom: 1rem; }        th, td { border: 1px solid #ddd; padding: 8px; }        img { max-width: 100%; height: auto; }        blockquote { border-left: 4px solid #ccc; margin: 0; padding-left: 16px; color: #666; }    </style></head><body>    ${content}</body></html>`;
+                  } else if (exportType === 'doc') {
+                      data = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${documentTitle}</title></head><body>${content}</body></html>`;
+                      mime = 'application/msword';
+                      ext = 'doc';
+                  } else if (exportType === 'txt') {
+                      const temp = document.createElement('div');
+                      temp.innerHTML = content;
+                      data = temp.innerText;
+                      mime = 'text/plain';
+                      ext = 'txt';
+                  } else if (exportType === 'md') {
+                      const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+                      data = turndownService.turndown(content);
+                      mime = 'text/markdown';
+                      ext = 'md';
+                  } else if (exportType === 'json') {
+                      const docModel = htmlToJSONDocument(content, documentTitle, pageConfig);
+                      data = JSON.stringify(docModel, null, 2);
+                      mime = 'application/json';
+                      ext = 'json';
+                  } else if (exportType === 'rtf') {
+                      const temp = document.createElement('div');
+                      temp.innerHTML = content;
+                      data = `{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\fnil\\fcharset0 Arial;}}\r\n\\viewkind4\\uc1\\pard\\lang1033\\f0\\fs22 ${temp.innerText.replace(/\n/g, '\\par\r\n')}}`;
+                      mime = 'application/rtf';
+                      ext = 'rtf';
+                  }
+                  const blob = new Blob([data], { type: mime });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `${documentTitle || 'document'}.${ext}`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                  closeModal();
+              }
           }
       } catch (e) {
           console.error("Export error:", e);
@@ -1038,6 +1243,8 @@ export const PrintModal: React.FC = () => {
                 setCustomPages={setCustomPages}
                 exportType={exportType}
                 setExportType={setExportType}
+                documentScope={documentScope}
+                setDocumentScope={setDocumentScope}
             />
         </div>
 
@@ -1047,7 +1254,7 @@ export const PrintModal: React.FC = () => {
         `}>
             {isMobile ? (
                 <MobilePrintPreview 
-                    pages={filteredPreviewPages}
+                    pages={documentScope === 'all' ? allSavedDocsPages : filteredPreviewPages}
                     headerContent={headerContent}
                     footerContent={footerContent}
                     isPreparing={isPreparingPrint}
@@ -1056,13 +1263,86 @@ export const PrintModal: React.FC = () => {
                 />
             ) : (
                 <DesktopPrintPreview 
-                    pages={filteredPreviewPages}
+                    pages={documentScope === 'all' ? allSavedDocsPages : filteredPreviewPages}
                     headerContent={headerContent}
                     footerContent={footerContent}
                     isPreparing={isPreparingPrint}
                 />
             )}
         </div>
+
+        {documentScope === 'all' && createPortal(
+            <div id="prodoc-batch-print-container" className="hidden">
+                {allSavedDocsPages.map((page, index) => (
+                    <div 
+                        key={index} 
+                        className="prodoc-page-wrapper"
+                        style={{
+                            pageBreakAfter: 'always',
+                            breakAfter: 'page'
+                        }}
+                    >
+                        <div 
+                            className="prodoc-page-sheet"
+                            style={{
+                                width: `${page.widthIn}in`,
+                                height: `${page.heightIn}in`,
+                                paddingTop: `${page.margins.top}in`,
+                                paddingBottom: `${page.margins.bottom}in`,
+                                paddingLeft: `${page.margins.left}in`,
+                                paddingRight: `${page.margins.right}in`,
+                                boxSizing: 'border-box',
+                                position: 'relative'
+                            }}
+                        >
+                            <div 
+                                className="absolute left-0 right-0 z-30"
+                                style={{ 
+                                    top: 0, 
+                                    height: `${page.margins.top}in`, 
+                                    paddingTop: `${page.headerDistance}in`, 
+                                    paddingLeft: `${page.margins.left}in`, 
+                                    paddingRight: `${page.margins.right}in` 
+                                }}
+                            >
+                                <div 
+                                    className="prodoc-header w-full h-full"
+                                    dangerouslySetInnerHTML={{ __html: page.headerHtml }}
+                                />
+                            </div>
+                            
+                            <div className="relative w-full h-full overflow-hidden z-10">
+                                <div 
+                                    className="prodoc-editor w-full h-full text-lg leading-loose break-words"
+                                    style={{ fontFamily: 'Inter, sans-serif' }}
+                                    dangerouslySetInnerHTML={{ __html: page.html }}
+                                />
+                            </div>
+
+                            <div 
+                                className="absolute left-0 right-0 z-30"
+                                style={{ 
+                                    bottom: 0, 
+                                    height: `${page.margins.bottom}in`, 
+                                    paddingBottom: `${page.footerDistance}in`, 
+                                    paddingLeft: `${page.margins.left}in`, 
+                                    paddingRight: `${page.margins.right}in`,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'flex-end'
+                                }}
+                            >
+                                <div 
+                                    className="prodoc-footer w-full"
+                                    dangerouslySetInnerHTML={{ __html: page.footerHtml }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>,
+            document.body
+        )}
     </div>
   );
 };
