@@ -78,10 +78,11 @@ export class CrossReferenceEngine {
       }
       case 'text':
         return bookmark.textContext || bookmark.displayName;
-      case 'number':
+      case 'number': {
         // Returns sequence number (e.g. "Figure 2" -> "2")
         const numMatch = (bookmark.textContext || '').match(/\d+/);
         return numMatch ? numMatch[0] : '1';
+      }
       default:
         return bookmark.displayName;
     }

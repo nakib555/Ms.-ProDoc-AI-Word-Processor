@@ -5,6 +5,9 @@ import {
     Layers, Grid, Undo2, HelpCircle, Info
 } from 'lucide-react';
 
+import { useDocumentModel } from '../../../../../contexts/DocumentModelContext';
+import { globalFormulaEngine } from '../../../../../utils/formulaEngine';
+
 interface TableFormulaDialogProps {
     isOpen: boolean;
     onClose: () => void;
@@ -34,6 +37,8 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
     const [isDragging, setIsDragging] = useState(false);
     const [liveResult, setLiveResult] = useState<string | number>('-');
     const [error, setError] = useState<string | null>(null);
+
+    const { documentModel } = useDocumentModel();
 
     const dragStartRef = useRef<{r: number, c: number} | null>(null);
 
@@ -107,6 +112,11 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
         // Generate Formula string
         let formulaStr = '';
         if (isCustom) {
+            if (!customFormula.trim()) {
+                setLiveResult('-');
+                setError(null);
+                return;
+            }
             formulaStr = customFormula.startsWith('=') ? customFormula : `=${customFormula}`;
         } else {
             if (currentSelType === 'individual') {
@@ -127,12 +137,61 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
             }
         }
 
+        // --- Validation Layer ---
+        const validateFormula = (formula: string) => {
+            const upperForm = formula.toUpperCase();
+            // Allowed common spreadsheet functions
+            const allowedFunctions = ['SUM', 'AVERAGE', 'COUNT', 'MAX', 'MIN', 'PRODUCT', 'ABS', 'ROUND', 'INT'];
+            
+            // Extract function names from the formula (e.g., SUM(, AVERAGE()
+            const matches = upperForm.match(/[A-Z]+(?=\()/g);
+            if (matches) {
+                for (const match of matches) {
+                    if (!allowedFunctions.includes(match)) {
+                        return { valid: false, error: `Unsupported function: ${match}` };
+                    }
+                }
+            }
+            
+            // Basic syntax check for unbalanced parentheses
+            const openParens = (formula.match(/\(/g) || []).length;
+            const closeParens = (formula.match(/\)/g) || []).length;
+            if (openParens !== closeParens) {
+                return { valid: false, error: "Unbalanced parentheses" };
+            }
+
+            // Reject potentially unsafe characters (basic sanitization)
+            if (/[;{}]/.test(formula)) {
+                return { valid: false, error: "Invalid characters in formula" };
+            }
+            
+            return { valid: true };
+        };
+
+        const validation = validateFormula(formulaStr);
+        if (!validation.valid) {
+            setLiveResult('Error');
+            setError(`Validation Error: ${validation.error}`);
+            return;
+        }
+        // --- End Validation Layer ---
+
         try {
-            const hf = HyperFormula.buildEmpty({ licenseKey: 'gpl-v3' });
-            const sheetId = hf.addSheet('PreviewSheet');
+            // Sync all document tables using dirty-node tracking to support ID cross-referencing
+            if (documentModel) {
+                globalFormulaEngine.syncDocument(documentModel);
+            }
+
+            const hf = globalFormulaEngine.hf;
+            
+            // Generate a PreviewSheet for the current table's DOM state
+            let sheetId = hf.getSheetId('PreviewSheet');
+            if (sheetId === undefined) {
+                sheetId = hf.addSheet('PreviewSheet');
+            }
             hf.setSheetContent(sheetId, data);
             
-            // Set cell to compute formula
+            // Set cell to compute formula in PreviewSheet context
             const tempRow = targetCell ? targetCell.r : 0;
             const tempCol = targetCell ? targetCell.c : 0;
             

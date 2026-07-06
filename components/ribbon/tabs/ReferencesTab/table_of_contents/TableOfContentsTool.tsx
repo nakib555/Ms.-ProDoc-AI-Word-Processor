@@ -5,6 +5,7 @@ import { DropdownRibbonButton } from '../common/ReferencesTools';
 import { MenuPortal } from '../../../common/MenuPortal';
 import { useReferencesTab } from '../ReferencesTabContext';
 import { useEditor } from '../../../../../contexts/EditorContext';
+import { globalTocEngine } from '../../../../../utils/tocEngine';
 
 export const TableOfContentsTool: React.FC = () => {
   const { activeMenu, menuPos, closeMenu } = useReferencesTab();
@@ -12,45 +13,19 @@ export const TableOfContentsTool: React.FC = () => {
   const menuId = 'toc';
 
   const generateTOC = () => {
-      // 1. Parse current content to find headings
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(content, 'text/html');
-      const headings = Array.from(doc.querySelectorAll('h1, h2, h3'));
+      const items = globalTocEngine.scanHeadings(content);
       
-      if (headings.length === 0) {
+      if (items.length === 0) {
           alert("No headings found to generate Table of Contents.");
           closeMenu();
           return;
       }
 
-      // 2. Build TOC HTML
-      let tocHtml = `<div class="toc-container" style="background: #f8fafc; padding: 24px; border: 1px solid #e2e8f0; margin: 20px 0; border-radius: 8px;">
-        <h2 style="margin-top: 0; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; font-size: 18px; color: #1e293b;">Table of Contents</h2>
-        <div style="font-family: 'Calibri', sans-serif; line-height: 1.8;">`;
+      // Generate the enterprise-grade TOC HTML
+      const tocHtml = globalTocEngine.generateTocHtml(items);
 
-      headings.forEach((h, index) => {
-          const level = parseInt(h.tagName.substring(1));
-          const text = h.textContent || `Heading ${index + 1}`;
-          const marginLeft = (level - 1) * 20;
-          const fontSize = level === 1 ? '11pt' : '10pt';
-          const fontWeight = level === 1 ? 'bold' : 'normal';
-          
-          // Note: Real page numbers require layout engine awareness which is hard in HTML string.
-          // We use placeholders or simple counters. For a web-view, anchors are better.
-          // Ideally, we'd insert IDs into the actual headings in the document too. 
-          // For this simulation, we just list them nicely.
-          
-          tocHtml += `
-            <div style="display: flex; justify-content: space-between; border-bottom: 1px dotted #e2e8f0; margin-left: ${marginLeft}px; font-size: ${fontSize}; font-weight: ${fontWeight};">
-                <span style="background: #f8fafc; padding-right: 5px;">${text}</span>
-                <span style="background: #f8fafc; padding-left: 5px;">${index + 1}</span>
-            </div>`;
-      });
-
-      tocHtml += `</div></div><p><br/></p>`;
-
-      // 3. Insert
-      executeCommand('insertHTML', tocHtml);
+      // Insert
+      executeCommand('insertHTML', tocHtml + '<p><br/></p>');
       closeMenu();
   };
 
