@@ -602,7 +602,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               // Fallback
               try {
                 (view as any).editor?.commands.insertContent(chunk);
-              } catch (e2) {}
+              } catch (err2) {
+                // Ignore parse errors on fallback
+              }
             }
 
             currentChunkIdx++;
