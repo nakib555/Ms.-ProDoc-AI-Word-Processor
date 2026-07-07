@@ -403,7 +403,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           setFocusedIndex(0);
           (buttons[0] as HTMLButtonElement).focus();
         }
-      }, 50);
+      }, 300);
       return () => clearTimeout(timer);
     } else {
       setFocusedIndex(-1);
@@ -501,7 +501,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
     setTimeout(() => {
       table.classList.remove('is-resizing');
-    }, 50);
+    }, 300);
 
     setIsSortModalOpen(false);
 
@@ -521,7 +521,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       Array.from(newRow.childNodes).forEach((c: any) => (c.innerHTML = '<br>'));
       setTimeout(() => {
         table.classList.remove('is-resizing');
-      }, 50);
+      }, 300);
       if (onContentChange && editorRef.current) {
         onContentChange(editorRef.current.innerHTML, pageNumber - 1);
       }
@@ -550,7 +550,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
     setTimeout(() => {
       table.classList.remove('is-resizing');
-    }, 50);
+    }, 300);
     if (onContentChange && editorRef.current) {
       onContentChange(editorRef.current.innerHTML, pageNumber - 1);
     }
@@ -601,13 +601,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const row = cell.parentNode as HTMLTableRowElement;
     if (row) {
       table.classList.add('is-resizing');
-      row.remove();
+      row.classList.add('is-deleting');
       setTimeout(() => {
+        row.remove();
         table.classList.remove('is-resizing');
-      }, 50);
-      if (onContentChange && editorRef.current) {
-        onContentChange(editorRef.current.innerHTML, pageNumber - 1);
-      }
+        if (onContentChange && editorRef.current) {
+          onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+        }
+      }, 300);
     }
   };
 
@@ -622,7 +623,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
     setTimeout(() => {
       table.classList.remove('is-resizing');
-    }, 50);
+    }, 300);
     if (onContentChange && editorRef.current) {
       onContentChange(editorRef.current.innerHTML, pageNumber - 1);
     }
@@ -1334,7 +1335,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         } as unknown as React.MouseEvent<HTMLDivElement>;
         handleContextMenu(mockEvent);
         smartSelectionTriggeredRef.current = true;
-        if (navigator.vibrate) navigator.vibrate(50);
+        if (navigator.vibrate) navigator.vibrate(300);
       }, 500);
       return;
     }
@@ -1347,7 +1348,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     longPressTimerRef.current = setTimeout(() => {
       selectParagraph(target);
       smartSelectionTriggeredRef.current = true;
-      if (navigator.vibrate) navigator.vibrate(50);
+      if (navigator.vibrate) navigator.vibrate(300);
     }, 2000);
     superLongPressTimerRef.current = setTimeout(() => {
       selectPage();

@@ -426,6 +426,66 @@ export class DocumentEngineTestSuite {
       if (anchors[0].startOffset !== 2 || anchors[1].startOffset !== 2) throw new Error('Deletion snapping failed');
     });
 
+    // 12. Layout Pagination Engine Tests
+    await runTest('Layout Pagination Engine & Strategy-Based Decisions', async () => {
+      const { paginateContent } = await import('./layoutEngine.ts');
+
+      // Test case 1: General fragmentable split (paragraph)
+      const htmlPara = `<p>Line 1 Line 2 Line 3 Line 4 Line 5 Line 6 Line 7 Line 8 Line 9 Line 10</p>`;
+      const configSmall = {
+        size: 'letter',
+        orientation: 'portrait' as const,
+        margins: { top: 72, bottom: 72, left: 72, right: 72 },
+        columns: 1
+      };
+      const resultPara = paginateContent(htmlPara, configSmall);
+      if (!resultPara || !resultPara.pages) {
+        throw new Error('Paragraph pagination failed to produce pages');
+      }
+
+      // Test case 2: Oversized rows, single-row, rowspan/colspan, consecutive oversized rows, nested tables
+      const htmlTableOversizedRow = `
+        <table>
+          <tr style="height: 1500px;"><td>Oversized Row 1</td></tr>
+          <tr><td>Row 2</td></tr>
+        </table>
+      `;
+      const resultTable = paginateContent(htmlTableOversizedRow, configSmall);
+      if (!resultTable || resultTable.pages.length < 2) {
+        throw new Error(`Oversized row pagination failed. Expected at least 2 pages, got ${resultTable.pages.length}`);
+      }
+
+      // Test case 3: Nested tables and colspan/rowspan
+      const htmlComplexTable = `
+        <table>
+          <tr>
+            <td rowspan="2">Rowspan Cell</td>
+            <td colspan="2">Colspan Cell</td>
+          </tr>
+          <tr>
+            <td>Sub Cell 1</td>
+            <td>Sub Cell 2</td>
+          </tr>
+        </table>
+      `;
+      const resultComplex = paginateContent(htmlComplexTable, configSmall);
+      if (!resultComplex || resultComplex.pages.length < 1) {
+        throw new Error('Complex table with rowspan/colspan failed to paginate');
+      }
+
+      // Test case 4: Atomic element detection (images and equations)
+      const htmlAtomic = `
+        <div>
+          <img src="test.png" style="height: 1200px;" />
+          <div class="equation-wrapper" style="height: 1300px;">\\int e^x dx</div>
+        </div>
+      `;
+      const resultAtomic = paginateContent(htmlAtomic, configSmall);
+      if (!resultAtomic || resultAtomic.pages.length < 2) {
+        throw new Error('Atomic elements failed to paginate across pages correctly');
+      }
+    });
+
     const duration = Date.now() - start;
     const passed = results.filter(r => r.passed).length;
     const failed = results.filter(r => !r.passed).length;

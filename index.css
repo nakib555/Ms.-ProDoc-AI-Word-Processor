@@ -474,3 +474,51 @@ math-field {
   background-color: #fde047; /* Yellow-300 */
   border-bottom: 2px solid #ca8a04; /* Yellow-600 */
 }
+
+@keyframes rowInsert {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+@keyframes rowDelete {
+  from {
+    transform: scaleY(1);
+    opacity: 1;
+    max-height: 500px;
+  }
+  to {
+    transform: scaleY(0);
+    opacity: 0;
+    max-height: 0;
+  }
+}
+
+.prodoc-editor table.is-resizing tr {
+  animation: rowInsert 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: top;
+}
+
+.prodoc-editor table.is-resizing tr.is-deleting {
+  animation: rowDelete 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: top;
+}
+
+.prodoc-editor table.is-resizing tr.is-deleting td,
+.prodoc-editor table.is-resizing tr.is-deleting th {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 0 !important;
+  line-height: 0 !important;
+  border-top-width: 0 !important;
+  border-bottom-width: 0 !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

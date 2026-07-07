@@ -1,7 +1,63 @@
-
 import { PageConfig } from '../types';
 import { PAGE_SIZES } from '../constants';
 import { JSONDocumentModel, jsonDocumentToHtml } from './documentModel';
+import {
+  LayoutVersion,
+  LayoutDiagnostics,
+  LayoutState,
+  LayoutEnvironmentImpl,
+  MeasurementCache,
+  MeasurementService,
+  PaginationAction,
+  OverflowReason,
+  getLayoutId,
+  isAtomicElement,
+  containsPageBreak,
+  SplitStatus,
+  PaginationDecisionService,
+  LayoutEngine,
+  LayoutEngineConfiguration
+} from './layout';
+
+import type {
+  LayoutEnvironment,
+  PaginationDecision,
+  LayoutContext,
+  SplitResult,
+  SplitMode,
+  OversizedMode,
+  BlockPolicy,
+  SplitStrategy,
+  SplitContext
+} from './layout';
+
+export {
+  LayoutVersion,
+  LayoutDiagnostics,
+  LayoutState,
+  LayoutEnvironmentImpl,
+  MeasurementCache,
+  PaginationAction,
+  OverflowReason,
+  getLayoutId,
+  isAtomicElement,
+  containsPageBreak,
+  SplitStatus,
+  LayoutEngine
+};
+
+export type {
+  LayoutEnvironment,
+  PaginationDecision,
+  LayoutContext,
+  SplitResult,
+  SplitMode,
+  OversizedMode,
+  BlockPolicy,
+  SplitStrategy,
+  SplitContext,
+  LayoutEngineConfiguration
+};
 
 const DPI = 96;
 const SAFETY_BUFFER = 15; 
@@ -113,186 +169,29 @@ class LayoutSandbox {
     document.body.appendChild(this.el);
   }
   setWidth(width: number) { this.el.style.width = `${width}px`; }
-  measure(node: Node): number {
+  measure(node: Node, cache?: MeasurementCache, width?: number): number {
+    if (node.nodeType === Node.ELEMENT_NODE && cache) {
+        const el = node as HTMLElement;
+        const cached = cache.get(el, width || 0);
+        if (cached !== undefined) return cached;
+    }
     this.el.innerHTML = '';
     this.el.appendChild(node.cloneNode(true));
-    return this.el.getBoundingClientRect().height;
+    const height = this.el.getBoundingClientRect().height;
+    if (node.nodeType === Node.ELEMENT_NODE && cache) {
+        cache.set(node as HTMLElement, height, width || 0);
+    }
+    return height;
   }
   destroy() { if (this.el.parentNode) this.el.parentNode.removeChild(this.el); }
 }
 
-const isAtomic = (node: Node): boolean => {
-    if (node.nodeType !== Node.ELEMENT_NODE) return false;
-    const el = node as HTMLElement;
-    return ['IMG', 'VIDEO', 'IFRAME', 'HR', 'MATH-FIELD'].includes(el.tagName) ||
-           el.classList.contains('equation-wrapper') ||
-           el.classList.contains('prodoc-page-break') ||
-           el.getAttribute('data-type') === 'page-break' ||
-           el.classList.contains('prodoc-section-break');
-};
+export interface PagePlacementResult {
+    pageIndex: number;
+    heightUsed: number;
+    nodeCount: number;
+}
 
-// Check if a node contains a page break internally
-const containsPageBreak = (node: Node): boolean => {
-    if (node.nodeType !== Node.ELEMENT_NODE) return false;
-    const el = node as HTMLElement;
-    if (el.classList.contains('prodoc-page-break') || el.getAttribute('data-type') === 'page-break') return true;
-    return !!el.querySelector('.prodoc-page-break, [data-type="page-break"]');
-};
-
-const splitBlock = (
-    originalNode: HTMLElement, 
-    remainingHeight: number, 
-    sandbox: LayoutSandbox
-): { keep: HTMLElement | null, move: HTMLElement | null } => {
-    
-    const effectiveLimit = Math.max(0, remainingHeight - SAFETY_BUFFER);
-
-    // If it's a page break or explicit atomic, move it entirely if it's the break itself, 
-    // but if it's a container with a break inside, we need deeper logic (handled by containsPageBreak check in paginate)
-    if (isAtomic(originalNode)) {
-        return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
-    }
-
-    if (originalNode.tagName === 'TABLE') {
-        const table = originalNode as HTMLTableElement;
-        const rows = Array.from(table.rows);
-        const keepTable = table.cloneNode(false) as HTMLTableElement;
-        const moveTable = table.cloneNode(false) as HTMLTableElement;
-        sandbox.el.innerHTML = '';
-        const measureTable = table.cloneNode(false) as HTMLTableElement;
-        sandbox.el.appendChild(measureTable);
-
-        let splitIndex = 0;
-        for (let i = 0; i < rows.length; i++) {
-            const row = rows[i].cloneNode(true) as HTMLTableRowElement;
-            measureTable.appendChild(row);
-            const newTotalHeight = measureTable.getBoundingClientRect().height;
-            
-            // Check for explicit page breaks inside cells
-            if (containsPageBreak(row)) {
-                 // Force split at this row.
-                 if (i === 0) {
-                     return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
-                 }
-                 splitIndex = i;
-                 break;
-            }
-
-            if (newTotalHeight > effectiveLimit) {
-                if (i === 0) {
-                     return { keep: null, move: originalNode.cloneNode(true) as HTMLElement };
-                }
-                splitIndex = i;
-                break;
-            }
-            if (i === rows.length - 1) splitIndex = rows.length;
-        }
-
-        if (splitIndex === rows.length) return { keep: originalNode.cloneNode(true) as HTMLElement, move: null };
-        
-        for (let i = 0; i < splitIndex; i++) keepTable.appendChild(rows[i].cloneNode(true));
-        
-        // If repeat header row option is enabled, prepend a copy of the first row to the split table
-        const repeatHeader = originalNode.getAttribute('data-repeat-header') === 'true';
-        if (repeatHeader && rows.length > 0 && splitIndex > 0 && splitIndex < rows.length) {
-            const headerRow = rows[0].cloneNode(true) as HTMLTableRowElement;
-            headerRow.setAttribute('data-repeated-header-row', 'true');
-            moveTable.appendChild(headerRow);
-        }
-
-        for (let i = splitIndex; i < rows.length; i++) moveTable.appendChild(rows[i].cloneNode(true));
-        
-        keepTable.setAttribute('data-split-bottom', 'true');
-        moveTable.setAttribute('data-continuation', 'true');
-        return { keep: keepTable, move: moveTable };
-    }
-
-    sandbox.el.innerHTML = '';
-    const keepNode = originalNode.cloneNode(false) as HTMLElement;
-    sandbox.el.appendChild(keepNode);
-    const moveNode = originalNode.cloneNode(false) as HTMLElement;
-
-    const findBinarySplitIndex = (text: string, parent: HTMLElement): number => {
-        let low = 0; let high = text.length; let best = 0;
-        while (low <= high) {
-            const mid = Math.floor((low + high) / 2);
-            const sub = text.substring(0, mid);
-            const tempNode = document.createTextNode(sub);
-            parent.appendChild(tempNode);
-            const h = keepNode.getBoundingClientRect().height;
-            parent.removeChild(tempNode);
-            if (h <= effectiveLimit) { best = mid; low = mid + 1; } else { high = mid - 1; }
-        }
-        return best;
-    };
-
-    const moveSiblings = (nodes: Node[], startIdx: number, target: HTMLElement) => {
-        for (let i = startIdx; i < nodes.length; i++) target.appendChild(nodes[i].cloneNode(true));
-    };
-
-    const processNodes = (nodes: Node[], parentKeep: HTMLElement, parentMove: HTMLElement): boolean => {
-        for (let i = 0; i < nodes.length; i++) {
-            const child = nodes[i];
-            
-            // Check if this child forces a break
-            if (containsPageBreak(child) || (child.nodeType === Node.ELEMENT_NODE && (child as HTMLElement).classList.contains('prodoc-page-break'))) {
-                 // Force move this and all subsequent siblings to next page
-                 parentMove.appendChild(child.cloneNode(true));
-                 moveSiblings(nodes, i + 1, parentMove);
-                 return true;
-            }
-
-            const childClone = child.cloneNode(true);
-            parentKeep.appendChild(childClone);
-            
-            if (keepNode.getBoundingClientRect().height <= effectiveLimit) continue;
-            
-            parentKeep.removeChild(childClone);
-            
-            if (isAtomic(child)) {
-                parentMove.appendChild(child.cloneNode(true));
-                moveSiblings(nodes, i + 1, parentMove);
-                return true;
-            }
-            
-            if (child.nodeType === Node.TEXT_NODE) {
-                const text = child.textContent || '';
-                const splitIndex = findBinarySplitIndex(text, parentKeep);
-                if (splitIndex > 0) parentKeep.appendChild(document.createTextNode(text.substring(0, splitIndex)));
-                const remainder = text.substring(splitIndex);
-                if (remainder || splitIndex === 0) parentMove.appendChild(document.createTextNode(remainder));
-                moveSiblings(nodes, i + 1, parentMove);
-                return true;
-            }
-            
-            if (child.nodeType === Node.ELEMENT_NODE) {
-                const el = child as HTMLElement;
-                const childKeep = el.cloneNode(false) as HTMLElement;
-                const childMove = el.cloneNode(false) as HTMLElement;
-                parentKeep.appendChild(childKeep);
-                if (keepNode.getBoundingClientRect().height > effectiveLimit) {
-                    parentKeep.removeChild(childKeep);
-                    parentMove.appendChild(el.cloneNode(true));
-                    moveSiblings(nodes, i + 1, parentMove);
-                    return true;
-                }
-                const childNodes = Array.from(el.childNodes);
-                const didSplitInside = processNodes(childNodes, childKeep, childMove);
-                parentMove.appendChild(childMove);
-                if (didSplitInside) {
-                    moveSiblings(nodes, i + 1, parentMove);
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    const originalChildren = Array.from(originalNode.childNodes);
-    processNodes(originalChildren, keepNode, moveNode);
-    if (!keepNode.hasChildNodes() && moveNode.hasChildNodes()) return { keep: null, move: moveNode };
-    return { keep: keepNode, move: moveNode };
-};
 
 export const paginateContent = (html: string, initialConfig: PageConfig): PaginatorResult => {
   if (typeof document === 'undefined') return { pages: [{ html, config: initialConfig }], pageHeight: 0, pageWidth: 0 };
@@ -362,8 +261,40 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
           currentH = 0;
       };
 
+      // Initialize LayoutEngine
+      const engineConfig: LayoutEngineConfiguration = {
+          pageSize: currentConfig.size || 'Letter',
+          dpi: DPI,
+          safetyBuffer: SAFETY_BUFFER,
+          minLineHeight: MIN_LINE_HEIGHT,
+          debug: false,
+          diagnosticsEnabled: false
+      };
+
+      const engine = new LayoutEngine({
+          configuration: engineConfig
+      });
+
+      // Initialize LayoutContext
+      const layoutVersion = new LayoutVersion();
+      const environment = new LayoutEnvironmentImpl(currentConfig, false);
+      const state = new LayoutState();
+      const diagnostics = new LayoutDiagnostics(false);
+      const measuredCache = new MeasurementCache(layoutVersion);
+      const measurementService = new MeasurementService(sandbox, measuredCache);
+
+      const context: LayoutContext = {
+          engine,
+          environment,
+          state,
+          diagnostics,
+          measurementService
+      };
+
       for (let i = 0; i < nodes.length; i++) {
           const node = nodes[i];
+
+          // 1. Handle Section Breaks
           if (node.classList?.contains('prodoc-section-break')) {
               const configData = node.getAttribute('data-config');
               if (configData) {
@@ -375,68 +306,105 @@ export const paginateContent = (html: string, initialConfig: PageConfig): Pagina
                       effectiveWidth = dims.effectiveWidth;
                       effectiveHeight = dims.effectiveHeight;
                       sandbox.setWidth(effectiveWidth);
+                      
+                      // Update the context environment
+                      context.environment = new LayoutEnvironmentImpl(currentConfig, false);
+                      layoutVersion.increment();
                   } catch (e) { console.error("Failed to parse section break", e); }
               }
-              if (currentPageNodes.length > 0) flushPage();
-              else if (pages.length === 0) { // Force blank first page if section break is first item
-                   pages.push({ html: '<p><br/></p>', config: initialConfig }); 
+              if (currentPageNodes.length > 0) {
+                  flushPage();
+              } else if (pages.length === 0) { // Force blank first page if section break is first item
+                  pages.push({ html: '<p><br/></p>', config: initialConfig }); 
               }
               lastWasBreak = true;
               continue;
           }
-          
-          const isPageBreak = node.classList?.contains('prodoc-page-break') || node.getAttribute('data-type') === 'page-break' || node.style?.pageBreakAfter === 'always' || node.style?.breakAfter === 'page';
-          
-          if (isPageBreak) { 
-              currentPageNodes.push(node); // Keep break marker on current page
-              flushPage(); 
-              lastWasBreak = true;
-              continue; 
-          }
 
           lastWasBreak = false;
 
+          // Check if we need to flush page before we start measuring the next block
           const remainingForStart = Math.max(0, effectiveHeight - currentH - SAFETY_BUFFER);
-          if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) { flushPage(); i--; continue; }
-
-          const nodeH = sandbox.measure(node);
-          
-          // Keep Together logic for tables:
-          const isTable = node.tagName === 'TABLE';
-          const keepTogether = isTable && node.getAttribute('data-keep-together') === 'true';
-          if (keepTogether && currentH > 0 && currentH + nodeH > effectiveHeight - SAFETY_BUFFER) {
+          if (currentH > 0 && remainingForStart < MIN_LINE_HEIGHT) {
               flushPage();
               i--;
               continue;
           }
 
-          if (currentH + nodeH > effectiveHeight - SAFETY_BUFFER) {
-              const remainingSpace = Math.max(0, effectiveHeight - currentH);
-              
-              // Safety valve: If we are at top of page and node fits nowhere, place it
-              if (currentH < MIN_LINE_HEIGHT * 2 && nodeH > remainingSpace) {
-                  const splitCheck = splitBlock(node, remainingSpace, sandbox);
-                  if (!splitCheck.keep && splitCheck.move) {
-                       currentPageNodes.push(node);
-                       flushPage();
-                       continue;
-                  }
-              }
+          // Measure the node height (utilizing MeasurementCache & MeasurementService)
+          const nodeH = context.measurementService.measure(node, effectiveWidth);
 
-              const split = splitBlock(node, remainingSpace, sandbox);
-              if (split.keep && (split.keep.hasChildNodes() || split.keep.tagName === 'IMG' || split.keep.tagName === 'TABLE')) {
-                  currentPageNodes.push(split.keep);
-                  flushPage(); 
-                  if (split.move && (split.move.hasChildNodes() || split.move.tagName === 'IMG' || split.move.tagName === 'TABLE')) {
-                      nodes[i] = split.move; i--;
+          // Get decision from our Pagination Decision engine
+          const decision = PaginationDecisionService.decide(
+              node,
+              nodeH,
+              currentH,
+              effectiveHeight,
+              context,
+              effectiveWidth,
+              state.currentPageIndex,
+              state.currentColumnIndex,
+              layoutVersion.get()
+          );
+
+          context.diagnostics.log(`Decision for node ${getLayoutId(node)}: Action=${PaginationAction[decision.action]}, NodeHeight=${nodeH}, CurrentHeight=${currentH}`);
+
+          switch (decision.action) {
+              case PaginationAction.Place:
+                  currentPageNodes.push(node);
+                  currentH += nodeH;
+                  break;
+
+              case PaginationAction.MoveNextPage:
+                  if (currentPageNodes.length > 0) {
+                      flushPage();
+                      i--; // retry on next page
+                  } else {
+                      // If page is already empty, force place it to prevent infinite loop
+                      currentPageNodes.push(node);
+                      currentH += nodeH;
                   }
-              } else {
-                  if (currentPageNodes.length > 0) { flushPage(); i--; }
-                  else { currentPageNodes.push(node); flushPage(); }
-              }
-          } else {
-              currentPageNodes.push(node);
-              currentH += nodeH;
+                  break;
+
+              case PaginationAction.ForceOverflow:
+                  currentPageNodes.push(node);
+                  currentH += nodeH;
+                  flushPage();
+                  break;
+
+              case PaginationAction.Split:
+                  if (decision.keep && (decision.keep.hasChildNodes() || decision.keep.tagName === 'IMG' || decision.keep.tagName === 'TABLE')) {
+                      currentPageNodes.push(decision.keep);
+                      flushPage();
+                      if (decision.move && (decision.move.hasChildNodes() || decision.move.tagName === 'IMG' || decision.move.tagName === 'TABLE')) {
+                          // Clear layout ID of the move-part to allow fresh processing
+                          decision.move.removeAttribute('data-layout-id');
+                          nodes[i] = decision.move;
+                          i--; // retry on next page with remaining part
+                      }
+                  } else {
+                      if (currentPageNodes.length > 0) {
+                          flushPage();
+                          i--; // retry entire node on empty page
+                      } else {
+                          // If page is empty and we can't keep anything, force place entire node
+                          currentPageNodes.push(node);
+                          currentH += nodeH;
+                      }
+                  }
+                  break;
+
+              case PaginationAction.Atomic:
+                  // For atomic elements that don't fit, we either move to next page or force place
+                  if (currentPageNodes.length > 0) {
+                      flushPage();
+                      i--; // retry on next page
+                  } else {
+                      currentPageNodes.push(node);
+                      currentH += nodeH;
+                      flushPage();
+                  }
+                  break;
           }
       }
 

@@ -62,22 +62,33 @@ export const TableLayoutTab: React.FC = () => {
           fn(table);
           setTimeout(() => {
               table.classList.remove('is-resizing');
-          }, 50);
+          }, 300);
       });
   };
 
-  const deleteRow = () => withResizeTransition((table) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      let node = selection.anchorNode as HTMLElement;
-      while(node && node.nodeName !== 'TR') {
-          node = node.parentNode as HTMLElement;
-          if (!node || node.nodeName === 'BODY') return;
-      }
-      if (node && node.nodeName === 'TR') {
-          node.remove();
-      }
-  });
+  const deleteRow = () => {
+      runOnTable((table) => {
+          const selection = window.getSelection();
+          if (!selection || selection.rangeCount === 0) return;
+          let node = selection.anchorNode as HTMLElement;
+          while(node && node.nodeName !== 'TR') {
+              node = node.parentNode as HTMLElement;
+              if (!node || node.nodeName === 'BODY') return;
+          }
+          if (node && node.nodeName === 'TR') {
+              table.classList.add('is-resizing');
+              node.classList.add('is-deleting');
+              setTimeout(() => {
+                  node.remove();
+                  table.classList.remove('is-resizing');
+                  const editorEl = table.closest('.prodoc-editor');
+                  if (editorEl) {
+                      editorEl.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+              }, 300);
+          }
+      });
+  };
   
   const deleteCol = () => withResizeTransition((table) => {
       const selection = window.getSelection();
@@ -480,10 +491,10 @@ export const TableLayoutTab: React.FC = () => {
                   onClick={autoFormatTable}
               />
               <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
-              <div className="flex flex-col gap-1 px-1 h-full justify-center min-w-[150px]">
+              <div className="flex flex-col gap-1 px-1 h-full justify-center min-w-[1300px]">
                   {/* Header Shading Row */}
               <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-500 font-medium w-[45px] leading-tight">Header:</span>
+                  <span className="text-[10px] text-slate-3000 font-medium w-[45px] leading-tight">Header:</span>
                   <div className="flex items-center gap-1">
                       <button 
                           onMouseDown={(e) => e.preventDefault()} 
@@ -514,29 +525,29 @@ export const TableLayoutTab: React.FC = () => {
 
               {/* Alternating Shading Row */}
               <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-500 font-medium w-[45px] leading-tight">Zebra:</span>
+                  <span className="text-[10px] text-slate-3000 font-medium w-[45px] leading-tight">Zebra:</span>
                   <div className="flex items-center gap-1">
                       <button 
                           onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-50" 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-300" 
                           title="Zebra Light Grey"
                           onClick={() => applyAlternatingShading('#f8fafc')} 
                       />
                       <button 
                           onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-50" 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-300" 
                           title="Zebra Soft Blue"
                           onClick={() => applyAlternatingShading('#eff6ff')} 
                       />
                       <button 
                           onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-emerald-50" 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-emerald-300" 
                           title="Zebra Soft Green"
                           onClick={() => applyAlternatingShading('#ecfdf5')} 
                       />
                       <button 
                           onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-amber-50" 
+                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-amber-300" 
                           title="Zebra Soft Amber"
                           onClick={() => applyAlternatingShading('#fffbeb')} 
                       />
@@ -558,10 +569,10 @@ export const TableLayoutTab: React.FC = () => {
       <RibbonSection title="Rows & Columns">
           <div className="flex h-full items-center gap-1">
               <div className="flex flex-col h-full justify-center gap-0.5 border-r border-slate-200 dark:border-slate-700 pr-1 mr-1">
-                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-50 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteRow}>
+                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-300 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteRow}>
                      <Trash2 size={12}/> Delete Row
                  </button>
-                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-50 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteCol}>
+                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-300 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteCol}>
                      <Trash2 size={12}/> Delete Column
                  </button>
               </div>
@@ -614,35 +625,35 @@ export const TableLayoutTab: React.FC = () => {
                               className="fixed inset-0 z-40" 
                               onClick={() => setIsAutoFitOpen(false)}
                           />
-                          <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                          <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 z-300 animate-in fade-in slide-in-from-top-1 duration-150">
                               <button 
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/300 text-xs text-slate-700 dark:text-slate-300 transition-colors"
                                   onClick={() => {
                                       autoFit('contents');
                                       setIsAutoFitOpen(false);
                                   }}
                               >
-                                  <Minimize size={14} className="text-slate-500 dark:text-slate-400" />
+                                  <Minimize size={14} className="text-slate-3000 dark:text-slate-400" />
                                   <span className="font-medium">AutoFit Contents</span>
                               </button>
                               <button 
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/300 text-xs text-slate-700 dark:text-slate-300 transition-colors"
                                   onClick={() => {
                                       autoFit('window');
                                       setIsAutoFitOpen(false);
                                   }}
                               >
-                                  <Maximize size={14} className="text-slate-500 dark:text-slate-400" />
+                                  <Maximize size={14} className="text-slate-3000 dark:text-slate-400" />
                                   <span className="font-medium">AutoFit Window</span>
                               </button>
                               <button 
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/50 text-xs text-slate-700 dark:text-slate-300 transition-colors"
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/300 text-xs text-slate-700 dark:text-slate-300 transition-colors"
                                   onClick={() => {
                                       autoFit('fixed');
                                       setIsAutoFitOpen(false);
                                   }}
                               >
-                                  <Grid size={14} className="text-slate-500 dark:text-slate-400" />
+                                  <Grid size={14} className="text-slate-3000 dark:text-slate-400" />
                                   <span className="font-medium">Fixed Column Width</span>
                               </button>
                           </div>
