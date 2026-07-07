@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --table-row-animation-duration: 300ms;
+}
+
 /* Custom scrollbar for a cleaner look */
 ::-webkit-scrollbar {
   width: 14px;
@@ -123,11 +127,11 @@ table:has([data-formula-outline]) {
 }
 
 /* Smooth transitions for table modifications like Insert/Delete Rows or Columns */
-.prodoc-editor table,
-.prodoc-editor table tbody,
-.prodoc-editor table tr,
-.prodoc-editor table td,
-.prodoc-editor table th {
+.prodoc-editor table.is-resizing,
+.prodoc-editor table.is-resizing tbody,
+.prodoc-editor table.is-resizing tr,
+.prodoc-editor table.is-resizing td,
+.prodoc-editor table.is-resizing th {
   transition: width 0.25s ease-out, height 0.25s ease-out, background-color 0.2s ease, border-color 0.2s ease;
 }
 
@@ -454,7 +458,18 @@ math-field {
   background-color: var(--bg-surface-hover) !important;
 }
 
-/* Disable transitions during manual drag to prevent lag */
+/* Disable transitions and selection during manual drag to prevent lag and jumps */
+body.is-table-resizing,
+body.is-table-resizing * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.is-table-resizing .prodoc-editor table,
+body.is-table-resizing .prodoc-editor tbody,
+body.is-table-resizing .prodoc-editor tr,
+body.is-table-resizing .prodoc-editor td,
+body.is-table-resizing .prodoc-editor th,
 .prodoc-editor table.is-dragging,
 .prodoc-editor table.is-dragging tbody,
 .prodoc-editor table.is-dragging tr,
@@ -475,50 +490,50 @@ math-field {
   border-bottom: 2px solid #ca8a04; /* Yellow-600 */
 }
 
-@keyframes rowInsert {
+@keyframes cellInsert {
   from {
-    transform: scaleY(0);
     opacity: 0;
-    max-height: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    line-height: 0 !important;
   }
   to {
-    transform: scaleY(1);
     opacity: 1;
-    max-height: 500px;
   }
 }
 
-@keyframes rowDelete {
+@keyframes cellDelete {
   from {
-    transform: scaleY(1);
     opacity: 1;
-    max-height: 500px;
   }
   to {
-    transform: scaleY(0);
     opacity: 0;
-    max-height: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: 0 !important;
+    line-height: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
   }
 }
 
-.prodoc-editor table.is-resizing tr {
-  animation: rowInsert 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-origin: top;
+.prodoc-editor tr.is-inserted td,
+.prodoc-editor tr.is-inserted th {
+  animation: cellInsert var(--table-row-animation-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-.prodoc-editor table.is-resizing tr.is-deleting {
-  animation: rowDelete 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  transform-origin: top;
-}
-
-.prodoc-editor table.is-resizing tr.is-deleting td,
-.prodoc-editor table.is-resizing tr.is-deleting th {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  height: 0 !important;
-  line-height: 0 !important;
-  border-top-width: 0 !important;
-  border-bottom-width: 0 !important;
+.prodoc-editor tr.is-deleting td,
+.prodoc-editor tr.is-deleting th {
+  animation: cellDelete var(--table-row-animation-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prodoc-editor tr.is-inserted td,
+  .prodoc-editor tr.is-inserted th,
+  .prodoc-editor tr.is-deleting td,
+  .prodoc-editor tr.is-deleting th {
+    animation: none !important;
+    transition: none !important;
+  }
 }

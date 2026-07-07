@@ -67,6 +67,12 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
   const [activeHandle, setActiveHandle] = useState<{ type: 'col' | 'row'; index: number } | null>(null);
   
   const { content, setContent, setIsTableResizing } = useEditor();
+  
+  useEffect(() => {
+    return () => {
+      document.body.classList.remove('is-table-resizing');
+    };
+  }, []);
 
   useEffect(() => {
     const updateHandles = () => {
@@ -136,6 +142,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     setIsTableResizing(true);
     setActiveHandle({ type: 'col', index });
     document.body.style.cursor = 'col-resize';
+    document.body.classList.add('is-table-resizing');
     
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -156,41 +163,52 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     const tableStartWidth = target.offsetWidth;
     const initialContent = content;
 
+    let latestActualWidth = startWidth;
+    let latestNewNextWidth = nextStartWidth;
+    let latestNewTableWidth = tableStartWidth;
+    let latestActualNewWidth = startWidth;
+
     const handlePointerMove = (ev: PointerEvent) => {
       const deltaX = (ev.clientX - startX) / scale;
       
-      let actualWidth = startWidth;
-      let newNextWidth = nextStartWidth;
-      let newTableWidth = tableStartWidth;
-      let actualNewWidth = startWidth;
-
       if (nextCell) {
         const newWidth = Math.max(20, startWidth + deltaX);
-        newNextWidth = Math.max(20, nextStartWidth - (newWidth - startWidth));
-        actualWidth = startWidth + (nextStartWidth - newNextWidth);
+        latestNewNextWidth = Math.max(20, nextStartWidth - (newWidth - startWidth));
+        latestActualWidth = startWidth + (nextStartWidth - latestNewNextWidth);
         
         for (let i = 0; i < target.rows.length; i++) {
           const r = target.rows[i];
-          if (r.cells[index]) r.cells[index].style.width = `${actualWidth}px`;
-          if (r.cells[index + 1]) r.cells[index + 1].style.width = `${newNextWidth}px`;
+          if (r.cells[index]) r.cells[index].style.width = `${latestActualWidth}px`;
+          if (r.cells[index + 1]) r.cells[index + 1].style.width = `${latestNewNextWidth}px`;
         }
       } else {
         const newWidth = Math.max(20, startWidth + deltaX);
         const maxTableWidth = container.offsetWidth;
-        newTableWidth = tableStartWidth + (newWidth - startWidth);
-        if (newTableWidth > maxTableWidth) {
-          newTableWidth = maxTableWidth;
+        latestNewTableWidth = tableStartWidth + (newWidth - startWidth);
+        if (latestNewTableWidth > maxTableWidth) {
+          latestNewTableWidth = maxTableWidth;
         }
-        actualNewWidth = newTableWidth - tableStartWidth + startWidth;
+        latestActualNewWidth = latestNewTableWidth - tableStartWidth + startWidth;
 
-        target.style.width = `${newTableWidth}px`;
+        target.style.width = `${latestNewTableWidth}px`;
         for (let i = 0; i < target.rows.length; i++) {
           const r = target.rows[i];
-          if (r.cells[index]) r.cells[index].style.width = `${actualNewWidth}px`;
+          if (r.cells[index]) r.cells[index].style.width = `${latestActualNewWidth}px`;
         }
       }
+    };
 
-      // Update global HTML content
+    const handlePointerUp = () => {
+      setIsResizing(false);
+      setIsTableResizing(false);
+      setActiveHandle(null);
+      document.body.style.cursor = '';
+      document.body.classList.remove('is-table-resizing');
+      target.classList.remove('is-dragging');
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+
+      // Apply the final values and update global HTML content ONCE on release
       const parser = new DOMParser();
       const doc = parser.parseFromString(initialContent, 'text/html');
       const body = doc.body;
@@ -216,29 +234,20 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
           if (nextCell) {
               for (let i = 0; i < tbl.rows.length; i++) {
                   const r = tbl.rows[i];
-                  if (r.cells[index]) r.cells[index].style.width = `${actualWidth}px`;
-                  if (r.cells[index + 1]) r.cells[index + 1].style.width = `${newNextWidth}px`;
+                  if (r.cells[index]) r.cells[index].style.width = `${latestActualWidth}px`;
+                  if (r.cells[index + 1]) r.cells[index + 1].style.width = `${latestNewNextWidth}px`;
               }
           } else {
-              tbl.style.width = `${newTableWidth}px`;
+              tbl.style.width = `${latestNewTableWidth}px`;
               for (let i = 0; i < tbl.rows.length; i++) {
                   const r = tbl.rows[i];
-                  if (r.cells[index]) r.cells[index].style.width = `${actualNewWidth}px`;
+                  if (r.cells[index]) r.cells[index].style.width = `${latestActualNewWidth}px`;
               }
           }
           const updatedContent = body.innerHTML;
           setContent(updatedContent);
       }
-    };
 
-    const handlePointerUp = () => {
-      setIsResizing(false);
-      setIsTableResizing(false);
-      setActiveHandle(null);
-      document.body.style.cursor = '';
-      target.classList.remove('is-dragging');
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
       onUpdate();
     };
 
@@ -257,6 +266,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     setIsTableResizing(true);
     setActiveHandle({ type: 'row', index });
     document.body.style.cursor = 'row-resize';
+    document.body.classList.add('is-table-resizing');
     
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -268,13 +278,25 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     const startY = e.clientY;
     const startHeight = row.offsetHeight;
     const initialContent = content;
+    let latestNewHeight = startHeight;
 
     const handlePointerMove = (ev: PointerEvent) => {
       const deltaY = (ev.clientY - startY) / scale;
-      const newHeight = Math.max(20, startHeight + deltaY);
-      row.style.height = `${newHeight}px`;
+      latestNewHeight = Math.max(20, startHeight + deltaY);
+      row.style.height = `${latestNewHeight}px`;
+    };
 
-      // Parse the initial content, merge split tables, set row height, and update global content
+    const handlePointerUp = () => {
+      setIsResizing(false);
+      setIsTableResizing(false);
+      setActiveHandle(null);
+      document.body.style.cursor = '';
+      document.body.classList.remove('is-table-resizing');
+      target.classList.remove('is-dragging');
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+
+      // Parse the initial content, merge split tables, set row height, and update global content ONCE on release
       const parser = new DOMParser();
       const doc = parser.parseFromString(initialContent, 'text/html');
       const body = doc.body;
@@ -297,20 +319,11 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       const tables = Array.from(body.querySelectorAll('table'));
       const tbl = tables[logicalTableIndex];
       if (tbl && tbl.rows[logicalRowIndex]) {
-          tbl.rows[logicalRowIndex].style.height = `${newHeight}px`;
+          tbl.rows[logicalRowIndex].style.height = `${latestNewHeight}px`;
           const updatedContent = body.innerHTML;
           setContent(updatedContent);
       }
-    };
 
-    const handlePointerUp = () => {
-      setIsResizing(false);
-      setIsTableResizing(false);
-      setActiveHandle(null);
-      document.body.style.cursor = '';
-      target.classList.remove('is-dragging');
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
       onUpdate();
     };
 

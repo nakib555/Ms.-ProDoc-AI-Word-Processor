@@ -77,6 +77,7 @@ export const TableLayoutTab: React.FC = () => {
           }
           if (node && node.nodeName === 'TR') {
               table.classList.add('is-resizing');
+              node.classList.remove('is-inserted');
               node.classList.add('is-deleting');
               setTimeout(() => {
                   node.remove();
@@ -108,7 +109,7 @@ export const TableLayoutTab: React.FC = () => {
 
   const deleteTable = () => runOnTable((table) => table.remove());
 
-  const insertRow = (where: 'above' | 'below') => withResizeTransition((table) => {
+  const insertRow = (where: 'above' | 'below') => runOnTable((table) => {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
       let node = selection.anchorNode as HTMLElement;
@@ -117,9 +118,20 @@ export const TableLayoutTab: React.FC = () => {
           if (!node || node.nodeName === 'BODY') return;
       }
       if (node && node.nodeName === 'TR') {
+          table.classList.add('is-resizing');
           const row = node as HTMLTableRowElement;
           const newRow = row.parentNode!.insertBefore(row.cloneNode(true), where === 'above' ? row : row.nextSibling);
           Array.from(newRow.childNodes).forEach((c: any) => c.innerHTML = '<br>');
+
+          newRow.classList.remove('is-deleting');
+          requestAnimationFrame(() => {
+              newRow.classList.add('is-inserted');
+          });
+
+          newRow.addEventListener('animationend', () => {
+              newRow.classList.remove('is-inserted');
+              table.classList.remove('is-resizing');
+          }, { once: true });
       }
   });
 

@@ -1,6 +1,24 @@
 import { SplitStrategy, SplitResult, SplitStatus, SplitContext } from '../SplitStrategy';
 import { containsPageBreak } from '../helpers';
 
+function appendRowToClonedTable(
+  clonedTable: HTMLTableElement,
+  originalParent: HTMLElement | null,
+  clonedRow: HTMLTableRowElement
+) {
+  const parentTag = originalParent?.tagName.toUpperCase();
+  if (parentTag === 'THEAD' || parentTag === 'TBODY' || parentTag === 'TFOOT') {
+    let container = clonedTable.querySelector(parentTag.toLowerCase());
+    if (!container) {
+      container = document.createElement(parentTag.toLowerCase());
+      clonedTable.appendChild(container);
+    }
+    container.appendChild(clonedRow);
+  } else {
+    clonedTable.appendChild(clonedRow);
+  }
+}
+
 export class TableSplitStrategy implements SplitStrategy {
   readonly priority = 5;
 
@@ -21,16 +39,24 @@ export class TableSplitStrategy implements SplitStrategy {
     const moveTable = table.cloneNode(false) as HTMLTableElement;
     const measureTable = table.cloneNode(false) as HTMLTableElement;
 
+    keepTable.removeAttribute('data-layout-id');
+    moveTable.removeAttribute('data-layout-id');
+    measureTable.removeAttribute('data-layout-id');
+
     let splitIndex = 0;
     let isFirstRowOversized = false;
 
     for (let i = 0; i < rows.length; i++) {
-      const row = rows[i].cloneNode(true) as HTMLTableRowElement;
-      measureTable.appendChild(row);
+      const row = rows[i];
+      const rowClone = row.cloneNode(true) as HTMLTableRowElement;
+      appendRowToClonedTable(measureTable, row.parentElement, rowClone);
+      
+      // Ensure the measureTable does not use stale cached height after row insertion
+      measureTable.removeAttribute('data-layout-id');
       const newTotalHeight = context.measure(measureTable);
 
       // Check for explicit page breaks inside cells
-      if (containsPageBreak(row)) {
+      if (containsPageBreak(rowClone)) {
         if (i === 0) {
           isFirstRowOversized = true;
           splitIndex = 1;
@@ -64,20 +90,23 @@ export class TableSplitStrategy implements SplitStrategy {
       };
     }
 
-    // Prepare keep and move tables
+    // Prepare keep and move tables preserving hierarchy
     for (let i = 0; i < splitIndex; i++) {
-      keepTable.appendChild(rows[i].cloneNode(true));
+      const rowClone = rows[i].cloneNode(true) as HTMLTableRowElement;
+      appendRowToClonedTable(keepTable, rows[i].parentElement, rowClone);
     }
 
     const repeatHeader = node.getAttribute('data-repeat-header') === 'true';
     if (repeatHeader && rows.length > 0 && splitIndex > 0 && splitIndex < rows.length) {
-      const headerRow = rows[0].cloneNode(true) as HTMLTableRowElement;
-      headerRow.setAttribute('data-repeated-header-row', 'true');
-      moveTable.appendChild(headerRow);
+      const headerRow = rows[0];
+      const headerRowClone = headerRow.cloneNode(true) as HTMLTableRowElement;
+      headerRowClone.setAttribute('data-repeated-header-row', 'true');
+      appendRowToClonedTable(moveTable, headerRow.parentElement, headerRowClone);
     }
 
     for (let i = splitIndex; i < rows.length; i++) {
-      moveTable.appendChild(rows[i].cloneNode(true));
+      const rowClone = rows[i].cloneNode(true) as HTMLTableRowElement;
+      appendRowToClonedTable(moveTable, rows[i].parentElement, rowClone);
     }
 
     keepTable.setAttribute('data-split-bottom', 'true');

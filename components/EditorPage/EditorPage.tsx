@@ -519,6 +519,16 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       table.classList.add('is-resizing');
       const newRow = row.parentNode!.insertBefore(row.cloneNode(true), where === 'above' ? row : row.nextSibling);
       Array.from(newRow.childNodes).forEach((c: any) => (c.innerHTML = '<br>'));
+      
+      newRow.classList.remove('is-deleting');
+      requestAnimationFrame(() => {
+        newRow.classList.add('is-inserted');
+      });
+
+      newRow.addEventListener('animationend', () => {
+        newRow.classList.remove('is-inserted');
+      }, { once: true });
+
       setTimeout(() => {
         table.classList.remove('is-resizing');
       }, 300);
@@ -601,6 +611,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const row = cell.parentNode as HTMLTableRowElement;
     if (row) {
       table.classList.add('is-resizing');
+      row.classList.remove('is-inserted');
       row.classList.add('is-deleting');
       setTimeout(() => {
         row.remove();

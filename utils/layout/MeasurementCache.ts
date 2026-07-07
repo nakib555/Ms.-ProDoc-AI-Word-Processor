@@ -26,8 +26,9 @@ export class MeasurementCache {
     const styleHash = node.style?.cssText || '';
     const fontHash = `${node.style?.fontFamily || ''}-${node.style?.fontSize || ''}-${node.style?.lineHeight || ''}`;
     const className = node.className || '';
+    const innerContent = node.innerHTML || '';
 
-    return `${id}::v=${version}::w=${pageWidth}::style=${styleHash}::font=${fontHash}::class=${className}`;
+    return `${id}::v=${version}::w=${pageWidth}::style=${styleHash}::font=${fontHash}::class=${className}::content=${innerContent}`;
   }
 
   get(node: HTMLElement, pageWidth: number, diagnostics?: LayoutDiagnostics): number | undefined {
