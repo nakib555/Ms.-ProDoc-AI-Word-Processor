@@ -12,6 +12,16 @@ export class SplitStrategyRegistry {
     }
   }
 
+  unregister(strategy: SplitStrategy): void {
+    const idx = this.strategies.indexOf(strategy);
+    if (idx !== -1) {
+      this.strategies.splice(idx, 1);
+    }
+    if (this.defaultStrategy === strategy) {
+      this.defaultStrategy = null;
+    }
+  }
+
   setDefault(strategy: SplitStrategy): void {
     this.defaultStrategy = strategy;
   }
