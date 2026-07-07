@@ -79,14 +79,14 @@ export const TableLayoutTab: React.FC = () => {
               table.classList.add('is-resizing');
               node.classList.remove('is-inserted');
               node.classList.add('is-deleting');
-              setTimeout(() => {
+              node.addEventListener('animationend', () => {
                   node.remove();
                   table.classList.remove('is-resizing');
                   const editorEl = table.closest('.prodoc-editor');
                   if (editorEl) {
                       editorEl.dispatchEvent(new Event('input', { bubbles: true }));
                   }
-              }, 300);
+              }, { once: true });
           }
       });
   };

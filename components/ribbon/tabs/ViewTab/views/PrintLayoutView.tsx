@@ -356,9 +356,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const actualZoom = zoom;
 
   useEffect(() => {
+    if (isTableResizing) return;
     let isMounted = true;
     
-    const delay = isTableResizing ? 0 : 200;
+    const delay = 200;
     
     const timer = setTimeout(() => {
         if (!isMounted) return;

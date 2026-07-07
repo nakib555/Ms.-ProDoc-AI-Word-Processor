@@ -152,9 +152,24 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     
     target.classList.add('is-dragging');
     target.style.tableLayout = 'fixed';
+
+    // Lock all column widths of the first row to their current offsetWidth so they do not shift during dragging
+    for (let j = 0; j < firstRow.cells.length; j++) {
+      const c = firstRow.cells[j];
+      if (!c.style.width) {
+        c.style.width = `${c.offsetWidth}px`;
+      }
+    }
+
     if (!target.style.width) {
       target.style.width = `${target.offsetWidth}px`;
     }
+
+    const handleEl = e.currentTarget as HTMLDivElement;
+    const parentEl = container.parentElement;
+    const containerRect = parentEl ? parentEl.getBoundingClientRect() : { left: 0 };
+    const cellRect = cell.getBoundingClientRect();
+    const startLeft = (cellRect.right - containerRect.left) / scale - 7 / scale;
     
     const startX = e.clientX;
     const startWidth = cell.offsetWidth;
@@ -170,6 +185,10 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
 
     const handlePointerMove = (ev: PointerEvent) => {
       const deltaX = (ev.clientX - startX) / scale;
+      
+      if (handleEl) {
+        handleEl.style.left = `${startLeft + deltaX}px`;
+      }
       
       if (nextCell) {
         const newWidth = Math.max(20, startWidth + deltaX);
@@ -275,6 +294,13 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     }
     
     target.classList.add('is-dragging');
+
+    const handleEl = e.currentTarget as HTMLDivElement;
+    const parentEl = container.parentElement;
+    const containerRect = parentEl ? parentEl.getBoundingClientRect() : { top: 0 };
+    const rowRect = row.getBoundingClientRect();
+    const startTop = (rowRect.bottom - containerRect.top) / scale - 7 / scale;
+
     const startY = e.clientY;
     const startHeight = row.offsetHeight;
     const initialContent = content;
@@ -282,6 +308,9 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
 
     const handlePointerMove = (ev: PointerEvent) => {
       const deltaY = (ev.clientY - startY) / scale;
+      if (handleEl) {
+        handleEl.style.top = `${startTop + deltaY}px`;
+      }
       latestNewHeight = Math.max(20, startHeight + deltaY);
       row.style.height = `${latestNewHeight}px`;
     };
