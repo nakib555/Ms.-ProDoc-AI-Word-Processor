@@ -2,7 +2,7 @@
 import React, { useCallback, useRef, useState, useLayoutEffect } from 'react';
 import { useEditor } from '../contexts/EditorContext';
 import { MiniToolbar } from './MiniToolbar';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { GhostDocument } from './ui/GhostDocument';
 import { PrintLayoutView } from './ribbon/tabs/ViewTab/views/PrintLayoutView';
 import { WebLayoutView } from './ribbon/tabs/ViewTab/views/WebLayoutView';
 import { ReadLayoutView } from './ribbon/tabs/ViewTab/views/ReadLayoutView';
@@ -45,8 +45,8 @@ const Editor: React.FC = () => {
 
   if (!editor) {
     return (
-        <div className="flex items-center justify-center h-full">
-            <LoadingSpinner />
+        <div className="flex flex-col items-center justify-center h-full w-full bg-[#f1f5f9] dark:bg-[#020617] p-8">
+            <GhostDocument />
         </div>
     );
   }

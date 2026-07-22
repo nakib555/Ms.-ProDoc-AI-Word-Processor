@@ -10,6 +10,7 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 import { jsonToHtml } from '../../../../../utils/documentConverter';
 import { getAdvancedExpandPrompt } from '../../../../../services/prompts/tools/refine';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { GhostDocument } from '@/components/ui/GhostDocument';
 
 interface AdvancedExpandDialogProps {
   isOpen: boolean;
@@ -290,19 +291,9 @@ export const AdvancedExpandDialog: React.FC<AdvancedExpandDialogProps> = ({
                             />
                         </div>
                     ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center text-slate-400">
                             {isGenerating ? (
-                                <div className="space-y-4">
-                                    <div className="relative mx-auto w-16 h-16">
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <LoadingSpinner className="w-12 h-12" />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Expanding your ideas...</p>
-                                        <p className="text-xs mt-1 opacity-70">Adding depth, context, and details.</p>
-                                    </div>
-                                </div>
+                                <GhostDocument />
                             ) : (
                                 <div className="space-y-4 max-w-sm opacity-60">
                                     <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-slate-700 shadow-sm">

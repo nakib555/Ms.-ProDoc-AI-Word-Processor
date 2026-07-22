@@ -517,6 +517,12 @@ body.is-table-resizing .prodoc-editor th,
   }
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .prodoc-editor tr.is-inserted td,
 .prodoc-editor tr.is-inserted th {
   animation: cellInsert var(--table-row-animation-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards;

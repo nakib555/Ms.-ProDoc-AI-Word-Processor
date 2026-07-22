@@ -25,13 +25,19 @@ export default defineConfig(({ mode }) => {
         }
       },
       build: {
-        chunkSizeWarningLimit: 1500,
+        chunkSizeWarningLimit: 2500,
         rollupOptions: {
           output: {
-            manualChunks: {
-              vendor: ['react', 'react-dom'],
-              lucide: ['lucide-react'],
-              mathlive: ['mathlive']
+            manualChunks: (id) => {
+              if (id.includes('node_modules')) {
+                if (id.includes('lucide-react')) return 'lucide';
+                if (id.includes('mathlive')) return 'mathlive';
+                if (id.includes('@tiptap') || id.includes('prosemirror')) return 'tiptap';
+                if (id.includes('@google/genai')) return 'genai';
+                if (id.includes('mammoth')) return 'mammoth';
+                if (id.includes('puppeteer')) return 'puppeteer';
+                if (id.includes('hyperformula')) return 'hyperformula';
+              }
             }
           }
         }

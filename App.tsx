@@ -70,41 +70,82 @@ const AppContent: React.FC = () => {
             
             {/* AI Overlay Loading State - Only show when thinking, not when writing/streaming */}
             {aiState === 'thinking' && (
-              <div className="absolute inset-0 bg-white/50 dark:bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-500 no-print">
-                 <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-zoom-in mx-4 max-w-sm w-full border border-white/40 dark:border-slate-700 ring-1 ring-black/5">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/20 ring-4 ring-indigo-50 dark:ring-indigo-900/30 relative">
-                      <LoadingSpinner className="w-10 h-10" />
-                      <div className="absolute inset-0 rounded-full bg-indigo-400/30 animate-ping"></div>
+              <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-50 flex items-center justify-center backdrop-blur-md transition-all duration-500 no-print">
+                 <div className="flex flex-col items-center w-full max-w-3xl animate-pulse">
+                    <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-500 mb-8 animate-pulse">AI is Thinking...</h3>
+                    
+                    {/* Ghost Document Effect */}
+                    <div className="w-full bg-white/50 dark:bg-slate-800/50 p-8 rounded-2xl shadow-2xl border border-indigo-100/50 dark:border-indigo-900/30">
+                      <div className="space-y-6">
+                        <div className="h-8 bg-slate-200/60 dark:bg-slate-700/60 rounded-md w-3/4"></div>
+                        <div className="space-y-3">
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full"></div>
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full"></div>
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-5/6"></div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full"></div>
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-11/12"></div>
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-4/6"></div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-8 flex justify-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-400/20 to-violet-500/20 rounded-full flex items-center justify-center relative shadow-lg shadow-indigo-500/10">
+                          <LoadingSpinner className="w-6 h-6 text-indigo-500" />
+                          <div className="absolute inset-0 rounded-full border-2 border-indigo-400/30 animate-ping"></div>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">AI is Thinking</h3>
-                    <p className="text-slate-500 dark:text-slate-300 text-sm text-center leading-relaxed">Analyzing your text and generating intelligent suggestions...</p>
                  </div>
               </div>
             )}
 
             {/* File Import Loading State with Progress Bar and Percentage Indicator */}
             {importState?.active && (
-              <div className="absolute inset-0 bg-white/50 dark:bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm transition-all duration-300 no-print">
-                 <div className="bg-white/95 dark:bg-slate-900 backdrop-blur-md p-8 rounded-2xl shadow-2xl flex flex-col items-center animate-zoom-in mx-4 max-w-sm w-full border border-slate-100 dark:border-slate-800 ring-1 ring-black/5">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 ring-4 ring-blue-50 dark:ring-indigo-950 relative">
-                      <LoadingSpinner className="w-10 h-10 text-white" />
-                      <div className="absolute inset-0 rounded-full bg-blue-400/30 animate-ping"></div>
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Importing Document</h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm text-center leading-relaxed mb-4 min-h-[40px] flex items-center justify-center">
-                      {importState.status || 'Processing file structures...'}
-                    </p>
+              <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-50 flex items-center justify-center backdrop-blur-md transition-all duration-300 no-print">
+                 <div className="flex flex-col items-center w-full max-w-3xl animate-pulse">
+                    <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500 mb-8 animate-pulse">Importing Document...</h3>
                     
-                    {/* Progress Bar Track */}
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden relative border border-slate-200/50 dark:border-slate-700/50">
-                      <div 
-                        className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full transition-all duration-300 ease-out"
-                        style={{ width: `${Math.min(100, Math.max(0, importState.percent))}%` }}
-                      />
+                    {/* Ghost Document Effect for Import */}
+                    <div className="w-full bg-white/50 dark:bg-slate-800/50 p-8 rounded-2xl shadow-2xl border border-blue-100/50 dark:border-blue-900/30">
+                      <div className="space-y-6">
+                        <div className="h-8 bg-slate-200/60 dark:bg-slate-700/60 rounded-md w-2/3"></div>
+                        <div className="space-y-3">
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full overflow-hidden relative">
+                             {/* Skeleton progress scanning effect */}
+                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"></div>
+                          </div>
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full overflow-hidden relative">
+                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite_0.5s]"></div>
+                          </div>
+                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-4/5 overflow-hidden relative">
+                             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite_1s]"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-12 w-full max-w-md mx-auto">
+                        <p className="text-slate-500 dark:text-slate-400 text-sm text-center leading-relaxed mb-4 min-h-[40px] flex items-center justify-center font-medium">
+                          {importState.status || 'Processing file structures...'}
+                        </p>
+                        
+                        {/* Progress Bar Track */}
+                        <div className="w-full bg-slate-200/50 dark:bg-slate-700/50 rounded-full h-3 overflow-hidden relative border border-white/50 dark:border-slate-600/50 shadow-inner">
+                          <div 
+                            className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden"
+                            style={{ width: `${Math.min(100, Math.max(0, importState.percent))}%` }}
+                          >
+                             <div className="absolute inset-0 bg-white/20 w-full animate-pulse"></div>
+                          </div>
+                        </div>
+                        <div className="text-center mt-3">
+                           <span className="text-sm font-bold font-mono text-indigo-600 dark:text-indigo-400">
+                             {Math.round(importState.percent)}% Complete
+                           </span>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-sm font-semibold font-mono text-indigo-600 dark:text-indigo-400 mt-3">
-                      {Math.round(importState.percent)}% Complete
-                    </span>
                  </div>
               </div>
             )}

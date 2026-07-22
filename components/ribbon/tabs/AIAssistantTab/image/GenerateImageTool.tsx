@@ -5,6 +5,7 @@ import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { generateAIImage } from '../../../../../services/geminiService';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { GhostImage } from '@/components/ui/GhostImage';
 
 export const GenerateImageTool: React.FC = () => {
   const { executeCommand } = useEditor();
@@ -89,12 +90,9 @@ export const GenerateImageTool: React.FC = () => {
             {/* Content */}
             <div className="p-6 flex flex-col gap-4 flex-1 overflow-y-auto min-h-0">
                 {/* Image Preview Area */}
-                <div className="w-full aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative group shadow-inner shrink-0">
+                <div className="w-full aspect-square bg-slate-50 dark:bg-slate-900 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden relative group shadow-inner shrink-0">
                     {isGenerating ? (
-                        <div className="flex flex-col items-center gap-3 text-slate-400">
-                            <LoadingSpinner className="w-12 h-12" />
-                            <span className="text-sm font-medium animate-pulse">Creating your masterpiece...</span>
-                        </div>
+                        <GhostImage />
                     ) : generatedImage ? (
                         <div className="relative w-full h-full flex items-center justify-center bg-[#f0f0f0]">
                             <img src={generatedImage} alt="Generated" className="max-w-full max-h-full object-contain shadow-md" />

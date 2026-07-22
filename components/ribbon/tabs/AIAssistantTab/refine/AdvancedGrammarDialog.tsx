@@ -9,6 +9,7 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import { getGrammarSystemPrompt } from '../../../../../services/prompts/tools/grammar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { GhostDocument } from '@/components/ui/GhostDocument';
 
 interface AdvancedGrammarDialogProps {
   isOpen: boolean;
@@ -484,16 +485,8 @@ export const AdvancedGrammarDialog: React.FC<AdvancedGrammarDialogProps> = ({
                             <button onClick={handleAnalyze} className="text-xs bg-white border border-slate-200 px-3 py-1.5 rounded hover:bg-slate-50 transition-colors">Retry Analysis</button>
                         </div>
                     ) : isAnalyzing ? (
-                        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-6">
-                            <div className="relative">
-                                <div className="w-20 h-20 flex items-center justify-center">
-                                    <LoadingSpinner className="w-12 h-12" />
-                                </div>
-                            </div>
-                            <div className="text-center">
-                                <p className="font-bold text-slate-700 dark:text-slate-200 text-lg">Polishing your prose...</p>
-                                <p className="text-sm mt-1 opacity-70">Analyzing structure, tone, and clarity</p>
-                            </div>
+                        <div className="flex-1 flex flex-col items-center justify-center p-8">
+                            <GhostDocument />
                         </div>
                     ) : result ? (
                         <div className="flex-1 flex flex-col h-full overflow-hidden animate-in slide-in-from-top-4 fade-in duration-500">
