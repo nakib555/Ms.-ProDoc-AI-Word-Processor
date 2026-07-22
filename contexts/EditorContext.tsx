@@ -134,6 +134,81 @@ const MathExtension = Node.create({
       ['span', { class: 'equation-dropdown' }, '▼']
     ];
   },
+
+  addNodeView() {
+    return ({ node, getPos, editor }) => {
+      const dom = document.createElement('span');
+      dom.classList.add('equation-wrapper');
+      dom.contentEditable = 'false';
+      
+      const handle = document.createElement('span');
+      handle.classList.add('equation-handle');
+      handle.textContent = '⋮⋮';
+      
+      const mathField = document.createElement('math-field');
+      mathField.setAttribute('placeholder', 'Type equation here.');
+      const initialLatex = node.attrs.latex || '';
+      (mathField as any).value = initialLatex;
+      mathField.setAttribute('value', initialLatex);
+      
+      // Update node attribute when math-field value changes
+      mathField.addEventListener('input', (e) => {
+        const newValue = (e.target as any).value;
+        mathField.setAttribute('value', newValue); // Ensure DOM serialization works
+        if (typeof getPos === 'function') {
+          const pos = getPos();
+          if (pos !== undefined) {
+             const tr = editor.state.tr.setNodeMarkup(pos, undefined, {
+               ...node.attrs,
+               latex: newValue
+             });
+             editor.view.dispatch(tr);
+          }
+        }
+      });
+
+      // Handle focus so clicking works properly
+      mathField.addEventListener('focusin', () => {
+         if (typeof getPos === 'function') {
+            const pos = getPos();
+            if (pos !== undefined) {
+                // optional: select the node when focused
+            }
+         }
+      });
+
+      const dropdown = document.createElement('span');
+      dropdown.classList.add('equation-dropdown');
+      dropdown.textContent = '▼';
+
+      dom.appendChild(handle);
+      dom.appendChild(mathField);
+      dom.appendChild(dropdown);
+
+      return {
+        dom,
+        update: (updatedNode) => {
+          if (updatedNode.type !== node.type) {
+            return false;
+          }
+          if ((mathField as any).value !== updatedNode.attrs.latex) {
+            const newLatex = updatedNode.attrs.latex || '';
+            (mathField as any).value = newLatex;
+            mathField.setAttribute('value', newLatex);
+          }
+          return true;
+        },
+        ignoreMutation: () => true,
+        stopEvent: (event) => {
+          const target = event.target as HTMLElement;
+          if (target && (target.tagName?.toLowerCase() === 'math-field' || target.closest('math-field'))) {
+             return true;
+          }
+          return false;
+        }
+      };
+    };
+  },
 });
 
 // Custom Table extensions to preserve styles
