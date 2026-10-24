@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { 
   Bold, Italic, Underline, Strikethrough, Subscript, Superscript,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,

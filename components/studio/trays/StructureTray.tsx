@@ -1,3 +1,4 @@
+import React from 'react';
 import { 
   BookmarkPlus, ListTree, StickyNote, Hash
 } from 'lucide-react';

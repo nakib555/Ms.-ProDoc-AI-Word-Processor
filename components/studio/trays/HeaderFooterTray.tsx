@@ -1,3 +1,4 @@
+import React from 'react';
 import { LayoutPanelTop, X, Calendar, Hash } from 'lucide-react';
 import { useEditor } from '../../../contexts/EditorContext';
 import { StudioButton } from '../common/StudioButton';

@@ -1,3 +1,4 @@
+import React from 'react';
 import { 
   FileText, Globe, BookOpen, 
   ZoomIn, RotateCcw, Pilcrow

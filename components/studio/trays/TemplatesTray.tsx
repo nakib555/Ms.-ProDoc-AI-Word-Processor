@@ -1,3 +1,4 @@
+import React from 'react';
 import { 
   FileStack, Variable, UserCheck, Building2, 
   Calendar, FileText

@@ -1,3 +1,4 @@
+import React from 'react';
 import { 
   Rows, Trash2, Merge, Split, 
   PaintBucket, Table as TableIcon, ArrowUp, ArrowDown, ArrowLeft, ArrowRight
