@@ -21,8 +21,7 @@ export const TABS = [
   RibbonTab.REFERENCES,
   RibbonTab.MAILINGS,
   RibbonTab.REVIEW,
-  RibbonTab.VIEW,
-  RibbonTab.AI_ASSISTANT
+  RibbonTab.VIEW
 ];
 
 export const DEFAULT_CONTENT = `<p><br></p>`;

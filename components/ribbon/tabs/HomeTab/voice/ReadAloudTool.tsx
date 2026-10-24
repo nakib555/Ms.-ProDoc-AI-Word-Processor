@@ -1,10 +1,7 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, Square } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Volume2 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
-import { generateSpeech } from '../../../../../services/geminiService';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 // Animated Visualizer Component
 const WaveformIcon = ({ className }: { className?: string }) => (
@@ -32,13 +29,9 @@ const WaveformIcon = ({ className }: { className?: string }) => (
 export const ReadAloudTool: React.FC = () => {
   const { content } = useEditor();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [hasContent, setHasContent] = useState(false);
-  
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
 
-  // Check content presence for disabled state using innerText to respect visibility
+  // Check content presence for disabled state
   useEffect(() => {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
@@ -46,117 +39,78 @@ export const ReadAloudTool: React.FC = () => {
     setHasContent(text.length > 0);
   }, [content]);
 
-  // Decode helper for Gemini PCM (24kHz, 1 channel)
-  const decodeAudioData = (
-      data: Uint8Array,
-      ctx: AudioContext
-  ): AudioBuffer => {
-      const pcmData = new Int16Array(data.buffer);
-      const float32Data = new Float32Array(pcmData.length);
-      for (let i = 0; i < pcmData.length; i++) {
-          float32Data[i] = pcmData[i] / 32768.0;
-      }
-      const buffer = ctx.createBuffer(1, float32Data.length, 24000);
-      buffer.copyToChannel(float32Data, 0);
-      return buffer;
-  };
-
   const stopAudio = () => {
-      if (sourceRef.current) {
-          try { sourceRef.current.stop(); } catch (_e) { /* ignore */ }
-          sourceRef.current = null;
-      }
-      setIsPlaying(false);
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlaying(false);
   };
 
-  const handleReadAloud = async () => {
+  const handleReadAloud = () => {
     if (isPlaying) {
-        stopAudio();
-        return;
+      stopAudio();
+      return;
     }
-    
-    if (isLoading) return;
+
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
 
     // Get text to read
     let textToRead = "";
     const selection = window.getSelection();
     if (selection && !selection.isCollapsed) {
-        textToRead = selection.toString();
+      textToRead = selection.toString();
     } else {
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = content;
-        textToRead = tempDiv.innerText || "";
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = content;
+      textToRead = tempDiv.innerText || "";
     }
-    
+
     textToRead = textToRead.trim();
     if (!textToRead) return;
 
-    setIsLoading(true);
-    
-    try {
-        const audioData = await generateSpeech(textToRead);
-        
-        if (audioData) {
-             if (!audioContextRef.current) {
-                 audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)({ sampleRate: 24000 });
-             }
-             
-             if (audioContextRef.current.state === 'suspended') {
-                 await audioContextRef.current.resume();
-             }
+    window.speechSynthesis.cancel();
 
-             const buffer = decodeAudioData(audioData, audioContextRef.current);
-             
-             // Create source
-             const source = audioContextRef.current.createBufferSource();
-             source.buffer = buffer;
-             source.connect(audioContextRef.current.destination);
-             
-             source.onended = () => {
-                 setIsPlaying(false);
-                 sourceRef.current = null;
-             };
-             
-             sourceRef.current = source;
-             source.start();
-             setIsPlaying(true);
-        } else {
-            alert("Could not generate speech. Please check your API key.");
-        }
-    } catch (e) {
-        console.error(e);
-        alert("Error generating speech.");
-    } finally {
-        setIsLoading(false);
-    }
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.lang = 'en-US';
+
+    utterance.onend = () => {
+      setIsPlaying(false);
+    };
+
+    utterance.onerror = (e) => {
+      if (e.error !== 'interrupted' && e.error !== 'canceled') {
+        console.error("Speech synthesis error:", e);
+      }
+      setIsPlaying(false);
+    };
+
+    setIsPlaying(true);
+    window.speechSynthesis.speak(utterance);
   };
 
   // Cleanup on unmount
   useEffect(() => {
-      return () => {
-          stopAudio();
-          if (audioContextRef.current) {
-              audioContextRef.current.close();
-          }
-      };
+    return () => {
+      stopAudio();
+    };
   }, []);
 
-  let Icon: React.ElementType = Volume2;
-  // Use LoadingSpinner component instead of Loader2 icon
-  const SpinnerIcon = (props: React.ComponentProps<typeof LoadingSpinner>) => <LoadingSpinner {...props} className="w-4 h-4" />;
-
-  if (isLoading) Icon = SpinnerIcon;
-  else if (isPlaying) Icon = WaveformIcon;
+  const Icon: React.ElementType = isPlaying ? WaveformIcon : Volume2;
 
   return (
     <RibbonButton 
         icon={Icon} 
-        label={isLoading ? "Generating..." : isPlaying ? "Stop" : "Read Aloud"} 
+        label={isPlaying ? "Stop" : "Read Aloud"} 
         onClick={handleReadAloud} 
         disabled={!hasContent && !isPlaying}
-        className={isPlaying || isLoading ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200" : ""}
-        iconClassName={!isPlaying && !isLoading ? "text-cyan-500" : ""}
-        title={!hasContent ? "No content to read" : isPlaying ? "Stop Reading" : "Read document aloud with Gemini AI"}
+        className={isPlaying ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200" : ""}
+        iconClassName={!isPlaying ? "text-cyan-500" : ""}
+        title={!hasContent ? "No content to read" : isPlaying ? "Stop Reading" : "Read document aloud"}
     />
   );
 };

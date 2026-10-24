@@ -6,7 +6,7 @@ import {
   ChevronLeft, ChevronRight,
   FileText, Home, Blocks, PenTool, Palette,
   Layout, BookOpen, Mail, CheckSquare,
-  Eye, Sparkles, Table, PaintBucket, Sigma, LayoutPanelTop
+  Eye, Table, PaintBucket, Sigma, LayoutPanelTop
 } from 'lucide-react';
 
 interface RibbonTabBarProps {
@@ -24,8 +24,7 @@ const TAB_CONFIG: Record<string, { icon: React.ElementType, label?: string, colo
   [RibbonTab.REFERENCES]: { icon: BookOpen, color: 'text-amber-600 dark:text-amber-400' },
   [RibbonTab.MAILINGS]: { icon: Mail, color: 'text-teal-600 dark:text-teal-400' },
   [RibbonTab.REVIEW]: { icon: CheckSquare, color: 'text-emerald-600 dark:text-emerald-400' },
-  [RibbonTab.VIEW]: { icon: Eye, color: 'text-sky-600 dark:text-sky-400' },
-  [RibbonTab.AI_ASSISTANT]: { icon: Sparkles, label: "AI Assistant", color: 'text-fuchsia-600 dark:text-fuchsia-400' }
+  [RibbonTab.VIEW]: { icon: Eye, color: 'text-sky-600 dark:text-sky-400' }
 };
 
 interface TabButtonProps {
@@ -196,9 +195,6 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       >
         {Object.keys(TAB_CONFIG).map((key) => {
           const tab = key as RibbonTab;
-          
-          if (tab === RibbonTab.AI_ASSISTANT && viewMode === 'web') return null;
-
           const config = TAB_CONFIG[tab];
           return (
             <TabButton 

@@ -7,7 +7,6 @@ import { ReadModeToolbar } from './components/ribbon/tabs/ViewTab/views/ReadMode
 import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
 import { CommentsSidebar } from './components/CommentsSidebar';
 import { NotesSidebar } from './components/NotesSidebar';
-import { AIAssistantSidebar } from './components/AIAssistantSidebar';
 import { JsonDocInspectorSidebar } from './components/JsonDocInspectorSidebar';
 import { RibbonTab } from './types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -19,14 +18,7 @@ import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/M
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
-  const { aiState, viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig, importState } = useEditor();
-  
-  // Automatically switch away from AI Assistant tab if in Web Layout
-  useEffect(() => {
-    if (viewMode === 'web' && activeTab === RibbonTab.AI_ASSISTANT) {
-        setTimeout(() => setActiveTab(RibbonTab.HOME), 0);
-    }
-  }, [viewMode, activeTab]);
+  const { viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig, importState } = useEditor();
 
   const handleTabChange = useCallback((tab: RibbonTab) => {
     setActiveTab(prev => prev === tab ? null : tab);
@@ -68,38 +60,7 @@ const AppContent: React.FC = () => {
                 <Editor />
             </ErrorBoundary>
             
-            {/* AI Overlay Loading State - Only show when thinking, not when writing/streaming */}
-            {aiState === 'thinking' && (
-              <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-50 flex items-center justify-center backdrop-blur-md transition-all duration-500 no-print">
-                 <div className="flex flex-col items-center w-full max-w-3xl animate-pulse">
-                    <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-violet-500 mb-8 animate-pulse">AI is Thinking...</h3>
-                    
-                    {/* Ghost Document Effect */}
-                    <div className="w-full bg-white/50 dark:bg-slate-800/50 p-8 rounded-2xl shadow-2xl border border-indigo-100/50 dark:border-indigo-900/30">
-                      <div className="space-y-6">
-                        <div className="h-8 bg-slate-200/60 dark:bg-slate-700/60 rounded-md w-3/4"></div>
-                        <div className="space-y-3">
-                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full"></div>
-                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full"></div>
-                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-5/6"></div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-full"></div>
-                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-11/12"></div>
-                          <div className="h-4 bg-slate-200/60 dark:bg-slate-700/60 rounded w-4/6"></div>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-8 flex justify-center">
-                        <div className="w-12 h-12 bg-gradient-to-br from-indigo-400/20 to-violet-500/20 rounded-full flex items-center justify-center relative shadow-lg shadow-indigo-500/10">
-                          <LoadingSpinner className="w-6 h-6 text-indigo-500" />
-                          <div className="absolute inset-0 rounded-full border-2 border-indigo-400/30 animate-ping"></div>
-                        </div>
-                      </div>
-                    </div>
-                 </div>
-              </div>
-            )}
+
 
             {/* File Import Loading State with Progress Bar and Percentage Indicator */}
             {importState?.active && (
@@ -151,9 +112,6 @@ const AppContent: React.FC = () => {
             )}
           </div>
           
-          <div className="no-print flex-shrink-0 h-full">
-            <AIAssistantSidebar />
-          </div>
           <div className="no-print flex-shrink-0 h-full">
             <CommentsSidebar />
           </div>

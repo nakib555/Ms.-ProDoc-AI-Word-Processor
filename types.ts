@@ -30,38 +30,12 @@ export enum RibbonTab {
   MAILINGS = 'Mailings',
   REVIEW = 'Review',
   VIEW = 'View',
-  AI_ASSISTANT = '🤖 AI Assistant',
   // Contextual Tabs
   TABLE_DESIGN = 'Table Design',
   TABLE_LAYOUT = 'Table Layout',
   EQUATION = 'Equation',
   HEADER_FOOTER = 'Header & Footer',
 }
-
-export interface AIResponse {
-  text: string;
-  error?: string;
-}
-
-export type AIOperation = 
-  | 'summarize' 
-  | 'fix_grammar' 
-  | 'make_professional' 
-  | 'expand' 
-  | 'shorten'
-  | 'simplify'
-  | 'tone_friendly'
-  | 'tone_confident'
-  | 'tone_casual'
-  | 'continue_writing'
-  | 'generate_content'
-  | 'edit_content'
-  | 'translate_es'
-  | 'translate_fr'
-  | 'translate_de'
-  | 'generate_outline'
-  | 'generate_template_list'
-  | 'translate_content';
 
 export type ViewMode = 'print' | 'web' | 'read';
 export type PageMovement = 'vertical' | 'side-to-side';

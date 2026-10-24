@@ -16,7 +16,6 @@ const FileTab = safeLazy(import('./ribbon/tabs/FileTab/FileTab'), 'FileTab');
 const LayoutTab = safeLazy(import('./ribbon/tabs/LayoutTab/LayoutTab'), 'LayoutTab');
 const ReferencesTab = safeLazy(import('./ribbon/tabs/ReferencesTab/ReferencesTab'), 'ReferencesTab');
 const MailingsTab = safeLazy(import('./ribbon/tabs/MailingsTab/MailingsTab'), 'MailingsTab');
-const AIAssistantTab = safeLazy(import('./ribbon/tabs/AIAssistantTab/AIAssistantTab'), 'AIAssistantTab');
 const DrawTab = safeLazy(import('./ribbon/tabs/DrawTab/DrawTab'), 'DrawTab');
 const DesignTab = safeLazy(import('./ribbon/tabs/DesignTab/DesignTab'), 'DesignTab');
 const ReviewTab = safeLazy(import('./ribbon/tabs/ReviewTab/ReviewTab'), 'ReviewTab');
@@ -89,7 +88,6 @@ const Ribbon: React.FC<RibbonProps> = ({
             case RibbonTab.REVIEW: return <ReviewTab />;
             case RibbonTab.VIEW: return <ViewTab />;
             case RibbonTab.FILE: return <FileTab />;
-            case RibbonTab.AI_ASSISTANT: return <AIAssistantTab />;
             case RibbonTab.TABLE_DESIGN: return <TableDesignTab />;
             case RibbonTab.TABLE_LAYOUT: return <TableLayoutTab />;
             case RibbonTab.EQUATION: return <EquationTab />;

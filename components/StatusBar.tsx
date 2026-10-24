@@ -9,7 +9,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
 const StatusBar: React.FC = () => {
-  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, isAIProcessing, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
+  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
@@ -133,17 +133,15 @@ const StatusBar: React.FC = () => {
             {/* View Modes - Desktop (Grouped) */}
             <div className="hidden sm:flex items-center bg-slate-800 dark:bg-slate-800 rounded-md p-0.5 border border-slate-700 dark:border-slate-700">
                  <button 
-                    onClick={() => !isAIProcessing && setViewMode('print')} 
-                    disabled={isAIProcessing}
-                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'print' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'} ${isAIProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => setViewMode('print')} 
+                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'print' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}
                     title="Print Layout"
                  >
                     <FileText size={14} />
                  </button>
                  <button 
-                    onClick={() => !isAIProcessing && setViewMode('web')} 
-                    disabled={isAIProcessing}
-                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'web' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'} ${isAIProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => setViewMode('web')} 
+                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'web' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}
                     title="Web Layout"
                  >
                     <Globe size={14} />
@@ -152,9 +150,8 @@ const StatusBar: React.FC = () => {
 
             {/* View Mode Toggle - Mobile (Single Button) */}
             <button 
-                onClick={() => !isAIProcessing && setViewMode(prev => prev === 'print' ? 'web' : 'print')}
-                disabled={isAIProcessing}
-                className={`sm:hidden p-1.5 rounded transition-all flex items-center justify-center ${isAIProcessing ? 'opacity-50' : ''} ${viewMode === 'web' ? 'text-blue-400 bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                onClick={() => setViewMode(prev => prev === 'print' ? 'web' : 'print')}
+                className={`sm:hidden p-1.5 rounded transition-all flex items-center justify-center ${viewMode === 'web' ? 'text-blue-400 bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
                 title={viewMode === 'print' ? "Switch to Web Layout" : "Switch to Print Layout"}
             >
                 {viewMode === 'print' ? <FileText size={14} /> : <Globe size={14} />}

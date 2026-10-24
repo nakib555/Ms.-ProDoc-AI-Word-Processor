@@ -367,16 +367,8 @@ export interface EditorContextType {
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
-  showAssistant: boolean;
-  setShowAssistant: React.Dispatch<React.SetStateAction<boolean>>;
   showJsonInspector: boolean;
   setShowJsonInspector: React.Dispatch<React.SetStateAction<boolean>>;
-  
-  // AI State
-  aiState: 'idle' | 'thinking' | 'writing';
-  setAiState: React.Dispatch<React.SetStateAction<'idle' | 'thinking' | 'writing'>>;
-  isAIProcessing: boolean;
-  setIsAIProcessing: (isProcessing: boolean) => void;
   
   // Header/Footer & Editing Area
   activeEditingArea: EditingArea;
@@ -478,9 +470,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [showAssistant, setShowAssistant] = useState(false);
   const [showJsonInspector, setShowJsonInspector] = useState(false);
-  const [aiState, setAiState] = useState<'idle' | 'thinking' | 'writing'>('idle');
   const [comments, setComments] = useState<DocumentComment[]>([]);
   const [footnotes, setFootnotes] = useState<DocumentFootnote[]>([]);
   const [endnotes, setEndnotes] = useState<DocumentEndnote[]>([]);
@@ -1004,7 +994,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const applyCustomStyle = useCallback((style: CustomStyle) => {}, []);
   const applyAdvancedStyleCallback = useCallback((styles: React.CSSProperties) => applyAdvancedStyle(styles), []);
   const applyBlockStyleCallback = useCallback((styles: React.CSSProperties) => applyBlockStyle(styles), []);
-  const setIsAIProcessing = useCallback((v: boolean) => setAiState(v ? 'thinking' : 'idle'), []);
   const registerContainer = useCallback((node: HTMLDivElement | null) => { containerRef.current = node; }, []);
 
   const addComment = useCallback((text: string) => {
@@ -1193,14 +1182,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentPage,
     totalPages,
     setTotalPages,
-    showAssistant,
-    setShowAssistant,
     showJsonInspector,
     setShowJsonInspector,
-    aiState,
-    setAiState,
-    isAIProcessing: aiState !== 'idle',
-    setIsAIProcessing,
     activeEditingArea,
     setActiveEditingArea,
     headerContent,
@@ -1277,10 +1260,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveElementType,
     currentPage,
     totalPages,
-    showAssistant,
     showJsonInspector,
-    aiState,
-    setIsAIProcessing,
     activeEditingArea,
     headerContent,
     footerContent,
