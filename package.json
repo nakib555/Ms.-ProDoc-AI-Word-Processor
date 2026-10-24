@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -36,7 +36,6 @@
     "mathlive": "^0.101.0",
     "motion": "^12.42.1",
     "pagedjs": "^0.4.3",
-    "puppeteer": "^25.3.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-virtualized-auto-sizer": "^1.0.24",
