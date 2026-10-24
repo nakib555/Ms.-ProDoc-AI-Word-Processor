@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Ribbon from './components/Ribbon';
 import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
@@ -8,7 +8,8 @@ import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
 import { CommentsSidebar } from './components/CommentsSidebar';
 import { NotesSidebar } from './components/NotesSidebar';
 import { JsonDocInspectorSidebar } from './components/JsonDocInspectorSidebar';
-import { StudioTab, RibbonTab } from './types';
+import { RibbonTab } from './types';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { DocumentModelProvider } from './contexts/DocumentModelContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -16,10 +17,10 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/Margins/CustomMargin/PageSetupDialog';
 
 const AppContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<StudioTab | RibbonTab | null>(StudioTab.FORMAT);
+  const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
   const { viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig, importState, importFile } = useEditor();
 
-  const handleTabChange = useCallback((tab: StudioTab | RibbonTab) => {
+  const handleTabChange = useCallback((tab: RibbonTab) => {
     setActiveTab(prev => prev === tab ? null : tab);
   }, []);
 

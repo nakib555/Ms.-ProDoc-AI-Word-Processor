@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Volume2 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -29,14 +29,14 @@ const WaveformIcon = ({ className }: { className?: string }) => (
 export const ReadAloudTool: React.FC = () => {
   const { content } = useEditor();
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasContent, setHasContent] = useState(false);
 
-  // Derive content presence for disabled state
-  const hasContent = useMemo(() => {
-    if (!content) return false;
+  // Check content presence for disabled state
+  useEffect(() => {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
     const text = (tempDiv.innerText || '').trim();
-    return text.length > 0;
+    setHasContent(text.length > 0);
   }, [content]);
 
   const stopAudio = () => {

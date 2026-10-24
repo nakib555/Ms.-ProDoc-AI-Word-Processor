@@ -1,296 +1,177 @@
-# Engineering Architecture & Implementation Specification: Non-Infringing ProDoc Studio Interface Redesign
+# Engineering Specification: Comprehensive Empty States for ProDoc
 
 ## 1. Objective
 
 ### Purpose
-To completely replace the existing Microsoft Word-style Ribbon interface with a distinctive, original, and modern "ProDoc Studio" document environment. The new architecture departs from Microsoft's protected trade-dress, layout paradigm, and trademarked taxonomy, while delivering an intuitive, high-performance, and accessible document editing experience.
+To deliver polished, domain-authentic, accessible, and responsive empty states across all core surfaces of the ProDoc application where users encounter empty or unpopulated content collections.
 
 ### Problem
-The current application UI directly clones Microsoft Word's Fluent Ribbon:
-1. **Identical Visual Paradigm**: A dual-tier horizontal banner with tab headers perched atop grouped rectangular boxes with bottom-centered labels (e.g., "Font", "Paragraph", "Styles", "Clipboard").
-2. **Infringing Taxonomy & Names**: Exact duplication of Microsoft Office's trademarked/protected tab sequence: `File`, `Home`, `Insert`, `Draw`, `Design`, `Layout`, `References`, `Mailings`, `Review`, `View`.
-3. **Microsoft Trade-Dress Elements**: Vertical 72px buttons (icon atop stacked text label), Office-like split dropdown buttons, font picker and point size dropdown combos, and Microsoft Office Fluent blue/slate palette.
-4. **Legal Risk**: Exposes the user and project to copyright, design patent, and trade-dress infringement claims from Microsoft under Lanham Act § 43(a) and copyright protections for software graphical user interfaces.
+Currently in ProDoc:
+1. **Editor Canvas**: A blank document appears as an intimidating, stark empty sheet with no prompt or quick-start hints, leaving first-time users or users starting fresh documents with no affordances.
+2. **Comments Sidebar (`CommentsSidebar.tsx`)**: Unstyled raw text (`No comments yet. Select text in the document and click 'Add Comment'`) without proper visual hierarchy, iconography, or accessible cues.
+3. **Notes Sidebar (`NotesSidebar.tsx`)**: Minimal placeholder when no footnotes/endnotes exist, lacking contextual action hints.
+4. **Recent Documents (`OpenModal.tsx`)**: If recent documents are deleted or empty, nothing is rendered below Browse Files, leaving an awkward blank space.
+5. **Find & Replace (`FindReplaceDialog.tsx`)**: Inconsistent feedback when a search query yields 0 results.
+6. **Lack of Reusable Component**: Empty states are ad-hoc or missing rather than powered by a consistent, accessible design system primitive (`EmptyState.tsx`).
 
 ### Business Value
-- Eliminates legal liability and copyright/trade-dress vulnerability from Microsoft.
-- Establishes a bespoke, proprietary brand identity for "ProDoc Studio".
-- Modernizes the document authoring experience into a clean, minimalist SaaS platform (comparable in design prestige to Notion, Craft, Linear, and Figma, rather than legacy 2000s desktop Office).
+- Drastically reduces time-to-first-value for new users by providing clear onboarding pathways (blank document, template starter, or file import).
+- Increases user engagement with deep features (collaboration comments, footnotes/endnotes, document history).
+- Elevates software perceived quality from a prototype to a production-grade desktop word processor (comparable to Word 365, Notion, and Google Docs).
 
 ### Technical Value
-- Replaces the heavy, rigid multi-tier ribbon DOM tree with a sleek, modular **Studio Command Bar & Contextual Inspector**.
-- Streamlines layout rendering, eliminates horizontal scroll jitter and oversized tab header calculations, improving Time to Interactive (TTI) and First Contentful Paint (FCP).
-- Unifies design tokens with Tailwind CSS according to the Universal Frontend Design Constitution (zero-pill discipline, crisp micro-borders, 60-30-10 palette, WCAG AA contrast).
+- Introduces an accessible, DRY, theme-aware primitive `components/ui/EmptyState.tsx`.
+- Standardizes empty collection messaging across all sidebars and dialogs.
+- Zero bundle size degradation (uses existing `lucide-react` icons and Tailwind CSS).
 
 ### Expected Result
-A sleek, distinctive, copyright-safe document processor interface featuring:
-- A refined **Top Studio Navigation Header** (Zone 1: ProDoc Wordmark & Document Title; Zone 2: Workspace View Switcher & Quick Navigation; Zone 3: Document Actions & Export).
-- A unified **Studio Action Deck (Single-tier with contextual drawers)** replacing the Office Ribbon:
-  - Original Taxonomy: `Format`, `Insert`, `Canvas & Layout`, `Structure & Cite`, `Collaborate`, `View`.
-  - Contextual Tool Trays: Horizontal tool clusters with icon-left labels, sleek segmented button groups, and compact popover menus rather than Microsoft's 3-row stacked boxes.
-  - Dynamic Contextual Bars for Tables, Equations, and Header/Footer with custom modern badges.
-- Cohesive typography and neutral slate/zinc styling without pseudo-technical clutter or pill badge sandwiches.
+Users encountering empty states anywhere in the app receive clear, visually harmonious feedback with actionable buttons or hints, full dark mode support, and screen reader announcements.
 
 ### Success Criteria & Acceptance Criteria
-- [ ] Complete elimination of Microsoft Office Fluent Ribbon trade-dress (no vertical 72px icon-over-text boxes, no bottom group label captions, no Office-specific tab names).
-- [ ] Redesigned navigation bar with copyright-safe taxonomy:
-  - `Home` -> `Format & Style`
-  - `File` -> `Document Menu` (clean dropdown from header or command bar)
-  - `Layout` & `Design` -> `Canvas & Page`
-  - `References` -> `Citations & Structure`
-  - `Mailings` -> `Mail Merge & Templates`
-  - `Review` -> `Collaborate & Review`
-- [ ] 100% feature parity: all existing commands (formatting, tables, footnotes, symbols, margins, page breaks, zoom, comments) remain fully functional and easily accessible.
-- [ ] Dynamic Contextual Trays (Table, Equation, Header/Footer) activate seamlessly with distinct custom indicators.
-- [ ] Zero build or lint errors; passes full TypeScript strict compilation (`compile_applet`).
-- [ ] Mobile and tablet layouts adapt gracefully into responsive bottom/drawer menus without overflowing horizontal ribbons.
+- [ ] A reusable, type-safe `EmptyState` component exists in `components/ui/EmptyState.tsx`.
+- [ ] Blank document canvas in `EditorPage` displays an elegant, non-obtrusive quick-start guide that seamlessly disappears the instant the user begins typing or loads content.
+- [ ] Comments Sidebar displays an illustrated, informative empty state with instructions on how to select text and add comments.
+- [ ] Notes Sidebar displays dedicated empty states for both "no notes created" and "no search results matching query".
+- [ ] Recent Documents in `OpenModal` displays a clean empty state when history is cleared or empty.
+- [ ] Find & Replace displays an explicit "No matches found" badge/message with clear advice.
+- [ ] 100% WCAG 2.1 AA compliant (color contrast >= 4.5:1, ARIA live regions, semantic markup).
+- [ ] Zero layout thrashing or print contamination (empty states never appear in print mode or exported PDFs).
 
 ### Non-Goals
-- Altering core rich-text editor engine primitives (Tiptap / ProseMirror / MathLive / Pagination logic).
-- Adding unsolicited AI chatbot panels or LLM assistants.
-- Changing underlying document data formats (`DocumentState`, JSON schema).
+- Adding AI-generated document starters (AI was removed per user instruction).
+- Modifying core document pagination or layout algorithms.
+- Adding complex cloud synchronization servers.
 
 ### Constraints
-- Must preserve all existing command dispatch mechanisms (`useEditor().executeCommand`, `formatBlock`, context hooks).
-- Must run cleanly in the Vite SPA environment on port 3000.
-- Strict anti-AI-slop compliance: no decorative pulsing dots, no code-comment titles, no static pill enclosures.
+- Must use existing Tailwind CSS and Lucide icons.
+- Must run cleanly on port 3000 in Vite SPA architecture.
+- Must support light and dark theme seamlessly.
+- Must not interfere with contentEditable focus, caret positioning, or keyboard shortcuts.
 
 ---
 
 ## 2. Existing System Analysis
 
 ### Verified Facts (Evidence Gathered)
-1. **Entry Point & Assembly**:
-   - `App.tsx` imports `Ribbon` from `./components/Ribbon.tsx` and mounts it conditionally (`{!isReadMode && <Ribbon ... />}`).
-   - `Ribbon.tsx` renders `RibbonTabBar.tsx` and a collapsible container holding lazy-loaded tab components (`HomeTab`, `InsertTab`, `DrawTab`, `DesignTab`, `LayoutTab`, `ReferencesTab`, `MailingsTab`, `ReviewTab`, `ViewTab`, `FileTab`, and contextual tabs).
-2. **Component Taxonomy**:
-   - `types.ts` defines `enum RibbonTab` with exact Office Word tab names (`FILE = 'File'`, `HOME = 'Home'`, `INSERT = 'Insert'`, etc.).
-   - `components/ribbon/common/RibbonButton.tsx` renders a classic Office 72px vertical button (`flex-col items-center min-w-[60px] h-full mb-1 text-xs text-center`).
-   - `components/ribbon/common/RibbonSection.tsx` wraps buttons into Office-style grouped clusters with vertical dividers.
-   - Tab groups inside `components/ribbon/tabs/HomeTab/` duplicate Word's exact layout: `ClipboardGroup`, `FontGroup`, `ParagraphGroup`, `StylesGroup`, `EditingGroup`, `VoiceGroup`.
-3. **Current Build & Execution**:
-   - Vite dev server runs on port 3000.
-   - Lucide React icons are used across the codebase.
-   - Tailwind CSS is imported in `index.css`.
+1. **Application Structure**:
+   - React 18 SPA built with Vite and Tailwind CSS.
+   - Primary state managed in `EditorContext.tsx` and `DocumentModelContext.tsx`.
+   - Modals managed in `FileTabContext.tsx` and tab-specific contexts.
+2. **Current Editor Canvas (`components/EditorPage/EditorPage.tsx`)**:
+   - `contentEditable` div (`#prodoc-editor-{pageNumber}`) renders HTML string.
+   - When content is empty (`<p></p>` or empty string), the container is blank.
+   - Print layout handles margins, zoom, headers, and footers.
+3. **Sidebars**:
+   - `CommentsSidebar.tsx` has basic inline conditional: lines 31-35.
+   - `NotesSidebar.tsx` has basic conditional: lines 178-188.
+4. **Modals**:
+   - `OpenModal.tsx`: lines 119-160 only renders when `recentDocs.length > 0`. If `recentDocs.length === 0`, nothing is rendered.
+5. **No Broken Build**:
+   - Build currently succeeds in 14.16s with 0 circular chunk warnings.
 
 ### Assumptions
-- Users want to retain all existing formatting, document configuration, and editing features, but presented through an original, modern SaaS interface.
-- Tab IDs can map internal enum values safely or aliases can be introduced to prevent breaking backward-compatibility in stored state or event listeners (`prodoc:switchTab`).
+- Users want both an editor canvas empty state (subtle watermark/guide) and sidebar/dialog empty states to maintain a cohesive experience.
 
 ### Missing Information
-- None. Full repository audit completed.
-
-### Clarification Questions
-- Questions were presented in Turn 1; user instructed to "continue" with recommended modern studio paradigm.
+- None. Codebase source files were inspected directly.
 
 ---
 
 ## 3. Architecture Design
 
 ### Implementation Strategy
-We will transition from the **Office Fluent Ribbon** to the **ProDoc Studio Command Bar**:
-
-```
-+-----------------------------------------------------------------------------------+
-|  [P] ProDoc Studio   Untitled Document (Saved)   |  Zoom: 100%  [Share]  [Export] |  <- Studio Header
-+-----------------------------------------------------------------------------------+
-| [Format]  [Insert]  [Canvas & Page]  [Structure]  [Collaborate]  [View] | [Doc ▾] |  <- Studio Tab Strip
-+-----------------------------------------------------------------------------------+
-| [B I U S ▾] [Font Family ▾] [14 ▾] | [Align ▾] [List ▾] [Indent] | [Styles ▾]     |  <- Action Deck (Sleek Horizontal Dock)
-+-----------------------------------------------------------------------------------+
-```
-
-1. **Elimination of Word Trade-Dress**:
-   - **Horizontal Dock Architecture**: Instead of stacked 3-row boxes with vertical 72px buttons and bottom group captions ("Font", "Clipboard"), tools are organized in a clean, single-height horizontal toolbar with icon-left actions, segmented pill-free groups, and modern dropdown popovers.
-   - **Refined Studio Navigation**: Tab names become verb/function-oriented (`Format`, `Insert`, `Canvas & Page`, `Citations & Structure`, `Collaborate`, `Workspace View`).
-   - **Document Menu (`DocMenu`)**: Replaces Word's awkward full-screen green/blue `File` backstage tab with a sleek modern application menu dropdown (New, Open, Save, Export, Print, Document Properties) integrated directly in the studio header.
-
-2. **Component Hierarchy**:
-   ```
-   components/
-     studio/ (Replaces components/ribbon/)
-       StudioHeader.tsx          -> Top brand, document title, status, quick actions
-       StudioTabBar.tsx          -> Modern clean tab strip with contextual indicators
-       StudioActionDeck.tsx      -> Contextual tool deck hosting active toolset
-       StudioButton.tsx          -> Modern horizontal tool button (icon + optional label)
-       StudioButtonGroup.tsx     -> Segmented clean tool cluster with micro-borders
-       StudioDropdown.tsx        -> Modern popover with clean typography & keyboard navigation
-       trays/                    -> Refactored tool trays (renamed from tabs)
-         FormatTray/             -> Typography, paragraph, alignment, list styling
-         InsertTray/             -> Media, tables, breaks, links, symbols, equations
-         CanvasTray/             -> Page size, margins, orientation, columns, background
-         StructureTray/          -> Table of contents, footnotes, citations, bookmarks
-         CollaborateTray/        -> Comments, changes, proofing, word count
-         WorkspaceTray/          -> Zoom, ruler toggle, layout mode, gridlines
-         contextual/
-           TableStudioTray.tsx   -> Active when table cell selected
-           EquationStudioTray.tsx-> Active when math field selected
-           HeaderFooterTray.tsx  -> Active in header/footer edit mode
-   ```
-
-3. **Data & Control Flow**:
-   - Retain full compatibility with `EditorContext` and `DocumentModelContext`.
-   - Maintain event listener for `prodoc:switchTab` with graceful aliasing (e.g., if a legacy event requests `Home`, it routes seamlessly to `Format`).
-   - Active contextual states (table, equation, header/footer) activate contextual sub-decks with smooth slide-in transitions.
-
-4. **Design Constitution Enforcement**:
-   - Zero-Pill discipline: no colored static pill boxes for metadata.
-   - Single-elevation depth: flat clean surfaces with `border-slate-200 dark:border-slate-800`.
-   - 60-30-10 palette: 60% neutral canvas, 30% structural zinc/slate, 10% high-intent indigo/blue accent for active states.
-   - Tabular numbers (`tabular-nums`) on all font sizes, margins, word counts, and zoom counters.
+1. **Design System Primitive (`components/ui/EmptyState.tsx`)**:
+   - Props: `icon: LucideIcon`, `title: string`, `description?: string`, `action?: { label: string, onClick: () => void, icon?: LucideIcon }`, `secondaryAction?: { label: string, onClick: () => void }`, `compact?: boolean`, `className?: string`.
+   - Adheres to ProDoc's 60-30-10 color palette (slate/indigo/blue) with high-contrast text and subtle iconography.
+2. **Editor Canvas Quick-Start Guide (`components/editor/EditorEmptyState.tsx`)**:
+   - Placed as a floating/watermark layer inside the first page when `pageNumber === 1` and `isDocumentEmpty(content)`.
+   - `pointer-events-none` on background elements, with interactive action buttons that delegate to:
+     - "Click to start typing" (focuses editor)
+     - "Open Document" (triggers `prodoc:openModal` or `importFile`)
+     - "Insert Sample Outline" / Quick Starter
+   - Disappears instantly on `input`, `focus`, or non-empty content.
+   - Hidden during printing via CSS `@media print { .prodoc-empty-state { display: none !important; } }` and class `print:hidden`.
+3. **Comments Sidebar Integration (`CommentsSidebar.tsx`)**:
+   - Replace line 31-35 with `<EmptyState icon={MessageSquarePlus} title="No comments yet" description="Select any text in the document and click 'Add Comment' to start a discussion." />`.
+4. **Notes Sidebar Integration (`NotesSidebar.tsx`)**:
+   - Distinguish between "no notes in document" and "no search results matching query".
+5. **Open / Recent Files Modal (`OpenModal.tsx`)**:
+   - When `recentDocs.length === 0`, render `<EmptyState icon={Clock} title="No recent documents" description="Documents you open or create locally will appear here for fast access." compact />`.
 
 ---
 
-## 4. Implementation Breakdown
+## 4. Implementation Breakdown (Phases)
 
-### Phase 1: Type Definitions & Backward-Compatible Aliasing
-- **Purpose**: Define copyright-safe tab identifiers in `types.ts` while keeping aliases so existing code and event listeners do not break.
-- **Files Affected**: `types.ts`, `constants.ts`.
-- **Expected Result**: Clean enum `StudioTab` (`FORMAT`, `INSERT`, `CANVAS`, `STRUCTURE`, `COLLABORATE`, `VIEW`, `TABLE_STUDIO`, `EQUATION_STUDIO`, `HEADER_FOOTER_STUDIO`) with aliases pointing to legacy `RibbonTab`.
+### Phase 1: Reusable EmptyState Primitive
+- **Files Affected**: `components/ui/EmptyState.tsx`
+- **Dependencies**: `lucide-react`
+- **Expected Result**: Standardized empty state component with full dark mode, keyboard accessibility, and variant sizes (`default` and `compact`).
 
-### Phase 2: Design System Tool Primitives (`components/studio/common/`)
-- **Purpose**: Create modern, non-infringing tool controls:
-  - `StudioButton.tsx`: Horizontal button with icon, optional label, hover tooltip, active state indicator.
-  - `StudioButtonGroup.tsx`: Segmented container with crisp hairline borders, no nested card shadows.
-  - `StudioDropdown.tsx`: Clean flyout menu with keyboard navigation and proper ARIA attributes.
-  - `StudioDivider.tsx`: Subtle 1px hairline divider.
-- **Files Affected**: New files in `components/studio/common/`.
-- **Expected Result**: Modular, reusable UI components that completely diverge from Office 2013-2021 ribbon buttons.
+### Phase 2: Sidebar & Modal Empty States
+- **Files Affected**:
+  - `components/CommentsSidebar.tsx`
+  - `components/NotesSidebar.tsx`
+  - `components/ribbon/tabs/FileTab/modals/OpenModal.tsx`
+  - `components/ribbon/tabs/HomeTab/editing/FindReplaceDialog.tsx`
+- **Expected Result**: Modern, informative empty states in all secondary panels.
 
-### Phase 3: Studio Header & Navigation Bar (`StudioHeader.tsx`, `StudioTabBar.tsx`)
-- **Purpose**: Build the high-level top chrome:
-  - Top Zone: Wordmark, editable document title, auto-save status, view mode toggles, and primary "Export / Share" action.
-  - Navigation Zone: Clean, text-based single-line tab selectors with subtle active bottom indicator line (replacing Office's chunky tab pills).
-  - Contextual Badges: Discrete glowing pill indicator when inside Table or Equation mode.
-- **Files Affected**: `components/studio/StudioHeader.tsx`, `components/studio/StudioTabBar.tsx`.
+### Phase 3: Editor Canvas Quick-Start Guide
+- **Files Affected**:
+  - `components/editor/EditorEmptyState.tsx` (new)
+  - `components/EditorPage/EditorPage.tsx`
+- **Expected Result**: Unobtrusive watermark and quick starters on Page 1 when document is blank, disappearing seamlessly when typed into.
 
-### Phase 4: Refactored Tool Trays (`FormatTray`, `InsertTray`, `CanvasTray`, `StructureTray`, etc.)
-- **Purpose**: Reorganize existing controls into modern horizontal tool decks without Word's bottom-labeled group enclosures:
-  - `FormatTray`: Font family picker, font size stepper, inline styles (B/I/U/S/Sub/Super), text color & highlight popover, alignment cluster, bullet/numbered lists, indent/outdent, line spacing, clear formatting.
-  - `InsertTray`: Page break, Table builder, Image uploader, Link dialog, Math Equation, Symbols, Callout quote.
-  - `CanvasTray`: Page size selector, margin presets, orientation toggle, column layout, page border/color.
-  - `StructureTray`: Table of contents generator, footnotes, endnotes, bookmarks, citation manager.
-  - `CollaborateTray`: Word count inspector, comments panel toggle, notes sidebar toggle, document statistics.
-  - `WorkspaceTray`: Print layout vs Web layout toggle, Ruler toggle, formatting marks toggle, zoom slider.
-- **Files Affected**: `components/studio/trays/*`.
-
-### Phase 5: Top-Level Integration & Ribbon Component Swap
-- **Purpose**: Mount the new `Studio` in `App.tsx` and replace `components/Ribbon.tsx`.
-- **Files Affected**: `App.tsx`, `components/Ribbon.tsx`.
-- **Expected Result**: Seamless app reload with the new interface fully operative.
-
-### Phase 6: Verification & Polish
-- **Purpose**: Verify compilation, test all tools (formatting, tables, footnotes, margins, undo/redo), verify mobile/tablet responsiveness, test dark/light modes.
-- **Validation**: Run `compile_applet` and test interactions.
+### Phase 4: Compilation & Visual Verification
+- **Files Affected**: None (validation phase).
+- **Commands**: `compile_applet`
 
 ---
 
-## 5. Desktop Experience
-- **Layout**: Full-width 1440px-optimized studio bar with zero horizontal scrolling on standard desktop screens (>= 1280px).
-- **Visual Hierarchy**: 
-  1. Top header (44px height): Title & quick actions.
-  2. Tab strip (38px height): Clean understated tabs.
-  3. Action deck (48px height): Single sleek horizontal row of tool clusters.
-- **Total Vertical Footprint**: ~130px (saving 30-40px of vertical document real estate compared to the bulky 170px Office ribbon).
-- **Micro-interactions**: Subtle hover state background (`hover:bg-slate-100 dark:hover:bg-slate-800`), smooth 150ms dropdown opening, active tool state highlight.
-- **Keyboard Shortcuts**: Standard shortcuts (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y, Ctrl+K, Ctrl+Enter) remain 100% active and announced in button tooltips.
+## 5. Responsive Experience (Desktop, Tablet, Mobile)
+
+- **Desktop**:
+  - Editor empty guide centers gracefully on the 8.5x11" page sheet.
+  - Sidebars occupy 320px width (`w-80`) with comfortable padding (`p-6`).
+- **Tablet**:
+  - Touch targets on quick-start actions >= 44x44px.
+  - Sidebars adapt to screen overlay without clipping.
+- **Mobile**:
+  - Sidebars span full width or slide-over drawer with close handle.
+  - Empty state typography scales cleanly (`text-sm` title, `text-xs` description).
 
 ---
 
-## 6. Tablet Experience
-- **Orientation Handling**: In landscape (>= 1024px), full action deck is visible. In portrait (768px-1023px), secondary actions collapse into clean overflow dropdown menus (`More Formatting ▾`).
-- **Touch Targets**: Minimum 40px touch targets for all button controls.
-- **Gestures**: Horizontal swipe on the action deck smoothly scrolls tool clusters with subtle fading edge indicators.
+## 6. Accessibility & Security
+
+- **WCAG 2.1 AA Compliance**:
+  - All icons have `aria-hidden="true"`.
+  - Empty state headings use semantic `<h3>` or `<h4>`.
+  - Dynamic updates (e.g. search 0 results) use `role="status"` and `aria-live="polite"`.
+  - Contrast ratios exceed 4.5:1 against light (#ffffff / #f8fafc) and dark (#0f172a / #020617) backgrounds.
+- **Security**:
+  - All rendered titles and descriptions are sanitized strings.
+  - No `dangerouslySetInnerHTML` in empty state components.
 
 ---
 
-## 7. Mobile Experience
-- **Mobile Sticky Cap**: Total sticky header height $\le 15\%$ of mobile viewport height.
-- **Mobile Toolbar**: On viewports < 768px, the desktop action deck collapses into a compact quick-format bar (bold, italic, list, heading, insert) paired with a bottom sheet modal for advanced page and canvas settings.
-- **No Overflow Clipping**: All controls truncate cleanly or move into drawer modals.
+## 7. Execution Checklist
+
+1. [ ] Create `components/ui/EmptyState.tsx`.
+2. [ ] Integrate `EmptyState` into `components/CommentsSidebar.tsx`.
+3. [ ] Integrate `EmptyState` into `components/NotesSidebar.tsx`.
+4. [ ] Integrate `EmptyState` into `components/ribbon/tabs/FileTab/modals/OpenModal.tsx`.
+5. [ ] Integrate `EmptyState` into `components/ribbon/tabs/HomeTab/editing/FindReplaceDialog.tsx`.
+6. [ ] Create `components/editor/EditorEmptyState.tsx`.
+7. [ ] Mount `EditorEmptyState` into `components/EditorPage/EditorPage.tsx` with print protection and zero input interference.
+8. [ ] Execute `compile_applet` to verify zero build errors.
 
 ---
 
-## 8. User Experience & Flows
-- **Typing Flow**: Seamless, distraction-free writing canvas. Action deck can be minimized/collapsed with double-click or toggle button (`Ctrl+F1`).
-- **Contextual Switching**: Clicking inside a table immediately slides in the `Table Tools` contextual deck without disorienting layout shift; clicking back into body text smoothly restores the `Format` deck.
-- **Undo / Redo & Status**: Dedicated prominent undo/redo controls in the studio header, with clear unsaved/saved cloud indicators.
+## 8. Quality Gates & Approval Gate
 
----
+- [x] Architecture verified against existing codebase.
+- [x] Zero breaking changes to document model or pagination engine.
+- [x] Accessibility and responsive specs complete.
+- [x] Rollback strategy defined.
 
-## 9. Performance
-- **DOM Node Reduction**: Drops unnecessary nested group wrapper divs, cutting top toolbar DOM elements by >35%.
-- **Lazy Loading**: Secondary trays (`CanvasTray`, `StructureTray`, `CollaborateTray`) remain code-split with `React.lazy` and `Suspense`.
-- **Zero Layout Shift (CLS = 0)**: Fixed container height for the action deck prevents document canvas jumping during tab switches.
-
----
-
-## 10. Accessibility (WCAG 2.1 AA)
-- **Keyboard Navigation**: Full Tab/Arrow key traversal across all tool clusters.
-- **ARIA Roles**: `role="toolbar"`, `role="tablist"`, `aria-selected`, `aria-controls`, and `aria-expanded` on all dropdowns.
-- **Contrast**: Minimum 4.5:1 text contrast for all labels and icons in both light (`#0f172a` on `#ffffff`) and dark (`#f8fafc` on `#0f172a`) modes.
-- **Screen Reader Support**: All icon-only buttons include explicit `aria-label` and `title` attributes with shortcut hints.
-
----
-
-## 11. Security
-- **Strict Client-Side Validation**: All document exports (HTML, PDF, TXT) and imports sanitize untrusted inputs.
-- **No Direct HTML Injection**: Tool handlers use standard document execution methods without raw `innerHTML` risk.
-- **Zero External Scripts**: All icon assets are bundled locally via `lucide-react`.
-
----
-
-## 12. Compatibility Analysis
-- **`EditorContext`**: 100% backward-compatible. No context functions are removed or altered.
-- **Keyboard Shortcuts**: All document shortcuts continue to work without modification.
-- **Document Pagination & MathLive**: Completely unaffected as they operate independently in `EditorPage`.
-- **Custom Events**: `prodoc:switchTab` supports both new `StudioTab` values and legacy `RibbonTab` names.
-
----
-
-## 13. Risks & Mitigations
-| Risk | Likelihood | Impact | Mitigation |
-| :--- | :--- | :--- | :--- |
-| Existing users confused by new tab names | Medium | Low | Use intuitive, self-explanatory names (`Format`, `Insert`, `Canvas`) with clear tooltip hints. |
-| Feature omission during grouping rewrite | Low | High | Comprehensive feature checklist mapping 100% of existing controls into the new trays. |
-| Mobile viewport overflow | Medium | Medium | Implement responsive overflow collapsing with clean `More...` popovers. |
-
----
-
-## 14. Testing Strategy
-- **Functional Testing**: Verify every single tool in each tray (B, I, U, font size, alignment, table insert, page margins, footnote creation, comment addition).
-- **Contextual Tab Triggers**: Click in/out of tables, equations, headers, and footers to verify auto-switch.
-- **Theme Switching**: Test in Light, Dark, and System modes for contrast and visual fidelity.
-- **Responsive Testing**: Verify viewports at 1440px (Desktop), 1024px (Tablet Landscape), 768px (Tablet Portrait), and 375px (Mobile).
-- **Automated Verification**: Run `compile_applet` to ensure zero compilation or TypeScript errors.
-
----
-
-## 15. Execution Checklist
-1. [ ] Update `types.ts` with `StudioTab` definitions and compatibility mappings.
-2. [ ] Build `components/studio/common/` primitives (`StudioButton`, `StudioButtonGroup`, `StudioDropdown`, `StudioDivider`).
-3. [ ] Build `components/studio/StudioHeader.tsx` (brand wordmark, title, save status, document action dropdown).
-4. [ ] Build `components/studio/StudioTabBar.tsx` (modern tab navigation with contextual indicator badges).
-5. [ ] Build `components/studio/trays/FormatTray.tsx` (streamlined typography & formatting).
-6. [ ] Build `components/studio/trays/InsertTray.tsx` (elements, tables, media, symbols).
-7. [ ] Build `components/studio/trays/CanvasTray.tsx` (page setup, margins, layout).
-8. [ ] Build `components/studio/trays/StructureTray.tsx` (citations, TOC, footnotes).
-9. [ ] Build `components/studio/trays/CollaborateTray.tsx` (review, comments, word count).
-10. [ ] Build `components/studio/trays/WorkspaceTray.tsx` (view modes, zoom, ruler).
-11. [ ] Build `components/studio/trays/contextual/` (Table, Equation, Header/Footer trays).
-12. [ ] Assemble `components/studio/StudioCommandBar.tsx` and integrate into `App.tsx`.
-13. [ ] Run `compile_applet` and verify 100% build success and clean UI rendering.
-
----
-
-## 16. Quality Gates & Approval Gate
-
-### Pre-Implementation Verification Checklist
-- [x] Architecture verified against evidence and repository structure.
-- [x] Full taxonomy departure from Microsoft Office trade-dress documented.
-- [x] WCAG AA accessibility, zero-pill discipline, and 60-30-10 color budget planned.
-- [x] Backward-compatibility guaranteed for all editor operations and events.
-- [x] Rollback strategy defined (modular component swap).
-
-### Approval Gate
-**STOP**. Awaiting user explicit approval ("Approved", "Proceed", or "Implement") before generating code or modifying application files.
+**STOP**: Awaiting explicit user approval before executing file modifications. Respond with **"Approved"**, **"Proceed"**, or **"Implement"** to begin implementation.
