@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { X, Search, FileText, Trash2, ArrowUpRight, HelpCircle } from 'lucide-react';
+import { X, Search, FileText, Trash2, ArrowUpRight, SearchX } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
+import { EmptyState } from './ui/EmptyState';
 
 export const NotesSidebar: React.FC = () => {
   const { 
@@ -178,13 +179,33 @@ export const NotesSidebar: React.FC = () => {
         {((activeTab === 'all' && filteredFootnotes.length === 0 && filteredEndnotes.length === 0) ||
           (activeTab === 'footnotes' && filteredFootnotes.length === 0) ||
           (activeTab === 'endnotes' && filteredEndnotes.length === 0)) && (
-          <div className="text-center py-12 flex flex-col items-center justify-center">
-            <HelpCircle className="w-8 h-8 text-slate-300 dark:text-slate-700 mb-2" />
-            <p className="text-xs text-slate-400 dark:text-slate-500">No matching notes found.</p>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 max-w-[200px] leading-relaxed">
-              Insert notes using the References tab in the ribbon toolbar above.
-            </p>
-          </div>
+          searchQuery.trim() ? (
+            <EmptyState
+              icon={SearchX}
+              title="No notes found"
+              description={`No notes matching "${searchQuery}".`}
+              action={{
+                label: "Clear Search",
+                onClick: () => setSearchQuery(''),
+                variant: 'secondary'
+              }}
+              compact
+              className="py-10"
+            />
+          ) : (
+            <EmptyState
+              icon={FileText}
+              title="No notes yet"
+              description="Footnotes and endnotes appear here. Insert notes using the References tab."
+              action={{
+                label: "Open References Tab",
+                onClick: () => window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'References' })),
+                variant: 'secondary'
+              }}
+              compact
+              className="py-10"
+            />
+          )
         )}
       </div>
     </div>

@@ -3,6 +3,7 @@ import { FolderOpen, FileText, Loader2, Trash2, Clock, Database } from 'lucide-r
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
 import { htmlToJSONDocument, jsonDocumentToHtml } from '../../../../../utils/documentModel';
+import { EmptyState } from '../../../../ui/EmptyState';
 
 export const OpenModal: React.FC = () => {
   const { loadDocument, importFile, importState } = useEditor();
@@ -116,7 +117,7 @@ export const OpenModal: React.FC = () => {
       </div>
 
       {/* Recent documents list */}
-      {recentDocs.length > 0 && (
+      {recentDocs.length > 0 ? (
         <div className="pt-2">
           <h3 className="font-bold text-slate-700 dark:text-slate-300 mb-3 text-xs uppercase tracking-wider flex items-center gap-1.5">
             <Clock size={14} className="text-slate-400" />
@@ -127,20 +128,20 @@ export const OpenModal: React.FC = () => {
               <div 
                 key={i} 
                 onClick={() => handleOpenDoc(doc.name)}
-                className="p-3 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-xl cursor-pointer flex items-center justify-between group transition-all"
+                className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 rounded-xl cursor-pointer flex items-center justify-between group transition-all"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2 bg-slate-100 group-hover:bg-blue-100 rounded-lg text-slate-500 group-hover:text-blue-600 transition-colors shrink-0">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-700 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 rounded-lg text-slate-500 group-hover:text-blue-600 transition-colors shrink-0">
                     <FileText size={18} />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-sm font-semibold text-slate-800 truncate">{doc.name}</h4>
+                    <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{doc.name}</h4>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
                         <Database size={10} />
                         {doc.path}
                       </span>
-                      <span className="text-slate-300 text-[10px]">•</span>
+                      <span className="text-slate-300 dark:text-slate-600 text-[10px]">•</span>
                       <span className="text-[10px] text-slate-400">{doc.date}</span>
                     </div>
                   </div>
@@ -148,7 +149,7 @@ export const OpenModal: React.FC = () => {
                 
                 <button 
                   onClick={(e) => handleDeleteDoc(doc.name, e)}
-                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                   title="Remove from recents"
                 >
                   <Trash2 size={14} />
@@ -156,6 +157,16 @@ export const OpenModal: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      ) : (
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <EmptyState
+            icon={Clock}
+            title="No recent documents"
+            description="Documents you open or create in ProDoc will appear here for fast access."
+            compact
+            className="py-6"
+          />
         </div>
       )}
     </div>

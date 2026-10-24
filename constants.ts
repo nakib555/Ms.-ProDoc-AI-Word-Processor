@@ -12,15 +12,12 @@ export const FONT_SIZES = [
 ];
 
 export const TABS = [
-  RibbonTab.FILE,
-  RibbonTab.HOME,
+  RibbonTab.FORMAT,
   RibbonTab.INSERT,
-  RibbonTab.DRAW,
-  RibbonTab.DESIGN,
-  RibbonTab.LAYOUT,
-  RibbonTab.REFERENCES,
-  RibbonTab.MAILINGS,
-  RibbonTab.REVIEW,
+  RibbonTab.CANVAS,
+  RibbonTab.STRUCTURE,
+  RibbonTab.COLLABORATE,
+  RibbonTab.TEMPLATES,
   RibbonTab.VIEW
 ];
 

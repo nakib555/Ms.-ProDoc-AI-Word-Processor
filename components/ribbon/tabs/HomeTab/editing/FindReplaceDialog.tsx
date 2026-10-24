@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Search, Replace, ArrowRight, ChevronRight } from 'lucide-react';
+import { X, Search, Replace, ArrowRight, ChevronRight, SearchX } from 'lucide-react';
 
 interface FindReplaceDialogProps {
   isOpen: boolean;
@@ -279,8 +279,13 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
 
         {/* Message Area */}
         {message && (
-            <div className="text-xs text-center py-1.5 text-amber-700 bg-amber-50 rounded border border-amber-100">
-                {message}
+            <div 
+                role="status" 
+                aria-live="polite"
+                className="text-xs text-center py-2 px-3 text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-800/60 flex items-center justify-center gap-1.5 animate-in fade-in"
+            >
+                <SearchX size={13} className="shrink-0" />
+                <span>{message}</span>
             </div>
         )}
 

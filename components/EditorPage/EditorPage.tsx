@@ -10,6 +10,7 @@ import { TableResizerOverlay } from './TableResizerOverlay';
 import { TableContextMenu } from './TableContextMenu';
 import { TablePropertiesModal } from './TablePropertiesModal';
 import { SortModal } from './SortModal';
+import { EditorEmptyState } from '../editor/EditorEmptyState';
 
 interface EditorPageProps {
   content: string;
@@ -908,6 +909,42 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const isFirstPage = pageNumber === 1;
   const useDifferentFirstPage = config.differentFirstPage;
 
+  const isContentEmpty = useMemo(() => {
+    if (!content) return true;
+    const stripped = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    const hasMedia = /<(img|table|math-field|hr|svg|iframe)/i.test(content);
+    return stripped === '' && !hasMedia;
+  }, [content]);
+
+  const showEmptyState = pageNumber === 1 && totalPages === 1 && isContentEmpty && !isHeaderFooterMode && !readOnly;
+
+  const handleStartWriting = () => {
+    if (editorRef.current) {
+      editorRef.current.focus();
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  };
+
+  const handleInsertOutline = () => {
+    const outlineHtml = `<h1>Project Proposal</h1><p>A concise overview of the background, target audience, and primary objectives of this document.</p><h2>1. Executive Summary</h2><p>Summary of key requirements, deliverables, and projected timelines.</p><h2>2. Objectives &amp; Scope</h2><p>Detailed outline of core milestones and anticipated achievements.</p><h2>3. Implementation Plan</h2><p>Step-by-step phased approach, resource allocation, and key deliverables.</p><h2>4. Conclusion &amp; Next Steps</h2><p>Action items and final sign-off criteria.</p>`;
+    if (editorRef.current) {
+      editorRef.current.innerHTML = outlineHtml;
+      editorRef.current.focus();
+    }
+    if (onContentChange) {
+      onContentChange(outlineHtml, pageNumber - 1);
+    }
+  };
+
+  const handleOpenDocument = () => {
+    window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'File' }));
+  };
+
   // Determine active header/footer content based on page number and config
   const activeHeaderContent = useDifferentFirstPage && isFirstPage ? firstHeaderContent : headerContent;
   const activeFooterContent = useDifferentFirstPage && isFirstPage ? firstFooterContent : footerContent;
@@ -1615,6 +1652,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               WebkitHyphens: config.hyphenation ? 'auto' : 'none',
             }}
           />
+          {showEmptyState && (
+            <EditorEmptyState
+              onStartWriting={handleStartWriting}
+              onInsertOutline={handleInsertOutline}
+              onOpenDocument={handleOpenDocument}
+            />
+          )}
           {selectedImage && editorElement && (
             <ResizerOverlay target={selectedImage} container={editorElement} scale={scale} onUpdate={handleImageUpdate} onClear={() => setSelectedImage(null)} />
           )}

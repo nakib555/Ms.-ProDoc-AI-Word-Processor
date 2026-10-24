@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Ribbon from './components/Ribbon';
 import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
@@ -8,8 +8,7 @@ import { MobileSelectionToolbar } from './components/MobileSelectionToolbar';
 import { CommentsSidebar } from './components/CommentsSidebar';
 import { NotesSidebar } from './components/NotesSidebar';
 import { JsonDocInspectorSidebar } from './components/JsonDocInspectorSidebar';
-import { RibbonTab } from './types';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { StudioTab, RibbonTab } from './types';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { DocumentModelProvider } from './contexts/DocumentModelContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -17,10 +16,10 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/Margins/CustomMargin/PageSetupDialog';
 
 const AppContent: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
-  const { viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig, importState } = useEditor();
+  const [activeTab, setActiveTab] = useState<StudioTab | RibbonTab | null>(StudioTab.FORMAT);
+  const { viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig, importState, importFile } = useEditor();
 
-  const handleTabChange = useCallback((tab: RibbonTab) => {
+  const handleTabChange = useCallback((tab: StudioTab | RibbonTab) => {
     setActiveTab(prev => prev === tab ? null : tab);
   }, []);
 
@@ -34,6 +33,17 @@ const AppContent: React.FC = () => {
       window.addEventListener('prodoc:switchTab', handleSwitchTab);
       return () => window.removeEventListener('prodoc:switchTab', handleSwitchTab);
   }, []);
+
+  useEffect(() => {
+      const handleOpenFile = (e: Event) => {
+          const customEvent = e as CustomEvent;
+          if (customEvent.detail) {
+              importFile(customEvent.detail);
+          }
+      };
+      window.addEventListener('prodoc:open-file', handleOpenFile);
+      return () => window.removeEventListener('prodoc:open-file', handleOpenFile);
+  }, [importFile]);
 
   const isReadMode = viewMode === 'read';
 
