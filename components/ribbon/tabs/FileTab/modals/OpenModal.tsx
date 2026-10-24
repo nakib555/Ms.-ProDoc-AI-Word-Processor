@@ -163,7 +163,7 @@ export const OpenModal: React.FC = () => {
           <EmptyState
             icon={Clock}
             title="No recent documents"
-            description="Documents you open or create in ProDoc will appear here for fast access."
+            description="Documents you open or create in Doc Writer Studio will appear here for fast access."
             compact
             className="py-6"
           />

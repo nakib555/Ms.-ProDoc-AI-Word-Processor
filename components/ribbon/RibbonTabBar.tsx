@@ -4,9 +4,9 @@ import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
 import { 
   ChevronLeft, ChevronRight,
-  FileText, Home, Blocks, PenTool, Palette,
-  Layout, BookOpen, Mail, CheckSquare,
-  Eye, Table, PaintBucket, Sigma, LayoutPanelTop
+  FileText, Edit3, PlusCircle, PenTool, Palette,
+  Columns, BookOpen, Mail, CheckSquare,
+  Eye, Table, PaintBucket, Sigma, LayoutPanelTop, FolderDown
 } from 'lucide-react';
 
 interface RibbonTabBarProps {
@@ -14,17 +14,17 @@ interface RibbonTabBarProps {
   onTabChange: (tab: RibbonTab) => void;
 }
 
-const TAB_CONFIG: Record<string, { icon: React.ElementType, label?: string, color: string }> = {
-  [RibbonTab.FILE]: { icon: FileText, color: 'text-slate-700 dark:text-slate-300' },
-  [RibbonTab.HOME]: { icon: Home, color: 'text-indigo-600 dark:text-indigo-400' },
-  [RibbonTab.INSERT]: { icon: Blocks, color: 'text-purple-600 dark:text-purple-400' },
-  [RibbonTab.DRAW]: { icon: PenTool, color: 'text-pink-600 dark:text-pink-400' },
-  [RibbonTab.DESIGN]: { icon: Palette, color: 'text-rose-600 dark:text-rose-400' },
-  [RibbonTab.LAYOUT]: { icon: Layout, color: 'text-cyan-600 dark:text-cyan-400' },
-  [RibbonTab.REFERENCES]: { icon: BookOpen, color: 'text-amber-600 dark:text-amber-400' },
-  [RibbonTab.MAILINGS]: { icon: Mail, color: 'text-teal-600 dark:text-teal-400' },
-  [RibbonTab.REVIEW]: { icon: CheckSquare, color: 'text-emerald-600 dark:text-emerald-400' },
-  [RibbonTab.VIEW]: { icon: Eye, color: 'text-sky-600 dark:text-sky-400' }
+const TAB_CONFIG: Record<string, { icon: React.ElementType, label: string, color: string }> = {
+  [RibbonTab.HOME]: { icon: Edit3, label: 'Compose', color: 'text-indigo-500' },
+  [RibbonTab.INSERT]: { icon: PlusCircle, label: 'Insert', color: 'text-blue-500' },
+  [RibbonTab.LAYOUT]: { icon: Columns, label: 'Page Setup', color: 'text-cyan-500' },
+  [RibbonTab.DESIGN]: { icon: Palette, label: 'Styles & Theme', color: 'text-purple-500' },
+  [RibbonTab.DRAW]: { icon: PenTool, label: 'Ink & Canvas', color: 'text-pink-500' },
+  [RibbonTab.REFERENCES]: { icon: BookOpen, label: 'References', color: 'text-amber-500' },
+  [RibbonTab.MAILINGS]: { icon: Mail, label: 'Automations', color: 'text-teal-500' },
+  [RibbonTab.REVIEW]: { icon: CheckSquare, label: 'Review & Audit', color: 'text-emerald-500' },
+  [RibbonTab.VIEW]: { icon: Eye, label: 'Display', color: 'text-sky-500' },
+  [RibbonTab.FILE]: { icon: FolderDown, label: 'Project', color: 'text-slate-500' },
 };
 
 interface TabButtonProps {
@@ -38,33 +38,32 @@ interface TabButtonProps {
 }
 
 const TabButton = memo(({ tabId, icon: Icon, label, isActive, onClick, isContextual, colorClass }: TabButtonProps) => {
-    // Default color from config if not contextual
     const configColor = TAB_CONFIG[tabId]?.color || 'text-slate-500';
-    
-    // For contextual tabs, use the passed color class. For normal tabs, use slate when inactive, specific color when active/hover.
-    const baseColor = isContextual ? `${colorClass} dark:text-amber-400 hover:text-amber-700` : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100';
-    const activeColor = isContextual ? 'text-amber-700 dark:text-amber-300' : configColor;
+    const baseColor = isContextual 
+      ? 'text-amber-700 dark:text-amber-300 hover:bg-amber-100/50 dark:hover:bg-amber-950/40' 
+      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100';
 
     return (
         <button
+            type="button"
             onClick={onClick}
             onMouseDown={(e) => e.preventDefault()}
             className={`
-              px-3.5 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center gap-2 mx-0.5 my-1
+              px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-150 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 mx-0.5 select-none
               ${isActive 
-                ? `bg-white text-slate-900 dark:bg-slate-800 dark:text-white shadow-sm font-semibold` 
-                : `${baseColor} hover:bg-slate-200/50 dark:hover:bg-slate-800/50`}
-              ${isContextual ? 'border border-current' : 'border border-transparent'}
+                ? `bg-slate-900 text-white dark:bg-white dark:text-slate-950 font-semibold shadow-sm border border-slate-900 dark:border-white` 
+                : `${baseColor} hover:bg-slate-200/60 dark:hover:bg-slate-800/60 border border-transparent`}
+              ${isContextual && !isActive ? 'border-dashed border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20' : ''}
             `}
         >
             {Icon && (
               <Icon 
-                size={16} 
-                className={`transition-colors duration-200 ${isActive ? 'text-current' : isContextual ? 'text-current' : configColor} ${!isActive && !isContextual ? 'opacity-70 group-hover:opacity-100' : ''}`}
-                strokeWidth={isActive ? 2.5 : 2}
+                size={14} 
+                className={`transition-colors duration-150 ${isActive ? 'text-current' : isContextual ? 'text-amber-600 dark:text-amber-400' : configColor}`}
+                strokeWidth={isActive ? 2.25 : 1.75}
               />
             )}
-            <span>{label}</span>
+            <span className="tracking-tight">{label}</span>
         </button>
     );
 });
@@ -171,27 +170,24 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
 
   return (
-    <div className="relative flex items-center bg-slate-50 dark:bg-[#0f172a] pt-2 pb-2 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200 dark:border-slate-800">
+    <div className="relative flex items-center bg-slate-100/90 dark:bg-[#090d16] px-2 py-1.5 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200 dark:border-slate-800">
        <div 
-          className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-8 bg-gradient-to-r from-slate-50 dark:from-[#0f172a] via-slate-50/90 dark:via-[#0f172a]/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute left-0 top-0 bottom-0 z-30 flex items-center pl-1 pr-6 bg-gradient-to-r from-slate-100 dark:from-[#090d16] via-slate-100/90 dark:via-[#090d16]/90 to-transparent transition-opacity duration-200 ${showLeftArrow ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
        >
            <button 
+              type="button"
               onClick={() => scroll('left')}
               onMouseDown={(e) => e.preventDefault()}
-              className="p-1.5 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all"
+              className="p-1 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-95 transition-all"
               aria-label="Scroll left"
            >
-              <ChevronLeft size={16} strokeWidth={2.5} />
+              <ChevronLeft size={14} strokeWidth={2.5} />
            </button>
        </div>
 
       <div 
         ref={scrollContainerRef}
-        className="flex px-2 md:px-4 overflow-x-auto overflow-y-hidden no-scrollbar w-full items-center gap-1 scroll-smooth touch-pan-x"
-        style={{
-          marginTop: '-10px',
-          marginBottom: '-10px'
-        }}
+        className="flex px-1 overflow-x-auto overflow-y-hidden no-scrollbar w-full items-center gap-1 scroll-smooth touch-pan-x"
       >
         {Object.keys(TAB_CONFIG).map((key) => {
           const tab = key as RibbonTab;
