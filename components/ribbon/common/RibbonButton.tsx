@@ -25,30 +25,18 @@ export const RibbonButton: React.FC<RibbonButtonProps> = React.memo(({
   disabled
 }) => (
   <button
-    type="button"
-    className={`group relative flex flex-col items-center justify-center px-2 py-1.5 min-w-[56px] md:min-w-[62px] h-[72px] rounded-lg transition-all duration-150 border border-transparent text-slate-700 dark:text-slate-300 flex-shrink-0 select-none ${className || ''} ${
-      disabled 
-        ? 'opacity-40 cursor-not-allowed pointer-events-none' 
-        : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700/80 hover:text-slate-950 dark:hover:text-white active:bg-slate-200 dark:active:bg-slate-700 active:scale-[0.97]'
-    }`}
+    className={`flex flex-col items-center justify-center px-2 py-1 min-w-[60px] md:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-700 dark:text-slate-200 flex-shrink-0 ${className || ''} ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white active:bg-slate-200 dark:active:bg-slate-700'}`}
     onClick={disabled ? undefined : onClick}
     onMouseDown={(e) => e.preventDefault()}
     title={title || label}
     disabled={disabled}
   >
-    <div className={`p-1 rounded-md transition-colors ${disabled ? '' : 'group-hover:bg-slate-200/50 dark:group-hover:bg-slate-700/50'}`}>
-      <Icon 
-        className={`w-5 h-5 transition-colors duration-150 ${iconClassName || 'text-slate-600 dark:text-slate-300'} ${disabled ? '' : 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400'}`} 
-        strokeWidth={1.75} 
-      />
+    <div className={`p-1.5 rounded-md transition-all mb-1 ${disabled ? '' : 'group-active:scale-95'}`}>
+        <Icon className={`w-6 h-6 transition-colors ${iconClassName || 'text-slate-600 dark:text-slate-300'} ${disabled ? '' : 'group-hover:text-slate-900 dark:group-hover:text-white'}`} strokeWidth={1.5} />
     </div>
-    <div className="flex items-center justify-center w-full px-0.5 mt-0.5">
-      <span className="text-[11px] font-medium leading-tight text-center truncate max-w-[64px] tracking-tight">
-        {label}
-      </span>
-      {hasArrow && (
-        <ChevronDown size={11} className="ml-0.5 opacity-60 shrink-0 group-hover:opacity-100 transition-opacity" />
-      )}
+    <div className="flex items-center justify-center w-full px-0.5">
+        <span className={`text-xs font-medium leading-tight text-center ${disabled ? '' : 'group-hover:text-slate-900 dark:group-hover:text-white'}`}>{label}</span>
+        {hasArrow && <ChevronDown size={12} className={`ml-0.5 opacity-80 shrink-0 ${disabled ? '' : 'group-hover:text-slate-900 dark:group-hover:text-white'}`} />}
     </div>
   </button>
 ));

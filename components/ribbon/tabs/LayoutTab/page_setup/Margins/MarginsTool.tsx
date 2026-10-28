@@ -1,6 +1,6 @@
 
 import React, { useState, Suspense, useMemo } from 'react';
-import { LayoutTemplate, Columns, ArrowLeftRight, MoveVertical, ArrowRightLeft, Monitor, Settings2 } from 'lucide-react';
+import { LayoutTemplate, Columns, ArrowLeftRight, MoveVertical, ArrowRightLeft, Monitor, Settings2, Check } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 import { useLayoutTab } from '../../LayoutTabContext';
 import { DropdownButton } from '../../common/LayoutTools';
@@ -69,34 +69,43 @@ export const MarginsTool: React.FC = () => {
              label="Margins" 
              iconClassName="text-cyan-600 dark:text-cyan-500"
          />
-         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={280}>
-             <div className="p-1 space-y-0.5 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
-                 {marginOptions.map((option) => (
-                     <button 
-                        key={option.id}
-                        onClick={() => handleMarginChange(option.id as MarginPreset)}
-                        onMouseDown={(e) => e.preventDefault()}
-                        className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md flex items-center gap-3 group transition-colors ${pageConfig.marginPreset === option.id ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200' : 'text-slate-700'}`}
-                     >
-                         <option.icon size={18} className={`flex-shrink-0 ${pageConfig.marginPreset === option.id ? 'text-blue-500' : option.colorClass}`} strokeWidth={1.5} />
-                         <div className="flex-1 min-w-0">
-                            <div className="text-xs font-medium truncate">{option.label}</div>
-                            <div className={`text-[10px] truncate ${pageConfig.marginPreset === option.id ? 'text-blue-400' : 'text-slate-400'}`}>{option.desc}</div>
-                         </div>
-                         {pageConfig.marginPreset === option.id && (
-                             <div className="w-1.5 h-1.5 rounded-full bg-blue-600 ml-2 shrink-0" />
-                         )}
-                     </button>
-                 ))}
+         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={280} title="Margin Presets">
+             <div className="p-1 space-y-1 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+                 {marginOptions.map((option) => {
+                     const isSelected = pageConfig.marginPreset === option.id;
+                     return (
+                         <button 
+                            key={option.id}
+                            onClick={() => handleMarginChange(option.id as MarginPreset)}
+                            onMouseDown={(e) => e.preventDefault()}
+                            className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 group transition-all active:scale-[0.99] ${
+                              isSelected 
+                                ? 'bg-indigo-50/90 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 ring-1 ring-indigo-500/30 border border-indigo-200 dark:border-indigo-800 shadow-xs' 
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
+                            }`}
+                         >
+                             <option.icon size={18} className={`flex-shrink-0 ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : option.colorClass}`} strokeWidth={1.75} />
+                             <div className="flex-1 min-w-0">
+                                <div className={`text-xs font-semibold truncate ${isSelected ? 'text-indigo-950 dark:text-indigo-100' : 'text-slate-800 dark:text-slate-200'}`}>{option.label}</div>
+                                <div className={`text-[10px] truncate ${isSelected ? 'text-indigo-600/80 dark:text-indigo-300/80' : 'text-slate-400 dark:text-slate-500'}`}>{option.desc}</div>
+                             </div>
+                             {isSelected && (
+                                 <div className="w-5 h-5 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-xs ml-2 animate-in zoom-in-75">
+                                   <Check size={12} strokeWidth={3} />
+                                 </div>
+                             )}
+                         </button>
+                     );
+                 })}
                  
-                 <div className="border-t border-slate-100 my-1"></div>
+                 <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                  
                  <button 
-                    className="w-full text-left px-3 py-2 hover:bg-slate-100 text-xs font-medium text-slate-700 rounded-md flex items-center gap-3 group transition-colors" 
+                    className="w-full text-left px-3.5 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 rounded-xl flex items-center gap-3 group transition-all active:scale-[0.99]" 
                     onClick={openCustomDialog}
                     onMouseDown={(e) => e.preventDefault()}
                  >
-                    <Settings2 size={18} className="text-slate-400 group-hover:text-slate-600" strokeWidth={1.5} />
+                    <Settings2 size={18} className="text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" strokeWidth={1.75} />
                     <span>Custom Margins...</span>
                  </button>
              </div>

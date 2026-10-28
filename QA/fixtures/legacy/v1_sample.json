@@ -1,0 +1,26 @@
+{
+  "type": "document",
+  "schemaVersion": 1,
+  "metadata": {
+    "title": "Legacy v1 Document"
+  },
+  "pages": [
+    {
+      "sections": [
+        {
+          "elements": [
+            {
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Legacy paragraph without node identifiers."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

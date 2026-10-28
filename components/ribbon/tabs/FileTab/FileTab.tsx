@@ -11,7 +11,7 @@ import { OutputGroup } from './export/OutputGroup';
 
 export const FileTab: React.FC = () => {
   return (
-    <FileTabProvider>
+    <>
       <DocumentGroup />
       <RibbonSeparator />
       <SaveGroup />
@@ -19,9 +19,6 @@ export const FileTab: React.FC = () => {
       <ShareGroup />
       <RibbonSeparator />
       <OutputGroup />
-      
-      {/* Modal Overlay managed by context */}
-      <FileModal />
-    </FileTabProvider>
+    </>
   );
 };

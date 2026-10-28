@@ -1,10 +1,12 @@
 /* eslint-disable react-hooks/immutability, @typescript-eslint/no-explicit-any */
-import React, { useRef, useLayoutEffect, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallback } from 'react';
+
 import { createPortal } from 'react-dom';
 import { PageConfig, EditingArea } from '../../types';
 import { PAGE_SIZES } from '../../constants';
 import { useMathLive } from '../../hooks/useMathLive';
 import { useEditor } from '../../contexts/EditorContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { ResizerOverlay } from './ResizerOverlay';
 import { TableResizerOverlay } from './TableResizerOverlay';
 import { TableContextMenu } from './TableContextMenu';
@@ -90,6 +92,15 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     updateEndnote,
     removeEndnote
   } = useEditor();
+
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark' || theme === 'ocean';
+  const defaultPaperBg = isDarkMode 
+    ? (theme === 'ocean' ? '#001a3d' : '#0f172a') 
+    : '#ffffff';
+  const defaultPaperInk = isDarkMode 
+    ? (theme === 'ocean' ? '#f0fdff' : '#f8fafc') 
+    : '#000000';
 
   const pageFootnoteIds = useMemo(() => {
     if (!content) return [];
@@ -1441,7 +1452,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     if (e.target !== selectedImage) setSelectedImage(null);
     if (!(e.target as HTMLElement).closest('table')) setSelectedTable(null);
     if (selectionMode) return;
-    if (editorRef.current && !editorRef.current.contains(e.target as Node) && !isHeaderFooterMode) {
+    if (isHeaderFooterMode) {
+      if (setActiveEditingArea) setActiveEditingArea('body');
+      if (editorRef.current) {
+        editorRef.current.focus();
+      }
+      return;
+    }
+    if (editorRef.current && !editorRef.current.contains(e.target as Node)) {
       editorRef.current.focus();
       const rect = editorRef.current.getBoundingClientRect();
       const range = document.createRange();
@@ -1451,6 +1469,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       window.getSelection()?.addRange(range);
     }
   };
+
 
   const getMarginsInches = () => {
     const m = config.margins;
@@ -1486,11 +1505,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const effectiveFooterDist = Math.min(defaultFooterDist, margins.bottom / 2);
 
   const getBackgroundStyle = (): React.CSSProperties => {
-    const base: React.CSSProperties = { backgroundColor: config.pageColor || '#ffffff' };
+    const baseColor = config.pageColor || defaultPaperBg;
+    const base: React.CSSProperties = { backgroundColor: baseColor };
+    const gridColor = isDarkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
     if (config.background === 'ruled') {
-      return { ...base, backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px)', backgroundSize: '100% 0.33in' };
+      return { ...base, backgroundImage: `linear-gradient(${gridColor} 1px, transparent 1px)`, backgroundSize: '100% 0.33in' };
     } else if (config.background === 'grid') {
-      return { ...base, backgroundImage: 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)', backgroundSize: '0.2in 0.2in' };
+      return { ...base, backgroundImage: `linear-gradient(${gridColor} 1px, transparent 1px), linear-gradient(90deg, ${gridColor} 1px, transparent 1px)`, backgroundSize: '0.2in 0.2in' };
     }
     return base;
   };
@@ -1530,23 +1551,58 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
 
+  const exitHeaderFooterToBody = useCallback((clientX?: number, clientY?: number) => {
+    if (activeEditingArea !== 'body' && setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
+      setActiveEditingArea('body');
+      requestAnimationFrame(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+          if (clientX !== undefined && clientY !== undefined && document.caretRangeFromPoint) {
+            const range = document.caretRangeFromPoint(clientX, clientY);
+            if (range && editorRef.current.contains(range.startContainer)) {
+              const sel = window.getSelection();
+              sel?.removeAllRanges();
+              sel?.addRange(range);
+              return;
+            }
+          }
+          const sel = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(editorRef.current);
+          range.collapse(false);
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+        }
+      });
+    }
+  }, [activeEditingArea, setActiveEditingArea, isKeyboardLocked, selectionMode]);
+
+  useEffect(() => {
+    if (!isHeaderFooterMode) return;
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        exitHeaderFooterToBody();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [isHeaderFooterMode, exitHeaderFooterToBody]);
+
   const onBodyDoubleClick = (e: React.MouseEvent) => {
     if (activeEditingArea !== 'body' && setActiveEditingArea && !isKeyboardLocked && !selectionMode) {
       e.stopPropagation();
-      setActiveEditingArea('body');
-      setTimeout(() => {
-        if (editorRef.current) editorRef.current.focus();
-      }, 10);
+      exitHeaderFooterToBody(e.clientX, e.clientY);
     }
   };
 
   const safeMaxHeaderHeight = (heightIn - MIN_BODY_GAP_IN) / 2;
   const safeMaxFooterHeight = (heightIn - MIN_BODY_GAP_IN) / 2;
   const isBodyEditable = true; 
-  const isHeaderFooterEditable = true;
+  const isHeaderFooterEditable = isHeaderFooterMode && !isKeyboardLocked && !selectionMode;
   let cursorStyle = 'cursor-text';
   if (selectionMode) cursorStyle = 'cursor-crosshair';
   else if (isKeyboardLocked) cursorStyle = 'cursor-default';
+
 
   return (
     <div 
@@ -1555,13 +1611,15 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       style={{ width: `${widthIn * scale}in`, height: `${heightIn * scale}in` }}
     >
       <div 
-        className={`prodoc-page-sheet absolute inset-0 bg-white overflow-clip ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
+        className={`prodoc-page-sheet absolute inset-0 overflow-clip ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
         style={{
           transform: `scale(${scale})`,
           transformOrigin: 'top left',
           width: `${widthIn}in`,
           height: `${heightIn}in`,
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)',
+          boxShadow: isDarkMode 
+            ? '0 10px 30px -5px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)' 
+            : '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)',
           paddingTop: `${margins.top}in`,
           paddingBottom: `${margins.bottom}in`,
           paddingLeft: `${margins.left}in`,
@@ -1585,7 +1643,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           onDoubleClick={onHeaderDoubleClick}
           onMouseDown={(e) => e.stopPropagation()} 
         >
-          <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500 print:border-none' : 'hover:bg-slate-50/50'}`}>
+          <div className={`w-full h-full relative ${isHeaderFooterMode ? 'border-b-2 border-dashed border-indigo-500 print:border-none' : isDarkMode ? 'hover:bg-slate-800/40' : 'hover:bg-slate-50/50'}`}>
             {isHeaderFooterMode && (
               <div className="header-footer-label bg-indigo-600 text-white print:hidden" style={{ left: 0, bottom: -2, transform: 'translateY(100%)' }}>
                 {isFirstPage && useDifferentFirstPage ? "First Page Header" : "Header"}
@@ -1599,14 +1657,20 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               suppressContentEditableWarning
               onInput={handleHeaderInput}
               onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
-              style={{ minHeight: '1em' }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  exitHeaderFooterToBody();
+                }
+              }}
+              style={{ minHeight: '1em', color: config.pageColor ? '#000000' : defaultPaperInk }}
             />
           </div>
         </div>
 
         {config.watermark && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-clip z-0">
-            <div className="transform -rotate-45 text-slate-300/40 font-bold text-[8rem] whitespace-nowrap select-none" style={{ color: 'rgba(0,0,0,0.08)' }}>
+            <div className="transform -rotate-45 font-bold text-[8rem] whitespace-nowrap select-none" style={{ color: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }}>
               {config.watermark}
             </div>
           </div>
@@ -1614,10 +1678,23 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
         {/* Body */}
         <div 
-          className={`relative w-full h-full overflow-clip transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-50' : 'opacity-100'}`}
+          className={`relative w-full h-full overflow-clip transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-60 cursor-pointer' : 'opacity-100'}`}
           style={{ ...getVerticalAlignStyle() }}
           onDoubleClick={onBodyDoubleClick}
-          onMouseDown={(e) => e.stopPropagation()} 
+          onMouseDown={(e) => {
+            if (isHeaderFooterMode) {
+              e.stopPropagation();
+              exitHeaderFooterToBody(e.clientX, e.clientY);
+            } else {
+              e.stopPropagation();
+            }
+          }}
+          onClick={(e) => {
+            if (isHeaderFooterMode) {
+              e.stopPropagation();
+              exitHeaderFooterToBody(e.clientX, e.clientY);
+            }
+          }}
         >
           <div
             id={`prodoc-editor-${pageNumber}`}
@@ -1628,7 +1705,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               }
             }}
             className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
-            contentEditable={isBodyEditable}
+            contentEditable={!isHeaderFooterMode && isBodyEditable}
+
             inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
@@ -1642,7 +1720,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             suppressContentEditableWarning={true}
             style={{ 
               fontFamily: 'Calibri, Inter, sans-serif', 
-              color: '#000000', 
+              color: config.pageColor ? '#000000' : defaultPaperInk, 
               flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined, 
               minHeight: '100%',
               columnCount: config.columns || 1,
@@ -1757,7 +1835,14 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               suppressContentEditableWarning
               onInput={handleFooterInput}
               onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
-              style={{ minHeight: '1em' }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  exitHeaderFooterToBody();
+                }
+              }}
+              style={{ minHeight: '1em', color: config.pageColor ? '#000000' : defaultPaperInk }}
+
             />
           </div>
         </div>

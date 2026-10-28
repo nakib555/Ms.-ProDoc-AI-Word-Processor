@@ -135,6 +135,18 @@ table:has([data-formula-outline]) {
   transition: width 0.25s ease-out, height 0.25s ease-out, background-color 0.2s ease, border-color 0.2s ease;
 }
 
+/* Smooth column width transitions for AutoFit, Distribute, and column adjustments */
+@media (prefers-reduced-motion: no-preference) {
+  .ProseMirror td,
+  .ProseMirror th,
+  .prodoc-editor td,
+  .prodoc-editor th,
+  .ProseMirror col,
+  .prodoc-editor col {
+    transition: width 240ms cubic-bezier(0.16, 1, 0.3, 1), min-width 240ms cubic-bezier(0.16, 1, 0.3, 1), max-width 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
 /* Smooth transitions for border updates via BorderTool */
 .prodoc-editor table.is-border-updating td,
 .prodoc-editor table.is-border-updating th {
@@ -152,6 +164,7 @@ table:has([data-formula-outline]) {
   position: relative;
   vertical-align: top;
 }
+
 
 /* Custom table layout and text wrapping overrides */
 .prodoc-editor table,
@@ -407,9 +420,9 @@ math-field {
   --bg-surface: #002855;
   --bg-surface-hover: #004282;
   --border-subtle: #005f9e;
-  --text-primary: #e0fbfc;
-  --text-secondary: #98c1d9;
-  --text-muted: #6b9ac4;
+  --text-primary: #f0fdff;
+  --text-secondary: #bce4f7;
+  --text-muted: #8ec5ea;
 }
 
 .theme-ocean.dark .dark\:bg-slate-950,
@@ -470,13 +483,22 @@ body.is-table-resizing .prodoc-editor tbody,
 body.is-table-resizing .prodoc-editor tr,
 body.is-table-resizing .prodoc-editor td,
 body.is-table-resizing .prodoc-editor th,
+body.is-table-resizing .prodoc-editor col,
+body.is-table-resizing .ProseMirror table,
+body.is-table-resizing .ProseMirror tbody,
+body.is-table-resizing .ProseMirror tr,
+body.is-table-resizing .ProseMirror td,
+body.is-table-resizing .ProseMirror th,
+body.is-table-resizing .ProseMirror col,
 .prodoc-editor table.is-dragging,
 .prodoc-editor table.is-dragging tbody,
 .prodoc-editor table.is-dragging tr,
 .prodoc-editor table.is-dragging td,
-.prodoc-editor table.is-dragging th {
+.prodoc-editor table.is-dragging th,
+.prodoc-editor table.is-dragging col {
   transition: none !important;
 }
+
 
 .comment-highlight {
   background-color: #fef08a; /* Yellow-200 */

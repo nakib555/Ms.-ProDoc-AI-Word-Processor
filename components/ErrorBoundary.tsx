@@ -50,12 +50,20 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <p className="text-sm text-red-600 dark:text-red-400 mb-4 max-w-md">
             {error?.message || "An unexpected error occurred while rendering this component."}
           </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-red-950 border border-red-300 dark:border-red-700 rounded-md shadow-sm text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-50 transition-colors"
-          >
-            <RefreshCw size={14} /> Reload Application
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => this.setState({ hasError: false, error: null })} 
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md shadow-sm text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              <RefreshCw size={14} /> Try Again
+            </button>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-red-950 border border-red-300 dark:border-red-700 rounded-md shadow-sm text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-50 transition-colors"
+            >
+              Reload Application
+            </button>
+          </div>
         </div>
       );
     }

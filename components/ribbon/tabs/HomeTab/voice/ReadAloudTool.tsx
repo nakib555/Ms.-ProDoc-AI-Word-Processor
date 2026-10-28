@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Volume2 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -29,14 +29,14 @@ const WaveformIcon = ({ className }: { className?: string }) => (
 export const ReadAloudTool: React.FC = () => {
   const { content } = useEditor();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hasContent, setHasContent] = useState(false);
 
-  // Check content presence for disabled state
-  useEffect(() => {
+  // Derive content presence for disabled state
+  const hasContent = useMemo(() => {
+    if (!content) return false;
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = content;
-    const text = (tempDiv.innerText || '').trim();
-    setHasContent(text.length > 0);
+    const text = (tempDiv.innerText || tempDiv.textContent || '').trim();
+    return text.length > 0;
   }, [content]);
 
   const stopAudio = () => {
@@ -53,7 +53,7 @@ export const ReadAloudTool: React.FC = () => {
     }
 
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      alert("Text-to-speech is not supported in this browser.");
+      console.warn("Text-to-speech is not supported in this browser environment.");
       return;
     }
 
@@ -65,7 +65,7 @@ export const ReadAloudTool: React.FC = () => {
     } else {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = content;
-      textToRead = tempDiv.innerText || "";
+      textToRead = tempDiv.innerText || tempDiv.textContent || "";
     }
 
     textToRead = textToRead.trim();

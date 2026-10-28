@@ -7,7 +7,44 @@ import { SmallRibbonButton } from '../../ViewTab/common/ViewTools';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const NavigationGroup: React.FC = () => {
-  const { setActiveEditingArea, activeEditingArea } = useEditor();
+  const { 
+    setActiveEditingArea, 
+    activeEditingArea,
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    pageConfig,
+    setPageConfig
+  } = useEditor();
+
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      const targetPage = currentPage - 1;
+      setCurrentPage(targetPage);
+      const targetEl = document.querySelector(`[data-page-index="${targetPage - 1}"] .prodoc-${activeEditingArea === 'footer' ? 'footer' : 'header'}`);
+      (targetEl as HTMLElement)?.focus();
+      (targetEl as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      const targetPage = currentPage + 1;
+      setCurrentPage(targetPage);
+      const targetEl = document.querySelector(`[data-page-index="${targetPage - 1}"] .prodoc-${activeEditingArea === 'footer' ? 'footer' : 'header'}`);
+      (targetEl as HTMLElement)?.focus();
+      (targetEl as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const isLinked = !pageConfig.differentFirstPage;
+
+  const handleToggleLink = () => {
+    setPageConfig(prev => ({
+      ...prev,
+      differentFirstPage: !prev.differentFirstPage
+    }));
+  };
 
   return (
     <RibbonSection title="Navigation">
@@ -28,11 +65,27 @@ export const NavigationGroup: React.FC = () => {
             />
             
             <div className="flex flex-col h-full justify-center gap-0.5 px-1 min-w-[100px]">
-                <SmallRibbonButton icon={ArrowLeft} label="Previous" onClick={() => {}} />
-                <SmallRibbonButton icon={ArrowRight} label="Next" onClick={() => {}} />
-                <SmallRibbonButton icon={Link2} label="Link to Previous" onClick={() => {}} />
+                <SmallRibbonButton 
+                  icon={ArrowLeft} 
+                  label="Previous" 
+                  onClick={handlePrevious} 
+                  disabled={currentPage <= 1}
+                />
+                <SmallRibbonButton 
+                  icon={ArrowRight} 
+                  label="Next" 
+                  onClick={handleNext} 
+                  disabled={currentPage >= totalPages}
+                />
+                <SmallRibbonButton 
+                  icon={Link2} 
+                  label={isLinked ? "Unlink Section" : "Link to Previous"} 
+                  onClick={handleToggleLink} 
+                  className={isLinked ? "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-semibold" : ""}
+                />
             </div>
         </div>
     </RibbonSection>
   );
 };
+

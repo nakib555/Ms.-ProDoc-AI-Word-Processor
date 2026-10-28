@@ -4,25 +4,26 @@ import { Shield, CheckCircle2, History, User, Tag, Activity } from 'lucide-react
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const InfoModal: React.FC = () => {
+  const editorContext = useEditor() as any;
   const { 
-    content, 
-    documentTitle, 
+    content = '', 
+    documentTitle = 'Untitled Document', 
     setDocumentTitle,
-    wordCount, 
-    lastModified, 
-    creationDate,
-    author,
+    wordCount = 0, 
+    lastModified = new Date(), 
+    creationDate = new Date(),
+    author = 'Author',
     setAuthor,
-    keywords,
+    keywords = [],
     setKeywords,
-    status,
+    status = 'Draft',
     setStatus
-  } = useEditor();
+  } = editorContext;
 
-  const [localKeywords, setLocalKeywords] = useState(keywords.join(', '));
+  const [localKeywords, setLocalKeywords] = useState((keywords || []).join(', '));
 
   useEffect(() => {
-    setLocalKeywords(keywords.join(', '));
+    setLocalKeywords((keywords || []).join(', '));
   }, [keywords]);
 
   const handleKeywordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,8 +31,10 @@ export const InfoModal: React.FC = () => {
   };
 
   const handleKeywordsBlur = () => {
-    const newKeywords = localKeywords.split(',').map(k => k.trim()).filter(k => k);
-    setKeywords(newKeywords);
+    const newKeywords = localKeywords.split(',').map(k => k.trim()).filter(Boolean);
+    if (setKeywords) {
+      setKeywords(newKeywords);
+    }
   };
 
   return (
@@ -82,8 +85,8 @@ export const InfoModal: React.FC = () => {
             <dd className="font-medium text-slate-800 truncate max-w-[120px]">
                 <input 
                     type="text" 
-                    value={documentTitle} 
-                    onChange={(e) => setDocumentTitle(e.target.value)}
+                    value={documentTitle || ''} 
+                    onChange={(e) => setDocumentTitle && setDocumentTitle(e.target.value)}
                     className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none text-right w-full"
                 />
             </dd>
@@ -94,8 +97,8 @@ export const InfoModal: React.FC = () => {
              <dd className="font-medium text-slate-800">
                 <input 
                     type="text" 
-                    value={status} 
-                    onChange={(e) => setStatus(e.target.value)}
+                    value={status || ''} 
+                    onChange={(e) => setStatus && setStatus(e.target.value)}
                     className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none text-right w-full"
                     placeholder="Add status"
                 />
@@ -104,11 +107,29 @@ export const InfoModal: React.FC = () => {
 
           <div className="pt-4 border-t border-slate-200">
             <dt className="text-slate-500 text-xs mb-1">Last Modified</dt>
-            <dd className="font-medium text-slate-800">{lastModified.toLocaleTimeString()} {lastModified.toLocaleDateString()}</dd>
+            <dd className="font-medium text-slate-800">
+              {(() => {
+                try {
+                  const d = lastModified instanceof Date ? lastModified : new Date(lastModified);
+                  return `${d.toLocaleTimeString()} ${d.toLocaleDateString()}`;
+                } catch {
+                  return 'Recently';
+                }
+              })()}
+            </dd>
           </div>
           <div className="pt-2">
             <dt className="text-slate-500 text-xs mb-1">Created</dt>
-            <dd className="font-medium text-slate-800">{creationDate.toLocaleDateString()}</dd>
+            <dd className="font-medium text-slate-800">
+              {(() => {
+                try {
+                  const d = creationDate instanceof Date ? creationDate : new Date(creationDate);
+                  return d.toLocaleDateString();
+                } catch {
+                  return 'Today';
+                }
+              })()}
+            </dd>
           </div>
           
           <div className="pt-4 border-t border-slate-200">
@@ -117,8 +138,8 @@ export const InfoModal: React.FC = () => {
               <User size={14} className="mr-1.5 text-slate-400"/> 
               <input 
                 type="text" 
-                value={author} 
-                onChange={(e) => setAuthor(e.target.value)}
+                value={author || ''} 
+                onChange={(e) => setAuthor && setAuthor(e.target.value)}
                 className="bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:outline-none w-full"
               />
             </dd>

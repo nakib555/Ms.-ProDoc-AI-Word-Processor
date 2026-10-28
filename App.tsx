@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Ribbon from './components/Ribbon';
 import Editor from './components/Editor';
 import StatusBar from './components/StatusBar';
@@ -9,12 +9,14 @@ import { CommentsSidebar } from './components/CommentsSidebar';
 import { NotesSidebar } from './components/NotesSidebar';
 import { JsonDocInspectorSidebar } from './components/JsonDocInspectorSidebar';
 import { RibbonTab } from './types';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EditorProvider, useEditor } from './contexts/EditorContext';
 import { DocumentModelProvider } from './contexts/DocumentModelContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { GestureProvider } from './contexts/GestureContext';
 import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/Margins/CustomMargin/PageSetupDialog';
+import { FileTabProvider } from './components/ribbon/tabs/FileTab/FileTabContext';
+import { FileModal } from './components/ribbon/tabs/FileTab/FileModal';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
@@ -54,23 +56,30 @@ const AppContent: React.FC = () => {
       {isReadMode && <ReadModeToolbar />}
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
+        {/* Top Ribbon */}
         {!isReadMode && (
             <ErrorBoundary>
                 <div className="no-print">
                     <Ribbon 
                         activeTab={activeTab} 
                         onTabChange={handleTabChange} 
+                        placement="top"
                     />
                 </div>
             </ErrorBoundary>
         )}
         
         <div className="flex-1 flex overflow-hidden relative z-0 w-full">
-          <div className="flex-1 flex flex-col overflow-hidden relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300">
+          <div 
+            className="flex-1 flex flex-col overflow-hidden relative bg-[#f1f5f9] dark:bg-[#020617] transition-[colors,transform] duration-200 ease-out will-change-transform"
+            style={{ willChange: 'transform' }}
+          >
             <ErrorBoundary>
                 <Editor />
             </ErrorBoundary>
+
             
+ 
 
 
             {/* File Import Loading State with Progress Bar and Percentage Indicator */}
@@ -133,16 +142,20 @@ const AppContent: React.FC = () => {
             <JsonDocInspectorSidebar />
           </div>
         </div>
+
       </div>
 
       <div className="no-print flex-shrink-0">
         <MobileSelectionToolbar />
       </div>
+
+      {/* Bottom Status Bar */}
       {!isReadMode && (
         <div className="no-print flex-shrink-0">
-            <StatusBar />
+            <StatusBar position="bottom" />
         </div>
       )}
+
 
       {/* Global Page Setup Dialog */}
       {showPageSetup && (
@@ -156,6 +169,9 @@ const AppContent: React.FC = () => {
             }}
         />
       )}
+
+      {/* Global File Modals (Open, New, Save As, Export, Print, Share) */}
+      <FileModal />
     </div>
   );
 };
@@ -166,7 +182,11 @@ const App: React.FC = () => {
         <ThemeProvider>
           <EditorProvider>
             <DocumentModelProvider>
-              <AppContent />
+              <FileTabProvider>
+                <GestureProvider>
+                  <AppContent />
+                </GestureProvider>
+              </FileTabProvider>
             </DocumentModelProvider>
           </EditorProvider>
         </ThemeProvider>

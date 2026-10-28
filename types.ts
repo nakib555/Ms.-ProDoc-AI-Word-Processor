@@ -19,23 +19,35 @@ export interface EditorConfig {
   alignment: 'justifyLeft' | 'justifyCenter' | 'justifyRight' | 'justifyFull';
 }
 
-export enum RibbonTab {
-  FILE = 'File',
-  HOME = 'Home',
+export enum StudioTab {
+  FORMAT = 'Compose',
   INSERT = 'Insert',
-  DRAW = 'Draw',
-  DESIGN = 'Design',
-  LAYOUT = 'Layout',
-  REFERENCES = 'References',
-  MAILINGS = 'Mailings',
-  REVIEW = 'Review',
-  VIEW = 'View',
+  LAYOUT = 'Page Setup',
+  DESIGN = 'Styles & Themes',
+  STRUCTURE = 'Citations & Structure',
+  COLLABORATE = 'Review & Audit',
+  TEMPLATES = 'Templates & Merge',
+  VIEW = 'Display',
   // Contextual Tabs
-  TABLE_DESIGN = 'Table Design',
+  TABLE_DESIGN = 'Table Studio',
   TABLE_LAYOUT = 'Table Layout',
-  EQUATION = 'Equation',
+  EQUATION = 'Equation Studio',
   HEADER_FOOTER = 'Header & Footer',
 }
+
+export type RibbonTab = StudioTab | 'Project' | 'File' | 'Draw' | 'References' | 'Mailings';
+export const RibbonTab = {
+  ...StudioTab,
+  FILE: 'Project' as const,
+  HOME: StudioTab.FORMAT,
+  DRAW: StudioTab.INSERT,
+  DESIGN: StudioTab.DESIGN,
+  LAYOUT: StudioTab.LAYOUT,
+  REFERENCES: StudioTab.STRUCTURE,
+  MAILINGS: StudioTab.TEMPLATES,
+  REVIEW: StudioTab.COLLABORATE,
+  VIEW: StudioTab.VIEW,
+};
 
 export type ViewMode = 'print' | 'web' | 'read';
 export type PageMovement = 'vertical' | 'side-to-side';

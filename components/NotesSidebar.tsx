@@ -92,28 +92,28 @@ export const NotesSidebar: React.FC = () => {
       <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50/50 dark:bg-slate-950/20">
         {activeTab !== 'endnotes' && filteredFootnotes.length > 0 && (
           <div>
-            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-1">Footnotes</div>
+            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">Footnotes</div>
             <div className="space-y-2">
               {filteredFootnotes.map((fn, idx) => (
                 <div 
                   key={fn.id} 
-                  className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-900 transition-all group"
+                  className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm hover:border-indigo-300 dark:hover:border-indigo-800 transition-all group"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded">
+                    <span className="font-bold text-xs text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded">
                       Footnote {idx + 1}
                     </span>
                     <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => handleJumpToNote(fn.id)}
-                        className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
                         title="Jump to Reference"
                       >
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={() => removeFootnote(fn.id)}
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
                         title="Delete Footnote"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -124,7 +124,7 @@ export const NotesSidebar: React.FC = () => {
                     value={fn.content}
                     onChange={(e) => updateFootnote(fn.id, e.target.value)}
                     rows={2}
-                    className="w-full text-xs bg-transparent border-0 resize-none focus:ring-1 focus:ring-indigo-100 dark:focus:ring-indigo-950 p-1 rounded font-normal text-slate-600 dark:text-slate-300 outline-none"
+                    className="w-full text-xs bg-transparent border-0 resize-none focus:ring-1 focus:ring-indigo-200 dark:focus:ring-indigo-900 p-1 rounded font-normal text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     placeholder="Enter footnote text..."
                   />
                 </div>
@@ -135,28 +135,28 @@ export const NotesSidebar: React.FC = () => {
 
         {activeTab !== 'footnotes' && filteredEndnotes.length > 0 && (
           <div className={activeTab === 'all' && filteredFootnotes.length > 0 ? 'mt-4' : ''}>
-            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-1">Endnotes</div>
+            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">Endnotes</div>
             <div className="space-y-2">
               {filteredEndnotes.map((en, idx) => (
                 <div 
                   key={en.id} 
-                  className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50 shadow-sm hover:border-emerald-200 dark:hover:border-emerald-900 transition-all group"
+                  className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm hover:border-emerald-300 dark:hover:border-emerald-800 transition-all group"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded uppercase">
+                    <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded uppercase">
                       Endnote {String.fromCharCode(idx + 97)}
                     </span>
                     <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => handleJumpToNote(en.id)}
-                        className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
                         title="Jump to Reference"
                       >
                         <ArrowUpRight className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={() => removeEndnote(en.id)}
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
+                        className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors cursor-pointer"
                         title="Delete Endnote"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -167,7 +167,7 @@ export const NotesSidebar: React.FC = () => {
                     value={en.content}
                     onChange={(e) => updateEndnote(en.id, e.target.value)}
                     rows={2}
-                    className="w-full text-xs bg-transparent border-0 resize-none focus:ring-1 focus:ring-emerald-100 dark:focus:ring-emerald-950 p-1 rounded font-normal text-slate-600 dark:text-slate-300 outline-none"
+                    className="w-full text-xs bg-transparent border-0 resize-none focus:ring-1 focus:ring-emerald-200 dark:focus:ring-emerald-900 p-1 rounded font-normal text-slate-800 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500"
                     placeholder="Enter endnote text..."
                   />
                 </div>

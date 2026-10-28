@@ -222,12 +222,15 @@ export const ColorTools: React.FC = () => {
                     ))}
                 </div>
 
-                <button 
-                    className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-sm text-xs text-slate-700 dark:text-slate-300 mt-1"
-                    onClick={() => alert("More Colors Dialog")}
-                >
-                    More Colors...
-                </button>
+                <label className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-sm text-xs text-slate-700 dark:text-slate-300 mt-1 flex items-center justify-between cursor-pointer">
+                    <span>Custom Color...</span>
+                    <input 
+                      type="color" 
+                      value={fontColor.startsWith('#') ? fontColor : '#000000'} 
+                      onChange={(e) => handleFontColor(e.target.value)} 
+                      className="w-5 h-5 rounded cursor-pointer border border-slate-300 dark:border-slate-600 bg-transparent p-0"
+                    />
+                </label>
             </div>
        </MenuPortal>
     </>

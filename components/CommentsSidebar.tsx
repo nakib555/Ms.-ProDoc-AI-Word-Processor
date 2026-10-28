@@ -44,19 +44,19 @@ export const CommentsSidebar: React.FC = () => {
           comments.map(comment => (
             <div 
               key={comment.id}
-              className={`bg-white p-3 rounded-lg shadow-sm border ${
-                comment.resolved ? 'border-gray-200 opacity-60' : 
-                activeCommentId === comment.id ? 'border-blue-500 ring-1 ring-blue-500' : 'border-gray-200'
+              className={`bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border ${
+                comment.resolved ? 'border-slate-200 dark:border-slate-700 opacity-60' : 
+                activeCommentId === comment.id ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200 dark:border-slate-700'
               } transition-all`}
               onClick={() => setActiveCommentId(comment.id)}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium text-sm text-gray-800">{comment.author}</span>
-                <span className="text-xs text-gray-400">
+                <span className="font-semibold text-sm text-slate-900 dark:text-slate-100">{comment.author}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-400 font-medium">
                   {new Date(comment.createdAt).toLocaleDateString()}
                 </span>
               </div>
-              <p className={`text-sm text-gray-600 mb-3 ${comment.resolved ? 'line-through' : ''}`}>
+              <p className={`text-sm text-slate-700 dark:text-slate-200 mb-3 ${comment.resolved ? 'line-through text-slate-400 dark:text-slate-500' : ''}`}>
                 {comment.content}
               </p>
               
@@ -64,7 +64,7 @@ export const CommentsSidebar: React.FC = () => {
                 {!comment.resolved && (
                   <button 
                     onClick={(e) => { e.stopPropagation(); resolveComment(comment.id); }}
-                    className="p-1 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded"
+                    className="p-1 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-700 rounded transition-colors"
                     title="Resolve"
                   >
                     <Check className="w-4 h-4" />
@@ -72,7 +72,7 @@ export const CommentsSidebar: React.FC = () => {
                 )}
                 <button 
                   onClick={(e) => { e.stopPropagation(); removeComment(comment.id); }}
-                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
+                  className="p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-slate-700 rounded transition-colors"
                   title="Delete"
                 >
                   <Trash2 className="w-4 h-4" />

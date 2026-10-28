@@ -1,0 +1,53 @@
+{
+  "type": "document",
+  "schemaVersion": 2,
+  "id": "fixture-valid-01",
+  "metadata": {
+    "title": "Standard Valid Fixture",
+    "createdAt": "2026-10-25T00:00:00.000Z",
+    "lastModified": "2026-10-25T00:00:00.000Z"
+  },
+  "pageConfig": {
+    "size": "Letter",
+    "orientation": "portrait",
+    "margins": {
+      "top": 72,
+      "right": 72,
+      "bottom": 72,
+      "left": 72
+    }
+  },
+  "pages": [
+    {
+      "id": "page-1",
+      "sections": [
+        {
+          "id": "sec-1",
+          "elements": [
+            {
+              "id": "h-1",
+              "type": "heading",
+              "level": 1,
+              "children": [
+                {
+                  "type": "text",
+                  "text": "Executive Summary"
+                }
+              ]
+            },
+            {
+              "id": "p-1",
+              "type": "paragraph",
+              "children": [
+                {
+                  "type": "text",
+                  "text": "This document verifies valid structure loading across ProDoc systems."
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

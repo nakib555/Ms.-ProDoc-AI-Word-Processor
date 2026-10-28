@@ -8,6 +8,7 @@ import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
+import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -299,18 +300,39 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     editorRef,
     setZoom,
     zoomMode,
+    setZoomMode,
     isTableResizing
   } = useEditor();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const contentWrapperRef = useRef<HTMLDivElement | null>(null);
   
   const cursorRestorationRef = useRef<number | null>(null);
 
-  // Refs for Pinch-to-Zoom
-  const touchDistRef = useRef<number>(0);
-  const startZoomRef = useRef<number>(0);
+  // High-performance focal-centered pinch to zoom & double-tap to toggle fit
+  const { zoomHUD } = useTouchZoom({
+    containerRef: scrollContainerRef,
+    contentRef: contentWrapperRef,
+    zoom,
+    setZoom: (newZoomOrUpdater) => {
+      if (zoomMode !== 'custom') {
+        setZoomMode('custom');
+      }
+      setZoom(newZoomOrUpdater);
+    },
+    minZoom: 15,
+    maxZoom: 500,
+    onDoubleTap: () => {
+      if (zoomMode === 'fit-width') {
+        setZoomMode('custom');
+        setZoom(100);
+      } else {
+        setZoomMode('fit-width');
+      }
+    },
+  });
 
   // Dynamic Zoom Logic
   useEffect(() => {
@@ -462,33 +484,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       containerRef(node);
   }, [containerRef]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-        const dist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-        );
-        touchDistRef.current = dist;
-        startZoomRef.current = zoom;
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-        e.preventDefault();
-        const dist = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-        );
-
-        if (touchDistRef.current > 0) {
-            const ratio = dist / touchDistRef.current;
-            const newZoom = Math.min(500, Math.max(10, startZoomRef.current * ratio));
-            setZoom(newZoom);
-        }
-    }
-  };
-
   const isVertical = pageMovement === 'vertical';
   const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
 
@@ -509,10 +504,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   return (
     <div 
-      className="print-layout-mode w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300 touch-pan-x touch-pan-y"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
+      className="print-layout-mode w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300"
     >
+       {zoomHUD}
        {showRuler && (
          <div 
             ref={rulerContainerRef}
@@ -530,13 +524,14 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
        <div 
           ref={setRefs}
-          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent touch-pan-x touch-pan-y"
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
           style={{ scrollBehavior: 'auto' }} 
        >
            <div 
-                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} py-8 gap-8`}
+                ref={contentWrapperRef}
+                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} pt-8 pb-24 md:pb-8 gap-8 transform-gpu will-change-transform`}
                 onClick={(e) => {
                     if (e.target === e.currentTarget && activeEditingArea !== 'body') {
                         setActiveEditingArea('body');
@@ -584,6 +579,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                 })}
            </div>
        </div>
+       {zoomHUD}
     </div>
   );
 });

@@ -1,6 +1,8 @@
 
 import React, { useCallback, useRef, useState, useLayoutEffect } from 'react';
 import { useEditor } from '../contexts/EditorContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { useGestureContext } from '../contexts/GestureContext';
 import { MiniToolbar } from './MiniToolbar';
 import { GhostDocument } from './ui/GhostDocument';
 import { PrintLayoutView } from './ribbon/tabs/ViewTab/views/PrintLayoutView';
@@ -37,11 +39,17 @@ const ResponsiveContainer = ({ children }: { children: (size: { width: number, h
 
 const Editor: React.FC = () => {
   const { editor, viewMode, content, setContent, pageConfig, zoom, showRuler, showFormattingMarks, registerContainer, editorRef, pasteProgress } = useEditor();
+  const { theme } = useTheme();
+  const { isPinching, isPanning, zoomHUD } = useGestureContext();
   
   const handleContentChange = useCallback((newContent: string) => {
       // Sync content back to editor context (and Tiptap)
       setContent(newContent);
   }, [setContent]);
+
+  const isDarkMode = theme === 'dark' || theme === 'ocean';
+  const webPaperBg = pageConfig.pageColor || (isDarkMode ? (theme === 'ocean' ? '#001a3d' : '#0f172a') : '#ffffff');
+  const webPaperTextColor = isDarkMode && !pageConfig.pageColor ? (theme === 'ocean' ? '#f0fdff' : '#f8fafc') : '#000000';
 
   if (!editor) {
     return (
@@ -58,9 +66,12 @@ const Editor: React.FC = () => {
 
   return (
     <>
-        <div className="no-print">
-            <MiniToolbar />
-        </div>
+        {!isPinching && !isPanning && (
+            <div className="no-print">
+                <MiniToolbar />
+            </div>
+        )}
+
         
         {viewMode === 'print' ? (
             <div className="flex-1 h-full w-full print-layout-mode overflow-clip flex flex-col">
@@ -91,7 +102,7 @@ const Editor: React.FC = () => {
                     pageConfig={pageConfig}
                     zoom={zoom}
                     showFormattingMarks={showFormattingMarks}
-                    backgroundStyle={{ backgroundColor: 'white' }}
+                    backgroundStyle={{ backgroundColor: webPaperBg, color: webPaperTextColor }}
                 />
             </div>
         )}
@@ -136,6 +147,8 @@ const Editor: React.FC = () => {
                 </div>
             </div>
         )}
+
+        {zoomHUD}
     </>
   );
 };

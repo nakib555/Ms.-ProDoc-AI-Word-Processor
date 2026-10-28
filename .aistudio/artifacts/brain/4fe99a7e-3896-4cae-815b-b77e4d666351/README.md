@@ -18,3 +18,9 @@ View your app in AI Studio: https://ai.studio/apps/drive/1noEmRORsd3r9oniQjE3eq-
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Key Capabilities
+
+- **Industry-Grade Gesture Engine**: Multi-touch pinch-to-zoom and 2-finger panning powered by `@use-gesture/react` with 60–120 FPS GPU transforms and smooth CSS transitions on zoom state updates.
+- **Modern Ribbon Interface**: Pill-based category navigation with high-contrast active tabs and quick collapse/expand toggle.
+- **Multi-Layout Canvas**: Paginated Print Layout, continuous Web Layout, and distraction-free Read Mode.

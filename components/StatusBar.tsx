@@ -8,7 +8,12 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
-const StatusBar: React.FC = () => {
+interface StatusBarProps {
+  position?: 'top' | 'bottom';
+}
+
+const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
+
   const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
@@ -54,9 +59,14 @@ const StatusBar: React.FC = () => {
     <>
         <div 
           onMouseDown={handleMouseDown}
-          className="h-9 sm:h-auto min-h-[2.25rem] bg-[#0f172a] dark:bg-[#0f172a] text-slate-400 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 border-t border-slate-800 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-colors duration-300 box-content"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          className={`h-9 sm:h-auto min-h-[2.25rem] bg-[#0f172a] dark:bg-[#0f172a] text-slate-300 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 transition-colors duration-300 box-content ${
+            position === 'top'
+              ? 'border-b border-slate-800 dark:border-slate-800 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]'
+              : 'border-t border-slate-800 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]'
+          }`}
+          style={position === 'top' ? { paddingTop: 'env(safe-area-inset-top)' } : { paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
+
           <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0 h-full">
             <div className="flex items-center gap-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
                 <Layout size={14} className="shrink-0" />
@@ -200,7 +210,7 @@ const StatusBar: React.FC = () => {
                     className="w-12 sm:w-20 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs hover:text-blue-400 transition-colors flex items-center justify-end gap-1"
                     title={`Current: ${zoomMode === 'custom' ? 'Custom' : zoomMode === 'fit-width' ? 'Fit Width' : 'Fit Page'} (Click to cycle)`}
                 >
-                    <span className="opacity-60 text-[9px] uppercase tracking-tighter hidden sm:inline">
+                    <span className="text-slate-400 font-semibold text-[9px] uppercase tracking-tighter hidden sm:inline">
                         {zoomMode === 'fit-width' ? 'Width' : zoomMode === 'fit-page' ? 'Page' : ''}
                     </span>
                     <span>{Number(zoom).toFixed(0)}%</span>

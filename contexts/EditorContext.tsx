@@ -437,7 +437,7 @@ export interface EditorContextType {
   setPasteProgress: React.Dispatch<React.SetStateAction<{ active: boolean; totalChunks: number; currentChunk: number; percentage: number } | null>>;
 }
 
-const EditorContext = createContext<EditorContextType | undefined>(undefined);
+export const EditorContext = createContext<EditorContextType | undefined>(undefined);
 
 export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   useEffect(() => {

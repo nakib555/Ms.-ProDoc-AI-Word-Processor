@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { PageConfig } from '../../../../../types';
 import { useMathLive } from '../../../../../hooks/useMathLive';
 import { useEditor } from '../../../../../contexts/EditorContext';
+import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
 
 interface WebLayoutViewProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
@@ -22,13 +23,35 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
   onInput,
   onPaste,
   onPageClick,
-  pageConfig,
+  pageConfig: _pageConfig,
   zoom,
   showFormattingMarks,
   backgroundStyle
 }) => {
-  const localRef = useRef<HTMLDivElement>(null);
-  const { setActiveElementType } = useEditor();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { setActiveElementType, setZoom, zoomMode, setZoomMode } = useEditor();
+
+  const { zoomHUD, isPinching } = useTouchZoom({
+    containerRef,
+    contentRef: editorRef,
+    zoom,
+    setZoom: (newZoomOrUpdater) => {
+      if (zoomMode !== 'custom') {
+        setZoomMode('custom');
+      }
+      setZoom(newZoomOrUpdater);
+    },
+    minZoom: 20,
+    maxZoom: 400,
+    onDoubleTap: () => {
+      if (zoomMode === 'fit-width') {
+        setZoomMode('custom');
+        setZoom(100);
+      } else {
+        setZoomMode('fit-width');
+      }
+    },
+  });
   
   // Sync content
   useEffect(() => {
@@ -94,10 +117,12 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
 
   return (
     <div 
-      className="flex-1 w-full overflow-y-auto bg-slate-100 dark:bg-slate-900 p-8 flex flex-col items-center"
+      ref={containerRef}
+      className="flex-1 w-full overflow-y-auto bg-slate-100 dark:bg-slate-900 p-8 pb-24 md:pb-8 flex flex-col items-center relative touch-pan-x touch-pan-y"
       onClick={onPageClick}
       style={{ willChange: 'transform' }}
     >
+      {zoomHUD}
       <div 
         ref={editorRef}
         contentEditable
@@ -107,8 +132,12 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
         className={`bg-white dark:bg-slate-800 shadow-xl outline-none p-12 min-h-screen w-full max-w-5xl prose dark:prose-invert ${showFormattingMarks ? 'show-formatting-marks' : ''}`}
         style={{
           ...backgroundStyle,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top center',
+          ...(isPinching ? {} : {
+            transform: `scale(${scale})`,
+            transformOrigin: 'top center',
+            transition: 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }),
+          willChange: 'transform',
           fontFamily: 'Calibri, Inter, sans-serif',
           lineHeight: '1.6',
         }}

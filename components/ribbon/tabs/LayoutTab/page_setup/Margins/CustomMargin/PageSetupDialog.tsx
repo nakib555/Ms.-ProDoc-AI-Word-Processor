@@ -235,7 +235,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
                      <div className="relative z-10 transform transition-transform group-hover:scale-[1.02] duration-500 perspective-1000">
                         {renderPreview()}
                      </div>
-                     <div className="absolute bottom-2 right-3 text-[10px] font-semibold text-slate-400/80 bg-white/60 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/50 shadow-sm pointer-events-none">
+                     <div className="absolute bottom-2 right-3 text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-white/90 dark:bg-slate-800/90 px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 shadow-xs pointer-events-none">
                         PREVIEW
                      </div>
                  </div>

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RibbonSection } from '../../../../common/RibbonSection';
 import { RibbonButton } from '../../../../common/RibbonButton';
 import { 
@@ -7,7 +7,7 @@ import {
   ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine,
   Merge, Split, Scaling, AlignLeft, AlignCenter, AlignRight,
   AlignJustify, ArrowDownAZ, Type, Calculator, TableProperties,
-  Maximize, Minimize, Sparkles
+  Maximize, Minimize, Sparkles, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 import { TablePropertiesDialog } from '../TablePropertiesDialog';
@@ -21,6 +21,26 @@ export const TableLayoutTab: React.FC = () => {
   const [isAutoFitOpen, setIsAutoFitOpen] = useState(false);
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null);
   const [activeCell, setActiveCell] = useState<HTMLTableCellElement | null>(null);
+
+  // MS Word-style Cell Size Steppers
+  const [rowHeight, setRowHeight] = useState<number>(32);
+  const [colWidth, setColWidth] = useState<number>(120);
+  const [resizeScope, setResizeScope] = useState<'column' | 'cell'>('column');
+
+  // Detect cell dimensions live when cursor changes position
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      runOnCell((cell) => {
+        if (cell) {
+          const rect = cell.getBoundingClientRect();
+          if (rect.width > 0) setColWidth(Math.round(rect.width));
+          if (rect.height > 0) setRowHeight(Math.round(rect.height));
+        }
+      });
+    };
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
 
   // --- Helper Functions ---
   const runOnCell = (fn: (cell: HTMLTableCellElement) => void) => {
@@ -486,260 +506,567 @@ export const TableLayoutTab: React.FC = () => {
   });
 
   return (
-    <>
+    <div className="flex h-full items-center gap-2 px-1 py-0.5">
+      {/* 1. Table Management Section */}
       <RibbonSection title="Table">
-          <div className="flex h-full items-center">
-              <RibbonButton icon={MousePointer2} label="Select" onClick={() => executeCommand('selectAll')} />
-              <RibbonButton icon={Grid} label="View Gridlines" onClick={() => {}} />
-              <RibbonButton icon={TableProperties} label="Properties" onClick={openProperties} />
-          </div>
+        <div className="flex items-center h-full gap-1 p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+          <RibbonButton 
+            icon={MousePointer2} 
+            label="Select" 
+            title="Select Table" 
+            onClick={() => executeCommand('selectAll')} 
+          />
+          <RibbonButton 
+            icon={Grid} 
+            label="Gridlines" 
+            title="Toggle Table Gridlines" 
+            onClick={() => {}} 
+          />
+          <RibbonButton 
+            icon={TableProperties} 
+            label="Properties" 
+            title="Table Properties" 
+            onClick={openProperties} 
+          />
+        </div>
       </RibbonSection>
 
-      <RibbonSection title="Table Styles">
-          <div className="flex h-full items-center gap-1">
-              <RibbonButton 
-                  icon={Sparkles} 
-                  label="Auto-Format" 
-                  onClick={autoFormatTable}
-              />
-              <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-1" />
-              <div className="flex flex-col gap-1 px-1 h-full justify-center min-w-[1300px]">
-                  {/* Header Shading Row */}
-              <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-3000 font-medium w-[45px] leading-tight">Header:</span>
-                  <div className="flex items-center gap-1">
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-800" 
-                          title="Dark Slate Header"
-                          onClick={() => applyHeaderShading('#1e293b')} 
-                      />
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-900" 
-                          title="Navy Header"
-                          onClick={() => applyHeaderShading('#1e3a8a')} 
-                      />
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-100" 
-                          title="Light Grey Header"
-                          onClick={() => applyHeaderShading('#f1f5f9')} 
-                      />
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-teal-800" 
-                          title="Teal Header"
-                          onClick={() => applyHeaderShading('#115e59')} 
-                      />
-                  </div>
-              </div>
-
-              {/* Alternating Shading Row */}
-              <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-3000 font-medium w-[45px] leading-tight">Zebra:</span>
-                  <div className="flex items-center gap-1">
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-300" 
-                          title="Zebra Light Grey"
-                          onClick={() => applyAlternatingShading('#f8fafc')} 
-                      />
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-300" 
-                          title="Zebra Soft Blue"
-                          onClick={() => applyAlternatingShading('#eff6ff')} 
-                      />
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-emerald-300" 
-                          title="Zebra Soft Green"
-                          onClick={() => applyAlternatingShading('#ecfdf5')} 
-                      />
-                      <button 
-                          onMouseDown={(e) => e.preventDefault()} 
-                          className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-amber-300" 
-                          title="Zebra Soft Amber"
-                          onClick={() => applyAlternatingShading('#fffbeb')} 
-                      />
-                  </div>
-              </div>
-
-              {/* Reset Option */}
-              <button 
-                  onMouseDown={(e) => e.preventDefault()} 
-                  className="text-[9px] text-red-600 dark:text-red-400 hover:underline text-left font-medium"
-                  onClick={clearTableShading}
-              >
-                  Clear Shading
-              </button>
-          </div>
-          </div>
-      </RibbonSection>
-
+      {/* 2. Rows & Columns Section */}
       <RibbonSection title="Rows & Columns">
-          <div className="flex h-full items-center gap-1">
-              <div className="flex flex-col h-full justify-center gap-0.5 border-r border-slate-200 dark:border-slate-700 pr-1 mr-1">
-                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-300 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteRow}>
-                     <Trash2 size={12}/> Delete Row
-                 </button>
-                 <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-1 hover:bg-red-300 dark:hover:bg-transparent text-red-600 rounded text-[10px] font-medium" onClick={deleteCol}>
-                     <Trash2 size={12}/> Delete Column
-                 </button>
-              </div>
-
-              <div className="flex flex-col gap-0.5">
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertRow('above')}>
-                      <ArrowUpToLine size={14}/> Insert Above
-                  </button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertRow('below')}>
-                      <ArrowDownToLine size={14}/> Insert Below
-                  </button>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertCol('left')}>
-                      <ArrowLeftToLine size={14}/> Insert Left
-                  </button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => insertCol('right')}>
-                      <ArrowRightToLine size={14}/> Insert Right
-                  </button>
-              </div>
+        <div className="flex items-center h-full gap-1.5 p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+          {/* Insert Controls */}
+          <div className="flex flex-col gap-1 pr-1.5 border-r border-slate-200 dark:border-slate-700">
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+              onClick={() => insertRow('above')}
+              title="Insert Row Above"
+            >
+              <ArrowUpToLine size={13} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span>Above</span>
+            </button>
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+              onClick={() => insertRow('below')}
+              title="Insert Row Below"
+            >
+              <ArrowDownToLine size={13} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span>Below</span>
+            </button>
           </div>
+
+          <div className="flex flex-col gap-1 pr-1.5 border-r border-slate-200 dark:border-slate-700">
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+              onClick={() => insertCol('left')}
+              title="Insert Column Left"
+            >
+              <ArrowLeftToLine size={13} className="text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+              <span>Left</span>
+            </button>
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+              onClick={() => insertCol('right')}
+              title="Insert Column Right"
+            >
+              <ArrowRightToLine size={13} className="text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+              <span>Right</span>
+            </button>
+          </div>
+
+          {/* Delete Controls */}
+          <div className="flex flex-col gap-1">
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              onClick={deleteRow}
+              title="Delete Current Row"
+            >
+              <Trash2 size={13} className="flex-shrink-0" />
+              <span>Del Row</span>
+            </button>
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+              onClick={deleteCol}
+              title="Delete Current Column"
+            >
+              <Trash2 size={13} className="flex-shrink-0" />
+              <span>Del Col</span>
+            </button>
+          </div>
+        </div>
       </RibbonSection>
 
-      <RibbonSection title="Merge">
-          <div className="flex flex-col h-full justify-center gap-0.5 min-w-[80px]">
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={mergeCells}>
-                  <Merge size={14}/> Merge Right
-              </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={splitCells}>
-                  <Split size={14}/> Split Cells
-              </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={splitTable}>
-                  <Split size={14} className="rotate-90"/> Split Table
-              </button>
-          </div>
+      {/* 3. Merge & Split Section */}
+      <RibbonSection title="Merge & Split">
+        <div className="flex flex-col justify-center h-full gap-1 p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs min-w-[90px]">
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+            onClick={mergeCells}
+            title="Merge Selected Cells Right"
+          >
+            <Merge size={13} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+            <span>Merge Right</span>
+          </button>
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+            onClick={splitCells}
+            title="Split Current Cell"
+          >
+            <Split size={13} className="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+            <span>Split Cells</span>
+          </button>
+          <button
+            onMouseDown={(e) => e.preventDefault()}
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+            onClick={splitTable}
+            title="Split Table into Two"
+          >
+            <Split size={13} className="rotate-90 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <span>Split Table</span>
+          </button>
+        </div>
       </RibbonSection>
 
+      {/* 4. Cell Size Section (MS Word Parity: Row Height, Column Width & Scope) */}
       <RibbonSection title="Cell Size">
-          <div className="flex h-full items-center gap-2 px-1">
-              <div className="relative flex items-center h-full">
-                  <RibbonButton 
-                      icon={TableProperties} 
-                      label="AutoFit" 
-                      hasArrow 
-                      onClick={() => setIsAutoFitOpen(!isAutoFitOpen)} 
-                  />
-                  {isAutoFitOpen && (
-                      <>
-                          <div 
-                              className="fixed inset-0 z-40" 
-                              onClick={() => setIsAutoFitOpen(false)}
-                          />
-                          <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 z-300 animate-in fade-in slide-in-from-top-1 duration-150">
-                              <button 
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/300 text-xs text-slate-700 dark:text-slate-300 transition-colors"
-                                  onClick={() => {
-                                      autoFit('contents');
-                                      setIsAutoFitOpen(false);
-                                  }}
-                              >
-                                  <Minimize size={14} className="text-slate-3000 dark:text-slate-400" />
-                                  <span className="font-medium">AutoFit Contents</span>
-                              </button>
-                              <button 
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/300 text-xs text-slate-700 dark:text-slate-300 transition-colors"
-                                  onClick={() => {
-                                      autoFit('window');
-                                      setIsAutoFitOpen(false);
-                                  }}
-                              >
-                                  <Maximize size={14} className="text-slate-3000 dark:text-slate-400" />
-                                  <span className="font-medium">AutoFit Window</span>
-                              </button>
-                              <button 
-                                  className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-700/300 text-xs text-slate-700 dark:text-slate-300 transition-colors"
-                                  onClick={() => {
-                                      autoFit('fixed');
-                                      setIsAutoFitOpen(false);
-                                  }}
-                              >
-                                  <Grid size={14} className="text-slate-3000 dark:text-slate-400" />
-                                  <span className="font-medium">Fixed Column Width</span>
-                              </button>
-                          </div>
-                      </>
-                  )}
+        <div className="flex items-center h-full gap-2 p-1.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+          
+          {/* Row Height & Column Width Controls */}
+          <div className="flex flex-col gap-1">
+            {/* Height Stepper */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs shadow-2xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase w-6">H</span>
+              <input
+                type="text"
+                value={`${rowHeight}px`}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value.replace(/\D/g, ''), 10);
+                  if (!isNaN(val) && val >= 15) {
+                    setRowHeight(val);
+                    runOnRow((row) => {
+                      row.style.height = `${val}px`;
+                      Array.from(row.cells).forEach(c => { c.style.height = `${val}px`; });
+                    });
+                  }
+                }}
+                className="w-11 text-center text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent outline-none"
+              />
+              <div className="flex flex-col -space-y-0.5">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    const next = rowHeight + 2;
+                    setRowHeight(next);
+                    runOnRow((row) => {
+                      row.style.height = `${next}px`;
+                      Array.from(row.cells).forEach(c => { c.style.height = `${next}px`; });
+                    });
+                  }}
+                  className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-600 transition-colors"
+                  title="Increase Row Height"
+                >
+                  <ChevronUp size={11} strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    const next = Math.max(16, rowHeight - 2);
+                    setRowHeight(next);
+                    runOnRow((row) => {
+                      row.style.height = `${next}px`;
+                      Array.from(row.cells).forEach(c => { c.style.height = `${next}px`; });
+                    });
+                  }}
+                  className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-600 transition-colors"
+                  title="Decrease Row Height"
+                >
+                  <ChevronDown size={11} strokeWidth={2.5} />
+                </button>
               </div>
-              
-              <div className="w-[1px] h-8 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+            </div>
 
-              <div className="flex flex-col gap-1">
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={distributeRows}>
-                    <Scaling size={14}/> Distribute Rows
+            {/* Width Stepper */}
+            <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs shadow-2xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase w-6">W</span>
+              <input
+                type="text"
+                value={`${colWidth}px`}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value.replace(/\D/g, ''), 10);
+                  if (!isNaN(val) && val >= 25) {
+                    setColWidth(val);
+                    runOnCell((cell) => {
+                      if (resizeScope === 'cell') {
+                        cell.style.width = `${val}px`;
+                        cell.style.minWidth = `${val}px`;
+                      } else {
+                        const table = cell.closest('table');
+                        if (!table) return;
+                        const idx = cell.cellIndex;
+                        Array.from(table.rows).forEach(r => {
+                          if (r.cells[idx]) {
+                            r.cells[idx].style.width = `${val}px`;
+                            r.cells[idx].style.minWidth = `${val}px`;
+                          }
+                        });
+                      }
+                    });
+                  }
+                }}
+                className="w-11 text-center text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent outline-none"
+              />
+              <div className="flex flex-col -space-y-0.5">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    const next = colWidth + 5;
+                    setColWidth(next);
+                    runOnCell((cell) => {
+                      if (resizeScope === 'cell') {
+                        cell.style.width = `${next}px`;
+                        cell.style.minWidth = `${next}px`;
+                      } else {
+                        const table = cell.closest('table');
+                        if (!table) return;
+                        const idx = cell.cellIndex;
+                        Array.from(table.rows).forEach(r => {
+                          if (r.cells[idx]) {
+                            r.cells[idx].style.width = `${next}px`;
+                            r.cells[idx].style.minWidth = `${next}px`;
+                          }
+                        });
+                      }
+                    });
+                  }}
+                  className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-600 transition-colors"
+                  title="Increase Width"
+                >
+                  <ChevronUp size={11} strokeWidth={2.5} />
                 </button>
-                <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={distributeCols}>
-                    <Scaling size={14} className="rotate-90"/> Distribute Cols
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    const next = Math.max(25, colWidth - 5);
+                    setColWidth(next);
+                    runOnCell((cell) => {
+                      if (resizeScope === 'cell') {
+                        cell.style.width = `${next}px`;
+                        cell.style.minWidth = `${next}px`;
+                      } else {
+                        const table = cell.closest('table');
+                        if (!table) return;
+                        const idx = cell.cellIndex;
+                        Array.from(table.rows).forEach(r => {
+                          if (r.cells[idx]) {
+                            r.cells[idx].style.width = `${next}px`;
+                            r.cells[idx].style.minWidth = `${next}px`;
+                          }
+                        });
+                      }
+                    });
+                  }}
+                  className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-600 transition-colors"
+                  title="Decrease Width"
+                >
+                  <ChevronDown size={11} strokeWidth={2.5} />
                 </button>
               </div>
+            </div>
           </div>
+
+          {/* Scope Selector: Entire Column vs Selected Cell (Word Parity) */}
+          <div className="flex flex-col gap-1 border-l border-slate-200 dark:border-slate-700 pl-1.5">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Scope</span>
+            <div className="flex flex-col bg-slate-200/70 dark:bg-slate-700/60 p-0.5 rounded-lg gap-0.5">
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setResizeScope('column')}
+                className={`px-1.5 py-0.5 text-[9px] font-bold rounded-md transition-all ${
+                  resizeScope === 'column'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+                title="Apply Width to Entire Column"
+              >
+                Col
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setResizeScope('cell')}
+                className={`px-1.5 py-0.5 text-[9px] font-bold rounded-md transition-all ${
+                  resizeScope === 'cell'
+                    ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                }`}
+                title="Apply Width to Selected Cell Only"
+              >
+                Cell
+              </button>
+            </div>
+          </div>
+
+          <div className="w-px h-7 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+          {/* AutoFit Menu */}
+          <div className="relative flex items-center h-full">
+            <RibbonButton 
+              icon={TableProperties} 
+              label="AutoFit" 
+              hasArrow 
+              title="AutoFit Column Widths"
+              onClick={() => setIsAutoFitOpen(!isAutoFitOpen)} 
+            />
+            {isAutoFitOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsAutoFitOpen(false)}
+                />
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <button 
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
+                    onClick={() => {
+                      autoFit('contents');
+                      setIsAutoFitOpen(false);
+                    }}
+                  >
+                    <Minimize size={14} className="text-slate-500 dark:text-slate-400" />
+                    <span className="font-medium">AutoFit Contents</span>
+                  </button>
+                  <button 
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
+                    onClick={() => {
+                      autoFit('window');
+                      setIsAutoFitOpen(false);
+                    }}
+                  >
+                    <Maximize size={14} className="text-slate-500 dark:text-slate-400" />
+                    <span className="font-medium">AutoFit Window</span>
+                  </button>
+                  <button 
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
+                    onClick={() => {
+                      autoFit('fixed');
+                      setIsAutoFitOpen(false);
+                    }}
+                  >
+                    <Grid size={14} className="text-slate-500 dark:text-slate-400" />
+                    <span className="font-medium">Fixed Column Width</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="w-px h-7 bg-slate-200 dark:bg-slate-700 mx-0.5" />
+
+          {/* Distribute Rows and Columns */}
+          <div className="flex flex-col gap-1">
+            <button 
+              onMouseDown={(e) => e.preventDefault()} 
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors" 
+              onClick={distributeRows}
+              title="Distribute Rows Evenly"
+            >
+              <Scaling size={13} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+              <span>Distribute Rows</span>
+            </button>
+            <button 
+              onMouseDown={(e) => e.preventDefault()} 
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors" 
+              onClick={distributeCols}
+              title="Distribute Columns Evenly"
+            >
+              <Scaling size={13} className="rotate-90 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+              <span>Distribute Cols</span>
+            </button>
+          </div>
+        </div>
       </RibbonSection>
 
+      {/* 5. Table Styles & Shading Section */}
+      <RibbonSection title="Table Styles">
+        <div className="flex items-center h-full gap-2 p-1.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+          <RibbonButton 
+            icon={Sparkles} 
+            label="Auto-Style" 
+            title="Apply Smart Auto-Format Style"
+            onClick={autoFormatTable}
+          />
+          <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
+          <div className="flex flex-col justify-center gap-1 text-[10px]">
+            {/* Header Shading Row */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 dark:text-slate-400 font-medium w-11 leading-tight">Header:</span>
+              <div className="flex items-center gap-1">
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-800 hover:scale-110 transition-transform" 
+                  title="Dark Slate Header"
+                  onClick={() => applyHeaderShading('#1e293b')} 
+                />
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-900 hover:scale-110 transition-transform" 
+                  title="Navy Header"
+                  onClick={() => applyHeaderShading('#1e3a8a')} 
+                />
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-100 hover:scale-110 transition-transform" 
+                  title="Light Grey Header"
+                  onClick={() => applyHeaderShading('#f1f5f9')} 
+                />
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-teal-800 hover:scale-110 transition-transform" 
+                  title="Teal Header"
+                  onClick={() => applyHeaderShading('#115e59')} 
+                />
+              </div>
+            </div>
+
+            {/* Alternating Shading Row */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-500 dark:text-slate-400 font-medium w-11 leading-tight">Zebra:</span>
+              <div className="flex items-center gap-1">
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-slate-300 hover:scale-110 transition-transform" 
+                  title="Zebra Light Grey"
+                  onClick={() => applyAlternatingShading('#f8fafc')} 
+                />
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-blue-300 hover:scale-110 transition-transform" 
+                  title="Zebra Soft Blue"
+                  onClick={() => applyAlternatingShading('#eff6ff')} 
+                />
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-emerald-300 hover:scale-110 transition-transform" 
+                  title="Zebra Soft Green"
+                  onClick={() => applyAlternatingShading('#ecfdf5')} 
+                />
+                <button 
+                  onMouseDown={(e) => e.preventDefault()} 
+                  className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-amber-300 hover:scale-110 transition-transform" 
+                  title="Zebra Soft Amber"
+                  onClick={() => applyAlternatingShading('#fffbeb')} 
+                />
+              </div>
+            </div>
+
+            {/* Reset Option */}
+            <button 
+              onMouseDown={(e) => e.preventDefault()} 
+              className="text-[10px] text-red-600 dark:text-red-400 hover:underline text-left font-medium"
+              onClick={clearTableShading}
+            >
+              Clear Shading
+            </button>
+          </div>
+        </div>
+      </RibbonSection>
+
+      {/* 6. Borders Section */}
       <RibbonSection title="Borders">
+        <div className="flex items-center h-full p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
           <BorderTool />
+        </div>
       </RibbonSection>
 
-      <RibbonSection title="Alignment">
-          <div className="flex h-full items-center gap-2 px-1">
-              {/* 3x3 Grid for Alignment */}
-              <div className="grid grid-cols-3 gap-0.5 p-0.5 border rounded bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('top', 'left')} title="Top Left"><AlignLeft size={10} className="rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('top', 'center')} title="Top Center"><AlignCenter size={10} className="-rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('top', 'right')} title="Top Right"><AlignRight size={10} className="rotate-45"/></button>
-                  
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('middle', 'left')} title="Center Left"><AlignLeft size={10}/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('middle', 'center')} title="Center"><AlignCenter size={10}/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('middle', 'right')} title="Center Right"><AlignRight size={10}/></button>
-                  
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('bottom', 'left')} title="Bottom Left"><AlignLeft size={10} className="-rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('bottom', 'center')} title="Bottom Center"><AlignCenter size={10} className="rotate-45"/></button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="p-0.5 hover:bg-blue-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => setAlign('bottom', 'right')} title="Bottom Right"><AlignRight size={10} className="-rotate-45"/></button>
-              </div>
-              <div className="flex flex-col gap-0.5 text-[10px] min-w-[70px]">
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-1.5 px-1 py-1 hover:bg-slate-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={setTextDirection}><Type size={12}/> Text Dir</button>
-                  <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-1.5 px-1 py-1 hover:bg-slate-100 dark:hover:bg-transparent rounded dark:text-slate-300" onClick={() => runOnCell(c => c.style.padding = "8px")}><Settings size={12}/> Margins</button>
-              </div>
+      {/* 7. Alignment & Data Section */}
+      <RibbonSection title="Alignment & Data">
+        <div className="flex items-center h-full gap-2 p-1.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+          {/* 3x3 Micro Alignment Matrix */}
+          <div className="grid grid-cols-3 gap-0.5 p-1 border rounded-lg bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-2xs">
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('top', 'left')} title="Top Left"><AlignLeft size={10} className="rotate-45"/></button>
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('top', 'center')} title="Top Center"><AlignCenter size={10} className="-rotate-45"/></button>
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('top', 'right')} title="Top Right"><AlignRight size={10} className="rotate-45"/></button>
+            
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('middle', 'left')} title="Center Left"><AlignLeft size={10}/></button>
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('middle', 'center')} title="Center"><AlignCenter size={10}/></button>
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('middle', 'right')} title="Center Right"><AlignRight size={10}/></button>
+            
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('bottom', 'left')} title="Bottom Left"><AlignLeft size={10} className="-rotate-45"/></button>
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('bottom', 'center')} title="Bottom Center"><AlignCenter size={10} className="rotate-45"/></button>
+            <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('bottom', 'right')} title="Bottom Right"><AlignRight size={10} className="-rotate-45"/></button>
           </div>
-      </RibbonSection>
 
-      <RibbonSection title="Data">
-          <div className="flex flex-col h-full justify-center gap-0.5 px-1">
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => alert("Sort Dialog")}>
-                  <ArrowDownAZ size={14}/> Sort
-              </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => {}}>
-                  <Type size={14}/> Convert to Text
-              </button>
-              <button onMouseDown={(e) => e.preventDefault()} className="flex items-center gap-2 px-2 py-0.5 hover:bg-slate-100 dark:hover:bg-transparent rounded text-[10px] dark:text-slate-300" onClick={() => {
-                  runOnTable((table) => {
-                      runOnCell((cell) => {
-                          setActiveTable(table);
-                          setActiveCell(cell);
-                          setIsFormulaOpen(true);
-                      });
+          <div className="flex flex-col gap-1 text-[11px] min-w-[76px]">
+            <button 
+              onMouseDown={(e) => e.preventDefault()} 
+              className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-medium transition-colors" 
+              onClick={setTextDirection}
+              title="Toggle Text Direction"
+            >
+              <Type size={12} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+              <span>Text Dir</span>
+            </button>
+            <button 
+              onMouseDown={(e) => e.preventDefault()} 
+              className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-medium transition-colors" 
+              onClick={() => runOnCell(c => c.style.padding = "8px")}
+              title="Set Standard Cell Margins"
+            >
+              <Settings size={12} className="text-slate-500 dark:text-slate-400 flex-shrink-0" />
+              <span>Margins</span>
+            </button>
+          </div>
+
+          <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
+
+          {/* Data Tools */}
+          <div className="flex flex-col gap-1 text-[11px]">
+            <button 
+              onMouseDown={(e) => e.preventDefault()} 
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-md hover:bg-slate-200/60 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 font-medium transition-colors" 
+              onClick={() => {
+                runOnTable((table) => {
+                  runOnCell((cell) => {
+                    setActiveTable(table);
+                    setActiveCell(cell);
+                    setIsFormulaOpen(true);
                   });
-              }}>
-                  <Calculator size={14}/> Formula
-              </button>
+                });
+              }}
+              title="Insert Table Formula"
+            >
+              <Calculator size={13} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+              <span>Formula</span>
+            </button>
+            <button 
+              onMouseDown={(e) => e.preventDefault()} 
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 font-medium transition-colors" 
+              onClick={deleteTable}
+              title="Delete Entire Table"
+            >
+              <Trash2 size={13} className="flex-shrink-0" />
+              <span>Delete Table</span>
+            </button>
           </div>
+        </div>
       </RibbonSection>
 
       <TablePropertiesDialog 
         isOpen={isPropertiesOpen} 
         onClose={() => {
-            setIsPropertiesOpen(false);
-            setActiveTable(null);
+          setIsPropertiesOpen(false);
+          setActiveTable(null);
         }} 
         table={activeTable} 
       />
@@ -747,13 +1074,13 @@ export const TableLayoutTab: React.FC = () => {
       <TableFormulaDialog
         isOpen={isFormulaOpen}
         onClose={() => {
-            setIsFormulaOpen(false);
-            setActiveTable(null);
-            setActiveCell(null);
+          setIsFormulaOpen(false);
+          setActiveTable(null);
+          setActiveCell(null);
         }}
         table={activeTable}
         activeCell={activeCell}
       />
-    </>
+    </div>
   );
 };

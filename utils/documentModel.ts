@@ -1010,6 +1010,7 @@ export function htmlToJSONDocument(
   const nowStr = new Date().toISOString();
   return {
     type: 'document',
+    schemaVersion: 2,
     metadata: {
       title,
       lastModified: lastModifiedDate ? lastModifiedDate.toISOString() : nowStr,
