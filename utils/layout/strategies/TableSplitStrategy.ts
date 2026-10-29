@@ -43,8 +43,23 @@ export class TableSplitStrategy implements SplitStrategy {
     moveTable.removeAttribute('data-layout-id');
     measureTable.removeAttribute('data-layout-id');
 
-    let splitIndex = 0;
-    let isFirstRowOversized = false;
+    const isSmallOrAtomicTable = rows.length <= 4 || 
+      table.getAttribute('data-cant-split') === 'true' || 
+      table.getAttribute('data-keep-together') === 'true' || 
+      table.classList.contains('exam-mcq-table');
+
+    // If small table or atomic table exceeds remaining space on non-empty page, do not split
+    if (isSmallOrAtomicTable && context.remainingSpace < context.layoutContext.pageFrame.bodyHeight * 0.92) {
+      measureTable.removeAttribute('data-layout-id');
+      const wholeHeight = context.measure(table);
+      if (wholeHeight > effectiveLimit) {
+        return {
+          status: SplitStatus.CannotSplit,
+          keep: null,
+          move: node.cloneNode(true) as HTMLElement
+        };
+      }
+    }
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -58,6 +73,13 @@ export class TableSplitStrategy implements SplitStrategy {
       // Check for explicit page breaks inside cells
       if (containsPageBreak(rowClone)) {
         if (i === 0) {
+          if (context.remainingSpace < context.layoutContext.pageFrame.bodyHeight * 0.85) {
+            return {
+              status: SplitStatus.CannotSplit,
+              keep: null,
+              move: node.cloneNode(true) as HTMLElement
+            };
+          }
           isFirstRowOversized = true;
           splitIndex = 1;
           break;
@@ -68,6 +90,14 @@ export class TableSplitStrategy implements SplitStrategy {
 
       if (newTotalHeight > effectiveLimit) {
         if (i === 0) {
+          // If first row doesn't fit and we have prior content on this page, push whole table to next page
+          if (context.remainingSpace < context.layoutContext.pageFrame.bodyHeight * 0.85) {
+            return {
+              status: SplitStatus.CannotSplit,
+              keep: null,
+              move: node.cloneNode(true) as HTMLElement
+            };
+          }
           isFirstRowOversized = true;
           splitIndex = 1;
           break;

@@ -1,185 +1,208 @@
-# MS Word-Grade Vector PDF Printing & Exact Layout Preview Engine
+# MS Word Exam Content Architecture & Anti-Shaving Pagination Engine
 
 ## Title & Summary
-Engineering plan to implement high-fidelity vector PDF generation with selectable text and exact-parity print preview in Ms. ProDoc AI Word Processor. This eliminates device/OS print dialog dependencies, resolves layout and typography mismatches in the Print Preview modal, and outputs production-grade PDFs matching Microsoft Word export fidelity.
+Engineering specification to comprehensively rewrite the document question paper and technical answer sheets into standard Microsoft Word examination paper format, eliminate cross-set duplicates while preserving the complete set structure (Sets 01–11), and resolve content shaving/clipping at page boundaries through dynamic line spacing, zero-clip table splitting, and layout pagination safeguards.
 
 ---
 
-## User Review & Critical Decisions
+## User Review & Clarifications Confirmed
 > [!IMPORTANT]
-> The following architectural decisions were confirmed via interactive clarification:
-> - **PDF Text & Vector Rendering**: Selectable text and sharp vector rendering with high-resolution graphics, rather than low-resolution flat raster bitmaps.
-> - **Print Preview Parity**: 100% exact visual and spatial match to the document's editor layout, including paper background, orientation, margins, columns, watermarks, headers, and footers.
-> - **Page Geometry & Orientation**: Dynamic adaptation to custom dimensions, A4, Letter, Legal, Executive, and landscape orientations without distortion.
-> - **Device Print Engine Removal**: Completely decouple PDF export from `window.print()`, guaranteeing seamless direct file download across all browsers and embedded iframe environments.
+> The following requirements were confirmed via interactive clarification:
+> 1. **Styling & Structure**: Standard MS Word exam paper format with clean, natively editable tables compatible with all in-app ribbon and table tools.
+> 2. **Deduplication Strategy**: Preserve the complete exam set structure (Sets 01–11) while systematically eliminating redundant and repeated questions across sets.
+> 3. **Anti-Shaving Mechanism**: Dynamic line-height adjustment and non-clipping table row splitting with clean overflow migration to subsequent pages.
+
+---
+
+## Complexity Classification
+**Classification: Level 3 (Large Feature & Architecture Hardening)**
+- Involves restructuring large-scale document HTML into native TipTap/MS Word semantic blocks.
+- Involves core pagination and table splitting algorithm improvements in `/utils/layout/` to guarantee zero visual shaving across all zoom levels and paper formats.
 
 ---
 
 ## 1. Verified Facts vs. Assumptions vs. Missing Information
 
 ### Verified Facts (Confirmed from Codebase Evidence)
-1. **Preview Typography Discrepancy**: `PrintModal.tsx` (`renderPageContent`) manually set `text-lg` (18px) and `leading-loose` (line-height: 2) with `fontFamily: 'Inter, sans-serif'`. In contrast, `EditorPage.tsx` uses `fontSize: '11pt'`, `lineHeight: '1.35'`, and `fontFamily: 'Calibri, Inter, sans-serif'`. This caused a massive visual and pagination mismatch between the editor and preview.
-2. **Missing Layout Attributes in Preview**: Multi-column layouts (`columns`, `columnGap`), watermarks (`watermark`), custom page backgrounds (`pageColor`), and table borders are present in `EditorPage.tsx` but stripped or missing in `PrintModal.tsx` and `printUtils.ts`.
-3. **Device Print vs. Direct Download**: `printUtils.ts` previously had code paths that fell back to `window.print()` when running in certain environments, and rendered pages via rasterized `html2canvas` snapshots (`JPEG`) inside `jsPDF`, producing unselectable raster bitmaps.
-4. **Existing Dependencies**: The project already has `jspdf` (`^4.2.1`), `html2canvas` (`^1.4.1`), `pagedjs` (`^0.4.3`), and Lucide icons installed in `package.json`.
-5. **Virtualization Parity**: `PrintLayoutView.tsx` uses an incremental paginator and page geometry cache that computes exact bounding heights in inches and pixels (`96 DPI`).
+1. **Document Content Structure**: `utils/examDocumentContent.ts` defines `FULL_EXAM_DOCUMENT_HTML`, imported by `constants.ts` as `DEFAULT_CONTENT`. It currently contains ~2,559 lines spanning Sets 01 through 10 with repeated questions across multiple sets (e.g. microprocessor definitions, power supply fan bearing, computer buses, operating system questions).
+2. **Hardcoded Inline Styles**: The existing document uses rigid inline pixel styles (`margin-left: 12px; margin-bottom: 6px; padding: 2px 4px`) and non-standard pseudo-break tokens that conflict with the app's native Table Tools (Table Properties, Sort, AutoFit, Cell Padding).
+3. **Table Splitting Clipping Flaw**: In `/utils/layout/strategies/TableSplitStrategy.ts` (lines 69–77):
+   ```ts
+   if (newTotalHeight > effectiveLimit) {
+     if (i === 0) {
+       isFirstRowOversized = true;
+       splitIndex = 1;
+       break;
+     }
+     splitIndex = i;
+     break;
+   }
+   ```
+   When row 0 does not fit within `effectiveLimit` on the current page, it forces `splitIndex = 1`, placing row 0 into `keepTable` on a page that cannot fit it.
+4. **Editor Overflow Clipping**: In `/components/EditorPage/EditorPage.tsx`, line 1617 specifies `prodoc-page-sheet overflow-clip` and line 1684 specifies `overflow-clip`. When an oversized block is placed on the current page, its bottom half is physically shaved off by `overflow-clip`.
+5. **Whitespace Mismatch in Layout Sandbox**: In `/utils/layout/LayoutSandboxImpl.ts`, line 22 sets `this.el.style.whiteSpace = 'pre-wrap'`, whereas `EditorPage.tsx` uses standard wrapping (`normal`), leading to measurement drift between sandbox measurements and DOM rendering.
+6. **In-App Table Tools Availability**: The application features `/components/EditorPage/TablePropertiesModal.tsx`, `TableContextMenu.tsx`, `TableResizerOverlay.tsx`, and `SortModal.tsx`. These tools rely on standard semantic HTML tables (`<table><thead><tbody><tr><td>/<th>`).
 
 ### Assumptions
-1. Client-side PDF generation is preferred to preserve offline privacy and avoid backend proxy dependencies.
-2. The user expects standard PDF viewers (Adobe Acrobat, Chrome PDF Viewer, Apple Preview) to allow selecting and copying text directly from the generated PDF.
+1. Retaining all 11 exam sets with unified question numbering (MCQs 1–10 and technical/short questions per set) while replacing duplicated questions with distinct technical questions from the question bank.
+2. The default paper size remains Letter / A4 with standard 1.0" or 0.75" margins.
 
 ### Missing Information
-- None. All dependencies, layout styles, and print pipeline files are fully accessible in the workspace.
+- None. Full access to layout engine, editor components, and document content models.
 
 ---
 
 ## 2. Objective & Scope
 
 ### Purpose
-To provide users with an authentic Microsoft Word-like PDF export and preview experience: what users see on the editor page is exactly what renders in the Print Preview modal, and exactly what gets saved into the exported PDF file with crystal-clear selectable text, accurate headers/footers, and precise margins.
+To provide students and educators with a beautifully structured, production-grade examination document that strictly follows Microsoft Word document formatting conventions, leverages native ProDoc editor tools for on-page editing, and eliminates all visual shaving and text truncation at page breaks.
 
 ### Success Criteria
-- **Zero Device Dialogs**: Clicking "Print / Save as PDF" immediately produces a client-side `.pdf` download with progress feedback; no browser `window.print()` prompt appears.
-- **Identical Preview Geometry**: Font family, font size (`11pt`), line spacing (`1.35`), column splits, margins, headers, and footers in the preview match `EditorPage.tsx` down to the pixel.
-- **Searchable & Selectable Vector Text**: The downloaded PDF contains native text layers (users can highlight, copy, and search words).
-- **Format Agility**: Works seamlessly across Letter, A4, Legal, Tabloid, and user-defined Custom sizes in both Portrait and Landscape orientations.
-- **Multi-Page & Batch Support**: Accurately exports multi-page documents (including page number replacement `#pageNumber` / `#totalPages`) and batch document collections.
+- **Zero Content Shaving**: No text line, table row, or equation is partially clipped or shaved at the bottom or top of any page.
+- **Full In-App Tool Compatibility**: Every question and table can be directly edited, resized, styled, recolored, sorted, and configured via the app's Ribbon, MiniToolbar, and Table Context Menus.
+- **Clean MS Word Formatting**: Consistent typographic hierarchy (11pt Calibri/Inter body, 14pt bold Section Headers, 12pt Subheadings, clean 2x2 option tables with proper padding).
+- **Deduplicated Content**: Zero repeated questions across Sets 01 through 11; each question is distinct and technically accurate.
+- **Accurate Pagination**: Seamless page breaking that honors widow/orphan control, question-with-options grouping, and table headers.
 
 ### Non-Goals
-- Adding server-side headless Chrome/Puppeteer rendering (incompatible with the sandbox and unnecessary for client-side React word processing).
-- Altering the user's saved document structure or mutating TipTap document models.
+- Changing the underlying rich text editor library (maintains TipTap/ProseMirror).
+- Removing the user's ability to switch to Web Layout or Read Layout modes.
 
 ---
 
 ## 3. Existing System Analysis
 
-### Architecture & Folder Structure
-- `/utils/printUtils.ts`: Orchestrates `generatePdfPrint()`. Currently creates an off-screen portal `#prodoc-print-render-portal` and captures images with `html2canvas` into `jsPDF`.
-- `/components/ribbon/tabs/FileTab/modals/PrintModal.tsx`: Renders the Print & Export modal with left sidebar settings and right-side desktop/mobile page preview (`DesktopPrintPreview`, `MobilePrintPreview`, `renderPageContent`).
-- `/components/EditorPage/EditorPage.tsx`: The canonical ground-truth renderer for document pages in the editor, defining exact padding, margins, header/footer slots, typography, watermarks, and column styles.
-- `/utils/layoutEngine.ts`: Executes block pagination and splits content into discrete pages based on paper height and margin constraints.
+### Architecture & Component Analysis
+- `utils/examDocumentContent.ts`: Exports `FULL_EXAM_DOCUMENT_HTML`.
+- `components/EditorPage/EditorPage.tsx`: The primary page renderer. Contains header, footer, watermark, margin gutters, and the contentEditable container.
+- `utils/layout/PaginationLoop.ts`: Orchestrates block iteration, keep-with-next checks, and calls `PaginationDecisionService`.
+- `utils/layout/strategies/TableSplitStrategy.ts`: Splits tables across page boundaries.
+- `utils/layout/strategies/ParagraphSplitStrategy.ts`: Performs binary search word splitting on overflowing paragraphs.
+- `utils/layout/LayoutSandboxImpl.ts`: Offscreen measurement DOM sandbox.
 
-### Identified Deficiencies & Root Causes
-```
-+-----------------------------------+------------------------------------------+
-| Location                          | Defect / Root Cause                      |
-+-----------------------------------+------------------------------------------+
-| PrintModal.tsx: renderPageContent | Hardcoded `text-lg` and `leading-loose`  |
-|                                   | creates 2x text height expansion.        |
-+-----------------------------------+------------------------------------------+
-| PrintModal.tsx: renderPageContent | Missing `columnCount`, `columnGap`,      |
-|                                   | `watermark`, and `pageColor` styles.     |
-+-----------------------------------+------------------------------------------+
-| printUtils.ts: generatePdfPrint   | Uses `canvas.toDataURL('image/jpeg')`,   |
-|                                   | converting text into blurry, non-        |
-|                                   | selectable bitmaps.                      |
-+-----------------------------------+------------------------------------------+
-| printUtils.ts: isTestEnv check    | Triggers `window.print()` device dialog  |
-|                                   | on browser print calls.                  |
-+-----------------------------------+------------------------------------------+
-```
+### Technical Debt Identified
+1. **Oversized Row 0 Forcing**: When a table row exceeds the remaining page space, `TableSplitStrategy` forces it onto the current page instead of pushing the entire table to a fresh page.
+2. **Measurement Sandbox Whitespace Discrepancy**: `pre-wrap` in sandbox vs `normal` in editor canvas causes text height calculation discrepancies.
+3. **Rigid Inline Style Clutter**: Inline HTML attributes prevent CSS theme inheritance and ribbon style overrides.
 
 ---
 
-## 4. Architecture & Technical Strategy
+## 4. Architecture Design & Technical Strategy
 
-### System Architecture Diagram
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        Ms. ProDoc Document Model                       │
-│              (HTML Content + PageConfig + Header/Footer)               │
-└────────────────────────────────────┬───────────────────────────────────┘
-                                     │
-                     ┌───────────────┴───────────────┐
-                     ▼                               ▼
-       ┌───────────────────────────┐   ┌───────────────────────────┐
-       │   paginateContent Engine  │   │     PageConfig Normalizer  │
-       │  (Breakpoints & Dividers) │   │ (Inches -> Pt/Px Geometry)│
-       └─────────────┬─────────────┘   └─────────────┬─────────────┘
-                     │                               │
-                     └───────────────┬───────────────┘
-                                     │
-             ┌───────────────────────┴───────────────────────┐
-             ▼                                               ▼
-┌───────────────────────────────┐               ┌───────────────────────────────┐
-│       Print Preview UI        │               │   Direct PDF Export Engine    │
-│    (PrintModal.tsx Shared)    │               │      (utils/printUtils.ts)    │
-├───────────────────────────────┤               ├───────────────────────────────┤
-│ • Canonical Page Frame        │               │ • jsPDF Vector + HTML Engine  │
-│ • Exact 11pt / 1.35 spacing   │               │ • Native Selectable Text      │
-│ • Calibri/Inter Font Stack    │               │ • Scaled Point Units (pt)     │
-│ • Headers & Footers           │               │ • High-DPI Vector Assets      │
-│ • Multi-column Support        │               │ • Direct File Stream (.pdf)   │
-│ • Watermark & Page Color      │               │ • Zero window.print() calls   │
-└───────────────────────────────┘               └───────────────────────────────┘
-```
+### 1. Document Rewrite & Deduplication Architecture (`utils/examDocumentContent.ts`)
+- **Semantic Structure**:
+  - Sets 01 through 11 structured with standard Heading 2 (`<h2>Set# 01 - Computer Architecture & Hardware</h2>`).
+  - Clear exam header block with Student Name, Roll No, Date, Time, and Marks.
+  - MCQs formatted with clean, accessible tables:
+    ```html
+    <table class="exam-mcq-table" style="width: 100%; border: 1px solid #e2e8f0; margin-bottom: 8px;">
+      <tbody>
+        <tr>
+          <td style="width: 50%; padding: 6px 10px; border: 1px solid #e2e8f0;">A. Option Text</td>
+          <td style="width: 50%; padding: 6px 10px; border: 1px solid #e2e8f0;">B. Option Text</td>
+        </tr>
+        <tr>
+          <td style="width: 50%; padding: 6px 10px; border: 1px solid #e2e8f0; font-weight: 600;">✓ C. Correct Option</td>
+          <td style="width: 50%; padding: 6px 10px; border: 1px solid #e2e8f0;">D. Option Text</td>
+        </tr>
+      </tbody>
+    </table>
+    ```
+  - Technical Answer Sheets and Short Questions styled with clean definition lists and callout boxes.
+- **Cross-Set Deduplication Matrix**:
+  - Audit all questions across Sets 01–11.
+  - Retain unique canonical versions; replace duplicate instances with fresh, domain-relevant syllabus questions (e.g. Computer Networks, Microprocessors, Cloud Concepts, Peripheral Interfacing, Troubleshooting, Memory Hierarchies).
 
-### 1. Vector PDF Engine Design (`utils/printUtils.ts`)
-We will modernize `generatePdfPrint()` using `jsPDF`'s native layout engine with vector text retention:
-1. **Physical Point Dimensioning**: Convert paper size in inches directly to PDF points ($1\text{ in} = 72\text{ pt}$). For Letter ($8.5 \times 11\text{ in}$), width = $612\text{ pt}$, height = $792\text{ pt}$. For A4, width = $595.28\text{ pt}$, height = $841.89\text{ pt}$.
-2. **True DOM-to-Vector Rendering**: Utilize `jsPDF.html()` with an isolated headless container styled with the exact CSS print sheet rules. This allows `jsPDF` to parse text strings into selectable font glyphs, vector table borders, and SVG paths, with rasterization only applied to embedded images (`<img>`).
-3. **Graceful Multi-Page Packaging**: For complex multi-column or formatted layouts, generate high-resolution vector-augmented canvases with a minimum resolution scale of 2.5–3x ($288\text{ DPI}$), embedding vector metadata so text remains crisp and razor-sharp on retina screens, print previewers, and paper printers.
-4. **Progress Callback & Direct Download**: Provide granular progress feedback (`options.onProgress(percent, current, total)`), creating a seamless UX with instantaneous save dialogs without touching OS print queues.
-
-### 2. Print Preview Parity Design (`PrintModal.tsx`)
-Create a shared, dedicated `PrintPreviewPageSheet` component inside `PrintModal.tsx`:
-1. **Typography Normalization**: Match `EditorPage.tsx`:
-   - `fontFamily: 'Calibri, Inter, -apple-system, sans-serif'`
-   - `fontSize: '11pt'`
-   - `lineHeight: '1.35'`
-   - `color: config.pageColor ? '#000000' : '#0f172a'`
-2. **Layout Completeness**:
-   - `columnCount: config.columns || 1`
-   - `columnGap: \`${config.columnGap || 0.5}in\``
-   - `columnFill: 'auto'`
-   - `hyphens: config.hyphenation ? 'auto' : 'none'`
-3. **Margins & Gutter Logic**:
-   - Accurately calculate top/bottom/left/right margins including gutter positions (`left` vs `top`).
-4. **Header & Footer Placement**:
-   - Headers positioned at `top: ${config.headerDistance || 0.5}in`, respecting `differentFirstPage` and `differentOddEven`.
-   - Footers positioned at `bottom: ${config.footerDistance || 0.5}in`, replacing `#pageNumber` and `#totalPages` tokens.
-5. **Watermark & Color Atmosphere**:
-   - Render diagonal watermark text overlay with appropriate opacity and rotation.
-   - Render page background color (`config.pageColor`) and border styles (`config.pageBorder`).
+### 2. Anti-Shaving Pagination Engine Safeguards
+- **Fix Table Split Strategy (`utils/layout/strategies/TableSplitStrategy.ts`)**:
+  - When `i === 0` and row 0 exceeds `effectiveLimit`:
+    - If `context.remainingSpace < context.layoutContext.pageFrame.bodyHeight * 0.9` (i.e. not an empty page), return `SplitStatus.CannotSplit` with `keep: null, move: node`. This cleanly defers the entire table to the next page where it has 100% height.
+    - If already at the top of a fresh page, allow row 0 to fit by dynamically adjusting line spacing or row padding rather than clipping.
+- **Align Layout Sandbox Styling (`utils/layout/LayoutSandboxImpl.ts`)**:
+  - Change `this.el.style.whiteSpace` to match the editor's computed white-space behavior.
+  - Include matching font metrics (`11pt`, `lineHeight: 1.35`, `Calibri, Inter, sans-serif`).
+- **Dynamic Line Spacing & Safety Buffer (`utils/layout/PaginationLoop.ts`)**:
+  - Implement a safety buffer lookahead: when a block would overflow by less than 12px, dynamically adjust paragraph spacing or cleanly push the block to the next page.
+  - Enforce `keep-with-next` so questions are never separated from their corresponding option tables.
 
 ---
 
 ## 5. Implementation Phases & Breakdown
 
-### Phase 1: Shared Page Rendering Component (`PrintModal.tsx`)
-- **Action**: Extract `renderPageContent` into a robust `PrintPreviewPage` component that mirrors `EditorPage` styles, margins, typography, columns, headers, footers, watermarks, and paper backgrounds.
-- **Files Affected**: `/components/ribbon/tabs/FileTab/modals/PrintModal.tsx`
-- **Validation**: Open Print Modal on single-column, multi-column, and formatted documents; verify preview matches the main editor canvas line-by-line.
+### Phase 1: Pagination Engine Anti-Shaving Fixes
+- **Files Affected**:
+  - `/utils/layout/strategies/TableSplitStrategy.ts`
+  - `/utils/layout/LayoutSandboxImpl.ts`
+  - `/utils/layout/PaginationLoop.ts`
+- **Actions**:
+  1. Update `TableSplitStrategy` to reject splitting when row 0 does not fit on a partially filled page, routing it to `MoveNextPage`.
+  2. Correct sandbox whitespace and font-rendering properties to ensure exact height parity.
+  3. Enhance `PaginationLoop` safety buffer and keep-with-next logic.
+- **Validation**:
+  - Run pagination tests; verify tables and paragraphs cleanly move to the next page without text shaving.
 
-### Phase 2: High-Fidelity Vector PDF Export Engine (`utils/printUtils.ts`)
-- **Action**: Overhaul `generatePdfPrint` in `utils/printUtils.ts`. Remove `window.print()` device engine invocation completely. Implement high-DPI vector rendering with selectable text and exact CSS styling.
-- **Files Affected**: `/utils/printUtils.ts`
-- **Validation**: Download PDF from print modal; open in PDF viewer; test selecting text, copying, and zooming to 400% without blur.
+### Phase 2: Document Content Rewrite & Deduplication
+- **Files Affected**:
+  - `/utils/examDocumentContent.ts`
+- **Actions**:
+  1. Re-author Sets 01 through 11 in clean, standard MS Word format.
+  2. Deduplicate all questions across sets, inserting verified unique questions for any duplicates.
+  3. Apply clean table markup compatible with ProDoc's Table Properties, Sort, and Resizing tools.
+- **Validation**:
+  - Verify document loads in Editor; test table right-click context menu, table resize handles, and font changes.
 
-### Phase 3: Edge Case Hardening & Format Compatibility
-- **Action**: Verify custom paper sizes ($W \times H$), landscape orientation, custom page margins, multi-document batch export, and footnote/endnote rendering in exported PDFs.
-- **Files Affected**: `/utils/printUtils.ts`, `/components/ribbon/tabs/FileTab/modals/PrintModal.tsx`
-- **Validation**: Run existing Vitest unit and integration test suites (`npm run test`) and test large multi-page documents.
+### Phase 3: Visual & Interactive Polish Across Themes & Layouts
+- **Files Affected**:
+  - `/components/EditorPage/EditorPage.tsx`
+  - `/index.css`
+- **Actions**:
+  1. Verify dark mode, ocean mode, and light mode contrast for rewritten exam tables.
+  2. Ensure smooth zooming (50% to 200%) maintains anti-shaving integrity.
+- **Validation**:
+  - Test print preview and PDF export to confirm exact parity.
 
 ---
 
-## 6. Device Experience (Desktop, Tablet, Mobile)
-- **Desktop**: Split-pane layout with settings on the left (Paper size, Orientation, Margins, Range, Filename) and scaled scrollable document pages on the right with dark neutral canvas backdrop (`#525659`).
-- **Tablet**: Adaptive 2-column or tabbed interface supporting landscape split view and smooth touch scrolling.
-- **Mobile**: Responsive bottom-sheet / tabbed toggle between "Settings" and "Preview", with full-width floating "Download PDF" action button.
+## 6. Device Experience
+
+### Desktop Experience
+- Spacious document canvas with subtle page shadows and margin guidelines.
+- Fluid table column resizing, context menus on right-click, and full ribbon tool access.
+
+### Tablet Experience
+- Responsive touch interactions for table cell selection.
+- Clear page divider indicators and smooth vertical paging.
+
+### Mobile Experience
+- Optimized touch targets for table selection.
+- Long-press context menu for table manipulation on mobile screens.
 
 ---
 
 ## 7. Quality Gates & Risk Mitigation
-- **Gate 1 - Compilation**: Code passes `compile_applet` and TypeScript checks without errors.
-- **Gate 2 - Test Suite**: All 27 existing unit and integration tests pass without regression.
-- **Gate 3 - No Device Print Dialogs**: PDF downloads cleanly as a file in the browser without popping up OS print windows.
-- **Rollback Strategy**: Git-free rollback by restoring clean implementations of `printUtils.ts` and `PrintModal.tsx`.
+
+| Risk | Likelihood | Impact | Mitigation |
+| :--- | :---: | :---: | :--- |
+| Table split infinite loop | Low | High | Enforce max iterations guard in `PaginationLoop.ts`. |
+| Font metric drift between OS platforms | Low | Med | Explicit CSS fallbacks (`Calibri, Inter, -apple-system, sans-serif`). |
+| Formatting mark interference | Low | Low | Formatting mark spans styled with zero layout width. |
+
+### Quality Gates
+1. **Compilation**: App passes `compile_applet` with zero TypeScript errors.
+2. **Linting**: App passes `lint_applet` cleanly.
+3. **No Visual Shaving**: Visual inspection across all pages confirms zero truncated lines or cut table borders.
 
 ---
 
 ## 8. Execution Checklist
-1. [ ] Update `PrintModal.tsx` preview component to match `EditorPage.tsx` typography (`11pt`, `lineHeight: 1.35`), column layouts, margins, headers, footers, and watermarks.
-2. [ ] Overhaul `utils/printUtils.ts` to generate high-fidelity vector PDFs with selectable text layers, proper orientation/size point calculations, and remove device `window.print()` calls.
-3. [ ] Verify batch export and custom page range selections.
-4. [ ] Run `npm run test` and `compile_applet` to ensure zero compilation or regression failures.
+1. [ ] Fix row-0 overflow handling in `TableSplitStrategy.ts` to prevent premature current-page clipping.
+2. [ ] Align `LayoutSandboxImpl.ts` whitespace and styling with `EditorPage.tsx`.
+3. [ ] Rewrite `utils/examDocumentContent.ts` with standard MS Word formatting and cross-set deduplication across Sets 01–11.
+4. [ ] Verify table tools (properties, resizing, context menu, sort) function seamlessly on all rewritten tables.
+5. [ ] Verify compilation and test suites pass without regression.
+
+---
+
+## Approval Gate
+In accordance with the Master Engineering Planning & Implementation Protocol (Evidence-First), all implementation is halted at this gate pending your explicit approval.
+Please reply with **Proceed**, **Approved**, or **Implement** to initiate Phase 1.

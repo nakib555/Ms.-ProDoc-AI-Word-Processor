@@ -62,7 +62,7 @@ export type {
 };
 
 const DPI = 96;
-const SAFETY_BUFFER = 15; 
+const SAFETY_BUFFER = 24; 
 const MIN_LINE_HEIGHT = 20;
 
 export interface LayoutBlock {

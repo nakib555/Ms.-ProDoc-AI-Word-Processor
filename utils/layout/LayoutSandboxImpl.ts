@@ -19,7 +19,7 @@ export class LayoutSandboxImpl implements LayoutSandbox {
     this.el.style.lineHeight = '1.35';
     this.el.style.wordWrap = 'break-word';
     this.el.style.overflowWrap = 'break-word';
-    this.el.style.whiteSpace = 'pre-wrap';
+    this.el.style.whiteSpace = 'normal';
     this.el.style.contain = 'layout style';
     if (typeof document !== 'undefined' && document.body) {
       document.body.appendChild(this.el);

@@ -14,7 +14,7 @@ export class PaginationLoop {
     session: LayoutSession,
     builder: PageBuilder,
     DPI = 96,
-    SAFETY_BUFFER = 15,
+    SAFETY_BUFFER = 24,
     MIN_LINE_HEIGHT = 20
   ): void {
     let lastWasBreak = false;

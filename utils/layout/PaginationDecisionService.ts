@@ -4,7 +4,7 @@ import { SplitStatus, SplitContext } from './SplitStrategy';
 import { getLayoutId } from './MeasurementCache';
 
 const MIN_LINE_HEIGHT = 18;
-const SAFETY_BUFFER = 20;
+const SAFETY_BUFFER = 24;
 
 export class PaginationDecisionService {
   static decide(
