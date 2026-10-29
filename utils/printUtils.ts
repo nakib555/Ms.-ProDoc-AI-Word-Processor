@@ -1,8 +1,6 @@
 
 import { PageConfig } from '../types';
 import { PAGE_SIZES } from '../constants';
-export { downloadDocumentPdf, generateDocumentPdf } from './pdfExportEngine';
-export type { PdfExportOptions, PdfExportProgress } from './pdfExportEngine';
 
 export interface PrintOptions {
     range: 'all' | 'current' | 'custom';

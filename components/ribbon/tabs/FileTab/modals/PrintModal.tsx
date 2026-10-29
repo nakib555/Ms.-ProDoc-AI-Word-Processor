@@ -15,8 +15,6 @@ import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../consta
 import { PageConfig, ExportType } from '../../../../../types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { generatePdfPrint } from '../../../../../utils/printUtils';
-import { downloadDocumentPdf, PdfExportProgress } from '../../../../../utils/pdfExportEngine';
-import { getPhysicalDimensions, inToMm, PAPER_DIMENSIONS_MM } from '../../../../../utils/unitConversion';
 import TurndownService from 'turndown';
 import { htmlToJSONDocument } from '../../../../../utils/documentModel';
 
@@ -647,8 +645,6 @@ const PrintSettingsPanel: React.FC<{
     copies: number;
     setCopies: (c: number) => void;
     onPrint: () => void;
-    onSystemPrint?: () => void;
-    pdfProgress?: PdfExportProgress | null;
     isPreparing: boolean;
     closeModal: () => void;
     isMobile?: boolean;
@@ -660,7 +656,7 @@ const PrintSettingsPanel: React.FC<{
     setExportType: (type: ExportType) => void;
     documentScope: 'current' | 'all';
     setDocumentScope: (scope: 'current' | 'all') => void;
-}> = ({ localConfig, setLocalConfig, onPrint, onSystemPrint, pdfProgress, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType, documentScope, setDocumentScope }) => {
+}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType, documentScope, setDocumentScope }) => {
     
     const { documentTitle, setDocumentTitle } = useEditor();
 
@@ -684,29 +680,18 @@ const PrintSettingsPanel: React.FC<{
     };
 
     const getDimensionsDisplay = () => {
-        const dims = getPhysicalDimensions(
-            localConfig.size as string,
-            localConfig.orientation,
-            localConfig.customWidth ? (localConfig.customWidth > 50 ? localConfig.customWidth : inToMm(localConfig.customWidth)) : undefined,
-            localConfig.customHeight ? (localConfig.customHeight > 50 ? localConfig.customHeight : inToMm(localConfig.customHeight)) : undefined
-        );
-        return `${dims.widthMm.toFixed(1)} × ${dims.heightMm.toFixed(1)} mm`;
+        if (localConfig.size === 'Custom') {
+             return `${localConfig.customWidth || 0} x ${localConfig.customHeight || 0} in`;
+        }
+        const format = PAPER_FORMATS.find(f => f.id === localConfig.size);
+        if (format) {
+            if (localConfig.orientation === 'landscape') {
+                return `${format.height} x ${format.width}`;
+            }
+            return `${format.width} x ${format.height}`;
+        }
+        return "";
     };
-
-    const paperOptions = [
-        { value: 'A4', label: 'A4 (210 × 297 mm)' },
-        { value: 'A5', label: 'A5 (148 × 210 mm)' },
-        { value: 'Letter', label: 'Letter (215.9 × 279.4 mm / 8.5" × 11")' },
-        { value: 'Legal', label: 'Legal (215.9 × 355.6 mm / 8.5" × 14")' },
-        { value: 'A3', label: 'A3 (297 × 420 mm)' },
-        { value: 'Executive', label: 'Executive (184.2 × 266.7 mm)' },
-        { value: 'Tabloid', label: 'Tabloid (279.4 × 431.8 mm)' },
-        ...PAPER_FORMATS.filter(f => !['A4', 'A5', 'Letter', 'Legal', 'A3', 'Executive', 'Tabloid'].includes(f.id)).map(f => ({ 
-            value: f.id, 
-            label: `${f.label} (${f.width} × ${f.height})` 
-        })),
-        { value: 'Custom', label: 'Custom Size...' }
-    ];
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-slate-900">
@@ -830,7 +815,10 @@ const PrintSettingsPanel: React.FC<{
                                 label="Paper Size"
                                 value={localConfig.size}
                                 onChange={(v: any) => handleSettingChange('size', v)}
-                                options={paperOptions}
+                                options={PAPER_FORMATS.map(f => ({ 
+                                    value: f.id, 
+                                    label: `${f.label} (${f.width} x ${f.height})` 
+                                }))}
                                 icon={FileText}
                             />
 
@@ -859,27 +847,11 @@ const PrintSettingsPanel: React.FC<{
             </div>
 
             {!isMobile && (
-                <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex flex-col gap-2.5">
-                    {/* Real-time PDF Progress Indicator */}
-                    {pdfProgress && (
-                        <div className="space-y-1.5 p-3 bg-blue-50/80 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-900 animate-in fade-in">
-                            <div className="flex justify-between items-center text-xs font-semibold text-blue-700 dark:text-blue-300">
-                                <span>{pdfProgress.stage}</span>
-                                <span>{pdfProgress.percent}%</span>
-                            </div>
-                            <div className="w-full bg-blue-200 dark:bg-blue-900/60 rounded-full h-1.5 overflow-hidden">
-                                <div 
-                                    className="bg-blue-600 h-1.5 rounded-full transition-all duration-200 ease-out" 
-                                    style={{ width: `${pdfProgress.percent}%` }}
-                                />
-                            </div>
-                        </div>
-                    )}
-
+                <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 shrink-0 flex flex-col gap-3">
                     <button 
                         onClick={onPrint}
                         disabled={isPreparing}
-                        className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98] cursor-pointer"
+                        className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-base shadow-lg shadow-blue-200/50 dark:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-70 active:scale-[0.98]"
                     >
                         {isPreparing ? (
                             <LoadingSpinner className="w-5 h-5 text-white"/>
@@ -888,9 +860,9 @@ const PrintSettingsPanel: React.FC<{
                         )}
                         <span>
                             {isPreparing ? (
-                                pdfProgress ? `Generating PDF (${pdfProgress.percent}%)` : (exportType === 'pdf' ? 'Generating Vector PDF...' : 'Preparing Export...')
+                                exportType === 'pdf' ? 'Preparing PDF...' : 'Preparing Export...'
                             ) : exportType === 'pdf' ? (
-                                'Download PDF Directly'
+                                'Print / Save as PDF'
                             ) : exportType === 'doc' ? (
                                 'Export Word Document (.doc)'
                             ) : exportType === 'rtf' ? (
@@ -906,26 +878,11 @@ const PrintSettingsPanel: React.FC<{
                             )}
                         </span>
                     </button>
-
-                    {exportType === 'pdf' && onSystemPrint && (
-                        <button
-                            type="button"
-                            onClick={onSystemPrint}
-                            disabled={isPreparing}
-                            className="w-full py-2 text-xs font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                            title="Open browser print interface for physical printer hardware"
-                        >
-                            <Printer size={13} />
-                            Send to Office Printer (System Print)
-                        </button>
-                    )}
-
                     <p className="text-[10px] text-center text-slate-400">
-                        {exportType === 'pdf' ? 'High-quality client-side PDF • Accurate millimeter layout • Selectable text' : 'Downloads directly to your system'}
+                        {exportType === 'pdf' ? 'Uses high-fidelity vector printing' : 'Downloads directly to your system'}
                     </p>
                 </div>
             )}
-
         </div>
     );
 };
@@ -938,7 +895,6 @@ export const PrintModal: React.FC = () => {
   const [localConfig, setLocalConfig] = useState<PageConfig>({ ...globalConfig });
   const [previewPages, setPreviewPages] = useState<{ html: string, config: PageConfig }[]>([]);
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
-  const [pdfProgress, setPdfProgress] = useState<PdfExportProgress | null>(null);
   const [copies, setCopies] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -1099,49 +1055,49 @@ export const PrintModal: React.FC = () => {
     }
   };
 
-  const handleSystemPrint = async () => {
-      setIsPreparingPrint(true);
-      try {
-          if (viewMode !== 'print') {
-              setViewMode('print');
-              await new Promise(resolve => setTimeout(resolve, 500));
-          }
-          setPageConfig(localConfig);
-          await new Promise(resolve => setTimeout(resolve, 800));
-          await generatePdfPrint(
-              content, 
-              localConfig, 
-              headerContent, 
-              footerContent, 
-              { 
-                  range: printRange, 
-                  pages: customPages,
-                  currentPage: currentPage
-              }
-          );
-          closeModal();
-      } catch (err) {
-          console.error("System print error:", err);
-      } finally {
-          setIsPreparingPrint(false);
-      }
-  };
-
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
       try {
           if (exportType === 'pdf') {
-              await downloadDocumentPdf(content, documentTitle || 'document', {
-                  config: localConfig,
-                  headerContent,
-                  footerContent,
-                  range: printRange,
-                  pages: customPages,
-                  currentPage: currentPage,
-                  onProgress: (p) => setPdfProgress(p)
-              });
-              setPdfProgress(null);
-              closeModal();
+              if (documentScope === 'all') {
+                  await generatePdfPrint(
+                      '', 
+                      localConfig, 
+                      '', 
+                      '', 
+                      { 
+                          range: 'all',
+                          batchPrintContainerId: 'prodoc-batch-print-container'
+                      }
+                  );
+                  closeModal();
+              } else {
+                  // Ensure we are in print layout mode for correct DOM structure
+                  if (viewMode !== 'print') {
+                      setViewMode('print');
+                      // Wait for view transition
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                  }
+                  
+                  // Update global config to match local print settings so the editor reflects the print layout
+                  setPageConfig(localConfig);
+                  
+                  // Wait for editor to re-render with new config
+                  await new Promise(resolve => setTimeout(resolve, 800));
+     
+                  await generatePdfPrint(
+                      content, 
+                      localConfig, 
+                      headerContent, 
+                      footerContent, 
+                      { 
+                          range: printRange, 
+                          pages: customPages,
+                          currentPage: currentPage
+                      }
+                  );
+                  closeModal();
+              }
           } else {
               if (documentScope === 'all') {
                   await handleBatchExport();
@@ -1278,8 +1234,6 @@ export const PrintModal: React.FC = () => {
                 copies={copies}
                 setCopies={setCopies}
                 onPrint={handleDownloadPDF}
-                onSystemPrint={handleSystemPrint}
-                pdfProgress={pdfProgress}
                 isPreparing={isPreparingPrint}
                 closeModal={closeModal}
                 isMobile={isMobile}

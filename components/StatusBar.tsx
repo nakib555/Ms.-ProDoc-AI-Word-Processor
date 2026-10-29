@@ -5,7 +5,6 @@ import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getDocumentStats } from '../utils/textUtils';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { ZoomDialog } from './ui/ZoomDialog';
 
 const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
 
@@ -20,7 +19,6 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
-  const [showZoomDialog, setShowZoomDialog] = useState(false);
 
   // Calculate stats only when necessary (when dialog is open or about to open)
   const detailedStats = useMemo(() => {
@@ -203,9 +201,14 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 </div>
                 
                 <button 
-                    onClick={() => setShowZoomDialog(true)}
-                    className="w-12 sm:w-20 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs hover:text-blue-400 hover:bg-slate-800/80 px-1 py-0.5 rounded transition-all flex items-center justify-end gap-1 cursor-pointer"
-                    title={`Zoom: ${Number(zoom).toFixed(0)}% (Click for Zoom Presets & Fit Controls)`}
+                    onClick={() => {
+                        // Cycle zoom modes on click
+                        if (zoomMode === 'custom') setZoomMode('fit-width');
+                        else if (zoomMode === 'fit-width') setZoomMode('fit-page');
+                        else setZoomMode('custom');
+                    }}
+                    className="w-12 sm:w-20 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs hover:text-blue-400 transition-colors flex items-center justify-end gap-1"
+                    title={`Current: ${zoomMode === 'custom' ? 'Custom' : zoomMode === 'fit-width' ? 'Fit Width' : 'Fit Page'} (Click to cycle)`}
                 >
                     <span className="text-slate-400 font-semibold text-[9px] uppercase tracking-tighter hidden sm:inline">
                         {zoomMode === 'fit-width' ? 'Width' : zoomMode === 'fit-page' ? 'Page' : ''}
@@ -227,13 +230,6 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
           </div>
         </div>
 
-        {showZoomDialog && (
-            <ZoomDialog
-                isOpen={showZoomDialog}
-                onClose={() => setShowZoomDialog(false)}
-            />
-        )}
-
         {showWordCountDialog && detailedStats && (
             <Suspense fallback={<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/5"><div className="bg-white p-4 rounded shadow"><LoadingSpinner className="w-8 h-8" /></div></div>}>
                 <WordCountDialog 
@@ -246,6 +242,5 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     </>
   );
 };
-
 
 export default React.memo(StatusBar);

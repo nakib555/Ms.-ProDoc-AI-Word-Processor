@@ -1,39 +1,27 @@
 import { PageConfig } from '../../types';
-import { PageFrame } from './PageFrame';
-import { getPhysicalDimensions, mmToPx, inToMm } from '../unitConversion';
 import { PAGE_SIZES } from '../../constants';
+import { PageFrame } from './PageFrame';
 
 const DPI = 96;
 
 export class GeometryCalculator {
   static calculate(config: PageConfig, dpi = DPI): PageFrame {
-    // If standard physical dimensions exist, use exact millimeter conversions
+    const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
+    let baseW = base.width;
+    let baseH = base.height;
+    if (config.size === 'Custom' && config.customWidth && config.customHeight) {
+      baseW = config.customWidth * dpi;
+      baseH = config.customHeight * dpi;
+    }
+
     let width: number;
     let height: number;
-
-    if (config.size === 'Custom' && config.customWidth && config.customHeight) {
-      // customWidth/customHeight might be specified in inches or mm (if > 50, likely mm)
-      const isMm = config.customWidth > 50;
-      const widthMm = isMm ? config.customWidth : inToMm(config.customWidth);
-      const heightMm = isMm ? config.customHeight : inToMm(config.customHeight);
-      const dims = getPhysicalDimensions('Custom', config.orientation, widthMm, heightMm);
-      width = dpi === 96 ? dims.widthPx : mmToPx(dims.widthMm, dpi);
-      height = dpi === 96 ? dims.heightPx : mmToPx(dims.heightMm, dpi);
+    if (config.orientation === 'portrait') {
+      width = baseW;
+      height = baseH;
     } else {
-      const dims = getPhysicalDimensions(config.size as string, config.orientation);
-      if (dims.widthMm && dims.heightMm) {
-        width = dpi === 96 ? dims.widthPx : mmToPx(dims.widthMm, dpi);
-        height = dpi === 96 ? dims.heightPx : mmToPx(dims.heightMm, dpi);
-      } else {
-        const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
-        if (config.orientation === 'portrait') {
-          width = (base.width / 96) * dpi;
-          height = (base.height / 96) * dpi;
-        } else {
-          width = (base.height / 96) * dpi;
-          height = (base.width / 96) * dpi;
-        }
-      }
+      width = baseH;
+      height = baseW;
     }
 
     const headerDistPx = (config.headerDistance || 0) * dpi;
@@ -66,4 +54,3 @@ export class GeometryCalculator {
     };
   }
 }
-
