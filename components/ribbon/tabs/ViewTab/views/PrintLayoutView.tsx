@@ -312,7 +312,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const cursorRestorationRef = useRef<number | null>(null);
 
   // High-performance focal-centered pinch to zoom & double-tap to toggle fit
-  const { zoomHUD } = useTouchZoom({
+  useTouchZoom({
     containerRef: scrollContainerRef,
     contentRef: contentWrapperRef,
     zoom,
@@ -633,11 +633,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     <div 
       className="print-layout-mode w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300"
     >
-       {zoomHUD}
-       {showRuler && (
+       {showRuler && width >= 768 && (
          <div 
             ref={rulerContainerRef}
-            className="w-full overflow-hidden bg-[#f8fafc] dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 z-20 shrink-0 sticky top-0 shadow-sm no-print"
+            className="w-full overflow-hidden bg-[#f8fafc] dark:bg-[#1e293b] border-b border-slate-200 dark:border-slate-700 z-20 shrink-0 sticky top-0 shadow-sm no-print hidden md:block"
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
@@ -720,7 +719,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                 )}
            </div>
        </div>
-       {zoomHUD}
     </div>
   );
 });

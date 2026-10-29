@@ -96,6 +96,35 @@ export class PaginationLoop {
       // Measure using caches
       const nodeH = session.measurementService.measure(node, effectiveWidth);
 
+      // Keep-with-next lookahead check:
+      // If this node is a heading or question prompt and has a subsequent sibling node (e.g. an MCQ table or first body line)
+      const isQuestionOrHeading = (n: HTMLElement): boolean => {
+        if (!n || n.nodeType !== Node.ELEMENT_NODE) return false;
+        if (n.getAttribute('data-keep-with-next') === 'true' || n.classList?.contains('keep-with-next')) return true;
+        const tag = n.tagName.toUpperCase();
+        if (['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(tag)) return true;
+        if (tag === 'P' || tag === 'DIV') {
+          const text = n.textContent?.trim() || '';
+          if (/^(\d+[.)]|Question\s+\d+|Q\d+[:.])/i.test(text)) return true;
+        }
+        return false;
+      };
+
+      if (session.currentHeight > 0 && i + 1 < nodes.length && isQuestionOrHeading(node)) {
+        const nextNode = nodes[i + 1];
+        const nextNodeH = session.measurementService.measure(nextNode, effectiveWidth);
+        const combinedH = nodeH + nextNodeH;
+        if (session.currentHeight + combinedH > effectiveHeight - SAFETY_BUFFER && combinedH <= effectiveHeight - SAFETY_BUFFER) {
+          if (builder.getCurrentNodes().length > 0) {
+            builder.finishPage();
+            session.currentPageIndex++;
+            session.currentHeight = 0;
+            i--; // retry placing this question heading on the fresh page
+            continue;
+          }
+        }
+      }
+
       // Decision
       const decision = PaginationDecisionService.decide(
         node,

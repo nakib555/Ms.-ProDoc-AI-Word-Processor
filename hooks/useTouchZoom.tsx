@@ -71,13 +71,7 @@ export const useTouchZoom = ({
     if (containerRef.current !== containerEl) {
       setContainerEl(containerRef.current);
     }
-    const checkTimer = setInterval(() => {
-      if (containerRef.current !== containerEl) {
-        setContainerEl(containerRef.current);
-      }
-    }, 50);
-    return () => clearInterval(checkTimer);
-  }, [containerRef, containerEl]);
+  }, [containerRef]);
 
   // Register active viewport elements with global gesture context
   useEffect(() => {
@@ -423,6 +417,8 @@ export const useTouchZoom = ({
     return () => {
       if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
+      setIsPinching(false);
+      gestureContext.setIsPinching(false);
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
@@ -434,18 +430,9 @@ export const useTouchZoom = ({
     };
   }, [containerEl, containerRef, contentRef, clampZoom, setZoom, onDoubleTap, enabled, animateZoomWithTransition, gestureContext, minZoom, maxZoom]);
 
-  const zoomHUD = isPinching ? (
-    <div className="fixed bottom-14 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none transition-all duration-200 animate-in fade-in zoom-in-95">
-      <div className="px-4 py-2 rounded-full bg-slate-900/90 text-white text-xs font-semibold shadow-2xl border border-white/15 backdrop-blur-md flex items-center gap-2 tabular-nums ring-1 ring-black/10">
-        <span className="text-indigo-400 font-bold uppercase tracking-wider text-[10px]">Zoom</span>
-        <span className="text-sm font-bold text-white">{Math.round(hudZoom)}%</span>
-      </div>
-    </div>
-  ) : null;
-
   return {
     isPinching,
     currentZoom: hudZoom,
-    zoomHUD: gestureContext.zoomHUD || zoomHUD,
+    zoomHUD: null,
   };
 };

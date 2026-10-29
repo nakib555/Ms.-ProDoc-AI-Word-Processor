@@ -1707,10 +1707,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 setEditorElement(el);
               }
             }}
-            className={`prodoc-editor w-full outline-none text-lg leading-loose break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
+            className={`prodoc-editor w-full outline-none break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
             contentEditable={!isHeaderFooterMode && isBodyEditable}
 
-            inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
+            inputMode={isKeyboardLocked ? "none" : "text"}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
             onFocus={onFocus}
@@ -1723,6 +1723,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             suppressContentEditableWarning={true}
             style={{ 
               fontFamily: 'Calibri, Inter, sans-serif', 
+              fontSize: '11pt',
+              lineHeight: '1.35',
               color: config.pageColor ? '#000000' : defaultPaperInk, 
               flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined, 
               minHeight: '100%',

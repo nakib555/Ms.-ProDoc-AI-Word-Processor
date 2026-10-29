@@ -35,6 +35,20 @@ export class BlockNormalizer {
       }
     }
 
+    // If the content is wrapped in generic container <div> elements, unwrap them so block pagination works on individual paragraphs, tables, and headings
+    while (
+      container.children.length === 1 &&
+      container.firstElementChild?.tagName === 'DIV' &&
+      container.firstElementChild.children.length > 0 &&
+      !container.firstElementChild.classList.contains('prodoc-page-break')
+    ) {
+      const wrapper = container.firstElementChild as HTMLElement;
+      while (wrapper.firstChild) {
+        container.insertBefore(wrapper.firstChild, wrapper);
+      }
+      wrapper.remove();
+    }
+
     const nodes: HTMLElement[] = [];
     const childNodes = container.childNodes;
     const len = childNodes.length;

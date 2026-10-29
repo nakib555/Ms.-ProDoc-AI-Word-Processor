@@ -19,25 +19,37 @@ export class ParagraphSplitStrategy implements SplitStrategy {
     const keepNode = node.cloneNode(false) as HTMLElement;
     const moveNode = node.cloneNode(false) as HTMLElement;
 
-    const findBinarySplitIndex = (text: string, parent: HTMLElement): number => {
+    const findWordBinarySplitIndex = (text: string, parent: HTMLElement): number => {
+      // Find all whitespace boundary positions to prevent shaving/slicing words in half
+      const wordBreakIndices: number[] = [0];
+      const regex = /\s+/g;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        wordBreakIndices.push(match.index);
+      }
+      wordBreakIndices.push(text.length);
+
       let low = 0;
-      let high = text.length;
-      let best = 0;
+      let high = wordBreakIndices.length - 1;
+      let bestBreakIdx = 0;
+
       while (low <= high) {
-        const mid = Math.floor((low + high) / 2);
-        const sub = text.substring(0, mid);
+        const midIdx = Math.floor((low + high) / 2);
+        const charPos = wordBreakIndices[midIdx];
+        const sub = text.substring(0, charPos);
         const tempNode = document.createTextNode(sub);
         parent.appendChild(tempNode);
         const h = context.measure(keepNode);
         parent.removeChild(tempNode);
         if (h <= effectiveLimit) {
-          best = mid;
-          low = mid + 1;
+          bestBreakIdx = midIdx;
+          low = midIdx + 1;
         } else {
-          high = mid - 1;
+          high = midIdx - 1;
         }
       }
-      return best;
+
+      return wordBreakIndices[bestBreakIdx];
     };
 
     const moveSiblings = (nodes: Node[], startIdx: number, target: HTMLElement) => {
@@ -74,7 +86,7 @@ export class ParagraphSplitStrategy implements SplitStrategy {
 
         if (child.nodeType === Node.TEXT_NODE) {
           const text = child.textContent || '';
-          const splitIndex = findBinarySplitIndex(text, parentKeep);
+          const splitIndex = findWordBinarySplitIndex(text, parentKeep);
           if (splitIndex > 0) {
             parentKeep.appendChild(document.createTextNode(text.substring(0, splitIndex)));
           }
@@ -111,6 +123,23 @@ export class ParagraphSplitStrategy implements SplitStrategy {
 
     const originalChildren = Array.from(node.childNodes);
     processNodes(originalChildren, keepNode, moveNode);
+
+    // Orphan/Widow protection: If keepNode has less than 10 characters or no content,
+    // defer entire paragraph to next page to prevent awkward single-word shaved lines
+    const keepTextLength = keepNode.textContent?.trim().length || 0;
+    if (keepTextLength < 10 && moveNode.hasChildNodes()) {
+      const origHeight = context.measure(node);
+      return {
+        status: SplitStatus.Oversized,
+        keep: null,
+        move: node.cloneNode(true) as HTMLElement,
+        metrics: {
+          originalHeight: origHeight,
+          remainingSpace,
+          overflow: origHeight - remainingSpace
+        }
+      };
+    }
 
     const hasKeepContent = keepNode.hasChildNodes();
     if (!hasKeepContent && moveNode.hasChildNodes()) {

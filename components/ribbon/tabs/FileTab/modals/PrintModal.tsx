@@ -646,6 +646,7 @@ const PrintSettingsPanel: React.FC<{
     setCopies: (c: number) => void;
     onPrint: () => void;
     isPreparing: boolean;
+    pdfProgress?: { percent: number; current: number; total: number } | null;
     closeModal: () => void;
     isMobile?: boolean;
     printRange: 'all' | 'current' | 'custom';
@@ -656,7 +657,7 @@ const PrintSettingsPanel: React.FC<{
     setExportType: (type: ExportType) => void;
     documentScope: 'current' | 'all';
     setDocumentScope: (scope: 'current' | 'all') => void;
-}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType, documentScope, setDocumentScope }) => {
+}> = ({ localConfig, setLocalConfig, onPrint, isPreparing, pdfProgress, closeModal, isMobile, printRange, setPrintRange, customPages, setCustomPages, exportType, setExportType, documentScope, setDocumentScope }) => {
     
     const { documentTitle, setDocumentTitle } = useEditor();
 
@@ -860,7 +861,11 @@ const PrintSettingsPanel: React.FC<{
                         )}
                         <span>
                             {isPreparing ? (
-                                exportType === 'pdf' ? 'Preparing PDF...' : 'Preparing Export...'
+                                exportType === 'pdf' ? (
+                                    pdfProgress && pdfProgress.total > 0
+                                        ? `Generating PDF (${pdfProgress.percent}% - ${pdfProgress.current}/${pdfProgress.total})...`
+                                        : 'Preparing PDF...'
+                                ) : 'Preparing Export...'
                             ) : exportType === 'pdf' ? (
                                 'Print / Save as PDF'
                             ) : exportType === 'doc' ? (
@@ -879,7 +884,7 @@ const PrintSettingsPanel: React.FC<{
                         </span>
                     </button>
                     <p className="text-[10px] text-center text-slate-400">
-                        {exportType === 'pdf' ? 'Uses high-fidelity vector printing' : 'Downloads directly to your system'}
+                        {exportType === 'pdf' ? 'Direct high-fidelity PDF download' : 'Downloads directly to your system'}
                     </p>
                 </div>
             )}
@@ -897,6 +902,7 @@ export const PrintModal: React.FC = () => {
   const [isPreparingPrint, setIsPreparingPrint] = useState(false);
   const [copies, setCopies] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<{ percent: number; current: number; total: number } | null>(null);
   
   // Print Range State
   const [printRange, setPrintRange] = useState<'all' | 'current' | 'custom'>('all');
@@ -1057,17 +1063,22 @@ export const PrintModal: React.FC = () => {
 
   const handleDownloadPDF = async () => {
       setIsPreparingPrint(true);
+      setPdfProgress({ percent: 0, current: 0, total: 1 });
       try {
           if (exportType === 'pdf') {
               if (documentScope === 'all') {
                   await generatePdfPrint(
-                      '', 
+                      content, 
                       localConfig, 
-                      '', 
-                      '', 
+                      headerContent, 
+                      footerContent, 
                       { 
                           range: 'all',
-                          batchPrintContainerId: 'prodoc-batch-print-container'
+                          batchPrintContainerId: 'prodoc-batch-print-container',
+                          documentTitle: 'All_Documents',
+                          onProgress: (percent, current, total) => {
+                              setPdfProgress({ percent, current, total });
+                          }
                       }
                   );
                   closeModal();
@@ -1076,14 +1087,11 @@ export const PrintModal: React.FC = () => {
                   if (viewMode !== 'print') {
                       setViewMode('print');
                       // Wait for view transition
-                      await new Promise(resolve => setTimeout(resolve, 500));
+                      await new Promise(resolve => setTimeout(resolve, 300));
                   }
                   
                   // Update global config to match local print settings so the editor reflects the print layout
                   setPageConfig(localConfig);
-                  
-                  // Wait for editor to re-render with new config
-                  await new Promise(resolve => setTimeout(resolve, 800));
      
                   await generatePdfPrint(
                       content, 
@@ -1093,7 +1101,11 @@ export const PrintModal: React.FC = () => {
                       { 
                           range: printRange, 
                           pages: customPages,
-                          currentPage: currentPage
+                          currentPage: currentPage,
+                          documentTitle: documentTitle || 'document',
+                          onProgress: (percent, current, total) => {
+                              setPdfProgress({ percent, current, total });
+                          }
                       }
                   );
                   closeModal();
@@ -1151,6 +1163,7 @@ export const PrintModal: React.FC = () => {
           console.error("Export error:", e);
       } finally {
           setIsPreparingPrint(false);
+          setPdfProgress(null);
       }
   };
 
@@ -1235,6 +1248,7 @@ export const PrintModal: React.FC = () => {
                 setCopies={setCopies}
                 onPrint={handleDownloadPDF}
                 isPreparing={isPreparingPrint}
+                pdfProgress={pdfProgress}
                 closeModal={closeModal}
                 isMobile={isMobile}
                 printRange={printRange}

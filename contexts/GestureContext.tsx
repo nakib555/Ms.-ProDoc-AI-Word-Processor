@@ -60,7 +60,7 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setGestureState(prev => ({ ...prev, hudZoom: Math.round(val), showHud: true }));
     if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     hudTimerRef.current = setTimeout(() => {
-      setGestureState(prev => ({ ...prev, showHud: false }));
+      setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
     }, 600);
   }, []);
 
@@ -70,11 +70,16 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isPinching: val,
       showHud: val ? true : prev.showHud,
     }));
+    if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     if (!val) {
-      if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
       hudTimerRef.current = setTimeout(() => {
-        setGestureState(prev => ({ ...prev, showHud: false }));
-      }, 500);
+        setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
+      }, 400);
+    } else {
+      // Safety auto-dismiss guard so HUD never remains stuck if touchend is interrupted
+      hudTimerRef.current = setTimeout(() => {
+        setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
+      }, 2500);
     }
   }, []);
 

@@ -6,7 +6,7 @@ export class LayoutSandboxImpl implements LayoutSandbox {
 
   constructor() {
     this.el = document.createElement('div');
-    this.el.className = 'prodoc-editor text-lg leading-loose text-slate-900'; 
+    this.el.className = 'prodoc-editor break-words text-slate-900'; 
     this.el.style.position = 'absolute';
     this.el.style.visibility = 'hidden';
     this.el.style.height = 'auto';
@@ -15,6 +15,8 @@ export class LayoutSandboxImpl implements LayoutSandbox {
     this.el.style.padding = '0';
     this.el.style.margin = '0';
     this.el.style.fontFamily = 'Calibri, Inter, sans-serif';
+    this.el.style.fontSize = '11pt';
+    this.el.style.lineHeight = '1.35';
     this.el.style.wordWrap = 'break-word';
     this.el.style.overflowWrap = 'break-word';
     this.el.style.whiteSpace = 'pre-wrap';

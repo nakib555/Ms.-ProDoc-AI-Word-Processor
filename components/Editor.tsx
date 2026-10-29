@@ -40,7 +40,7 @@ const ResponsiveContainer = ({ children }: { children: (size: { width: number, h
 const Editor: React.FC = () => {
   const { editor, viewMode, content, setContent, pageConfig, zoom, showRuler, showFormattingMarks, registerContainer, editorRef, pasteProgress } = useEditor();
   const { theme } = useTheme();
-  const { isPinching, isPanning, zoomHUD } = useGestureContext();
+  const { isPinching, isPanning } = useGestureContext();
   
   const handleContentChange = useCallback((newContent: string) => {
       // Sync content back to editor context (and Tiptap)
@@ -147,8 +147,6 @@ const Editor: React.FC = () => {
                 </div>
             </div>
         )}
-
-        {zoomHUD}
     </>
   );
 };

@@ -31,7 +31,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { setActiveElementType, setZoom, zoomMode, setZoomMode } = useEditor();
 
-  const { zoomHUD, isPinching } = useTouchZoom({
+  const { isPinching } = useTouchZoom({
     containerRef,
     contentRef: editorRef,
     zoom,
