@@ -27,21 +27,6 @@ export const TableLayoutTab: React.FC = () => {
   const [colWidth, setColWidth] = useState<number>(120);
   const [resizeScope, setResizeScope] = useState<'column' | 'cell'>('column');
 
-  // Detect cell dimensions live when cursor changes position
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      runOnCell((cell) => {
-        if (cell) {
-          const rect = cell.getBoundingClientRect();
-          if (rect.width > 0) setColWidth(Math.round(rect.width));
-          if (rect.height > 0) setRowHeight(Math.round(rect.height));
-        }
-      });
-    };
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
-  }, []);
-
   // --- Helper Functions ---
   const runOnCell = (fn: (cell: HTMLTableCellElement) => void) => {
       const selection = window.getSelection();
@@ -73,6 +58,21 @@ export const TableLayoutTab: React.FC = () => {
           if (table) fn(table);
       });
   };
+
+  // Detect cell dimensions live when cursor changes position
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      runOnCell((cell) => {
+        if (cell) {
+          const rect = cell.getBoundingClientRect();
+          if (rect.width > 0) setColWidth(Math.round(rect.width));
+          if (rect.height > 0) setRowHeight(Math.round(rect.height));
+        }
+      });
+    };
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
 
   // --- Actions ---
 

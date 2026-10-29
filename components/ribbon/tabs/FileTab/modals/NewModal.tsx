@@ -36,7 +36,23 @@ export const NewModal: React.FC = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
       <button 
-        onClick={() => { setContent(DEFAULT_CONTENT); setDocumentTitle('Untitled Document'); closeModal(); }}
+        onClick={() => { setContent(DEFAULT_CONTENT); setDocumentTitle('IT Support Exam Questions & Answers (Sets 01 - 11)'); closeModal(); }}
+        className="group text-left"
+      >
+        <div className="bg-white aspect-[3/4] border border-slate-200 shadow-sm group-hover:shadow-md group-hover:ring-2 ring-blue-500 transition-all p-3 mb-3 rounded-lg overflow-hidden relative">
+          <div className="w-1/2 h-2 bg-slate-400 mx-auto mb-1.5 rounded-sm"></div>
+          <div className="w-2/3 h-1.5 bg-slate-300 mx-auto mb-3 rounded-sm"></div>
+          <div className="w-full h-1 bg-slate-200 mb-1 rounded-sm"></div>
+          <div className="w-full h-1 bg-slate-100 mb-1 rounded-sm"></div>
+          <div className="w-4/5 h-1 bg-slate-100 mb-2 rounded-sm"></div>
+          <div className="w-full h-1 bg-slate-200 mb-1 rounded-sm"></div>
+          <div className="w-3/4 h-1 bg-slate-100 mb-1 rounded-sm"></div>
+        </div>
+        <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">Full Exam Paper (Sets 01 - 11)</span>
+      </button>
+
+      <button 
+        onClick={() => { setContent('<p><br></p>'); setDocumentTitle('Untitled Document'); closeModal(); }}
         className="group text-left"
       >
         <div className="bg-white aspect-[3/4] border border-slate-200 shadow-sm group-hover:shadow-md group-hover:ring-2 ring-blue-500 transition-all flex items-center justify-center mb-3 rounded-lg overflow-hidden">

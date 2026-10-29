@@ -4,6 +4,7 @@ import React, { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallba
 import { createPortal } from 'react-dom';
 import { PageConfig, EditingArea } from '../../types';
 import { PAGE_SIZES } from '../../constants';
+import { getPhysicalDimensions, inToMm } from '../../utils/unitConversion';
 import { useMathLive } from '../../hooks/useMathLive';
 import { useEditor } from '../../contexts/EditorContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -979,17 +980,27 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
   
-  // Dimensions in Inches
+  // Dimensions in Inches (derived from true physical dimensions)
   let widthIn = 0;
   let heightIn = 0;
   
   if (config.size === 'Custom' && config.customWidth && config.customHeight) {
-    widthIn = config.customWidth;
-    heightIn = config.customHeight;
+    const isMm = config.customWidth > 50;
+    const wMm = isMm ? config.customWidth : inToMm(config.customWidth);
+    const hMm = isMm ? config.customHeight : inToMm(config.customHeight);
+    const dims = getPhysicalDimensions('Custom', config.orientation, wMm, hMm);
+    widthIn = dims.widthIn;
+    heightIn = dims.heightIn;
   } else {
-    const base = PAGE_SIZES[config.size as keyof typeof PAGE_SIZES] || PAGE_SIZES['Letter'];
-    widthIn = config.orientation === 'portrait' ? base.width / 96 : base.height / 96;
-    heightIn = config.orientation === 'portrait' ? base.height / 96 : base.width / 96;
+    const dims = getPhysicalDimensions(config.size as string, config.orientation);
+    if (dims.widthIn && dims.heightIn) {
+      widthIn = dims.widthIn;
+      heightIn = dims.heightIn;
+    } else {
+      const base = PAGE_SIZES[config.size as keyof typeof PAGE_SIZES] || PAGE_SIZES['Letter'];
+      widthIn = config.orientation === 'portrait' ? base.width / 96 : base.height / 96;
+      heightIn = config.orientation === 'portrait' ? base.height / 96 : base.width / 96;
+    }
   }
 
   // Minimum body gap (approx 2 inches) used for safe header/footer max height calculation

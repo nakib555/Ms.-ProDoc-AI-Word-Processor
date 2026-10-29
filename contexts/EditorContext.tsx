@@ -449,7 +449,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  const [documentTitle, setDocumentTitle] = useState("Untitled Document");
+  const [documentTitle, setDocumentTitle] = useState("IT Support Exam Questions & Answers (Sets 01 - 11)");
   const documentTitleRef = useRef(documentTitle);
   useEffect(() => {
     documentTitleRef.current = documentTitle;
@@ -504,12 +504,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
   
   // Default Header/Footer content
-  const [headerContent, setHeaderContent] = useState('<p style="color:#94a3b8">Header</p>');
-  const [footerContent, setFooterContent] = useState('<p style="color:#94a3b8">Footer - [Page <span class="page-number-placeholder">1</span>]</p>');
+  const [headerContent, setHeaderContent] = useState('');
+  const [footerContent, setFooterContent] = useState('');
   
   // First Page Header/Footer content
-  const [firstHeaderContent, setFirstHeaderContent] = useState('<p style="color:#94a3b8">First Page Header</p>');
-  const [firstFooterContent, setFirstFooterContent] = useState('<p style="color:#94a3b8">First Page Footer</p>');
+  const [firstHeaderContent, setFirstHeaderContent] = useState('');
+  const [firstFooterContent, setFirstFooterContent] = useState('');
   
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
   const [isTableResizerEnabled, setIsTableResizerEnabled] = useState(false);
@@ -521,11 +521,11 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [pageConfig, setPageConfig] = useState<PageConfig>({
     size: 'Letter',
     orientation: 'portrait',
-    marginPreset: 'normal',
-    margins: MARGIN_PRESETS.normal,
+    marginPreset: 'compactReport',
+    margins: MARGIN_PRESETS.compactReport || { top: 0.75, bottom: 0.75, left: 0.75, right: 0.75, gutter: 0 },
     background: 'none',
-    headerDistance: 0.5,
-    footerDistance: 0.5,
+    headerDistance: 0.4,
+    footerDistance: 0.4,
     verticalAlign: 'top',
     sectionStart: 'newpage',
     differentOddEven: false,

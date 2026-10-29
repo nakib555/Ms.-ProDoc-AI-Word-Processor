@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
-import { FileText, Check } from 'lucide-react';
+import { FileText, RotateCcw, AlertTriangle } from 'lucide-react';
 import { CompactInput, CompactSelect, ApplyToSection, RenderSubTabs } from '../../../common/DialogHelpers';
 import { PageConfig, PageOrientation, MultiplePagesType, SheetsPerBookletType } from '../../../../../../../../types';
 import { PAGE_SIZES } from '../../../../../../../../constants';
+import { inToMm, mmToIn, validateMargins, getPhysicalDimensions } from '../../../../../../../../utils/unitConversion';
 
 interface MarginTabProps {
     localConfig: PageConfig;
@@ -14,18 +14,57 @@ type MarginSubTab = 'margins' | 'orientation' | 'pages' | 'apply';
 
 export const MarginTab: React.FC<MarginTabProps> = ({ localConfig, setLocalConfig }) => {
     const [marginSubTab, setMarginSubTab] = useState<MarginSubTab>('margins');
+    const [unit, setUnit] = useState<'mm' | 'in'>('mm');
 
-    const handleMarginInputChange = (section: keyof PageConfig['margins'], value: string) => {
-        let numVal = parseFloat(value);
-        if (isNaN(numVal)) numVal = 0;
-        if (numVal < 0) numVal = 0;
+    // Get current paper physical dimensions in mm
+    const paperDims = getPhysicalDimensions(
+      localConfig.size as string,
+      localConfig.orientation,
+      localConfig.customWidth ? (localConfig.customWidth > 50 ? localConfig.customWidth : inToMm(localConfig.customWidth)) : undefined,
+      localConfig.customHeight ? (localConfig.customHeight > 50 ? localConfig.customHeight : inToMm(localConfig.customHeight)) : undefined
+    );
+
+    // Current margins in mm
+    const marginsMm = {
+      top: inToMm(localConfig.margins.top),
+      bottom: inToMm(localConfig.margins.bottom),
+      left: inToMm(localConfig.margins.left),
+      right: inToMm(localConfig.margins.right),
+      gutter: inToMm(localConfig.margins.gutter || 0)
+    };
+
+    // Real-time validation
+    const validation = validateMargins(paperDims.widthMm, paperDims.heightMm, marginsMm);
+
+    const handleMarginInputChange = (section: keyof PageConfig['margins'], valStr: string) => {
+        let numVal = parseFloat(valStr);
+        if (isNaN(numVal) || numVal < 0) numVal = 0;
+
+        // If unit is mm, convert to inches for internal storage
+        const valInInches = unit === 'mm' ? mmToIn(numVal) : numVal;
         
         setLocalConfig(prev => ({
           ...prev,
           marginPreset: 'custom',
           margins: {
             ...prev.margins,
-            [section]: numVal
+            [section]: Number(valInInches.toFixed(3))
+          }
+        }));
+    };
+
+    const handleResetDefault = () => {
+        // Reset to Word standard 20 mm (~0.787 in)
+        const defaultInches = mmToIn(20);
+        setLocalConfig(prev => ({
+          ...prev,
+          marginPreset: 'custom',
+          margins: {
+            top: defaultInches,
+            bottom: defaultInches,
+            left: defaultInches,
+            right: defaultInches,
+            gutter: 0
           }
         }));
     };
@@ -62,20 +101,86 @@ export const MarginTab: React.FC<MarginTabProps> = ({ localConfig, setLocalConfi
         }));
     };
 
+    // Values to display in input fields based on selected unit
+    const displayVal = (inchesVal: number) => {
+      if (unit === 'mm') {
+        return Number(inToMm(inchesVal).toFixed(1));
+      }
+      return Number(inchesVal.toFixed(2));
+    };
+
     return (
         <>
             <RenderSubTabs tabs={['margins', 'orientation', 'pages', 'apply']} active={marginSubTab} setActive={setMarginSubTab} />
             <div className="animate-in slide-in-from-right-4 duration-300 fade-in pt-2">
                 {marginSubTab === 'margins' && (
                     <div className="flex flex-col gap-4">
+                        {/* Unit Switcher & Reset Button */}
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-xs">
+                                <button
+                                    type="button"
+                                    onClick={() => setUnit('mm')}
+                                    className={`px-2.5 py-1 rounded font-medium transition-colors ${unit === 'mm' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+                                >
+                                    Millimeters (mm)
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setUnit('in')}
+                                    className={`px-2.5 py-1 rounded font-medium transition-colors ${unit === 'in' ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs' : 'text-slate-500 hover:text-slate-900'}`}
+                                >
+                                    Inches (in)
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleResetDefault}
+                                className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+                                title="Reset margins to default 20 mm"
+                            >
+                                <RotateCcw size={12} />
+                                Reset to 20 mm
+                            </button>
+                        </div>
+
+                        {/* Validation Error Banner */}
+                        {!validation.valid && (
+                            <div className="flex items-start gap-2 p-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg text-xs text-amber-700 dark:text-amber-300 animate-in fade-in">
+                                <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-500" />
+                                <span>{validation.error}</span>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-3">
-                            <CompactInput label="Top" value={localConfig.margins.top} onChange={(e: any) => handleMarginInputChange('top', e.target.value)} />
-                            <CompactInput label="Bottom" value={localConfig.margins.bottom} onChange={(e: any) => handleMarginInputChange('bottom', e.target.value)} />
-                            <CompactInput label={localConfig.multiplePages === 'mirrorMargins' || localConfig.multiplePages === 'bookFold' ? 'Inside' : 'Left'} value={localConfig.margins.left} onChange={(e: any) => handleMarginInputChange('left', e.target.value)} />
-                            <CompactInput label={localConfig.multiplePages === 'mirrorMargins' || localConfig.multiplePages === 'bookFold' ? 'Outside' : 'Right'} value={localConfig.margins.right} onChange={(e: any) => handleMarginInputChange('right', e.target.value)} />
+                            <CompactInput 
+                                label={`Top (${unit})`} 
+                                value={displayVal(localConfig.margins.top)} 
+                                onChange={(e: any) => handleMarginInputChange('top', e.target.value)} 
+                            />
+                            <CompactInput 
+                                label={`Bottom (${unit})`} 
+                                value={displayVal(localConfig.margins.bottom)} 
+                                onChange={(e: any) => handleMarginInputChange('bottom', e.target.value)} 
+                            />
+                            <CompactInput 
+                                label={localConfig.multiplePages === 'mirrorMargins' || localConfig.multiplePages === 'bookFold' ? `Inside (${unit})` : `Left (${unit})`} 
+                                value={displayVal(localConfig.margins.left)} 
+                                onChange={(e: any) => handleMarginInputChange('left', e.target.value)} 
+                            />
+                            <CompactInput 
+                                label={localConfig.multiplePages === 'mirrorMargins' || localConfig.multiplePages === 'bookFold' ? `Outside (${unit})` : `Right (${unit})`} 
+                                value={displayVal(localConfig.margins.right)} 
+                                onChange={(e: any) => handleMarginInputChange('right', e.target.value)} 
+                            />
                         </div>
                         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                            <CompactInput label="Gutter" value={localConfig.margins.gutter} onChange={(e: any) => handleMarginInputChange('gutter', e.target.value)} />
+                            <CompactInput 
+                                label={`Gutter (${unit})`} 
+                                value={displayVal(localConfig.margins.gutter || 0)} 
+                                onChange={(e: any) => handleMarginInputChange('gutter', e.target.value)} 
+                            />
                             <CompactSelect
                                 label="Position"
                                 value={localConfig.gutterPosition}
@@ -85,6 +190,10 @@ export const MarginTab: React.FC<MarginTabProps> = ({ localConfig, setLocalConfi
                                     { value: 'top', label: 'Top' },
                                 ]}
                             />
+                        </div>
+
+                        <div className="text-[11px] text-slate-400 text-center">
+                            Printable Area: {validation.printableWidthMm.toFixed(0)} × {validation.printableHeightMm.toFixed(0)} mm
                         </div>
                     </div>
                 )}

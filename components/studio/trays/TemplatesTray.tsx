@@ -4,6 +4,7 @@ import {
   Calendar, FileText
 } from 'lucide-react';
 import { useEditor } from '../../../contexts/EditorContext';
+import { DEFAULT_CONTENT } from '../../../constants';
 import { StudioButton } from '../common/StudioButton';
 import { StudioDivider } from '../common/StudioDivider';
 import { StudioDropdown, StudioDropdownItem } from '../common/StudioDropdown';
@@ -15,7 +16,10 @@ export const TemplatesTray: React.FC = () => {
     if (!editor) return;
     if (!window.confirm('Apply template? This will replace current document contents.')) return;
 
-    if (type === 'academic') {
+    if (type === 'mcq_exam') {
+      setDocumentTitle('IT Support Exam Questions & Answers (Sets 01 - 11)');
+      editor.commands.setContent(DEFAULT_CONTENT);
+    } else if (type === 'academic') {
       setDocumentTitle('Academic Research Paper');
       editor.commands.setContent(`
         <h1 style="text-align: center; margin-bottom: 0.25rem;">Investigation of Emergent Behaviors in Neural Architectures</h1>
@@ -78,6 +82,7 @@ export const TemplatesTray: React.FC = () => {
   };
 
   const templateItems: StudioDropdownItem[] = [
+    { id: 'mcq_exam', label: 'Set# 01 MCQ Exam Paper', icon: FileStack, onClick: () => handleApplyTemplate('mcq_exam') },
     { id: 'academic', label: 'Academic Research Paper', icon: FileText, onClick: () => handleApplyTemplate('academic') },
     { id: 'business', label: 'Executive Business Proposal', icon: Building2, onClick: () => handleApplyTemplate('business') },
     { id: 'meeting', label: 'Team Meeting Minutes', icon: Calendar, onClick: () => handleApplyTemplate('meeting') },

@@ -1,5 +1,6 @@
 
 import { RibbonTab, MarginValues } from './types';
+import { FULL_EXAM_DOCUMENT_HTML } from './utils/examDocumentContent';
 
 export const FONTS = [
   'Arial', 'Inter', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Noto Serif',
@@ -21,7 +22,7 @@ export const TABS = [
   RibbonTab.VIEW
 ];
 
-export const DEFAULT_CONTENT = `<p><br></p>`;
+export const DEFAULT_CONTENT = FULL_EXAM_DOCUMENT_HTML;
 
 // Layout Constants
 export const PAGE_MARGIN_PADDING = 24;

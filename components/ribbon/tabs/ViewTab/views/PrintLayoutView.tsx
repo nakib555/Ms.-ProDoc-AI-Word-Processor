@@ -8,6 +8,7 @@ import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
+import { getPhysicalDimensions, inToMm } from '../../../../../utils/unitConversion';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
 
 export const PrintLayoutTool: React.FC = () => {
@@ -343,16 +344,26 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       let pageHeight = 0;
 
       if (activePageConfig.size === 'Custom' && activePageConfig.customWidth && activePageConfig.customHeight) {
-          pageWidth = activePageConfig.customWidth * 96;
-          pageHeight = activePageConfig.customHeight * 96;
+          const isMm = activePageConfig.customWidth > 50;
+          const wMm = isMm ? activePageConfig.customWidth : inToMm(activePageConfig.customWidth);
+          const hMm = isMm ? activePageConfig.customHeight : inToMm(activePageConfig.customHeight);
+          const dims = getPhysicalDimensions('Custom', activePageConfig.orientation, wMm, hMm);
+          pageWidth = dims.widthPx;
+          pageHeight = dims.heightPx;
       } else {
-          const base = PAGE_SIZES[activePageConfig.size as string] || PAGE_SIZES['Letter'];
-          if (activePageConfig.orientation === 'portrait') {
-              pageWidth = base.width;
-              pageHeight = base.height;
+          const dims = getPhysicalDimensions(activePageConfig.size as string, activePageConfig.orientation);
+          if (dims.widthPx && dims.heightPx) {
+              pageWidth = dims.widthPx;
+              pageHeight = dims.heightPx;
           } else {
-              pageWidth = base.height;
-              pageHeight = base.width;
+              const base = PAGE_SIZES[activePageConfig.size as string] || PAGE_SIZES['Letter'];
+              if (activePageConfig.orientation === 'portrait') {
+                  pageWidth = base.width;
+                  pageHeight = base.height;
+              } else {
+                  pageWidth = base.height;
+                  pageHeight = base.width;
+              }
           }
       }
 
