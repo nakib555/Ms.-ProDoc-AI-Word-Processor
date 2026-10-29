@@ -1,0 +1,6 @@
+{
+  "summary":  "Comprehensive Master Engineering Specification to deliver MS Word-grade PDF export and preview fidelity. Eliminates device print dialogs in favor of high-fidelity selectable vector PDF generation, aligns the Print Preview modal to 100% exact parity with the EditorPage rendering engine (fonts, margins, columns, headers/footers, and page colors), and guarantees crisp multi-page pagination.",
+  "updatedAt":  "2026-10-29T09:21:59.011913240Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

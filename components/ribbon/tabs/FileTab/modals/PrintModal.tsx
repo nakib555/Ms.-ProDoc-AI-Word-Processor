@@ -14,7 +14,7 @@ import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
 import { PageConfig, ExportType } from '../../../../../types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { generatePdfPrint } from '../../../../../utils/printUtils';
+import { generatePdfPrint, calculatePrintMargins } from '../../../../../utils/printUtils';
 import TurndownService from 'turndown';
 import { htmlToJSONDocument } from '../../../../../utils/documentModel';
 
@@ -173,34 +173,32 @@ const renderPageContent = (
 ) => {
     const cfg = page.config;
     
-    let widthIn = 0;
-    let heightIn = 0;
+    let widthIn = 8.5;
+    let heightIn = 11;
     
     if (cfg.size === 'Custom' && cfg.customWidth && cfg.customHeight) {
         widthIn = cfg.customWidth;
         heightIn = cfg.customHeight;
     } else {
         const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
-        widthIn = cfg.orientation === 'landscape' ? base.height / 96 : base.width / 96;
-        heightIn = cfg.orientation === 'landscape' ? base.width / 96 : base.height / 96;
+        widthIn = base.width / 96;
+        heightIn = base.height / 96;
     }
 
-    const margins = {
-        top: cfg.margins.top,
-        bottom: cfg.margins.bottom,
-        left: cfg.margins.left,
-        right: cfg.margins.right,
-        gutter: cfg.margins.gutter || 0
-    };
-    
-    if (cfg.gutterPosition === 'top' && !['mirrorMargins', 'bookFold'].includes(cfg.multiplePages || '')) {
-         margins.top += margins.gutter;
-    } else {
-         margins.left += margins.gutter;
+    if (cfg.orientation === 'landscape') {
+        const temp = widthIn;
+        widthIn = heightIn;
+        heightIn = temp;
     }
-    
-    const headerDistIn = cfg.headerDistance || 0.5;
-    const footerDistIn = cfg.footerDistance || 0.5;
+
+    const margins = calculatePrintMargins(cfg, index + 1);
+    const defaultHeaderDist = cfg.headerDistance || 0.5;
+    const effectiveHeaderDist = Math.min(defaultHeaderDist, margins.top / 2);
+    const defaultFooterDist = cfg.footerDistance || 0.5;
+    const effectiveFooterDist = Math.min(defaultFooterDist, margins.bottom / 2);
+
+    const pNum = index + 1;
+    const showHeader = !cfg.differentFirstPage || pNum > 1;
 
     let printHeader = (page as any).headerHtml !== undefined ? (page as any).headerHtml : headerContent;
     if (printHeader && printHeader.includes('[Header]')) {
@@ -208,14 +206,26 @@ const renderPageContent = (
     }
     
     let printFooter = (page as any).footerHtml !== undefined ? (page as any).footerHtml : footerContent;
-    if (printFooter && !(page as any).footerHtml) {
-        printFooter = printFooter.replace(/\[Page \d+\]/g, `[Page ${index + 1}]`)
-                                 .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${index + 1}`);
+    if (printFooter) {
+        printFooter = printFooter
+            .replace(/\[Page \d+\]/g, `[Page ${pNum}]`)
+            .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${pNum}`)
+            .replace(/#pageNumber/g, String(pNum));
     }
 
     const scaledWidth = widthIn * 96 * scale;
     const scaledHeight = heightIn * 96 * scale;
     const verticalAlignStyle = getVerticalAlignStyle(cfg.verticalAlign);
+
+    const baseColor = cfg.pageColor || '#ffffff';
+    const backgroundStyle: React.CSSProperties = { backgroundColor: baseColor };
+    if (cfg.background === 'ruled') {
+        backgroundStyle.backgroundImage = 'linear-gradient(#e2e8f0 1px, transparent 1px)';
+        backgroundStyle.backgroundSize = '100% 0.33in';
+    } else if (cfg.background === 'grid') {
+        backgroundStyle.backgroundImage = 'linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px)';
+        backgroundStyle.backgroundSize = '0.2in 0.2in';
+    }
 
     return (
         <div 
@@ -224,10 +234,10 @@ const renderPageContent = (
                 width: scaledWidth, 
                 height: scaledHeight,
             }}
-            className="relative shrink-0 select-none shadow-lg"
+            className="relative shrink-0 select-none shadow-[0_10px_30px_rgba(0,0,0,0.15)] rounded-sm overflow-hidden bg-white"
         >
             <div 
-                className="prodoc-page-sheet bg-white transition-transform duration-200 origin-top-left absolute top-0 left-0 overflow-hidden"
+                className="prodoc-page-sheet transition-transform duration-150 origin-top-left absolute top-0 left-0 overflow-hidden"
                 style={{
                     width: `${widthIn}in`,
                     height: `${heightIn}in`,
@@ -236,56 +246,84 @@ const renderPageContent = (
                     paddingBottom: `${margins.bottom}in`,
                     paddingLeft: `${margins.left}in`,
                     paddingRight: `${margins.right}in`,
-                    boxSizing: 'border-box'
+                    boxSizing: 'border-box',
+                    ...backgroundStyle
                 }}
             >
-                <div 
-                    className="absolute left-0 right-0 z-30"
-                    style={{ 
-                        top: 0, 
-                        height: `${margins.top}in`, 
-                        paddingTop: `${headerDistIn}in`, 
-                        paddingLeft: `${margins.left}in`, 
-                        paddingRight: `${margins.right}in` 
-                    }}
-                >
+                {/* Optional Watermark */}
+                {cfg.watermark && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden z-0 select-none">
+                        <div 
+                            className="transform -rotate-45 font-bold whitespace-nowrap select-none"
+                            style={{ 
+                                fontSize: `${Math.min(widthIn, heightIn) * 0.18}in`,
+                                color: 'rgba(0, 0, 0, 0.08)' 
+                            }}
+                        >
+                            {cfg.watermark}
+                        </div>
+                    </div>
+                )}
+
+                {/* Header Area */}
+                {showHeader && (
                     <div 
-                        className="prodoc-header w-full h-full"
-                        dangerouslySetInnerHTML={{__html: printHeader || ''}}
-                    />
-                </div>
+                        className="absolute left-0 right-0 z-20 pointer-events-none"
+                        style={{ 
+                            top: 0, 
+                            height: `${margins.top}in`, 
+                            paddingTop: `${effectiveHeaderDist}in`, 
+                            paddingLeft: `${margins.left}in`, 
+                            paddingRight: `${margins.right}in` 
+                        }}
+                    >
+                        <div 
+                            className="prodoc-header w-full h-full text-slate-500 font-sans"
+                            style={{ fontSize: '9pt', lineHeight: '1.2' }}
+                            dangerouslySetInnerHTML={{__html: printHeader || ''}}
+                        />
+                    </div>
+                )}
                 
+                {/* Body Content with exact MS Word typography */}
                 <div 
                     className="relative w-full h-full overflow-hidden z-10"
                     style={{ ...verticalAlignStyle }}
                 >
                     <div 
-                        className="prodoc-editor w-full h-full outline-none text-lg leading-loose break-words"
+                        className="prodoc-editor w-full outline-none break-words"
                         style={{
-                            fontFamily: 'Inter, sans-serif',
-                            color: '#000000',
-                            flex: cfg.verticalAlign === 'justify' ? '1 1 auto' : undefined
+                            fontFamily: 'Calibri, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                            fontSize: '11pt',
+                            lineHeight: '1.35',
+                            color: cfg.pageColor ? '#000000' : '#0f172a',
+                            flex: cfg.verticalAlign === 'justify' ? '1 1 auto' : undefined,
+                            minHeight: '100%',
+                            columnCount: cfg.columns || 1,
+                            columnGap: `${cfg.columnGap || 0.5}in`,
+                            columnFill: 'auto',
+                            hyphens: cfg.hyphenation ? 'auto' : 'none',
+                            WebkitHyphens: cfg.hyphenation ? 'auto' : 'none',
                         }}
                         dangerouslySetInnerHTML={{__html: page.html}}
                     />
                 </div>
 
+                {/* Footer Area */}
                 <div 
-                    className="absolute left-0 right-0 z-30"
+                    className="absolute left-0 right-0 z-20 pointer-events-none flex flex-col justify-end"
                     style={{ 
                         bottom: 0, 
                         height: `${margins.bottom}in`, 
-                        paddingBottom: `${footerDistIn}in`, 
+                        paddingBottom: `${effectiveFooterDist}in`, 
                         paddingLeft: `${margins.left}in`, 
                         paddingRight: `${margins.right}in`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'flex-end'
                     }}
                 >
                     <div 
-                        className="prodoc-footer w-full"
-                        dangerouslySetInnerHTML={{__html: printFooter}}
+                        className="prodoc-footer w-full text-slate-500 font-sans"
+                        style={{ fontSize: '9pt', lineHeight: '1.2' }}
+                        dangerouslySetInnerHTML={{__html: printFooter || `<span style="margin-left: auto;">Page ${pNum}</span>`}}
                     />
                 </div>
             </div>
@@ -310,10 +348,25 @@ const DesktopPrintPreview: React.FC<{
                 const availableWidth = containerWidth - padding;
                 
                 const firstPageConfig = pages[0].config;
-                const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
-                const widthPx = firstPageConfig.orientation === 'landscape' ? baseSize.height : baseSize.width;
+                let widthIn = 8.5;
+                if (firstPageConfig.size === 'Custom' && firstPageConfig.customWidth) {
+                    widthIn = firstPageConfig.customWidth;
+                } else {
+                    const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
+                    widthIn = baseSize.width / 96;
+                }
+
+                if (firstPageConfig.orientation === 'landscape') {
+                    if (firstPageConfig.size === 'Custom' && firstPageConfig.customHeight) {
+                        widthIn = firstPageConfig.customHeight;
+                    } else {
+                        const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
+                        widthIn = baseSize.height / 96;
+                    }
+                }
+                const widthPx = widthIn * 96;
                 
-                const newScale = Math.min(1.2, Math.max(0.5, availableWidth / widthPx));
+                const newScale = Math.min(1.2, Math.max(0.4, availableWidth / widthPx));
                 setScale(newScale);
             }
         };
@@ -326,7 +379,7 @@ const DesktopPrintPreview: React.FC<{
     return (
         <div 
             ref={containerRef}
-            className="flex-1 bg-[#525659] dark:bg-slate-950/50 relative overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 flex flex-col items-center p-8"
+            className="flex-1 bg-[#525659] dark:bg-slate-950/70 relative overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 flex flex-col items-center p-8"
         >
              {pages.length === 0 || isPreparing ? (
                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
@@ -377,9 +430,23 @@ const MobilePrintPreview: React.FC<{
                 const availableWidth = Math.max(0, containerWidth - padding);
                 
                 const firstPageConfig = pages[0].config;
-                const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
-                const widthPx = firstPageConfig.orientation === 'landscape' ? baseSize.height : baseSize.width;
-                const docWidthPx = widthPx || 816;
+                let widthIn = 8.5;
+                if (firstPageConfig.size === 'Custom' && firstPageConfig.customWidth) {
+                    widthIn = firstPageConfig.customWidth;
+                } else {
+                    const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
+                    widthIn = baseSize.width / 96;
+                }
+
+                if (firstPageConfig.orientation === 'landscape') {
+                    if (firstPageConfig.size === 'Custom' && firstPageConfig.customHeight) {
+                        widthIn = firstPageConfig.customHeight;
+                    } else {
+                        const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
+                        widthIn = baseSize.height / 96;
+                    }
+                }
+                const docWidthPx = widthIn * 96;
                 
                 const newScale = Math.min(0.85, availableWidth / docWidthPx);
                 if (newScale > 0) setScale(newScale);

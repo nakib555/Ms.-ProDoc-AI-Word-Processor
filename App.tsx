@@ -15,12 +15,13 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GestureProvider } from './contexts/GestureContext';
 import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/Margins/CustomMargin/PageSetupDialog';
-import { FileTabProvider } from './components/ribbon/tabs/FileTab/FileTabContext';
+import { FileTabProvider, useFileTab } from './components/ribbon/tabs/FileTab/FileTabContext';
 import { FileModal } from './components/ribbon/tabs/FileTab/FileModal';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
   const { viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig, importState, importFile } = useEditor();
+  const { setActiveModal } = useFileTab();
 
   const handleTabChange = useCallback((tab: RibbonTab) => {
     setActiveTab(prev => prev === tab ? null : tab);
@@ -47,6 +48,19 @@ const AppContent: React.FC = () => {
       window.addEventListener('prodoc:open-file', handleOpenFile);
       return () => window.removeEventListener('prodoc:open-file', handleOpenFile);
   }, [importFile]);
+
+  // Intercept Ctrl+P / Cmd+P globally to eliminate device print engine dialogs
+  useEffect(() => {
+      const handleGlobalKeyDown = (e: KeyboardEvent) => {
+          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+              e.preventDefault();
+              e.stopPropagation();
+              setActiveModal('print');
+          }
+      };
+      window.addEventListener('keydown', handleGlobalKeyDown, { capture: true });
+      return () => window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
+  }, [setActiveModal]);
 
   const isReadMode = viewMode === 'read';
 

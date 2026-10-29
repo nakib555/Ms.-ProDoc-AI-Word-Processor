@@ -6,11 +6,13 @@ import {
 } from 'lucide-react';
 import { useEditor } from '../../contexts/EditorContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useFileTab } from '../ribbon/tabs/FileTab/FileTabContext';
 import { StudioButton } from './common/StudioButton';
 import { StudioDivider } from './common/StudioDivider';
 import { StudioDropdown, StudioDropdownItem } from './common/StudioDropdown';
 
 export const StudioHeader: React.FC = () => {
+  const { setActiveModal } = useFileTab();
   const { 
     documentTitle, 
     setDocumentTitle, 
@@ -154,7 +156,7 @@ export const StudioHeader: React.FC = () => {
       label: 'Print Document',
       icon: Printer,
       shortcut: 'Ctrl+P',
-      onClick: () => window.print()
+      onClick: () => setActiveModal('print')
     },
     {
       id: 'inspector',
@@ -261,7 +263,7 @@ export const StudioHeader: React.FC = () => {
         />
         <StudioButton
           icon={Printer}
-          onClick={() => window.print()}
+          onClick={() => setActiveModal('print')}
           title="Print Document"
           shortcut="Ctrl+P"
           size="sm"
