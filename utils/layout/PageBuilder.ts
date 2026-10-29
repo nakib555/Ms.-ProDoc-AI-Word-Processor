@@ -31,11 +31,13 @@ export class PageBuilder {
   }
 
   finishPage(): void {
-    if (typeof document === 'undefined') return;
-    const div = document.createElement('div');
-    this.currentNodes.forEach(n => div.appendChild(n));
+    if (this.currentNodes.length === 0) return;
+    let html = '';
+    for (let i = 0; i < this.currentNodes.length; i++) {
+      html += this.currentNodes[i].outerHTML;
+    }
     this.pages.push({
-      html: div.innerHTML,
+      html,
       config: { ...this.currentConfig }
     });
     this.currentNodes = [];

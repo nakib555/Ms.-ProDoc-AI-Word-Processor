@@ -197,12 +197,15 @@ export const DocumentModelProvider: React.FC<{ children: React.ReactNode }> = ({
       generateModelFromProseMirror(editor.state.doc);
     }, 0);
 
-    // Listen to editor transactions for real-time document updates.
-    // Instead of rebuilding the entire tree on every transaction, we pass the direct
-    // ProseMirror document node to exploit immutability references.
+    let transactionDebounce: ReturnType<typeof setTimeout> | null = null;
     const handleTransaction = ({ transaction }: any) => {
       if (transaction.docChanged) {
-        generateModelFromProseMirror(transaction.doc);
+        if (transactionDebounce) clearTimeout(transactionDebounce);
+        transactionDebounce = setTimeout(() => {
+          React.startTransition(() => {
+            generateModelFromProseMirror(editor.state.doc);
+          });
+        }, 500);
       }
     };
 
@@ -210,9 +213,11 @@ export const DocumentModelProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       clearTimeout(initTimeout);
+      if (transactionDebounce) clearTimeout(transactionDebounce);
       editor.off('transaction', handleTransaction);
     };
   }, [editor, generateModelFromProseMirror]);
+
 
   const value = useMemo(() => ({
     documentModel,

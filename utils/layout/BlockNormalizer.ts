@@ -1,41 +1,57 @@
 export class BlockNormalizer {
+  private static fragmentContainer: HTMLDivElement | null = null;
+
+  private static getContainer(): HTMLDivElement {
+    if (!BlockNormalizer.fragmentContainer && typeof document !== 'undefined') {
+      BlockNormalizer.fragmentContainer = document.createElement('div');
+    }
+    return BlockNormalizer.fragmentContainer!;
+  }
+
   static normalize(html: string): HTMLElement[] {
     if (typeof document === 'undefined') return [];
     
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const body = doc.body;
+    const container = BlockNormalizer.getContainer();
+    container.innerHTML = html;
 
     // Merge previously split contiguous tables (Improvement #1 & #6)
-    const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
-    splitTables.forEach(splitTable => {
-      // Remove any repeated headers in the split part before merging back
-      const repeatedHeaders = Array.from(splitTable.querySelectorAll('tr[data-repeated-header-row="true"]'));
-      repeatedHeaders.forEach(row => row.remove());
+    const splitTables = container.querySelectorAll('table[data-continuation="true"]');
+    for (let i = 0; i < splitTables.length; i++) {
+      const splitTable = splitTables[i] as HTMLElement;
+      const repeatedHeaders = splitTable.querySelectorAll('tr[data-repeated-header-row="true"]');
+      for (let j = 0; j < repeatedHeaders.length; j++) {
+        repeatedHeaders[j].remove();
+      }
 
       const prev = splitTable.previousElementSibling;
       if (prev && prev.tagName === 'TABLE') {
-        while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
+        while (splitTable.firstChild) {
+          prev.appendChild(splitTable.firstChild);
+        }
         prev.removeAttribute('data-split-bottom');
         splitTable.remove();
       } else {
         splitTable.removeAttribute('data-continuation');
       }
-    });
+    }
 
     const nodes: HTMLElement[] = [];
+    const childNodes = container.childNodes;
+    const len = childNodes.length;
     
-    Array.from(body.childNodes).forEach(node => {
+    for (let i = 0; i < len; i++) {
+      const node = childNodes[i];
       if (node.nodeType === Node.TEXT_NODE) {
-        if (node.textContent && (node.textContent.trim() || node.textContent.includes('\n'))) {
+        const text = node.textContent;
+        if (text && (text.trim() || text.includes('\n'))) {
           const p = document.createElement('p');
-          p.appendChild(node.cloneNode(true));
+          p.textContent = text;
           nodes.push(p);
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
-        nodes.push(node.cloneNode(true) as HTMLElement);
+        nodes.push(node as HTMLElement);
       }
-    });
+    }
 
     return nodes;
   }

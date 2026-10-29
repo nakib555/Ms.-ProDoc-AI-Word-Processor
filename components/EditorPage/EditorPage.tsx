@@ -38,7 +38,9 @@ interface EditorPageProps {
   setFirstHeaderContent?: (html: string) => void;
   firstFooterContent?: string;
   setFirstFooterContent?: (html: string) => void;
+  isActivePage?: boolean;
 }
+
 
 const getTextLength = (node: Node): number => {
   if (node.nodeType === Node.TEXT_NODE) return (node.nodeValue || "").length;
@@ -71,6 +73,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   setFirstHeaderContent,
   firstFooterContent = '',
   setFirstFooterContent,
+  isActivePage = false,
 }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1848,88 +1851,93 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         </div>
       </div>
       
-      {/* Context Menu Overlay */}
-      <TableContextMenu
-        visible={contextMenu.visible}
-        x={contextMenu.x}
-        y={contextMenu.y}
-        cell={contextMenu.cell}
-        table={contextMenu.table}
-        contextMenuRef={contextMenuRef}
-        onClose={() => setContextMenu((prev) => ({ ...prev, visible: false }))}
-        onAction={handleContextAction}
-        onKeyDown={handleMenuKeyDown}
-      />
+      {/* Context Menu Overlay & Modals (Mounted only for active page) */}
+      {isActivePage && (
+        <>
+          <TableContextMenu
+            visible={contextMenu.visible}
+            x={contextMenu.x}
+            y={contextMenu.y}
+            cell={contextMenu.cell}
+            table={contextMenu.table}
+            contextMenuRef={contextMenuRef}
+            onClose={() => setContextMenu((prev) => ({ ...prev, visible: false }))}
+            onAction={handleContextAction}
+            onKeyDown={handleMenuKeyDown}
+          />
 
-      {/* Beautiful Table Properties Dialog Modal */}
-      <TablePropertiesModal
-        isOpen={isTablePropertiesOpen}
-        onClose={() => setIsTablePropertiesOpen(false)}
-        propertiesTable={propertiesTable}
-        applyProperties={applyProperties}
-        tableWidth={tableWidth}
-        setTableWidth={setTableWidth}
-        tableAlign={tableAlign}
-        setTableAlign={setTableAlign}
-        textWrapping={textWrapping}
-        setTextWrapping={setTextWrapping}
-        customCellPadding={customCellPadding}
-        setCustomCellPadding={setCustomCellPadding}
-        cellPadding={cellPadding}
-        setCellPadding={setCellPadding}
-        padTopBottom={padTopBottom}
-        setPadTopBottom={setPadTopBottom}
-        padLeftRight={padLeftRight}
-        setPadLeftRight={setPadLeftRight}
-        verticalAlign={verticalAlign}
-        setVerticalAlign={setVerticalAlign}
-        specifyRowHeight={specifyRowHeight}
-        setSpecifyRowHeight={setSpecifyRowHeight}
-        rowHeightVal={rowHeightVal}
-        setRowHeightVal={setRowHeightVal}
-        rowHeightMode={rowHeightMode}
-        setRowHeightMode={setRowHeightMode}
-        specifyColWidth={specifyColWidth}
-        setSpecifyColWidth={setSpecifyColWidth}
-        colWidthVal={colWidthVal}
-        setColWidthVal={setColWidthVal}
-        colWidthUnit={colWidthUnit}
-        setColWidthUnit={setColWidthUnit}
-        headerColor={headerColor}
-        setHeaderColor={setHeaderColor}
-        borderColor={borderColor}
-        setBorderColor={setBorderColor}
-        borderWidth={borderWidth}
-        setBorderWidth={setBorderWidth}
-        zebraStriping={zebraStriping}
-        setZebraStriping={setZebraStriping}
-        cantSplit={cantSplit}
-        setCantSplit={setCantSplit}
-        repeatHeader={repeatHeader}
-        setRepeatHeader={setRepeatHeader}
-        keepTogether={keepTogether}
-        setKeepTogether={setKeepTogether}
-      />
+          {/* Beautiful Table Properties Dialog Modal */}
+          <TablePropertiesModal
+            isOpen={isTablePropertiesOpen}
+            onClose={() => setIsTablePropertiesOpen(false)}
+            propertiesTable={propertiesTable}
+            applyProperties={applyProperties}
+            tableWidth={tableWidth}
+            setTableWidth={setTableWidth}
+            tableAlign={tableAlign}
+            setTableAlign={setTableAlign}
+            textWrapping={textWrapping}
+            setTextWrapping={setTextWrapping}
+            customCellPadding={customCellPadding}
+            setCustomCellPadding={setCustomCellPadding}
+            cellPadding={cellPadding}
+            setCellPadding={setCellPadding}
+            padTopBottom={padTopBottom}
+            setPadTopBottom={setPadTopBottom}
+            padLeftRight={padLeftRight}
+            setPadLeftRight={setPadLeftRight}
+            verticalAlign={verticalAlign}
+            setVerticalAlign={setVerticalAlign}
+            specifyRowHeight={specifyRowHeight}
+            setSpecifyRowHeight={setSpecifyRowHeight}
+            rowHeightVal={rowHeightVal}
+            setRowHeightVal={setRowHeightVal}
+            rowHeightMode={rowHeightMode}
+            setRowHeightMode={setRowHeightMode}
+            specifyColWidth={specifyColWidth}
+            setSpecifyColWidth={setSpecifyColWidth}
+            colWidthVal={colWidthVal}
+            setColWidthVal={setColWidthVal}
+            colWidthUnit={colWidthUnit}
+            setColWidthUnit={setColWidthUnit}
+            headerColor={headerColor}
+            setHeaderColor={setHeaderColor}
+            borderColor={borderColor}
+            setBorderColor={setBorderColor}
+            borderWidth={borderWidth}
+            setBorderWidth={setBorderWidth}
+            zebraStriping={zebraStriping}
+            setZebraStriping={setZebraStriping}
+            cantSplit={cantSplit}
+            setCantSplit={setCantSplit}
+            repeatHeader={repeatHeader}
+            setRepeatHeader={setRepeatHeader}
+            keepTogether={keepTogether}
+            setKeepTogether={setKeepTogether}
+          />
 
-      {/* Beautiful Table Column Sort Modal */}
-      <SortModal
-        isOpen={isSortModalOpen}
-        sortColIndex={sortColIndex}
-        sortDirection={sortDirection}
-        setSortDirection={setSortDirection}
-        sortExcludeHeader={sortExcludeHeader}
-        setSortExcludeHeader={setSortExcludeHeader}
-        sortType={sortType}
-        setSortType={setSortType}
-        onClose={() => setIsSortModalOpen(false)}
-        onApply={applySortColumn}
-      />
+          {/* Beautiful Table Column Sort Modal */}
+          <SortModal
+            isOpen={isSortModalOpen}
+            sortColIndex={sortColIndex}
+            sortDirection={sortDirection}
+            setSortDirection={setSortDirection}
+            sortExcludeHeader={sortExcludeHeader}
+            setSortExcludeHeader={setSortExcludeHeader}
+            sortType={sortType}
+            setSortType={setSortType}
+            onClose={() => setIsSortModalOpen(false)}
+            onApply={applySortColumn}
+          />
+        </>
+      )}
     </div>
   );
 };
 
 const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
   return (
+    prev.isActivePage === next.isActivePage &&
     prev.content === next.content &&
     prev.pageNumber === next.pageNumber &&
     prev.totalPages === next.totalPages &&
@@ -1958,5 +1966,6 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
     prev.config.hyphenation === next.config.hyphenation
   );
 };
+
 
 export const EditorPage = React.memo(EditorPageComponent, arePropsEqual);

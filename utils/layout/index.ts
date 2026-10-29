@@ -26,3 +26,4 @@ export * from './PageBuilder';
 export * from './ContinuationManager';
 export * from './PaginationLoop';
 export * from './Paginator';
+export * from './IncrementalPaginator';

@@ -32,8 +32,20 @@ export class PaginationLoop {
     let effectiveHeight = dims.effectiveHeight;
     session.measurementService.setWidth(effectiveWidth);
 
+    const maxIterations = Math.max(5000, nodes.length * 5);
+    let totalIterations = 0;
+
     for (let i = 0; i < nodes.length; i++) {
       session.checkCancelled();
+      totalIterations++;
+      if (totalIterations > maxIterations) {
+        console.warn(`[PaginationLoop] Loop guard triggered after ${totalIterations} iterations; forcing remaining content to finish safely.`);
+        while (i < nodes.length) {
+          builder.append(nodes[i]);
+          i++;
+        }
+        break;
+      }
 
       const node = nodes[i];
 

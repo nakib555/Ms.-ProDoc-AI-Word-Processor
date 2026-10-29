@@ -14,17 +14,30 @@ interface StatusBarProps {
 
 const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
-  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
+  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, setCurrentPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
+  const [showJumpDialog, setShowJumpDialog] = useState(false);
+  const [jumpPageInput, setJumpPageInput] = useState('');
+
+  const handleJumpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const target = parseInt(jumpPageInput, 10);
+    if (!isNaN(target) && target >= 1 && target <= totalPages) {
+      setCurrentPage(target);
+      setShowJumpDialog(false);
+      setJumpPageInput('');
+    }
+  };
 
   // Calculate stats only when necessary (when dialog is open or about to open)
   const detailedStats = useMemo(() => {
       if (!showWordCountDialog) return null;
       return getDocumentStats(content);
   }, [content, showWordCountDialog]);
+
 
   useEffect(() => {
     const el = zoomControlsRef.current;
@@ -68,11 +81,16 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
         >
 
           <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0 h-full">
-            <div className="flex items-center gap-1.5 hover:text-slate-200 cursor-pointer transition-colors whitespace-nowrap" title="Page Count">
-                <Layout size={14} className="shrink-0" />
+            <div 
+                className="flex items-center gap-1.5 hover:text-white hover:bg-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors whitespace-nowrap active:bg-slate-700" 
+                title="Click to jump to page"
+                onClick={() => setShowJumpDialog(true)}
+            >
+                <Layout size={14} className="shrink-0 text-indigo-400" />
                 <span className="hidden sm:inline">{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>
                 <span className="sm:hidden text-[10px] font-semibold">{viewMode === 'print' ? `${currentPage} / ${totalPages}` : 'Web'}</span>
             </div>
+
             
             <div 
                 className="flex items-center gap-1.5 hover:bg-slate-800 hover:text-white cursor-pointer transition-all px-2 py-0.5 rounded active:bg-slate-700 whitespace-nowrap" 
@@ -239,8 +257,45 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 />
             </Suspense>
         )}
+
+        {showJumpDialog && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4 animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl max-w-xs w-full text-slate-900 dark:text-slate-100">
+              <h4 className="text-sm font-bold mb-1">Go to Page</h4>
+              <p className="text-xs text-slate-500 mb-3">Enter page number (1 to {totalPages}):</p>
+              <form onSubmit={handleJumpSubmit} className="flex flex-col gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  autoFocus
+                  value={jumpPageInput}
+                  onChange={(e) => setJumpPageInput(e.target.value)}
+                  placeholder={`1 - ${totalPages}`}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowJumpDialog(false); setJumpPageInput(''); }}
+                    className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm"
+                  >
+                    Jump
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
     </>
   );
 };
+
 
 export default React.memo(StatusBar);

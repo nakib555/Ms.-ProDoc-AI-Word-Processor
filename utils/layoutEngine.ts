@@ -16,8 +16,9 @@ import {
   LayoutEngineConfiguration,
   LayoutSandboxImpl,
   GeometryCalculator,
-  Paginator
+  IncrementalPaginator
 } from './layout';
+
 
 import type {
   LayoutEnvironment,
@@ -135,21 +136,16 @@ export interface PagePlacementResult {
 
 
 export const paginateContent = (html: string, initialConfig: PageConfig): PaginatorResult => {
-  const engineConfig: LayoutEngineConfiguration = {
+  return IncrementalPaginator.paginate(html, initialConfig, {
     pageSize: initialConfig.size || 'Letter',
     dpi: DPI,
     safetyBuffer: SAFETY_BUFFER,
     minLineHeight: MIN_LINE_HEIGHT,
     debug: false,
     diagnosticsEnabled: false
-  };
-
-  const engine = new LayoutEngine({
-    configuration: engineConfig
   });
-
-  return Paginator.paginate(html, initialConfig, engine);
 };
+
 
 /**
  * Computes a target-agnostic, platform-independent virtual Layout Tree

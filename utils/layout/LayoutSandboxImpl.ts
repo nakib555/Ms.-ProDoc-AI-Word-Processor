@@ -18,24 +18,31 @@ export class LayoutSandboxImpl implements LayoutSandbox {
     this.el.style.wordWrap = 'break-word';
     this.el.style.overflowWrap = 'break-word';
     this.el.style.whiteSpace = 'pre-wrap';
-    document.body.appendChild(this.el);
+    this.el.style.contain = 'layout style';
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.appendChild(this.el);
+    }
   }
 
   setWidth(width: number): void {
-    this.el.style.width = `${width}px`;
+    const wStr = `${Math.round(width)}px`;
+    if (this.el.style.width !== wStr) {
+      this.el.style.width = wStr;
+    }
   }
 
   measure(node: Node, cache?: MeasurementCache, width?: number): number {
+    const effectiveWidth = width || (this.el.clientWidth || 800);
     if (node.nodeType === Node.ELEMENT_NODE && cache) {
       const el = node as HTMLElement;
-      const cached = cache.get(el, width || 0);
+      const cached = cache.get(el, effectiveWidth);
       if (cached !== undefined) return cached;
     }
-    this.el.innerHTML = '';
-    this.el.appendChild(node.cloneNode(true));
-    const height = this.el.getBoundingClientRect().height;
+    this.el.appendChild(node);
+    const height = Math.ceil(this.el.getBoundingClientRect().height);
+    this.el.removeChild(node);
     if (node.nodeType === Node.ELEMENT_NODE && cache) {
-      cache.set(node as HTMLElement, height, width || 0);
+      cache.set(node as HTMLElement, height, effectiveWidth);
     }
     return height;
   }
@@ -46,3 +53,4 @@ export class LayoutSandboxImpl implements LayoutSandbox {
     }
   }
 }
+

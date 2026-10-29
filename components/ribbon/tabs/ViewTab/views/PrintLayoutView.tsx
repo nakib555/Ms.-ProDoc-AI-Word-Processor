@@ -423,13 +423,20 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, [currentPage, editorRef, pagesData]);
 
+  const [scrollTop, setScrollTop] = useState(0);
+  const scrollAnimFrameRef = useRef<number | null>(null);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
     setPagesData(currentPages => {
         const updatedPages = [...currentPages];
-        if (updatedPages[pageIndex].html !== newHtml) {
+        if (updatedPages[pageIndex] && updatedPages[pageIndex].html !== newHtml) {
             updatedPages[pageIndex] = { ...updatedPages[pageIndex], html: newHtml };
-            const fullContent = updatedPages.map(p => p.html).join('');
-            setTimeout(() => setContent(fullContent), 0);
+            if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+            syncTimeoutRef.current = setTimeout(() => {
+                const fullContent = updatedPages.map(p => p.html).join('');
+                setContent(fullContent);
+            }, 600);
             return updatedPages;
         }
         return currentPages;
@@ -439,68 +446,188 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const handlePageFocus = useCallback((index: number, e: React.FocusEvent<HTMLDivElement>) => {
       setCurrentPage(index + 1);
       if (editorRef) {
-           
           editorRef.current = e.currentTarget;
       }
   }, [setCurrentPage, editorRef]);
 
+  const isVertical = pageMovement === 'vertical';
+  const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
+
+  // Geometry calculation for all pages
+  const pageGeometries = useMemo(() => {
+    const scale = actualZoom / 100;
+    return pagesData.map(p => {
+      const cfg = p.config;
+      let w = 0;
+      let h = 0;
+      if (cfg.size === 'Custom' && cfg.customWidth && cfg.customHeight) {
+        w = cfg.customWidth * 96;
+        h = cfg.customHeight * 96;
+      } else {
+        const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
+        w = cfg.orientation === 'portrait' ? base.width : base.height;
+        h = cfg.orientation === 'portrait' ? base.height : base.width;
+      }
+      return {
+        scaledWidth: Math.round(w * scale),
+        scaledHeight: Math.round(h * scale)
+      };
+    });
+  }, [pagesData, actualZoom]);
+
+  // Prefix sums for vertical top positions
+  const { pageTops, totalVirtualHeight } = useMemo(() => {
+    const tops: number[] = [];
+    const gap = 32; // gap-8
+    let currentY = 32; // pt-8
+    for (let i = 0; i < pageGeometries.length; i++) {
+      tops.push(currentY);
+      currentY += pageGeometries[i].scaledHeight + gap;
+    }
+    const total = currentY + 64; // pb-24/pb-8
+    return { pageTops: tops, totalVirtualHeight: total };
+  }, [pageGeometries]);
+
+  const maxPageWidth = useMemo(() => {
+      let max = 0;
+      pageGeometries.forEach(g => {
+        if (g.scaledWidth > max) max = g.scaledWidth;
+      });
+      return Math.max(width, max + 64);
+  }, [pageGeometries, width]);
+
+  // Compute Virtual Window
+  const VIRTUAL_BUFFER = 2; // Render 2 pages above and 2 pages below viewport
+  const viewportHeight = height > 0 ? height : 900;
+  
+  const { startIndex, endIndex, topSpacerHeight, bottomSpacerHeight } = useMemo(() => {
+    const totalCount = pagesData.length;
+    if (totalCount <= 5) {
+      return {
+        startIndex: 0,
+        endIndex: totalCount - 1,
+        topSpacerHeight: 0,
+        bottomSpacerHeight: 0
+      };
+    }
+
+    const viewTop = scrollTop;
+    const viewBottom = scrollTop + viewportHeight;
+
+    // Find first page visible
+    let firstVis = 0;
+    let lastVis = totalCount - 1;
+
+    for (let i = 0; i < totalCount; i++) {
+      const pTop = pageTops[i];
+      const pBottom = pTop + pageGeometries[i].scaledHeight;
+      if (pBottom >= viewTop) {
+        firstVis = i;
+        break;
+      }
+    }
+
+    for (let i = firstVis; i < totalCount; i++) {
+      const pTop = pageTops[i];
+      if (pTop > viewBottom) {
+        lastVis = Math.max(firstVis, i - 1);
+        break;
+      }
+    }
+
+    let start = Math.max(0, firstVis - VIRTUAL_BUFFER);
+    let end = Math.min(totalCount - 1, lastVis + VIRTUAL_BUFFER);
+
+    // Keep active page mounted if user has focus
+    const activeIdx = currentPage - 1;
+    if (activeIdx >= 0 && activeIdx < totalCount) {
+      if (activeIdx < start) start = activeIdx;
+      if (activeIdx > end) end = activeIdx;
+    }
+
+    const topSpacer = start > 0 ? (pageTops[start] - pageTops[0]) : 0;
+    const bottomSpacer = end < totalCount - 1 
+      ? (pageTops[totalCount - 1] + pageGeometries[totalCount - 1].scaledHeight) - (pageTops[end] + pageGeometries[end].scaledHeight)
+      : 0;
+
+    return {
+      startIndex: start,
+      endIndex: end,
+      topSpacerHeight: Math.max(0, topSpacer),
+      bottomSpacerHeight: Math.max(0, bottomSpacer)
+    };
+  }, [pagesData.length, scrollTop, viewportHeight, pageTops, pageGeometries, currentPage]);
+
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
-    
+    const newScrollTop = container.scrollTop;
+
     if (rulerContainerRef.current) {
         rulerContainerRef.current.scrollLeft = container.scrollLeft;
     }
 
-    const containerRect = container.getBoundingClientRect();
-    const centerY = containerRect.top + containerRect.height / 2;
-    const centerX = containerRect.left + containerRect.width / 2;
+    if (scrollAnimFrameRef.current !== null) {
+      cancelAnimationFrame(scrollAnimFrameRef.current);
+    }
 
-    const pageWrappers = Array.from(container.getElementsByClassName('prodoc-page-wrapper')) as HTMLElement[];
-    
-    let closestPage = 1;
-    let minDistance = Infinity;
+    scrollAnimFrameRef.current = requestAnimationFrame(() => {
+      setScrollTop(newScrollTop);
 
-    for (const wrapper of pageWrappers) {
-        const rect = wrapper.getBoundingClientRect();
-        const wrapperCenterX = rect.left + rect.width / 2;
-        const wrapperCenterY = rect.top + rect.height / 2;
-        
-        const dist = Math.hypot(wrapperCenterX - centerX, wrapperCenterY - centerY);
-        
+      // Fast O(1) page indicator tracking based on scroll position
+      const centerY = newScrollTop + (container.clientHeight / 2);
+      let closestPage = 1;
+      let minDistance = Infinity;
+
+      for (let i = 0; i < pageTops.length; i++) {
+        const pageCenter = pageTops[i] + (pageGeometries[i]?.scaledHeight || 1000) / 2;
+        const dist = Math.abs(pageCenter - centerY);
         if (dist < minDistance) {
-            minDistance = dist;
-            const pageIndex = Number(wrapper.getAttribute('data-page-index'));
-            if (!isNaN(pageIndex)) closestPage = pageIndex + 1;
+          minDistance = dist;
+          closestPage = i + 1;
+        } else if (dist > minDistance && i > closestPage) {
+          // Passed closest
+          break;
         }
-    }
-    
-    if (closestPage !== currentPage) {
+      }
+
+      if (closestPage !== currentPage) {
         setCurrentPage(closestPage);
-    }
-  }, [currentPage, setCurrentPage]);
+      }
+    });
+  }, [currentPage, setCurrentPage, pageTops, pageGeometries]);
 
   const setRefs = useCallback((node: HTMLDivElement | null) => {
       scrollContainerRef.current = node;
       containerRef(node);
   }, [containerRef]);
 
-  const isVertical = pageMovement === 'vertical';
-  const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
+  // Jump-to-page support when currentPage changed from external UI
+  useEffect(() => {
+    const targetIdx = currentPage - 1;
+    if (targetIdx >= 0 && targetIdx < pageTops.length && scrollContainerRef.current) {
+      const targetTop = pageTops[targetIdx];
+      const currentScroll = scrollContainerRef.current.scrollTop;
+      const viewH = scrollContainerRef.current.clientHeight;
+      // Only scroll if active page is not currently in viewport
+      if (currentScroll > targetTop + pageGeometries[targetIdx].scaledHeight || currentScroll + viewH < targetTop) {
+        scrollContainerRef.current.scrollTo({
+          top: targetTop - 32,
+          behavior: 'auto'
+        });
+      }
+    }
+  }, [currentPage, pageTops, pageGeometries]);
 
-  const maxPageWidth = useMemo(() => {
-      let max = 0;
-      pagesData.forEach(p => {
-          const cfg = p.config;
-          let w = 0;
-          if (cfg.size === 'Custom' && cfg.customWidth) w = cfg.customWidth * 96;
-          else {
-             const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
-             w = cfg.orientation === 'portrait' ? base.width : base.height;
-          }
-          if (w > max) max = w;
-      });
-      return Math.max(width, (max * (actualZoom / 100)) + 64);
-  }, [pagesData, actualZoom, width]);
+  // Slice visible pages
+  const visiblePages = useMemo(() => {
+    const pages: { pageData: { html: string; config: PageConfig }; index: number }[] = [];
+    for (let i = startIndex; i <= endIndex; i++) {
+      if (pagesData[i]) {
+        pages.push({ pageData: pagesData[i], index: i });
+      }
+    }
+    return pages;
+  }, [pagesData, startIndex, endIndex]);
 
   return (
     <div 
@@ -532,21 +659,26 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
            <div 
                 ref={contentWrapperRef}
                 className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} pt-8 pb-24 md:pb-8 gap-8 transform-gpu will-change-transform`}
+                style={{ minHeight: isVertical ? `${totalVirtualHeight}px` : '100%' }}
                 onClick={(e) => {
                     if (e.target === e.currentTarget && activeEditingArea !== 'body') {
                         setActiveEditingArea('body');
                     }
                 }}
            >
-                {pagesData.map((pageData, index) => {
-                    const config = pageData.config;
-                    let baseH = 0;
-                    if (config.size === 'Custom' && config.customHeight) baseH = config.customHeight * 96;
-                    else {
-                        const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
-                        baseH = config.orientation === 'portrait' ? base.height : base.width;
-                    }
-                    const scaledHeight = baseH * (actualZoom / 100);
+                {/* Top Virtual Spacer */}
+                {topSpacerHeight > 0 && (
+                  <div 
+                    className="prodoc-virtual-spacer-top pointer-events-none select-none w-full"
+                    style={{ height: `${topSpacerHeight}px`, flexShrink: 0 }}
+                    aria-hidden="true"
+                  />
+                )}
+
+                {/* Visible Virtual Page Windows */}
+                {visiblePages.map(({ pageData, index }) => {
+                    const geo = pageGeometries[index];
+                    const scaledHeight = geo ? geo.scaledHeight : 1000;
 
                     return (
                         <div 
@@ -554,8 +686,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                             className="prodoc-page-wrapper box-border shrink-0 relative group"
                             data-page-index={index}
                             style={{ 
-                                contentVisibility: 'auto', 
-                                containIntrinsicSize: `0 ${scaledHeight}px`
+                                height: `${scaledHeight}px`
                             }}
                         >
                             <EditorPage
@@ -567,6 +698,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                                 showFormattingMarks={showFormattingMarks}
                                 onContentChange={handlePageUpdate}
                                 onFocus={(e) => handlePageFocus(index, e)}
+                                isActivePage={currentPage === index + 1}
                                 activeEditingArea={activeEditingArea}
                                 setActiveEditingArea={setActiveEditingArea}
                                 headerContent={headerContent}
@@ -577,9 +709,19 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                         </div>
                     );
                 })}
+
+                {/* Bottom Virtual Spacer */}
+                {bottomSpacerHeight > 0 && (
+                  <div 
+                    className="prodoc-virtual-spacer-bottom pointer-events-none select-none w-full"
+                    style={{ height: `${bottomSpacerHeight}px`, flexShrink: 0 }}
+                    aria-hidden="true"
+                  />
+                )}
            </div>
        </div>
        {zoomHUD}
     </div>
   );
 });
+

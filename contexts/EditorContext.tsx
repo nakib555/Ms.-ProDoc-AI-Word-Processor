@@ -551,6 +551,10 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { saveStatus, triggerAutoSave, manualSave } = useAutoSave();
 
+  const [contentState, setContentState] = useState<string>(DEFAULT_CONTENT);
+  const autoSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const footnoteRelabelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // --- TipTap Initialization ---
   const editor = useTipTapEditor({
     extensions: [
@@ -620,7 +624,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           } else {
             const paragraphs = text.split(/\n+/);
             const CHUNK_SIZE = 30;
-            for (let i = 0; i < paragraphs.length; i += CHUNK_SIZE) {
+            for (let i = 0; i < paragraphs.slice(0, 500).length; i += CHUNK_SIZE) {
               const group = paragraphs.slice(i, i + CHUNK_SIZE);
               const htmlParagraphs = group.map(p => {
                 const trimmed = p.trim();
@@ -664,7 +668,6 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               view.dispatch(transaction);
             } catch (err) {
               console.error('ProseMirror chunk parse failed, fallback to insertContent', err);
-              // Fallback
               try {
                 (view as any).editor?.commands.insertContent(chunk);
               } catch (err2) {
@@ -695,38 +698,48 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     },
     onUpdate: ({ editor }) => {
-      setWordCount(editor.storage.characterCount?.words?.() || 0);
-      setLastModified(new Date());
+      // Debounce heavy autosave serialization (1000ms idle)
+      if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
+      autoSaveDebounceRef.current = setTimeout(() => {
+        if (!editor.isDestroyed) {
+          const html = editor.getHTML();
+          setContentState(html);
+          setWordCount(editor.storage.characterCount?.words?.() || 0);
+          setLastModified(new Date());
+          triggerAutoSave(documentTitleRef.current, html, pageConfigRef.current, footnotesRef.current, endnotesRef.current);
+        }
+      }, 1000);
 
-      // Chronological relabeling of footnotes and endnotes
-      let footnoteCount = 0;
-      let endnoteCount = 0;
-      let relabelChanged = false;
-      const tr = editor.state.tr;
-      
-      editor.state.doc.descendants((node, pos) => {
-        if (node.type.name === 'footnoteReference') {
-          footnoteCount++;
-          const expectedLabel = String(footnoteCount);
-          if (node.attrs.label !== expectedLabel) {
-            tr.setNodeMarkup(pos, undefined, { ...node.attrs, label: expectedLabel });
-            relabelChanged = true;
-          }
-        } else if (node.type.name === 'endnoteReference') {
-          endnoteCount++;
-          const expectedLabel = String.fromCharCode(96 + endnoteCount); // 'a', 'b', 'c'...
-          if (node.attrs.label !== expectedLabel) {
-            tr.setNodeMarkup(pos, undefined, { ...node.attrs, label: expectedLabel });
-            relabelChanged = true;
+      // Debounce footnote/endnote relabeling
+      if (footnoteRelabelTimeoutRef.current) clearTimeout(footnoteRelabelTimeoutRef.current);
+      footnoteRelabelTimeoutRef.current = setTimeout(() => {
+        if (!editor.isDestroyed) {
+          let footnoteCount = 0;
+          let endnoteCount = 0;
+          let relabelChanged = false;
+          const tr = editor.state.tr;
+          editor.state.doc.descendants((node, pos) => {
+            if (node.type.name === 'footnoteReference') {
+              footnoteCount++;
+              const expectedLabel = String(footnoteCount);
+              if (node.attrs.label !== expectedLabel) {
+                tr.setNodeMarkup(pos, undefined, { ...node.attrs, label: expectedLabel });
+                relabelChanged = true;
+              }
+            } else if (node.type.name === 'endnoteReference') {
+              endnoteCount++;
+              const expectedLabel = String.fromCharCode(96 + endnoteCount);
+              if (node.attrs.label !== expectedLabel) {
+                tr.setNodeMarkup(pos, undefined, { ...node.attrs, label: expectedLabel });
+                relabelChanged = true;
+              }
+            }
+          });
+          if (relabelChanged) {
+            editor.view.dispatch(tr);
           }
         }
-      });
-      
-      if (relabelChanged) {
-        editor.view.dispatch(tr);
-      }
-
-      triggerAutoSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current, footnotesRef.current, endnotesRef.current);
+      }, 800);
     },
     onSelectionUpdate: ({ editor }) => {
         setHasActiveSelection(!editor.state.selection.empty);
@@ -747,10 +760,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   const setContent = useCallback((content: string, emitUpdate = true) => {
+    setContentState(content);
     if (editor && emitUpdate) {
         editor.commands.setContent(content);
     }
   }, [editor]);
+
 
   const executeCommand = useCallback((command: string, value?: string) => {
     let nativeCommandExecuted = false;
@@ -1135,7 +1150,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const contextValue = useMemo(() => ({
     editor,
-    content: editor?.getHTML() || '',
+    content: contentState,
     setContent,
     undo: () => editor?.chain().focus().undo().run(),
     redo: () => editor?.chain().focus().redo().run(),
@@ -1233,6 +1248,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setPasteProgress
   }), [
     editor,
+    contentState,
     setContent,
     wordCount,
     zoom,

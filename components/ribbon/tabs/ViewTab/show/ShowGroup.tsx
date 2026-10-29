@@ -5,6 +5,7 @@ import { RulerCheckTool } from './RulerCheckTool';
 import { GridlinesCheckTool } from './GridlinesCheckTool';
 import { NavPaneCheckTool } from './NavPaneCheckTool';
 import { JsonInspectorCheckTool } from './JsonInspectorCheckTool';
+import { BenchmarkTool } from './BenchmarkTool';
 
 export const ShowGroup: React.FC = () => {
   return (
@@ -14,7 +15,9 @@ export const ShowGroup: React.FC = () => {
            <GridlinesCheckTool />
            <NavPaneCheckTool />
            <JsonInspectorCheckTool />
+           <BenchmarkTool />
         </div>
     </RibbonSection>
   );
 };
+

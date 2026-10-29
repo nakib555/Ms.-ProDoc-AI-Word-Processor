@@ -9,14 +9,30 @@ export interface PrintOptions {
     batchPrintContainerId?: string;
 }
 
-export const generatePdfPrint = async (
+import { PageConfig } from '../types';
+import { PAGE_SIZES } from '../constants';
+import { paginateContent } from './layoutEngine';
+
+export interface PrintOptions {
+    range: 'all' | 'current' | 'custom';
+    pages?: string;
+    currentPage?: number;
+    batchPrintContainerId?: string;
+}
+
+export const generatePdfPrint = (
     content: string, 
     config: PageConfig, 
     headerContent: string, 
     footerContent: string,
     options: PrintOptions = { range: 'all' }
 ): Promise<void> => {
-    try {
+    return new Promise((resolve, reject) => {
+        let portalEl: HTMLDivElement | null = null;
+        let styleEl: HTMLStyleElement | null = null;
+
+        try {
+
         const { size, orientation, margins } = config;
         
         let widthIn = 0;
@@ -39,66 +55,173 @@ export const generatePdfPrint = async (
 
         const sizeCss = `${widthIn}in ${heightIn}in`;
 
-        // Generate page visibility CSS
-        let pageVisibilityCss = '';
-        
+        // Determine which pages to render
+        const paginated = paginateContent(content, config);
+        const allPages = paginated.pages;
+        const totalPages = allPages.length;
+
+        const pagesToInclude: number[] = []; // 0-indexed
         if (options.range === 'current' && options.currentPage !== undefined) {
-            // Show only current page (0-based index)
-            const pageIndex = options.currentPage - 1;
-            pageVisibilityCss = `
-                .prodoc-page-wrapper { display: none !important; }
-                .prodoc-page-wrapper[data-page-index="${pageIndex}"] { display: block !important; }
-            `;
+            const pIdx = options.currentPage - 1;
+            if (pIdx >= 0 && pIdx < totalPages) pagesToInclude.push(pIdx);
         } else if (options.range === 'custom' && options.pages) {
-            // Parse custom range (e.g., "1-3, 5")
-            const pagesToShow = new Set<number>();
             const parts = options.pages.split(',').map(p => p.trim());
-            
             parts.forEach(part => {
                 if (part.includes('-')) {
                     const [start, end] = part.split('-').map(n => parseInt(n, 10));
                     if (!isNaN(start) && !isNaN(end)) {
-                        for (let i = start; i <= end; i++) pagesToShow.add(i - 1);
+                        for (let i = start; i <= end; i++) {
+                            if (i >= 1 && i <= totalPages) pagesToInclude.push(i - 1);
+                        }
                     }
                 } else {
                     const page = parseInt(part, 10);
-                    if (!isNaN(page)) pagesToShow.add(page - 1);
+                    if (!isNaN(page) && page >= 1 && page <= totalPages) {
+                        pagesToInclude.push(page - 1);
+                    }
                 }
             });
-
-            if (pagesToShow.size > 0) {
-                const selectors = Array.from(pagesToShow)
-                    .map(i => `.prodoc-page-wrapper[data-page-index="${i}"]`)
-                    .join(',\n');
-                
-                pageVisibilityCss = `
-                    .prodoc-page-wrapper { display: none !important; }
-                    ${selectors} { display: block !important; }
-                `;
+        } else {
+            // 'all'
+            for (let i = 0; i < totalPages; i++) {
+                pagesToInclude.push(i);
             }
         }
 
-        // Create a style element for print-specific overrides
-        const styleEl = document.createElement('style');
+        if (pagesToInclude.length === 0) {
+            for (let i = 0; i < totalPages; i++) pagesToInclude.push(i);
+        }
+
+        // Mount a dedicated offscreen print portal containing the exact vector pages
+        portalEl = document.createElement('div');
+        portalEl.id = 'prodoc-print-render-portal';
+        portalEl.style.position = 'absolute';
+        portalEl.style.left = '0';
+        portalEl.style.top = '0';
+        portalEl.style.width = '100%';
+        portalEl.style.zIndex = '99999';
+        portalEl.style.background = '#ffffff';
+
+        // Render target pages
+        pagesToInclude.forEach((pIdx) => {
+            const pageData = allPages[pIdx];
+            const pNum = pIdx + 1;
+            const pConfig = pageData.config || config;
+            const pMargins = pConfig.margins || margins;
+
+            const pageWrapper = document.createElement('div');
+            pageWrapper.className = 'prodoc-print-page-wrapper';
+            pageWrapper.setAttribute('data-page-number', String(pNum));
+            pageWrapper.style.boxSizing = 'border-box';
+            pageWrapper.style.width = `${widthIn}in`;
+            pageWrapper.style.minHeight = `${heightIn}in`;
+            pageWrapper.style.height = `${heightIn}in`;
+            pageWrapper.style.pageBreakAfter = 'always';
+            pageWrapper.style.breakAfter = 'page';
+            pageWrapper.style.padding = `${pMargins.top}in ${pMargins.right}in ${pMargins.bottom}in ${pMargins.left}in`;
+            pageWrapper.style.position = 'relative';
+            pageWrapper.style.background = '#ffffff';
+            pageWrapper.style.color = '#000000';
+            pageWrapper.style.fontFamily = 'Calibri, Inter, sans-serif';
+            pageWrapper.style.overflow = 'hidden';
+
+            // Optional Header
+            if (headerContent && (!pConfig.differentFirstPage || pNum > 1)) {
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'prodoc-print-header';
+                headerDiv.style.position = 'absolute';
+                headerDiv.style.top = `${pConfig.headerDistance || 0.4}in`;
+                headerDiv.style.left = `${pMargins.left}in`;
+                headerDiv.style.right = `${pMargins.right}in`;
+                headerDiv.style.fontSize = '9pt';
+                headerDiv.style.color = '#64748b';
+                headerDiv.innerHTML = headerContent;
+                pageWrapper.appendChild(headerDiv);
+            }
+
+            // Body Content
+            const bodyDiv = document.createElement('div');
+            bodyDiv.className = 'prodoc-editor prodoc-print-body';
+            bodyDiv.style.width = '100%';
+            bodyDiv.style.height = '100%';
+            bodyDiv.style.color = '#000000';
+            bodyDiv.style.backgroundColor = 'transparent';
+            bodyDiv.style.lineHeight = '1.35';
+            bodyDiv.style.fontSize = '11pt';
+            bodyDiv.innerHTML = pageData.html;
+            pageWrapper.appendChild(bodyDiv);
+
+            // Optional Footer
+            const footerDiv = document.createElement('div');
+            footerDiv.className = 'prodoc-print-footer';
+            footerDiv.style.position = 'absolute';
+            footerDiv.style.bottom = `${pConfig.footerDistance || 0.4}in`;
+            footerDiv.style.left = `${pMargins.left}in`;
+            footerDiv.style.right = `${pMargins.right}in`;
+            footerDiv.style.fontSize = '9pt';
+            footerDiv.style.color = '#64748b';
+            footerDiv.style.display = 'flex';
+            footerDiv.style.justifyContent = 'space-between';
+            footerDiv.style.alignItems = 'center';
+
+            let footerHtml = footerContent || '';
+            footerHtml = footerHtml.replace(/#pageNumber/g, String(pNum)).replace(/#totalPages/g, String(totalPages));
+            footerDiv.innerHTML = footerHtml || `<span style="margin-left: auto;">Page ${pNum} of ${totalPages}</span>`;
+            pageWrapper.appendChild(footerDiv);
+
+            portalEl.appendChild(pageWrapper);
+        });
+
+        document.body.appendChild(portalEl);
+
+        // Inject print-specific styles targeting only the print portal
+        styleEl = document.createElement('style');
         styleEl.id = 'native-print-style';
-        
-        const isBatch = !!options.batchPrintContainerId;
-        
         styleEl.innerHTML = `
             @page {
                 size: ${sizeCss};
-                margin: 0; /* We use the editor's internal padding for margins */
+                margin: 0;
             }
             
+            @media screen {
+                #prodoc-print-render-portal {
+                    display: none !important;
+                }
+            }
+
             @media print {
-                /* Force white background and black text globally for print */
-                html, body, #root, .print-layout-mode, .prodoc-page-wrapper, .prodoc-page-sheet {
-                    background-color: white !important;
+                html, body {
+                    background: white !important;
+                    color: black !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                body > * {
+                    display: none !important;
+                }
+
+                body > #prodoc-print-render-portal {
+                    display: block !important;
+                    position: static !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                }
+
+                .prodoc-print-page-wrapper {
+                    display: block !important;
+                    width: ${widthIn}in !important;
+                    height: ${heightIn}in !important;
+                    page-break-after: always !important;
+                    break-after: page !important;
+                    box-sizing: border-box !important;
+                    overflow: hidden !important;
                     background: white !important;
                     color: black !important;
                 }
 
-                /* Ensure text colors are black for print and backgrounds transparent */
                 .prodoc-editor, .prodoc-editor * {
                     color: black !important;
                     background-color: transparent !important;
@@ -106,126 +229,6 @@ export const generatePdfPrint = async (
                     box-shadow: none !important;
                 }
 
-                /* Hide everything by default */
-                body > * {
-                    display: none !important;
-                }
-
-                ${isBatch ? `
-                /* Hide normal root workspace completely, show only batch print container */
-                body > #${options.batchPrintContainerId} {
-                    display: block !important;
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    height: auto !important;
-                    overflow: visible !important;
-                    background: white !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-                
-                body > #${options.batchPrintContainerId} * {
-                    overflow: visible !important;
-                }
-                
-                /* Target the page wrapper inside batch print */
-                body > #${options.batchPrintContainerId} .prodoc-page-wrapper {
-                    break-after: page;
-                    page-break-after: always;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    box-shadow: none !important;
-                    transform: none !important;
-                    width: 100% !important;
-                    height: auto !important;
-                    display: block !important;
-                }
-                ` : `
-                /* Show the root app container but hide its non-editor children via no-print class */
-                body > #root {
-                    display: flex !important;
-                    height: auto !important;
-                    overflow: visible !important;
-                }
-
-                /* Ensure the editor container is visible */
-                #root .print-layout-mode {
-                    display: block !important;
-                    position: absolute !important;
-                    left: 0 !important;
-                    top: 0 !important;
-                    width: 100% !important;
-                    height: auto !important;
-                    overflow: visible !important;
-                    background: white !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                }
-                `}
-
-                /* Hide UI elements explicitly */
-                .no-print, .ribbon-container, .status-bar, .ruler-container, .mini-toolbar, .ai-assistant-sidebar, .mobile-selection-toolbar, .ProseMirror-selectednode {
-                    display: none !important;
-                }
-                
-                /* Target the scroll container and flex layouts */
-                .print-layout-mode,
-                .print-layout-mode * {
-                    overflow: visible !important;
-                    height: auto !important;
-                }
-
-                /* Remove gaps and padding from the page container */
-                .print-layout-mode .flex {
-                    gap: 0 !important;
-                    padding: 0 !important;
-                    display: block !important; /* Stack pages vertically */
-                }
-                
-                /* Target the page wrapper */
-                .prodoc-page-wrapper {
-                    break-after: page;
-                    page-break-after: always;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    box-shadow: none !important;
-                    transform: none !important; /* Reset zoom transform */
-                    width: 100% !important;
-                    height: auto !important;
-                    display: block !important;
-                    float: none !important;
-                    
-                    /* Disable virtualization for print */
-                    content-visibility: visible !important;
-                    contain-intrinsic-size: auto !important;
-                }
-
-                /* Apply page visibility rules */
-                ${pageVisibilityCss}
-                
-                /* Target the page sheet */
-                .prodoc-page-sheet {
-                    transform: none !important; /* Reset zoom transform */
-                    width: 100% !important;
-                    height: 100% !important; /* Fill the page */
-                    margin: 0 !important;
-                    box-shadow: none !important;
-                    border: none !important;
-                    overflow: visible !important;
-                    background: white !important;
-                }
-
-                .prodoc-editor {
-                    column-count: ${config.columns || 1} !important;
-                    column-gap: ${config.columnGap || 0.5}in !important;
-                    column-fill: auto !important;
-                    hyphens: ${config.hyphenation ? 'auto' : 'none'} !important;
-                    -webkit-hyphens: ${config.hyphenation ? 'auto' : 'none'} !important;
-                }
-                
-                /* Ensure images and SVGs render correctly in print, keeping them as vectors/images */
                 img, svg {
                     max-width: 100% !important;
                     page-break-inside: avoid !important;
@@ -233,38 +236,36 @@ export const generatePdfPrint = async (
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
                 }
-                
-                /* Hide placeholders in print */
-                .is-editor-empty:before {
-                    content: none !important;
-                }
             }
         `;
-        
-        // Remove existing print style if any
-        const existingStyle = document.getElementById('native-print-style');
-        if (existingStyle) {
-            existingStyle.remove();
-        }
 
+        const existingStyle = document.getElementById('native-print-style');
+        if (existingStyle) existingStyle.remove();
         document.head.appendChild(styleEl);
-        
-        // Give time for styles to apply and layout to stabilize
+
+        // Allow microtask to ensure elements and styles are mounted
         setTimeout(() => {
-            window.print();
-            
-            // Cleanup after print dialog closes (or after a delay if non-blocking)
-            // Note: In many browsers window.print() is blocking, so this runs after dialog closes.
-            // In others, it might run immediately. We use a small delay to be safe.
+            try {
+                window.print();
+            } finally {
+                resolve();
+            }
+
+            // Safe cleanup
             setTimeout(() => {
-                 if (document.head.contains(styleEl)) {
-                    document.head.removeChild(styleEl);
-                }
+                if (portalEl && portalEl.parentNode) portalEl.parentNode.removeChild(portalEl);
+                if (styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl);
             }, 500);
-        }, 250); // Increased delay to ensure styles apply
+        }, 150);
 
     } catch (e) {
         console.error("Print Error:", e);
+        if (portalEl && portalEl.parentNode) portalEl.parentNode.removeChild(portalEl);
+        if (styleEl && styleEl.parentNode) styleEl.parentNode.removeChild(styleEl);
         alert("Failed to print document. Please try again.");
+        reject(e);
     }
+  });
 };
+
+
