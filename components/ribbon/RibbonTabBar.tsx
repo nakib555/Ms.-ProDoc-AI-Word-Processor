@@ -83,10 +83,10 @@ const TabButton = memo(({ icon: Icon, label, isActive, onClick, iconColorClass, 
       className={`
         px-3.5 py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-150 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 select-none
         ${isActive 
-          ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm font-semibold ring-1 ring-slate-900 dark:ring-white scale-[1.02]' 
+          ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-600 scale-[1.02]' 
           : isContextual
-            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 hover:bg-amber-100 dark:hover:bg-amber-900/40 shadow-xs'
-            : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-750 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-xs'
+            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 hover:bg-white dark:hover:bg-amber-900/40 shadow-xs'
+            : 'bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/80 hover:bg-white dark:hover:bg-slate-750 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-xs'
         }
       `}
     >
@@ -95,7 +95,7 @@ const TabButton = memo(({ icon: Icon, label, isActive, onClick, iconColorClass, 
           size={15} 
           className={`transition-colors duration-150 flex-shrink-0 ${
             isActive 
-              ? 'text-white dark:text-slate-900' 
+              ? 'text-indigo-600 dark:text-indigo-400' 
               : iconColorClass || 'text-slate-500'
           }`}
           strokeWidth={isActive ? 2.5 : 2}
@@ -159,28 +159,37 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
     }
   }, [activeTab]);
 
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     const prevType = prevElementTypeRef.current;
     const prevArea = prevEditingAreaRef.current;
 
     if ((activeEditingArea === 'header' || activeEditingArea === 'footer') && (prevArea !== 'header' && prevArea !== 'footer')) {
-      onTabChange(RibbonTab.HEADER_FOOTER);
+      if (activeTab !== RibbonTab.HEADER_FOOTER) onTabChange(RibbonTab.HEADER_FOOTER);
     } else if ((prevArea === 'header' || prevArea === 'footer') && (activeEditingArea !== 'header' && activeEditingArea !== 'footer')) {
-      onTabChange(RibbonTab.HOME);
+      if (activeTab !== RibbonTab.HOME) onTabChange(RibbonTab.HOME);
     }
     else if (activeElementType === 'equation' && prevType !== 'equation') {
-      onTabChange(RibbonTab.EQUATION);
+      if (activeTab !== RibbonTab.EQUATION) onTabChange(RibbonTab.EQUATION);
     } 
     else if (activeElementType === 'table' && prevType !== 'table') {
-      onTabChange(RibbonTab.TABLE_DESIGN);
+      if (activeTab !== RibbonTab.TABLE_DESIGN && activeTab !== RibbonTab.TABLE_LAYOUT) {
+        onTabChange(RibbonTab.TABLE_DESIGN);
+      }
     } 
     else {
       if (activeTab === RibbonTab.EQUATION && activeElementType !== 'equation') {
-        timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
+        timeoutId = setTimeout(() => {
+          if (activeTabRef.current !== RibbonTab.HOME) onTabChange(RibbonTab.HOME);
+        }, 200);
       }
       else if ((activeTab === RibbonTab.TABLE_DESIGN || activeTab === RibbonTab.TABLE_LAYOUT) && activeElementType !== 'table') {
-        timeoutId = setTimeout(() => onTabChange(RibbonTab.HOME), 200);
+        timeoutId = setTimeout(() => {
+          if (activeTabRef.current !== RibbonTab.HOME) onTabChange(RibbonTab.HOME);
+        }, 200);
       }
     }
 
@@ -225,7 +234,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
 
   return (
-    <div className="relative flex items-center bg-slate-100/80 dark:bg-[#0b1324] px-2 py-1.5 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200 dark:border-slate-800 transition-colors">
+    <div className="relative flex items-center bg-[#f1f5f9] dark:bg-[#0b1324] px-2 py-1.5 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200/90 dark:border-slate-800 transition-colors">
       
       {/* Collapse / Expand Button on the Left */}
       <div className="flex-shrink-0 mr-1.5">
@@ -246,7 +255,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
 
       {/* Overflow Left Arrow */}
       {showLeftArrow && (
-        <div className="absolute left-10 top-0 bottom-0 z-30 flex items-center pl-1 pr-6 bg-gradient-to-r from-slate-100 dark:from-[#0b1324] via-slate-100/90 dark:via-[#0b1324]/90 to-transparent">
+        <div className="absolute left-10 top-0 bottom-0 z-30 flex items-center pl-1 pr-6 bg-gradient-to-r from-[#f1f5f9] dark:from-[#0b1324] via-[#f1f5f9]/90 dark:via-[#0b1324]/90 to-transparent">
           <button 
             onClick={() => scroll('left')}
             onMouseDown={(e) => e.preventDefault()}
@@ -332,7 +341,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
 
       {/* Overflow Right Arrow */}
       {showRightArrow && (
-        <div className="absolute right-0 top-0 bottom-0 z-30 flex items-center pr-1 pl-6 bg-gradient-to-l from-slate-100 dark:from-[#0b1324] via-slate-100/90 dark:via-[#0b1324]/90 to-transparent">
+        <div className="absolute right-0 top-0 bottom-0 z-30 flex items-center pr-1 pl-6 bg-gradient-to-l from-[#f1f5f9] dark:from-[#0b1324] via-[#f1f5f9]/90 dark:via-[#0b1324]/90 to-transparent">
           <button 
             onClick={() => scroll('right')}
             onMouseDown={(e) => e.preventDefault()}

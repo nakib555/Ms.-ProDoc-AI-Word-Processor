@@ -312,7 +312,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const cursorRestorationRef = useRef<number | null>(null);
 
   // High-performance focal-centered pinch to zoom & double-tap to toggle fit
-  useTouchZoom({
+  const { zoomHUD } = useTouchZoom({
     containerRef: scrollContainerRef,
     contentRef: contentWrapperRef,
     zoom,
@@ -334,9 +334,15 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     },
   });
 
+  const lastAppliedFitZoomRef = useRef<number | null>(null);
+
   // Dynamic Zoom Logic
   useEffect(() => {
       if (width <= 0 || height <= 0) return;
+      if (zoomMode !== 'fit-page' && zoomMode !== 'fit-width') {
+          lastAppliedFitZoomRef.current = null;
+          return;
+      }
 
       const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
       let pageWidth = 0;
@@ -362,16 +368,15 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
       const zoomW = (availableWidth / pageWidth) * 100;
       const zoomH = (availableHeight / pageHeight) * 100;
-      const fitPageZoom = Math.min(zoomW, zoomH);
-      const fitWidthZoom = zoomW;
+      const fitPageZoom = Math.round(Math.min(zoomW, zoomH));
+      const fitWidthZoom = Math.round(zoomW);
 
-      // Update zoom state based on mode
-      if (zoomMode === 'fit-page') {
-          if (Math.abs(zoom - fitPageZoom) > 0.1) setZoom(fitPageZoom);
-      } else if (zoomMode === 'fit-width') {
-          if (Math.abs(zoom - fitWidthZoom) > 0.1) setZoom(fitWidthZoom);
+      const targetZoom = zoomMode === 'fit-page' ? fitPageZoom : fitWidthZoom;
+
+      if (Math.abs(zoom - targetZoom) >= 1 && lastAppliedFitZoomRef.current !== targetZoom) {
+          lastAppliedFitZoomRef.current = targetZoom;
+          setZoom(targetZoom);
       }
-
   }, [width, height, pageConfig, currentPage, pagesData, zoomMode, zoom, setZoom]);
 
   // Actual scale used for rendering
@@ -631,8 +636,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   return (
     <div 
-      className="print-layout-mode w-full h-full flex flex-col relative bg-[#f1f5f9] dark:bg-[#020617] transition-colors duration-300"
+      className="print-layout-mode w-full h-full flex flex-col relative bg-[#eef2f6] dark:bg-[#0b1120] transition-colors duration-300"
     >
+       {zoomHUD}
+
        {showRuler && width >= 768 && (
          <div 
             ref={rulerContainerRef}

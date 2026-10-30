@@ -53,7 +53,7 @@ const Editor: React.FC = () => {
 
   if (!editor) {
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full bg-[#f1f5f9] dark:bg-[#020617] p-8">
+        <div className="flex flex-col items-center justify-center h-full w-full bg-[#eef2f6] dark:bg-[#0b1120] p-8">
             <GhostDocument />
         </div>
     );

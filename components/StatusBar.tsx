@@ -72,28 +72,28 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     <>
         <div 
           onMouseDown={handleMouseDown}
-          className={`h-9 sm:h-auto min-h-[2.25rem] bg-[#0f172a] dark:bg-[#0f172a] text-slate-300 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 transition-colors duration-300 box-content ${
+          className={`h-9 sm:h-auto min-h-[2.25rem] bg-[#f1f5f9] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 transition-colors duration-300 box-content ${
             position === 'top'
-              ? 'border-b border-slate-800 dark:border-slate-800 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]'
-              : 'border-t border-slate-800 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]'
+              ? 'border-b border-slate-300/80 dark:border-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.05)]'
+              : 'border-t border-slate-300/80 dark:border-slate-800 shadow-[0_-1px_3px_rgba(15,23,42,0.05)]'
           }`}
           style={position === 'top' ? { paddingTop: 'env(safe-area-inset-top)' } : { paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
 
           <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0 h-full">
             <div 
-                className="flex items-center gap-1.5 hover:text-white hover:bg-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors whitespace-nowrap active:bg-slate-700" 
+                className="flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors whitespace-nowrap active:bg-slate-300 dark:active:bg-slate-700" 
                 title="Click to jump to page"
                 onClick={() => setShowJumpDialog(true)}
             >
-                <Layout size={14} className="shrink-0 text-indigo-400" />
+                <Layout size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
                 <span className="hidden sm:inline">{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>
                 <span className="sm:hidden text-[10px] font-semibold">{viewMode === 'print' ? `${currentPage} / ${totalPages}` : 'Web'}</span>
             </div>
 
             
             <div 
-                className="flex items-center gap-1.5 hover:bg-slate-800 hover:text-white cursor-pointer transition-all px-2 py-0.5 rounded active:bg-slate-700 whitespace-nowrap" 
+                className="flex items-center gap-1.5 hover:bg-slate-200/80 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer transition-all px-2 py-0.5 rounded active:bg-slate-300 dark:active:bg-slate-700 whitespace-nowrap" 
                 title="Click for detailed statistics"
                 onClick={() => setShowWordCountDialog(true)}
             >
@@ -102,7 +102,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 <span className="sm:hidden text-[10px] font-semibold">{wordCount} w</span>
             </div>
             
-            <span className="hover:text-slate-200 cursor-pointer transition-colors hidden md:inline whitespace-nowrap">English (US)</span>
+            <span className="hover:text-slate-900 dark:hover:text-slate-200 cursor-pointer transition-colors hidden md:inline whitespace-nowrap">English (US)</span>
           </div>
           
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-auto pl-2">
@@ -152,24 +152,24 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
             <button 
                 onClick={toggleTheme}
-                className={`transition-colors p-1 ${theme === 'ocean' ? 'text-blue-400 hover:text-blue-300' : 'text-slate-400 hover:text-yellow-400'}`}
+                className={`transition-colors p-1 ${theme === 'ocean' ? 'text-blue-500 hover:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-yellow-400'}`}
                 title={theme === 'light' ? "Switch to Dark Mode" : theme === 'dark' ? "Switch to Ocean Mode" : "Switch to Light Mode"}
             >
                 {theme === 'light' ? <Moon size={14} /> : theme === 'dark' ? <Droplets size={14} /> : <Sun size={14} />}
             </button>
 
             {/* View Modes - Desktop (Grouped) */}
-            <div className="hidden sm:flex items-center bg-slate-800 dark:bg-slate-800 rounded-md p-0.5 border border-slate-700 dark:border-slate-700">
+            <div className="hidden sm:flex items-center bg-slate-200/80 dark:bg-slate-800 rounded-md p-0.5 border border-slate-300/80 dark:border-slate-700">
                  <button 
                     onClick={() => setViewMode('print')} 
-                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'print' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}
+                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'print' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                     title="Print Layout"
                  >
                     <FileText size={14} />
                  </button>
                  <button 
                     onClick={() => setViewMode('web')} 
-                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'web' ? 'bg-slate-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700'}`}
+                    className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'web' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                     title="Web Layout"
                  >
                     <Globe size={14} />
@@ -179,7 +179,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             {/* View Mode Toggle - Mobile (Single Button) */}
             <button 
                 onClick={() => setViewMode(prev => prev === 'print' ? 'web' : 'print')}
-                className={`sm:hidden p-1.5 rounded transition-all flex items-center justify-center ${viewMode === 'web' ? 'text-blue-400 bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                className={`sm:hidden p-1.5 rounded transition-all flex items-center justify-center ${viewMode === 'web' ? 'text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800'}`}
                 title={viewMode === 'print' ? "Switch to Web Layout" : "Switch to Print Layout"}
             >
                 {viewMode === 'print' ? <FileText size={14} /> : <Globe size={14} />}
@@ -188,16 +188,16 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             {/* Zoom Controls - Optimized for Mobile */}
             <div 
                 ref={zoomControlsRef}
-                className="flex items-center gap-0.5 sm:gap-3 cursor-ew-resize hover:bg-slate-800/50 rounded-lg px-1 transition-colors"
+                className="flex items-center gap-0.5 sm:gap-3 cursor-ew-resize hover:bg-slate-200/70 dark:hover:bg-slate-800/50 rounded-lg px-1 transition-colors"
                 title="Scroll to Zoom"
             >
-                <div className="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
+                <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
                 <button 
                     onClick={() => {
                         if (zoomMode !== 'custom') setZoomMode('custom');
                         setZoom(z => Math.max(10, z - 10));
                     }} 
-                    className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" 
+                    className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom Out"
                 >
                     <Minus size={14} />
@@ -213,7 +213,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                             if (zoomMode !== 'custom') setZoomMode('custom');
                             setZoom(Number(e.target.value));
                         }}
-                        className="w-16 sm:w-24 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-400"
+                        className="w-16 sm:w-24 h-1 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-500"
                         title="Zoom Level"
                     />
                 </div>
@@ -225,10 +225,10 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                         else if (zoomMode === 'fit-width') setZoomMode('fit-page');
                         else setZoomMode('custom');
                     }}
-                    className="w-12 sm:w-20 text-right font-semibold tabular-nums text-slate-200 text-[10px] sm:text-xs hover:text-blue-400 transition-colors flex items-center justify-end gap-1"
+                    className="w-12 sm:w-20 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center justify-end gap-1"
                     title={`Current: ${zoomMode === 'custom' ? 'Custom' : zoomMode === 'fit-width' ? 'Fit Width' : 'Fit Page'} (Click to cycle)`}
                 >
-                    <span className="text-slate-400 font-semibold text-[9px] uppercase tracking-tighter hidden sm:inline">
+                    <span className="text-slate-500 dark:text-slate-400 font-semibold text-[9px] uppercase tracking-tighter hidden sm:inline">
                         {zoomMode === 'fit-width' ? 'Width' : zoomMode === 'fit-page' ? 'Page' : ''}
                     </span>
                     <span>{Number(zoom).toFixed(0)}%</span>
@@ -239,7 +239,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                         if (zoomMode !== 'custom') setZoomMode('custom');
                         setZoom(z => Math.min(500, z + 10));
                     }} 
-                    className="hover:bg-slate-800 p-1 rounded-full text-slate-400 hover:text-white transition-colors" 
+                    className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom In"
                 >
                     <Plus size={14} />

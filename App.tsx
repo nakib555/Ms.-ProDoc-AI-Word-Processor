@@ -65,31 +65,31 @@ const AppContent: React.FC = () => {
   const isReadMode = viewMode === 'read';
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-white dark:bg-[#020617] overflow-hidden text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div className="fixed inset-0 flex flex-col bg-[#f8fafc] dark:bg-[#020617] overflow-hidden text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       
       {isReadMode && <ReadModeToolbar />}
 
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {/* Top Ribbon */}
         {!isReadMode && (
-            <ErrorBoundary>
-                <div className="no-print">
-                    <Ribbon 
-                        activeTab={activeTab} 
-                        onTabChange={handleTabChange} 
-                        placement="top"
-                    />
-                </div>
-            </ErrorBoundary>
+          <ErrorBoundary>
+            <div className="no-print">
+              <Ribbon 
+                activeTab={activeTab} 
+                onTabChange={handleTabChange} 
+                placement="top"
+              />
+            </div>
+          </ErrorBoundary>
         )}
         
         <div className="flex-1 flex overflow-hidden relative z-0 w-full">
           <div 
-            className="flex-1 flex flex-col overflow-hidden relative bg-[#f1f5f9] dark:bg-[#020617] transition-[colors,transform] duration-200 ease-out will-change-transform"
+            className="flex-1 flex flex-col overflow-hidden relative bg-[#eef2f6] dark:bg-[#0b1120] transition-[colors,transform] duration-200 ease-out will-change-transform"
             style={{ willChange: 'transform' }}
           >
             <ErrorBoundary>
-                <Editor />
+              <Editor />
             </ErrorBoundary>
 
             

@@ -84,23 +84,32 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const setIsPanning = useCallback((val: boolean) => {
-    setGestureState(prev => ({ ...prev, isPanning: val }));
+    setGestureState(prev => (prev.isPanning === val ? prev : { ...prev, isPanning: val }));
   }, []);
 
   const setShowHud = useCallback((val: boolean) => {
-    setGestureState(prev => ({ ...prev, showHud: val }));
+    setGestureState(prev => (prev.showHud === val ? prev : { ...prev, showHud: val }));
   }, []);
 
   const setSheetDragY = useCallback((val: number) => {
-    setGestureState(prev => ({ ...prev, sheetDragY: val }));
+    setGestureState(prev => (prev.sheetDragY === val ? prev : { ...prev, sheetDragY: val }));
   }, []);
 
   const setIsDraggingSheet = useCallback((val: boolean) => {
-    setGestureState(prev => ({ ...prev, isDraggingSheet: val }));
+    setGestureState(prev => (prev.isDraggingSheet === val ? prev : { ...prev, isDraggingSheet: val }));
   }, []);
 
   const updateGestureState = useCallback((patch: Partial<GestureState>) => {
-    setGestureState(prev => ({ ...prev, ...patch }));
+    setGestureState(prev => {
+      let changed = false;
+      for (const key of Object.keys(patch) as (keyof GestureState)[]) {
+        if (prev[key] !== patch[key]) {
+          changed = true;
+          break;
+        }
+      }
+      return changed ? { ...prev, ...patch } : prev;
+    });
   }, []);
 
   const registerActiveView = useCallback((container: HTMLDivElement | null, content: HTMLDivElement | null) => {

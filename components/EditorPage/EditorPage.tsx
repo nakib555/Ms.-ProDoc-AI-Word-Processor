@@ -1622,7 +1622,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           height: `${heightIn}in`,
           boxShadow: isDarkMode 
             ? '0 10px 30px -5px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)' 
-            : '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.05)',
+            : '0 4px 24px -2px rgba(15,23,42,0.09), 0 2px 6px -1px rgba(15,23,42,0.04), 0 0 0 1px rgba(15,23,42,0.06)',
           paddingTop: `${margins.top}in`,
           paddingBottom: `${margins.bottom}in`,
           paddingLeft: `${margins.left}in`,

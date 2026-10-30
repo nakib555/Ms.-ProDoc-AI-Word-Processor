@@ -137,14 +137,14 @@ export const Ribbon: React.FC<RibbonProps> = ({
   return (
     <div 
       onMouseDown={handleMouseDown}
-      className={`flex z-20 no-print relative bg-slate-50 dark:bg-[#0f172a] transition-colors duration-300 ${
-        isBottom ? 'flex-col-reverse shadow-[0_-4px_16px_rgba(0,0,0,0.06)]' : 'flex-col shadow-sm'
+      className={`flex z-20 no-print relative bg-[#f8fafc] dark:bg-[#0f172a] transition-colors duration-300 ${
+        isBottom ? 'flex-col-reverse shadow-[0_-4px_16px_rgba(15,23,42,0.06)]' : 'flex-col shadow-[0_1px_3px_rgba(15,23,42,0.05)]'
       }`}
     >
       <RibbonTabBar activeTab={activeTab} onTabChange={onTabChange} />
 
       <div 
-        className={`bg-white dark:bg-[#1e293b] ${isBottom ? 'border-t' : 'border-b'} border-slate-200 dark:border-slate-700 relative z-10 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
+        className={`bg-white dark:bg-[#1e293b] ${isBottom ? 'border-t' : 'border-b'} border-slate-200/90 dark:border-slate-700/80 relative z-10 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
         style={{ 
           height: activeTab ? `${Math.max(height, 100)}px` : '0px'
         }}

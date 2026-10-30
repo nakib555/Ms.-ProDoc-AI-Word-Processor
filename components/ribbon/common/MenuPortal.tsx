@@ -40,30 +40,29 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
   const lastTouchTime = useRef<number>(0);
 
   // Two-stage lifecycle to support true smooth slide-up and slide-down exit animations
+  const isFirstMount = useRef(true);
   const [isRendered, setIsRendered] = useState<boolean>(isOpen);
   const [isVisible, setIsVisible] = useState<boolean>(false);
 
-  // Mark rendered immediately during render pass when opened
-  if (isOpen && !isRendered) {
-    setIsRendered(true);
-  }
-
-  // Clear visibility during render pass when closed to trigger exit transition
-  if (!isOpen && isVisible) {
-    setIsVisible(false);
-  }
-
   useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      if (!isOpen) return;
+    }
+
     let animTimer: number | null = null;
     let unmountTimer: number | null = null;
 
     if (isOpen) {
-      // Wait for DOM paint in offscreen state before smoothly transitioning upward
+      setIsRendered(true);
       animTimer = window.setTimeout(() => {
         setIsVisible(true);
-      }, 16);
-    } else if (isRendered) {
-      // Allow slide-down animation to finish before unmounting DOM
+      }, 20);
+    } else {
+      setIsVisible(false);
+      setPosition(null);
+      setDragOffset(0);
+      touchStartY.current = null;
       unmountTimer = window.setTimeout(() => {
         setIsRendered(false);
       }, 280);
@@ -73,7 +72,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
       if (animTimer) clearTimeout(animTimer);
       if (unmountTimer) clearTimeout(unmountTimer);
     };
-  }, [isOpen, isRendered]);
+  }, [isOpen]);
 
   // Monitor viewport width to smoothly switch between desktop popover and mobile bottom sheet
   useEffect(() => {
@@ -178,10 +177,6 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
     });
   }, [isOpen, isMobile, triggerElement, menuPos]);
 
-  if (!isOpen && position !== null) {
-      setPosition(null);
-  }
-
   // Use layout effect to measure and position before paint on desktop
   useLayoutEffect(() => {
     if (isOpen && !isMobile) {
@@ -208,23 +203,6 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
          window.removeEventListener('scroll', handleEvent, true);
      };
   }, [isOpen, isMobile, calculatePosition]);
-
-  // Reset drag offset when closed during render
-  if (!isOpen && dragOffset !== 0) {
-    setDragOffset(0);
-  }
-
-  // Reset external gesture context when closed
-  useEffect(() => {
-    if (!isOpen) {
-      touchStartY.current = null;
-      const timer = window.setTimeout(() => {
-        setSheetDragY(0);
-        setIsDraggingSheet(false);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, setSheetDragY, setIsDraggingSheet]);
 
   if (!isRendered) return null;
 
