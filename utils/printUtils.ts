@@ -124,11 +124,13 @@ export const generatePdfPrint = async (
         // Mount a dedicated print portal containing exact pages
         portalEl = document.createElement('div');
         portalEl.id = 'prodoc-print-render-portal';
+        portalEl.className = 'print-layout-mode prodoc-print-render-portal';
         portalEl.style.position = 'fixed';
-        portalEl.style.left = '-99999px';
+        portalEl.style.left = '0';
         portalEl.style.top = '0';
         portalEl.style.width = `${widthIn}in`;
         portalEl.style.zIndex = '-9999';
+        portalEl.style.opacity = '0';
         portalEl.style.background = '#ffffff';
         portalEl.style.pointerEvents = 'none';
 
@@ -248,8 +250,10 @@ export const generatePdfPrint = async (
                 bodyDiv.style.columnCount = String(pConfig.columns || 1);
                 bodyDiv.style.columnGap = `${pConfig.columnGap || 0.5}in`;
                 bodyDiv.style.columnFill = 'auto';
-                bodyDiv.style.hyphens = pConfig.hyphenation ? 'auto' : 'none';
-                bodyDiv.innerHTML = pageData.html;
+                const cleanHtml = (pageData.html || '')
+                    .replace(/<div[^>]*class="[^"]*prodoc-page-break[^"]*"[^>]*>.*?<\/div>/gi, '')
+                    .replace(/<div[^>]*data-type="page-break"[^>]*>.*?<\/div>/gi, '');
+                bodyDiv.innerHTML = cleanHtml;
                 verticalContainer.appendChild(bodyDiv);
                 pageWrapper.appendChild(verticalContainer);
 

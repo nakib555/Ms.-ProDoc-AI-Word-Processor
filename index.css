@@ -294,14 +294,23 @@ tr.table-row-keep-together,
   color: #94a3b8;
 }
 
-/* Hide visual page break line in Print Layout Mode where physical pages are shown */
-.print-layout-mode .prodoc-page-break {
-    border: none;
-    height: 0;
-    margin: 0;
+/* Hide visual page break line in Print Layout Mode and Print Portals where physical pages are shown */
+.print-layout-mode .prodoc-page-break,
+.prodoc-print-page-wrapper .prodoc-page-break,
+#prodoc-print-render-portal .prodoc-page-break,
+.prodoc-print-render-portal .prodoc-page-break {
+    border: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: none !important;
 }
-.print-layout-mode .prodoc-page-break::after {
-    display: none;
+.print-layout-mode .prodoc-page-break::after,
+.prodoc-print-page-wrapper .prodoc-page-break::after,
+#prodoc-print-render-portal .prodoc-page-break::after,
+.prodoc-print-render-portal .prodoc-page-break::after {
+    display: none !important;
+    content: '' !important;
 }
 
 /* Section Break Visualization */

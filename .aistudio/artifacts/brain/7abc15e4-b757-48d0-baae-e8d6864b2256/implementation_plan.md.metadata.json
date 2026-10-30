@@ -1,6 +1,0 @@
-{
-  "summary":  "Master Engineering Plan to eliminate performance bottlenecks in the React Word Editor, enabling 60fps scrolling, sub-16ms keystroke latency, incremental pagination, and reliable PDF export for documents up to 1,000 pages through page virtualization, persistent layout measurement caching, React rendering isolation, and an independent vector print pipeline.",
-  "updatedAt":  "2026-10-29T07:23:40.924216409Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}

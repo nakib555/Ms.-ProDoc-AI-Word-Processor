@@ -1,10 +1,11 @@
 /**
- * Full Exam Question Paper & Technical Answer Sheets (Sets 01 - 11)
+ * Full Exam Question Paper & Technical Answer Sheets (Sets 01 - 10)
  * Re-authored to strict Microsoft Word Professional Examination standards:
- * - Clean semantic tables compatible with ProDoc Table Properties, Context Menu, Resizing, and Sort
- * - Zero duplicated questions across Sets 01 through 11
- * - Enhanced anti-shaving attributes (keep-with-next, exam-mcq-table)
- * - Authentic MS Word examination typography, candidate ledger, and structured answer blocks
+ * - Authentic questions and complete technical answers transcribed from booklet images
+ * - Completely deduplicated across all sets
+ * - Clean semantic tables fully compatible with ProDoc Table Properties, Context Menu, Resizer, and Sort
+ * - Zero artificial page breaks: content flows naturally across pages without blank voids
+ * - High-DPI print and PDF rendering with crisp vector typography and selectable text
  */
 
 export const FULL_EXAM_DOCUMENT_HTML = `
@@ -20,16 +21,16 @@ export const FULL_EXAM_DOCUMENT_HTML = `
     <p style="font-size: 13pt; font-weight: bold; margin: 2px 0 0 0; color: #334155;">
       Department of Information Technology &amp; Systems Engineering
     </p>
-    <p style="font-size: 11pt; font-style: italic; margin: 2px 0 6px 0; color: #64748b;">
-      National Examination Board &bull; Comprehensive Assessment Series (Sets 01 &ndash; 11)
+    <p style="font-size: 10.5pt; font-style: italic; margin: 2px 0 6px 0; color: #64748b;">
+      National Examination Board &bull; Assessment Series (Sets 01 &ndash; 10)
     </p>
     <p style="font-size: 10pt; font-weight: 600; margin: 0; color: #475569;">
       Time Allowed: 3 Hours &nbsp;|&nbsp; Total Marks: 100 &nbsp;|&nbsp; Passing Marks: 50
     </p>
   </div>
 
-  <!-- Candidate Identification Ledger Table (Fully editable via ProDoc Table Tools) -->
-  <table style="width: 100%; border-collapse: collapse; border: 1px solid #94a3b8; margin-bottom: 14px; font-size: 10pt;">
+  <!-- Candidate Identification Ledger Table (Editable via ProDoc Table Tools) -->
+  <table class="exam-answer-table" style="width: 100%; border-collapse: collapse; border: 1px solid #94a3b8; margin-bottom: 12px; font-size: 10pt;">
     <tbody>
       <tr>
         <td style="width: 25%; padding: 4px 8px; border: 1px solid #cbd5e1; background-color: #f8fafc; font-weight: bold;">Candidate Name:</td>
@@ -46,21 +47,21 @@ export const FULL_EXAM_DOCUMENT_HTML = `
     </tbody>
   </table>
 
-  <!-- General Instructions -->
-  <div style="background-color: #f1f5f9; border-left: 4px solid #4f46e5; padding: 6px 12px; margin-bottom: 14px; font-size: 9.5pt; color: #334155;">
+  <!-- General Examination Instructions -->
+  <div style="background-color: #f1f5f9; border-left: 4px solid #4f46e5; padding: 6px 12px; margin-bottom: 12px; font-size: 9.5pt; color: #334155;">
     <strong>Instructions to Candidates:</strong>
-    1. Read all questions carefully before answering. Each set represents a distinct technical domain.
+    1. Read all questions carefully before answering. Each set represents a distinct technical curriculum domain.
     2. Multiple Choice Questions: Choose the correct option indicated by the tick mark (✓).
-    3. Technical Answer Sheets: Provide clear, concise steps and diagrams where applicable.
+    3. Technical Answer Sheets: Provide clear, concise explanations and diagnostic steps.
   </div>
 
   <!-- ==========================================
        SET# 01: COMPUTER ARCHITECTURE & PROCESSORS
        ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 01: Computer Architecture, Bus Systems &amp; Hardware Components
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 01: Computer Architecture, Bus Systems &amp; Hardware Diagnostics
   </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
+  <p style="font-size: 9.5pt; font-style: italic; color: #64748b; margin-bottom: 8px;">
     Section A: Multiple Choice Questions (Select the single best answer for each question)
   </p>
 
@@ -68,1237 +69,1558 @@ export const FULL_EXAM_DOCUMENT_HTML = `
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
     <strong>1. A microprocessor unit, a memory unit, and an input/output unit integrated together form a:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Central Processing Unit</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Software Compiler</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Central Processing Unit</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Compiler Software</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Microcomputer System</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Arithmetic Logic Unit</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Microcomputer</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Arithmetic Logic Unit</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q2 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. Which of the following is NOT one of the three primary computer system buses?</strong>
+    <strong>2. Which of the following is NOT a primary computer bus?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Data Bus</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Timer Bus</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Data Bus</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Timer Bus</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Control Bus</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Address Bus</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Control Bus</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Address Bus</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q3 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. Which CPU internal register always holds the address of the next instruction to be fetched?</strong>
+    <strong>3. The brain of any computer system is:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Program Counter (PC)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Instruction Register (IR)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. ALU</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. CPU</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Accumulator (AC)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Memory Buffer Register (MBR)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Memory</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Control Unit</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q4 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. The personnel who design, program, operate, and manage computer systems together are classified as:</strong>
+    <strong>4. The personnel who deal with the computer &amp; its management put together are called:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. System Software</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Liveware / Humanware</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Software</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Humanware / Liveware</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Embedded Firmware</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Peripheral Hardware</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Firmware</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Hardware</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q5 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. In modern processor architecture, a microprocessor integrates which two primary functional blocks:</strong>
+    <strong>5. A microprocessor is:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Display Unit and RAM Interface</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Arithmetic Logic Unit (ALU) &amp; Control Unit (CU)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Combined unit of monitor and keyboard</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Combined unit of ALU and CU</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Power Management &amp; Battery Controller</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Optical Drive &amp; Magnetic Storage</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Combined unit of CPU and UPS</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. None of these</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
+  <!-- Q6 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>6. When a bearing in the power supply fan goes out, what should you replace?</strong>
   </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. What are the primary functions of thermal paste applied between the CPU and heat sink?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Thermal interface material (TIM) eliminates microscopic air gaps between the uneven surfaces of the CPU heat spreader and the copper heat sink base, ensuring maximum thermal conductivity and heat dissipation.
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Fan</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Case</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Bearing</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. Power Supply Unit (PSU)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q7 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>7. All Operating Systems get their total memory initialized from:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. CPU</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. BIOS</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. ROM</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. RAM</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q8 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>8. Which provides the fastest data access time?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. RAM</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. ROM</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. CD-ROM</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Hard disk</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q9 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>9. A hard disk is divided into concentric tracks which are further subdivided into:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Clusters</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Sectors</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Vectors</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Cylinders</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q10 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>10. Computer memory system consists of:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. RAM</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. ROM</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. PROM</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. All of the above</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q11 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>11. System software acts as a bridge between computer hardware and:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Management</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Processing</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Utility</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. Application software</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q12 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>12. You should protect your computer system from:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Viruses</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Unauthorized access</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Network Worms</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. All of the above</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q13 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>13. The operating system manages:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Memory</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Processor</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Disks and I/O devices</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. All of the above</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q14 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>14. What is the standard file extension of an optical Disc Image file?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. .DSK</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. .OSDSK</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. .OS</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. .ISO</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q15 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>15. What is the file extension of a Windows Device Driver and System File?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. .sys</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. .system</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. .stm</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. .syt</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q16 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>16. In networking terminology, UTP stands for:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Unshielded Twisted Pair</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Ubiquitous Teflon Port</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Uniformly Terminating Port</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Unshielded T-connector Port</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q17 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>17. What is the address length of an IPv4 address?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. 32 bits</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. 64 bits</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. 128 bits</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. 256 bits</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q18 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>18. Which character is strictly NOT allowed in a standard email address?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Underscore ( _ )</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. At sign ( @ )</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Period ( . )</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. Space ( &nbsp; )</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q19 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>19. In computer security, what does VIRUS stand for?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Very Important Record User Searched</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Verify Interchanged Result Until Source</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Vital Information Resource Under Seize</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Very Important Resource Under Search</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q20 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>20. To return the remainder after a number is divided by a divisor in Excel, which function is used?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. ROUND()</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. FACT()</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. MOD()</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. DIV()</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q21 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>21. Which of the following represents an absolute cell reference in spreadsheet formulas?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. !A!1</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. $A$1</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. #a#1</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. A1</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q22 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>22. Which key on the keyboard is used to start a PowerPoint Slide Show from the first slide?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. F1</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. F2</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. F5</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. F10</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q23 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>23. In MS Word, which ribbon tab contains the 'Insert Footnote' command?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Insert Tab</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Review Tab</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. References Tab</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Layout Tab</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q24 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>24. Which keyboard shortcut is used to insert a Hyperlink in MS Office documents?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Ctrl + K</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Ctrl + V</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Alt + V</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Alt + K</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q25 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>25. Superscript, subscript, outline, emboss, and engrave in word processing are known as:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 10px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Font Effects</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Text Effects</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Font Styles</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. WordArt</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Technical Diagnostic Questions (Set 01) -->
+  <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; margin-top: 10px; margin-bottom: 16px;">
+    <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e293b; font-size: 11pt;">
+      Section B: Hardware Diagnostics &amp; Troubleshooting Answer Sheets
     </p>
 
-    <p style="margin-bottom: 2px;"><strong>7. Contrast Unified Extensible Firmware Interface (UEFI) with Legacy BIOS:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> UEFI supports partitions larger than 2.2 TB using GPT, enables Secure Boot cryptographic validation, provides a graphical mouse-driven setup, and executes in 32-bit or 64-bit mode compared to the 16-bit real mode limit of legacy BIOS.
-    </p>
+    <p style="margin: 4px 0 2px 0;"><strong>26. Name 5 famous antivirus software applications and 5 well-known computer viruses:</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Famous Antivirus:</strong> 1. Comodo Antivirus, 2. AVAST Antivirus, 3. AVG Antivirus, 4. Avira Antivirus, 5. Bitdefender Antivirus.<br/>
+      <strong>Famous Historical Viruses:</strong> 1. ILOVEYOU (2000 email worm), 2. Melissa (1999 macro virus), 3. Mydoom (fast-spreading mass mailer), 4. Conficker (Windows worm), 5. Stuxnet (industrial cyber weapon).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>27. What is Malware?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Malware (short for malicious software) is any file, code, or program intentionally designed to infiltrate, damage, exploit, or gain unauthorized access to computer systems, networks, or servers.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>28. What are the primary causes of 'No Display' on a computer and how do you troubleshoot it?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Diagnostic Checklist:</strong>
+      1. Verify monitor power LED is ON.
+      2. Ensure computer has exited sleep or hibernation mode.
+      3. Check VGA/HDMI/DisplayPort cable seating.
+      4. Listen for BIOS POST beep codes.
+      5. Reseat RAM modules into slots after cleaning gold contacts with an eraser.
+      6. Reseat dedicated PCIe graphics card.
+      7. Clear CMOS settings by shorting jumper pins or reseating the CR2032 coin cell.
+      8. Inspect SMPS power output to GPU and motherboard 24-pin connector.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>29. How do you troubleshoot and fix random system restarts in Windows?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Step-by-Step Resolution:</strong>
+      1. Disable Automatic Restart on system failure in Advanced System Properties to capture BSOD stop codes.
+      2. Check CPU and GPU temperatures using diagnostic tools to rule out thermal throttling.
+      3. Clean dust buildup from heatsinks and reapply thermal paste.
+      4. Run Windows Memory Diagnostic (<code>mdsched.exe</code>) to test physical RAM.
+      5. Update or cleanly reinstall display and chipset drivers.
+      6. Inspect power supply wattage stability under load.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>30. How do you troubleshoot a 'No Power' issue on a desktop PC?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 2px;">
+      <strong>Diagnostic Procedure:</strong>
+      1. Verify main wall outlet with an AVO meter or lamp.
+      2. Ensure the I/O rocker switch on the back of the PSU is set to 'I' (ON).
+      3. Perform the PSU paperclip test (bridge green pin with any black ground pin on 24-pin ATX connector) to verify fan spinning.
+      4. Check front-panel power switch header cables on motherboard.
+      5. Disconnect non-essential peripherals to isolate internal short circuits.
+    </div>
   </div>
 
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
   <!-- ==========================================
-       SET# 02: OPERATING SYSTEMS & SYSTEM MANAGEMENT
+       SET# 02: OFFICE APPLICATIONS & COMPUTING
        ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 02: Operating Systems, Virtual Memory &amp; System Administration
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 02: Office Applications, Bengali Typing &amp; Network Fundamentals
   </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
 
   <!-- Q1 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. The core component of an Operating System that manages CPU time, memory allocation, and hardware interrupts is:</strong>
+    <strong>1. The Bengali compound character &ldquo;ক্ষ&rdquo; is a combination of which letters?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Command Shell</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Operating System Kernel</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. হ + ম</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. হ + ষ</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Application Wrapper</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. File Allocation Table</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. ক + ষ</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. ম + ম</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q2 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. In Windows operating systems, which executable launches the Graphical Windows Registry Editor?</strong>
+    <strong>2. Which of the following is NOT a dedicated Bengali Unicode font?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. regedit.exe</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. winregistry.exe</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Arial</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Kalpurush</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. sysreg.msc</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. configedit.dll</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. SolaimanLipi</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Nikosh</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q3 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. Virtual memory implementation primarily uses which hardware mechanism to swap inactive memory pages to disk:</strong>
+    <strong>3. Which of the following is a valid cell address in an electronic spreadsheet?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Direct Memory Bus</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Static Cache Indexing</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. 5A</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. A5</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Paging &amp; Page Table Mapping</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Register Renaming</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. @A5</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. A@5</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q4 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. Which command-line utility verifies the integrity of protected Windows system files and repairs damaged ones?</strong>
+    <strong>4. In MS Excel, the function &ldquo;=IF()&rdquo; belongs to which category?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. sfc /scannow</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. chkdsk /f</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Mathematical Function</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Logical Function</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. defrag /all</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. cleanmgr /sageset</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Comparison Function</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Text Function</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q5 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What file system provides file-level compression, Access Control Lists (ACLs), and journaling for modern Windows?</strong>
+    <strong>5. What PowerPoint feature is used to apply motion effects to specific objects on a slide?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. FAT32</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. exFAT</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Slide Transition</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Slide Design</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. NTFS (New Technology File System)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. CDFS</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Animation Objects</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Reading Layout</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
+  <!-- Q6 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>6. The full form of SSD is:</strong>
   </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. What troubleshooting steps should be taken when Windows displays Blue Screen of Death (BSOD) stop code "IRQL_NOT_LESS_OR_EQUAL"?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> 1. Roll back newly installed device drivers; 2. Run Windows Memory Diagnostic (mdsched.exe) to verify RAM integrity; 3. Run BlueScreenView to inspect memory dump files (minidump); 4. Ensure antivirus kernel filters are updated.
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Solid State Device</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Secondary Storage Device</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Solid State Drive</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Static Storage Disk</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q7 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>7. From what location are the initial computer instructions executed upon power boot-up?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. ROM BIOS</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. CPU Register</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Boot.ini</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. CONFIG.SYS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q8 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>8. ASCII stands for:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. American Standard Code for Information Interchange</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. American Standard Code for Information Interaction</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. All Standard Code for Information Interchange</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Automatic System Code for Information Interchange</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q9 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>9. The standard suite of protocols governing communication across the global Internet is:</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. FTP</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. UDP</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. TCP/IP</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. NetBIOS</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q10 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>10. Which of the following is classified as an Internet Search Engine?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Google Chrome</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Microsoft Edge</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. MSN / Bing</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Yellow Pages PDF</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q11 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>11. How do you create a brand new email account on a web service?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Log In</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Sign In</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Reset Password</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ D. Sign Up / Register</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q12 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>12. Which of the following is NOT an online Cloud Storage service?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Microsoft OneDrive</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Google Drive</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Local Hard Disk Drive</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. MEGA Cloud</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q13 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>13. Which of the following is classified as an Online Word Processor?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Social Media App</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Disk Defragmenter</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Google Docs</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Windows Explorer</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q14 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>14. Which computer memory is strictly Volatile (contents lost when powered off)?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. RAM (Random Access Memory)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. ROM (Read Only Memory)</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. SSD NAND Flash</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. EEPROM</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Q15 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>15. Which of the following is an external peripheral and NOT part of the internal System Unit?</strong>
+  </p>
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 10px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Flatbed Scanner</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Processor</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Motherboard RAM</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Internal SATA HDD</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Technical Answer Sheet (Set 02) -->
+  <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; margin-top: 10px; margin-bottom: 16px;">
+    <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e293b; font-size: 11pt;">
+      Section B: Technical Answer Key (Questions 23 &ndash; 30)
     </p>
 
-    <p style="margin-bottom: 2px;"><strong>7. Describe the function of the Windows Boot Configuration Data (BCD) store:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> The BCD is a firmware-independent database that contains boot-time configuration parameters and controls how the Windows Boot Manager (bootmgr) loads operating system kernels.
-    </p>
+    <p style="margin: 4px 0 2px 0;"><strong>23. What is the full form of OSH in occupational environments?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Occupational Safety and Health (standards designed to maintain worker health, safety protocols, and hazard-free workspaces).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>24. Which IP Class does the address 172.16.10.125 belong to?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Class B (Default range: 128.0.0.0 &ndash; 191.255.255.255; 172.16.0.0/12 is reserved for private intranets).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>25. How many bits are there in a standard Ethernet MAC address?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> 48 bits (represented as 6 pairs of hexadecimal digits separated by colons or hyphens, e.g., <code>00:1A:2B:3C:4D:5E</code>).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>26. What does WPM stand for in computer typing?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Words Per Minute &mdash; the standardized metric measuring keyboard typing speed, calculated as total words typed correctly in a 60-second duration.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>27. What is the fundamental difference between SAVE and SAVE AS?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong>
+      &bull; <strong>SAVE:</strong> Overwrites and commits recent changes to the existing file at its current storage path without prompting.<br/>
+      &bull; <strong>SAVE AS:</strong> Prompts the user to create a new file or replica with a distinct file name, directory location, or format, keeping the original intact.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>28. What is the difference between a Formula and a Function in a spreadsheet?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong>
+      &bull; <strong>Formula:</strong> A user-constructed mathematical expression written manually (e.g., <code>=A1+B1*C1</code>).<br/>
+      &bull; <strong>Function:</strong> A pre-programmed, built-in algorithmic routine provided by the software (e.g., <code>=SUM(A1:A50)</code> or <code>=VLOOKUP()</code>).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>29. Compare a Network Router versus a Network Switch:</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <table class="exam-answer-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 9.5pt;">
+        <thead>
+          <tr style="background-color: #f1f5f9;">
+            <th style="padding: 3px 6px; border: 1px solid #cbd5e1; text-align: left; width: 50%;">Network Switch (Layer 2)</th>
+            <th style="padding: 3px 6px; border: 1px solid #cbd5e1; text-align: left; width: 50%;">Network Router (Layer 3)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">Connects devices together inside the same local network (LAN).</td>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">Connects multiple distinct networks together (e.g., LAN to WAN/Internet).</td>
+          </tr>
+          <tr>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">Forwards traffic based on hardware MAC addresses.</td>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">Forwards packets based on logical IP addresses and routing tables.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>30. What is the function of a Network Interface Card (NIC)?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 2px;">
+      <strong>Answer:</strong> A Network Interface Card provides the physical and electrical interface enabling a computer to communicate over Ethernet or Wi-Fi with other network devices.
+    </div>
   </div>
 
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
   <!-- ==========================================
-       SET# 03: COMPUTER NETWORKING & PROTOCOLS
+       SET# 03: IT INFRASTRUCTURE & PROTOCOLS
        ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 03: Computer Networks, OSI Model &amp; Internet Protocols
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 03: IT Systems Operations, Storage Management &amp; Networking Infrastructure
   </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
 
   <!-- Q1 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. At which layer of the OSI 7-Layer Reference Model do Network Switches operate when inspecting MAC addresses?</strong>
+    <strong>1. What is a Job Sheet in technical workplace administration?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Physical Layer (Layer 1)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Data Link Layer (Layer 2)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. A formal document describing assigned tasks and work orders</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. An invoice for payment processing</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Network Layer (Layer 3)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Transport Layer (Layer 4)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. An employee attendance log</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. An equipment user manual</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q2 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. What is the address length and hexadecimal notation format of an IPv6 network address?</strong>
+    <strong>2. Taking a necessary data backup prior to installing operating systems or software is done to:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. 32 bits divided into 4 decimal octets</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. 48 bits divided into 6 byte pairs</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Increase download speeds</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Clean monitor pixels</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. 128 bits divided into 8 colon-separated groups</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. 256 bits divided into 16 binary blocks</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Protect existing data against loss or corruption</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Register software warranties</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q3 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. Which networking protocol automatically assigns dynamic IP addresses, default gateways, and DNS servers to client hosts?</strong>
+    <strong>3. A low-level disk structure that defines how a physical hard drive is partitioned into logical volumes is:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Dynamic Host Configuration Protocol (DHCP)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Simple Network Management Protocol (SNMP)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Partition Table (MBR or GPT)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Sector Map</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Address Resolution Protocol (ARP)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Network Time Protocol (NTP)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Defrag Index</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. File Allocation Cache</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q4 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. What standard pinout wiring code is most universally used for RJ-45 terminating twisted-pair Ethernet patch cables?</strong>
+    <strong>4. Which tool is used to safely remove dust from delicate computer internal components without physical contact?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. IEEE 802.11ac Specification</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. TIA/EIA-568-B (White-Orange, Orange, White-Green...)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Electrostatic Blower Gun / Compressed Air</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Wet Sponge</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. ISO/IEC 27001 Annexure A</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. RS-232 Serial Port Standard</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Steel Wire Brush</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Household Vacuum Cleaner</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q5 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What well-known TCP port number is utilized by secure HTTPS web traffic encrypted with TLS/SSL?</strong>
+    <strong>5. What tool is specifically designed to attach an 8P8C RJ45 modular plug onto a twisted pair network cable?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Port 80</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Port 21</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. RJ45 Crimping Tool</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Cable Stripper Only</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Port 443</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Port 53</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Soldering Iron</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Wire Cutter</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
+  <!-- Q6 -->
+  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
+    <strong>6. What is the valid usable host range for the subnet on which 192.168.168.188 /26 resides?</strong>
   </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. What is the meaning and implication of an IP address in the 169.254.x.x range (APIPA)?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Automatic Private IP Addressing (APIPA) indicates that the host computer is configured for DHCP but failed to communicate with a DHCP server on the local subnet. It can talk only to other local APIPA clients.
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 10px;">
+    <tbody>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. 192.168.168.129 &ndash; 192.168.168.190</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. 192.168.168.128 &ndash; 192.168.168.191</td>
+      </tr>
+      <tr>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. 192.168.168.65 &ndash; 192.168.168.126</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. 192.168.168.193 &ndash; 192.168.168.254</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Technical Answer Sheet (Set 03 & 04) -->
+  <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; margin-top: 10px; margin-bottom: 16px;">
+    <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e293b; font-size: 11pt;">
+      Section B: Networking &amp; Security Concepts (Questions 21 &ndash; 30)
     </p>
 
-    <p style="margin-bottom: 2px;"><strong>7. Explain how the "tracert" (traceroute) utility identifies network bottlenecks:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Tracert sends packets with incrementally increasing Time-To-Live (TTL) values starting from 1. Each intermediate router decrements TTL, drops expired packets, and returns an ICMP Time Exceeded message, revealing hop latencies.
-    </p>
+    <p style="margin: 4px 0 2px 0;"><strong>21. What are the two main types of physical transmission media in networking?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Wired Media (Twisted pair UTP/STP, Coaxial, Fiber Optic) and Wireless Media (Radio waves, Microwaves, Infrared).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>22. What is the critical final step after installing and configuring any hardware or software?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Test and verify functionality against acceptance criteria to confirm normal operations.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>23. What is DNS and how does it function on the Internet?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Domain Name System (DNS) translates human-readable domain names (e.g., <code>www.example.com</code>) into numerical IP addresses (e.g., <code>93.184.216.34</code>), enabling devices to locate and route packets to hosts globally.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>24. What is Bandwidth?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> The maximum data transfer capacity of a network transmission channel over a given unit of time, typically measured in bits per second (bps, Mbps, or Gbps).<br/>
+      <span style="font-size: 9.5pt; color: #475569;">(বাংলা বিবরণ: এক সেকেন্ডে নেটওয়ার্কের মাধ্যমে কতটুকু ডেটা আদান-প্রদান করা যায়, সেটিই ব্যান্ডউইথ।)</span>
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>25. What is a Firewall and how does it safeguard network boundaries?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> A security barrier that inspects incoming and outgoing network traffic based on predefined security rules, blocking malicious packets, unauthorized access, and cyber threats.<br/>
+      <span style="font-size: 9.5pt; color: #475569;">(বাংলা বিবরণ: ফায়ারওয়াল হলো একটি সিকিউরিটি সিস্টেম যা ক্ষতিকর ট্র্যাফিক ব্লক করে নিরাপদ ডেটা পার হতে দেয়।)</span>
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>26. What is CPU Cache Memory?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> High-speed Static RAM (SRAM) integrated directly on the CPU die (L1, L2, L3) that caches frequently accessed instructions and data to eliminate memory access latency between processor cores and slower system RAM.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>27. What is a Network Gateway?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> A network node that joins two distinct networks running different communication protocols, translating packets so they can cross boundaries.<br/>
+      <span style="font-size: 9.5pt; color: #475569;">(বাংলা বিবরণ: গেটওয়ে হলো নেটওয়ার্কের প্রবেশদ্বার, যা এক নেটওয়ার্ককে অন্য নেটওয়ার্কের সাথে যুক্ত করে।)</span>
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>28. What is the purpose of an Anti-Static ESD Wristband?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 2px;">
+      <strong>Answer:</strong> Provides a safe resistive path to electrical ground, safely dissipating static charges from the technician's body and preventing electrostatic discharge (ESD) from frying sensitive CMOS and silicon circuits.
+    </div>
   </div>
 
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
   <!-- ==========================================
-       SET# 04: OFFICE SUITE & DOCUMENT PROCESSING
+       SET# 05: WORKPLACE SYSTEMS & OPERATIONS
        ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 04: Document Processing, Formulas &amp; Office Automation
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 05: Workplace Information, System Architecture &amp; Disaster Recovery
   </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
 
   <!-- Q1 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. In Microsoft Word, which ribbon tab contains the tools to insert and format Table of Authorities and Footnotes?</strong>
+    <strong>1. Which device is used to convert physical hard copy documents into digital soft copies?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Insert Tab</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. References Tab</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Optical Scanner</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Laser Printer</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Layout Tab</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Review Tab</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Computer Monitor</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Dial-up Modem</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q2 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. In Microsoft Excel, what symbol prefix locks both column and row references (Absolute Cell Referencing)?</strong>
+    <strong>2. The Windows desktop Taskbar is primarily designed to:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Hash Symbol (#A#1)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Dollar Sign ($A$1)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Display BIOS boot logs</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Launch applications and show running programs</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. At Symbol (@A@1)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Exclamation Mark (!A!1)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Defragment hard drives</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Edit registry keys</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q3 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. Which modern Excel lookup function searches across columns/rows and returns matching values without right-side restrictions?</strong>
+    <strong>3. Which motherboard component stores BIOS settings and powers the Real-Time Clock (RTC) when unplugged?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. VLOOKUP</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. HLOOKUP</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Sound Card</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Network Card</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. XLOOKUP</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. SEARCHEX</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. CMOS CR2032 Lithium Coin Battery</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Power Supply Fan</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q4 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. In PowerPoint, what view allows global modifications to fonts, logo placement, and placeholder layouts across all slides?</strong>
+    <strong>4. What happens when two devices on the same local network are configured with identical IP addresses?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Slide Sorter View</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Slide Master View</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Network speed doubles</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Both devices combine bandwidth</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Presenter View</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Outline View</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. An IP conflict occurs, disconnecting one or both hosts</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Router resets to defaults</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q5 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What word processor feature automatically combines a standard form letter document with a structured recipient database?</strong>
+    <strong>5. A documented process to recover and restore business functions after an unplanned disruption is a:</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 10px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Mail Merge</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Quick Parts</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Disaster Recovery Plan (DRP)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Marketing Strategy</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Track Changes</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Cross-reference</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Network Topology Map</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Software End-User License</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. Write the exact Excel formula to calculate employee bonus (10% if sales in B2 &gt;= 50,000, else 5%):</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> <code style="background-color: #f1f5f9; padding: 2px 4px; border-radius: 3px;">=IF(B2&gt;=50000, B2*0.10, B2*0.05)</code>
+  <!-- Technical Answer Sheet (Set 05) -->
+  <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; margin-top: 10px; margin-bottom: 16px;">
+    <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e293b; font-size: 11pt;">
+      Section B: Professional IT Systems &amp; Maintenance (Questions 21 &ndash; 30)
     </p>
 
-    <p style="margin-bottom: 2px;"><strong>7. What causes a document in Word to display a blank second page after inserting a full-width table?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Word always appends a mandatory trailing paragraph mark (¶) after every table. If the table extends to the exact bottom margin, this paragraph is pushed onto the next page. Solution: Select the mark and set font size to 1pt or enable hidden font.
-    </p>
+    <p style="margin: 4px 0 2px 0;"><strong>21. Name two modern spreadsheet applications:</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Microsoft Excel (desktop/enterprise standard) and Google Sheets (cloud-native collaborative platform).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>22. What is an AVO Meter?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> An analog or digital multimeter that measures <strong>A</strong>mperes (electrical current), <strong>V</strong>olts (potential difference), and <strong>O</strong>hms (electrical resistance).
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>23. What are the key benefits of consulting manufacturer instruction manuals during installations?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> Prevents physical equipment damage, ensures correct jumper and wiring configurations, avoids warranty invalidation, and adheres to safety specifications.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>24. Explain the 6-Step CompTIA Systematic Troubleshooting Methodology:</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 2px;">
+      <strong>Standard 6-Step Workflow:</strong>
+      1. Identify the problem (gather symptoms, question users, inspect error logs).<br/>
+      2. Establish a theory of probable cause (test obvious factors first).<br/>
+      3. Test the theory to determine cause.<br/>
+      4. Establish a plan of action to resolve the problem and implement the solution.<br/>
+      5. Verify full system functionality and implement preventive measures.<br/>
+      6. Document findings, actions, and outcomes in the ticketing system.
+    </div>
   </div>
 
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
   <!-- ==========================================
-       SET# 05: STORAGE TECHNOLOGIES & RAID SYSTEMS
+       SET# 06: WINDOWS INTERNALS & PRODUCTIVITY
        ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 05: Storage Devices, NVMe SSDs &amp; RAID Configurations
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 06: Office Suite Mastery, Windows Internals &amp; Hardware Interfaces
   </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
 
   <!-- Q1 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. Non-Volatile Memory Express (NVMe) solid state drives interface directly with which high-speed bus:</strong>
+    <strong>1. Which file extension is used for modern OpenXML Microsoft Word documents?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Legacy SATA III (6 Gbps)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. PCI Express (PCIe) Lanes</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. .doc</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. .docx</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. USB 3.0 Header</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. IDE / PATA Ribbon</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. .txt</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. .pdf</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q2 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. Which RAID configuration stripes data with distributed parity across a minimum of 3 physical disks?</strong>
+    <strong>2. Which symbol must precede any calculation formula in Microsoft Excel?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. RAID 0 (Striping)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. RAID 1 (Mirroring)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. = (Equals)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. + (Plus)</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. RAID 5 (Distributed Parity)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. JBOD (Spanning)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. @ (At)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. # (Hash)</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q3 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. What wear-leveling algorithm command allows operating systems to inform SSDs which blocks of data are no longer considered in use?</strong>
+    <strong>3. Which PowerPoint view displays thumbnails of all slides for easy reordering and sequencing?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. TRIM Command</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. SCANDISK</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Normal View</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Slide Sorter View</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. FLUSHBUFF</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. DEFRAG</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Slide Show View</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Outline View</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q4 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. In magnetic hard disk drive (HDD) geometry, what constitutes a complete vertical stack of identical tracks across all platters?</strong>
+    <strong>4. Which command-line diagnostic tool measures round-trip latency and packet reachability to a remote host?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Sector</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Cylinder</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. ping (ICMP Echo)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. ipconfig</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Cluster</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Head Assembly</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. netstat</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. chkdsk</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q5 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What backup strategy copies only the files that have changed since the last FULL backup and does not clear the archive bit?</strong>
+    <strong>5. What is the purpose of Windows System Restore?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 10px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Incremental Backup</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Differential Backup</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. To upgrade hardware RAM</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. To delete temporary cache files</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Mirror Snapshot</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Synthetic Full</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. To revert system files and registry to an earlier restore point</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. To reformat the primary C: drive</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. Why is traditional disk defragmentation harmful to Solid State Drives (SSDs)?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> SSDs have near-instant random access with zero rotational latency. Defragmenting writes unnecessary rewrite cycles across flash cells, accelerating SSD cell degradation without providing any performance gain.
+  <!-- Technical Answer Sheet (Set 06) -->
+  <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px 14px; margin-top: 10px; margin-bottom: 16px;">
+    <p style="font-weight: bold; margin: 0 0 6px 0; color: #1e293b; font-size: 11pt;">
+      Section B: Comparative Systems &amp; Storage Architecture (Questions 26 &ndash; 30)
     </p>
 
-    <p style="margin-bottom: 2px;"><strong>7. Explain S.M.A.R.T. disk monitoring and list two critical failure attributes:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Self-Monitoring, Analysis and Reporting Technology (S.M.A.R.T.) monitors internal drive reliability. Critical failure attributes include: 1. Reallocated Sector Count (indicates dying magnetic sectors); 2. Uncorrectable Sector Count.
-    </p>
+    <p style="margin: 4px 0 2px 0;"><strong>26. Explain the difference between Slide Transitions and Object Animations in PowerPoint:</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      &bull; <strong>Slide Transition:</strong> Visual motion effect that occurs when transitioning from one slide to the next.<br/>
+      &bull; <strong>Object Animation:</strong> Entrance, emphasis, motion path, or exit effect applied to individual elements (text boxes, shapes, pictures) within a single slide.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>27. What is the purpose of a CPU Heat Sink and Cooling Fan?</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <strong>Answer:</strong> The thermal heat sink draws heat away from the silicon processor die via thermal paste and copper/aluminum fins, while the fan expels the heated air, preventing thermal throttling and hardware burnout.
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>28. Compare the FAT32 versus NTFS file systems:</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 6px;">
+      <table class="exam-answer-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 9.5pt;">
+        <thead>
+          <tr style="background-color: #f1f5f9;">
+            <th style="padding: 3px 6px; border: 1px solid #cbd5e1; text-align: left; width: 50%;">FAT32 (Legacy)</th>
+            <th style="padding: 3px 6px; border: 1px solid #cbd5e1; text-align: left; width: 50%;">NTFS (Modern Windows)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">Max single file size: 4 GB.</td>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">Max single file size: 16 TB+.</td>
+          </tr>
+          <tr>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">No native file-level encryption or permissions.</td>
+            <td style="padding: 3px 6px; border: 1px solid #cbd5e1;">Supports Access Control Lists (ACLs), EFS encryption, and journaling.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin: 4px 0 2px 0;"><strong>29. Compare IPv4 versus IPv6 Addressing:</strong></p>
+    <div style="margin-left: 10px; font-size: 10pt; color: #334155; margin-bottom: 2px;">
+      <strong>Answer:</strong> IPv4 utilizes 32-bit addresses (~4.29 billion total addresses, e.g., <code>192.168.1.1</code>) and relies on NAT due to exhaustion. IPv6 utilizes 128-bit hexadecimal addresses (~3.4 &times; 10<sup>38</sup> addresses, e.g., <code>2001:db8::1</code>), eliminating NAT and supporting built-in IPsec security.
+    </div>
   </div>
 
-  <div class="prodoc-page-break" data-type="page-break"></div>
+  <!-- ==========================================
+       SET# 07: SUBNETTING & DIAGNOSTICS
+       ========================================== -->
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 07: Subnetting Mathematics, Diagnostic Procedures &amp; Workplace Safety
+  </h2>
+
+  <!-- Step-by-Step Subnet Calculation Worksheet Table -->
+  <div style="background-color: #fdfefe; border: 1.5px solid #4f46e5; border-radius: 4px; padding: 10px 14px; margin-bottom: 14px;">
+    <p style="font-size: 11pt; font-weight: bold; color: #312e81; margin: 0 0 6px 0;">
+      Mathematical Subnet Analysis: Finding Host Range for 192.168.168.188 / 255.255.255.192
+    </p>
+    
+    <table class="exam-answer-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 9.5pt; margin-bottom: 8px;">
+      <tbody>
+        <tr style="background-color: #eef2ff;">
+          <td style="width: 30%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold;">Step 1: Prefix &amp; Hosts</td>
+          <td style="width: 70%; padding: 4px 8px; border: 1px solid #cbd5e1;">
+            Subnet Mask <code>255.255.255.192</code> equates to <strong>/26</strong> prefix length.<br/>
+            Host bits = 32 &minus; 26 = 6 bits. Total addresses per block = 2<sup>6</sup> = <strong>64 addresses</strong>.
+          </td>
+        </tr>
+        <tr>
+          <td style="width: 30%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold;">Step 2: Subnet Block Size</td>
+          <td style="width: 70%; padding: 4px 8px; border: 1px solid #cbd5e1;">
+            Magic Number Calculation: 256 &minus; 192 = <strong>64 block interval</strong>.<br/>
+            Subnet 0: 192.168.168.0 &ndash; 192.168.168.63<br/>
+            Subnet 1: 192.168.168.64 &ndash; 192.168.168.127<br/>
+            Subnet 2: <strong>192.168.168.128 &ndash; 192.168.168.191</strong><br/>
+            Subnet 3: 192.168.168.192 &ndash; 192.168.168.255
+          </td>
+        </tr>
+        <tr style="background-color: #f8fafc;">
+          <td style="width: 30%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold;">Step 3: Matching Subnet</td>
+          <td style="width: 70%; padding: 4px 8px; border: 1px solid #cbd5e1;">
+            Host IP <code>192.168.168.188</code> falls strictly inside Subnet 2:<br/>
+            Network ID: <code>192.168.168.128</code> &nbsp;|&nbsp; Broadcast ID: <code>192.168.168.191</code>
+          </td>
+        </tr>
+        <tr style="background-color: #ecfdf5;">
+          <td style="width: 30%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #065f46;">Step 4: Valid Host Range</td>
+          <td style="width: 70%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #065f46;">
+            Usable Host Range: 192.168.168.129 through 192.168.168.190 (Total 62 usable client hosts).<br/>
+            <span style="font-weight: normal; font-size: 9pt; color: #047857;">(বাংলা: ১৯২.১৬৮.১৬৮.১২৯ থেকে ১৯২.১৬৮.১৬৮.১৯০ পর্যন্ত ঠিকানাগুলো ভ্যালিড হোস্ট হিসেবে ব্যবহারযোগ্য।)</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Safety & Diagnostic Standards Table -->
+  <table class="exam-answer-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 9.5pt; margin-bottom: 14px;">
+    <thead>
+      <tr style="background-color: #f1f5f9;">
+        <th style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: left; width: 35%;">Workplace Safety Symbol</th>
+        <th style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: left; width: 65%;">Standard Meaning &amp; Regulatory Protocol</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold;">Fire Extinguisher Symbol</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">Identifies exact physical location of emergency fire suppression canisters.</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold;">No Smoking Symbol</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">Smoking prohibited due to flammable chemicals, packaging, or oxygenated server rooms.</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold;">First Aid Cross Symbol</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">Points directly to emergency medical response kits and injury response supplies.</td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: bold;">Electrical Hazard Triangle</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">Alerts personnel to open high-voltage transformers, power racks, and shock risk.</td>
+      </tr>
+    </tbody>
+  </table>
 
   <!-- ==========================================
-       SET# 06: CYBERSECURITY & THREAT MITIGATION
+       SET# 08 & 09: IT SUPPORT SERVICE LEVEL 3
        ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 06: Cybersecurity, Malware Analysis &amp; Network Defense
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 08 &amp; 09: Technical Support Level 3 Examination Answer Sheet
   </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
+  <p style="font-size: 9.5pt; font-style: italic; color: #64748b; margin-bottom: 8px;">
+    Official Bilingual Assessment Ledger &bull; National Technical Competency Framework
   </p>
+
+  <table class="exam-answer-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; font-size: 9.5pt; margin-bottom: 14px;">
+    <thead>
+      <tr style="background-color: #0f172a; color: #ffffff;">
+        <th style="padding: 4px 8px; border: 1px solid #475569; text-align: center; width: 8%;">No.</th>
+        <th style="padding: 4px 8px; border: 1px solid #475569; text-align: left; width: 50%;">Question &amp; Assessment Scope</th>
+        <th style="padding: 4px 8px; border: 1px solid #475569; text-align: left; width: 42%;">Verified Answer Key (English &amp; Bengali)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">1</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          What should be done if a workplace document is difficult to understand?<br/>
+          <span style="font-size: 8.5pt; color: #64748b;">(কোনো অফিস নথি বুঝতে সমস্যা হলে কী করা উচিত?)</span>
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          a) Take assistance from peers / supervisors<br/>
+          <span style="font-weight: normal; font-size: 8.5pt; color: #334155;">(সহকর্মী বা পর্যবেক্ষণকের সাহায্য নেওয়া)</span>
+        </td>
+      </tr>
+      <tr style="background-color: #f8fafc;">
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">2</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          To increase or decrease display screen clarity, you should adjust:<br/>
+          <span style="font-size: 8.5pt; color: #64748b;">(স্ক্রিনের স্বচ্ছতা বাড়াতে বা কমাতে কোনটি পরিবর্তন করতে হবে?)</span>
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          c) Screen resolution setting<br/>
+          <span style="font-weight: normal; font-size: 8.5pt; color: #334155;">(স্ক্রিন রেজোলিউশন)</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">3</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          Which of the following is a physical working area for an enterprise IT support team?
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          a) Corporate Data Center / IT Help Desk
+        </td>
+      </tr>
+      <tr style="background-color: #f8fafc;">
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">4</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          Assisting end-users experiencing technical difficulties is a primary aspect of:
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          b) Customer Support Service in an IT system
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">5</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          When should a technician perform a motherboard BIOS update?
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          b) When replacing CPU with a newer architecture or fixing firmware bugs
+        </td>
+      </tr>
+      <tr style="background-color: #f8fafc;">
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">6</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          What is the standard bootable media used for modern OS deployment?
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          a) Bootable USB Flash Disk (created via Media Creation Tool or Rufus)
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">7</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          What is the primary architectural function of the motherboard?
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          c) Interconnects and communicates power and data between all hardware units
+        </td>
+      </tr>
+      <tr style="background-color: #f8fafc;">
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">8</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          A formal set of rules governing packet exchange between devices is a:
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          a) Network Protocol
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">9</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          What does GPT stand for in modern disk partitioning schemes?
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          a) GUID Partition Table (supports drives &gt; 2 TB and up to 128 partitions)
+        </td>
+      </tr>
+      <tr style="background-color: #f8fafc;">
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">10</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          What is meant by a 'Conflict of Interest' in professional employment?<br/>
+          <span style="font-size: 8.5pt; color: #64748b;">(স্বার্থের দ্বন্দ্ব বলতে কী বোঝায়?)</span>
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          A situation where personal interests may compromise professional integrity.<br/>
+          <span style="font-weight: normal; font-size: 8.5pt; color: #334155;">(ব্যক্তিগত স্বার্থ পেশাগত দায়িত্বকে প্রভাবিত করার পরিস্থিতি)</span>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">11</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          Why is it vital to comply with environmental electronic waste regulations?
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          Prevents toxic lead, mercury, and heavy metals from contaminating ecosystems.
+        </td>
+      </tr>
+      <tr style="background-color: #f8fafc;">
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: bold;">12</td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1;">
+          What is calculated and formally approved before authorizing costly repair work?
+        </td>
+        <td style="padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">
+          The total repair or replacement cost estimate.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ==========================================
+       SET# 10: ENTERPRISE OPERATIONS & WORKPLACE
+       ========================================== -->
+  <h2 style="font-size: 12.5pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
+    Set# 10: Enterprise Systems, Professional Decorum &amp; Technical Support Operations
+  </h2>
 
   <!-- Q1 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. Malicious software that self-replicates across computer networks WITHOUT requiring human interaction or a host file is a:</strong>
+    <strong>1. What practice best conveys professionalism during client workplace interactions?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Macro Virus</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Network Worm</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Speaking clearly, politely, and listening actively</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Using technical jargon to confuse the client</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Trojan Horse</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Logic Bomb</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Ignoring user feedback</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Rushing through explanations</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q2 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. What form of cyber attack encrypts a victim company's files and demands digital cryptocurrency payment for the private decryption key?</strong>
+    <strong>2. What must be strictly respected and maintained regarding client confidential matters?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Ransomware Attack</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Denial of Service (DoS)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Data Privacy &amp; Non-Disclosure Confidentiality</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Public forum posting</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Cross-Site Scripting (XSS)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. ARP Poisoning</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Casual conversation sharing</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Personal storage duplication</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q3 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. In asymmetric cryptography (public-key cryptography), which key is used to decrypt a message encrypted with the recipient's public key?</strong>
+    <strong>3. In Microsoft Word, what does the Paragraph Alignment feature control?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Sender's Public Key</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Recipient's Private Key</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">A. Font color palette</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Horizontal text positioning (Left, Center, Right, Justify)</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Shared Symmetric Session Key</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Certificate Authority Master Key</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Spell check dictionaries</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Table cell borders</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q4 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. What security defense continuously analyzes packets statefully at the network perimeter to block unauthorized inbound connections?</strong>
+    <strong>4. What web browser is officially developed by Microsoft for modern Windows operating systems?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 6px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Stateful Inspection Firewall</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Network Hub Repeater</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Microsoft Edge (Chromium engine)</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. Mozilla Firefox</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Loopback Adapter</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Bandwidth Shaper</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. Safari</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. Opera Mini</td>
       </tr>
     </tbody>
   </table>
 
   <!-- Q5 -->
   <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. Multi-Factor Authentication (MFA) requires proof combining at least two distinct categories:</strong>
+    <strong>5. What are the two primary firmware interface standards found on contemporary PC motherboards?</strong>
   </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 10px;">
     <tbody>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Two different passwords</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Two different usernames</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. UEFI (Unified Extensible Firmware Interface) &amp; Legacy BIOS</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">B. DOS &amp; CP/M</td>
       </tr>
       <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Knowledge (Password) + Possession (Token) or Inherence (Biometric)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Email Address + Phone Number</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">C. FAT &amp; NTFS</td>
+        <td style="width: 50%; padding: 3px 8px; border: 1px solid #cbd5e1;">D. TCP &amp; UDP</td>
       </tr>
     </tbody>
   </table>
 
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. Define Social Engineering and identify three common organizational attack vectors:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Social engineering manipulates human trust rather than cracking software flaws. Common vectors: 1. Phishing / Spear Phishing (fraudulent emails); 2. Pretexting (posing as IT support); 3. Baiting / Tailgating (unauthorized physical entry).
-    </p>
-
-    <p style="margin-bottom: 2px;"><strong>7. What immediate incident response steps must an IT technician execute upon detecting active ransomware on an office workstation?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> 1. Immediately disconnect network cables and disable Wi-Fi/Bluetooth to halt lateral network propagation; 2. Preserve volatile RAM if required for forensics; 3. Notify the CISO / Incident Response Team; 4. Do not pay ransom; restore from clean offline backups.
-    </p>
-  </div>
-
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
-  <!-- ==========================================
-       SET# 07: HARDWARE MAINTENANCE & BENCH DIAGNOSTICS
-       ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 07: Bench Hardware Maintenance, Power Supplies &amp; Motherboard Diagnostics
-  </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
-
-  <!-- Q1 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. When testing a computer ATX Power Supply Unit (SMPS) with a digital multimeter, what DC voltage should be measured on the Yellow wire rail?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. +3.3 Volts DC</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. +5.0 Volts DC</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. +12.0 Volts DC</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. -12.0 Volts DC</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q2 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. A desktop computer powers on, fan spins at high speed, but the system emits continuous repeated beeps with no display. This symptom most commonly points to:</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Failed Hard Disk Boot Sector</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Unseated, Faulty, or Oxidized RAM Module</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Dead CMOS CR2032 Battery</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Defective Audio Driver</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q3 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. To prevent Electrostatic Discharge (ESD) damage when servicing sensitive motherboard and CPU electronics, an engineer must use:</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Anti-Static Wrist Strap clipped to equipment ground chassis</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Heavy Rubber Insulated Gloves</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Standard Plastic Screwdriver</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Wool Desk Mat</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q4 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. If a computer's system clock consistently resets to January 1st, 2000 whenever AC wall power is turned off, what should be replaced?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. CPU Socket Heatsink</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Motherboard 3V Lithium Coin Cell (CR2032)</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Front Panel USB Header</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Main Power Cord</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q5 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What diagnostic symptom indicates failed electrolytic capacitors on a motherboard?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Bulging, swollen tops with brown electrolyte crusting</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Shiny metallic pins</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Cold temperature during heavy compute load</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Dim motherboard LEDs</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. Provide the systematic troubleshooting flowchart when a computer demonstrates "No Power" (no LEDs, no fan spin):</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> 1. Verify wall outlet with another appliance; 2. Reseat power cord at both ends; 3. Check PSU rocker switch (I/O); 4. Perform the "paperclip test" on the 24-pin ATX connector (short Green PS-ON pin 16 to any Black Ground pin); 5. If PSU fan spins, verify front panel power switch header connection.
-    </p>
-
-    <p style="margin-bottom: 2px;"><strong>7. What bench procedure cleans oxidized gold edge fingers on DDR4/DDR5 RAM sticks?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Gently buff the gold contacts using a soft vinyl eraser to remove oxidation layers, followed by a wipe with 99% pure Isopropyl Alcohol (IPA) on a lint-free microfiber cloth. Allow complete evaporation before reseating into the DIMM slot.
-    </p>
-  </div>
-
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
-  <!-- ==========================================
-       SET# 08: PRINTERS, PERIPHERALS & CABLING
-       ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 08: Peripheral Interfacing, Display Technologies &amp; Printer Engineering
-  </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
-
-  <!-- Q1 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. In electrophotographic laser printers, which component uses high heat and mechanical pressure to melt toner permanently into paper fibers?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Photosensitive OPC Drum</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Primary Corona Wire</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Fuser Assembly Roller Unit</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Transfer Belt</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q2 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. Which modern digital display interface supports variable refresh rates (FreeSync/G-Sync) and daisy-chaining multiple monitors via MST (Multi-Stream Transport)?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Legacy Analog VGA (DE-15)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. DisplayPort (DP 1.4 / 2.0)</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. S-Video Port</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. DVI-A Single Link</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q3 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. What type of printer is universally used in Point of Sale (POS) retail receipts because it requires no ink or ribbon cartridges?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Direct Thermal Printer (heat-sensitive paper)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Continuous Inkjet Tank</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Dot Matrix Impact 24-Pin</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Solid Ink Wax Printer</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q4 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. What universal reversible connector specification can carry PCIe data, DisplayPort video, and USB-PD charging up to 100W–240W?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Micro-USB Type-B</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. USB Type-C (Thunderbolt 3/4)</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Mini-HDMI Type-C</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. FireWire IEEE 1394</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q5 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What resolution metric quantifies the physical scanning clarity of flatbed document scanners?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Optical DPI (Dots Per Inch)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Nit Luminance</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Baud Rate</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Frame Rate (Hz)</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. What is the cause when a laser printer produces recurring black smudges every 3 inches down printed pages?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> A repetitive defect with fixed spacing equal to the circumference of an internal roller points directly to a physical scratch or baked toner flaw on the Organic Photoconductor (OPC) drum or fuser heat roller.
-    </p>
-
-    <p style="margin-bottom: 2px;"><strong>7. Explain the function of a printer print spooler (spoolsv.exe) and how to restart it when print jobs hang:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> The print spooler intercepts print jobs and buffers them in memory/disk (<code style="background-color: #f1f5f9; padding: 1px 3px;">System32\\spool\\PRINTERS</code>) so apps can resume immediately. To fix a hang: Open elevated cmd &rarr; <code style="background-color: #f1f5f9; padding: 1px 3px;">net stop spooler</code> &rarr; delete queued files &rarr; <code style="background-color: #f1f5f9; padding: 1px 3px;">net start spooler</code>.
-    </p>
-  </div>
-
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
-  <!-- ==========================================
-       SET# 09: VIRTUALIZATION & CLOUD COMPUTING
-       ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 09: Virtualization, Hypervisors &amp; Cloud Infrastructure
-  </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
-
-  <!-- Q1 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. Which type of hypervisor installs directly on bare-metal hardware without requiring an underlying host operating system?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Type-1 Bare-Metal Hypervisor (e.g. VMware ESXi, Proxmox)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Type-2 Hosted Hypervisor (e.g. VirtualBox)</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Application Container Docker Engine</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Emulation Interpreter</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q2 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. In cloud computing service architecture, Microsoft 365, Google Workspace, and Salesforce are categorized under:</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Infrastructure as a Service (IaaS)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Platform as a Service (PaaS)</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Software as a Service (SaaS)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Function as a Service (FaaS)</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q3 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. In Windows Server Active Directory domains, what centralized policy engine controls user desktop environments and security policies?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Group Policy Objects (GPO)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Task Manager Services</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. DHCP Scope Options</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Device Manager Tree</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q4 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. What CPU virtualization extensions must be enabled in motherboard BIOS/UEFI settings to run 64-bit virtual machines?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Intel VT-x / AMD-V (SVM Mode)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Intel Hyper-Threading</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Overclocking XMP Profile</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. SpeedStep C-States</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q5 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What virtual networking adapter mode bridges a virtual machine directly to the physical router as if it were a distinct physical host on the LAN?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Host-Only Adapter</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Internal Isolated Network</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Bridged Networking (Adapter)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. NAT Shared IP</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. Differentiate Virtual Machines (VMs) from Lightweight OS Containers (Docker):</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Virtual Machines virtualize the entire hardware layer and each runs its own independent Guest OS kernel. Containers share the host operating system kernel and isolate applications in user space, consuming significantly less memory and CPU overhead.
-    </p>
-
-    <p style="margin-bottom: 2px;"><strong>7. Explain the function of a Virtual Machine Snapshot:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> A snapshot freezes the VM disk and memory state at a precise point in time. Future disk writes divert to a delta file. If a risky patch or upgrade corrupts the system, administrators can revert the VM back to the snapshot in seconds.
-    </p>
-  </div>
-
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
-  <!-- ==========================================
-       SET# 10: IT SERVICE MANAGEMENT & DOCUMENTATION
-       ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 10: IT Service Desk, Incident Response &amp; Asset Management
-  </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
-
-  <!-- Q1 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. In ITIL Service Management framework, what formal agreement between a service provider and customer defines expected uptime and ticket resolution deadlines?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Service Level Agreement (SLA)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Operational Level Contract</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Standard Operating Procedure</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. User Acceptance Protocol</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q2 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. Why are barcode or RFID asset tags attached to corporate computer systems upon procurement?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. To enhance Wi-Fi reception</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. To track hardware lifecycle, warranty, and physical location</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. To prevent operating system crashes</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. To satisfy graphic card drivers</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q3 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. When an IT technician completes hardware troubleshooting for a client, what is the mandatory final step before closing the service ticket?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Immediately reboot into BIOS setup</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Document the root cause, solution, and verify functionality with user</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Delete client profile folders</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Reset network router to defaults</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q4 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. What document must chemical manufacturers provide detailing health hazards, safe handling, and spill cleanup for workshop solvents?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Safety Data Sheet (SDS / MSDS)</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Service Desk Changelog</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Quality Assurance Certificate</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Manufacturer RMA form</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q5 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. What compliance standard requires secure sanitization or physical degaussing/shredding of retiring hard drives containing sensitive personal data?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. NIST SP 800-88 / GDPR Data Protection Standard</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. IEEE 802.3 Ethernet Standard</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Energy Star Efficiency Rule</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. ANSI Typography Standard</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Troubleshooting
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. Explain the concept and significance of "Chain of Custody" in computer forensic evidence handling:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Chain of custody is a chronological paper trail documenting who collected, transferred, secured, and analyzed digital evidence (such as cloned drive images). Any undocumented gap renders evidence inadmissible in court.
-    </p>
-
-    <p style="margin-bottom: 2px;"><strong>7. What calculated approval is mandatory prior to executing a repair that exceeds equipment replacement value?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Total Cost of Ownership (TCO) &amp; Return on Investment (ROI) repair-versus-replace authorization must be approved in writing by departmental management before incurring parts expenses.
-    </p>
-  </div>
-
-  <div class="prodoc-page-break" data-type="page-break"></div>
-
-  <!-- ==========================================
-       SET# 11: PROFESSIONAL ETHICS & WORKPLACE EXCELLENCE
-       ========================================== -->
-  <h2 style="font-size: 13pt; font-weight: bold; color: #1e1b4b; border-bottom: 1.5px solid #6366f1; padding-bottom: 3px; margin-top: 14px; margin-bottom: 6px;">
-    Set# 11: Professional Ethics, Ergonomics &amp; Workplace Communication
-  </h2>
-  <p style="font-size: 10pt; font-style: italic; color: #64748b; margin-bottom: 10px;">
-    Section A: Multiple Choice Questions
-  </p>
-
-  <!-- Q1 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>1. When communicating technical troubleshooting steps to a non-technical end user, the technician should:</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Use complex technical jargon to assert authority</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Use clear, empathetic, plain language without condescension</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Dismiss user input as irrelevant</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Advise the user to fix the issue themselves</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q2 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>2. According to computer workstation ergonomics guidelines, the top edge of the monitor screen should be positioned:</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. 12 inches above eye level to stretch the neck</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. At or slightly below eye level (approx. 15&ndash;20&deg; downward angle)</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Below the desktop surface</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Directly touching the keyboard keys</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q3 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>3. If an IT engineer discovers unencrypted confidential employee salary spreadsheets on an open share while servicing a drive, ethical conduct dictates:</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Copy the data to a personal flash drive</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Share the details informally with colleagues</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ C. Maintain strict confidentiality and alert the Security Officer of the open share</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Delete the spreadsheet permanently</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q4 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>4. What is the environmentally responsible disposal method for depleted lead-acid UPS batteries and damaged LCD backlights?</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">A. Discard into municipal household trash bins</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ B. Deliver to a certified hazardous E-Waste recycling facility</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Incinerate in an open outdoor burn pile</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Submerge in tap water containers</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Q5 -->
-  <p class="keep-with-next" style="margin-top: 6px; margin-bottom: 2px;">
-    <strong>5. An effective team meeting practice that builds mutual respect and avoids unproductive conflicts is:</strong>
-  </p>
-  <table class="exam-mcq-table" style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-    <tbody>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1; font-weight: 600; color: #047857;">✓ A. Active listening, respecting scheduled speaking turns, and documenting action items</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">B. Interrupting others whenever an error is suspected</td>
-      </tr>
-      <tr>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">C. Multi-tasking on unrelated mobile games</td>
-        <td style="width: 50%; padding: 4px 8px; border: 1px solid #cbd5e1;">D. Refusing to take notes or assign deadlines</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <!-- Section B: Technical Questions -->
-  <p style="font-weight: bold; margin-top: 12px; margin-bottom: 4px; color: #334155;">
-    Section B: Technical Explanations &amp; Professional Standards
-  </p>
-  <div style="margin-left: 12px; margin-bottom: 10px;">
-    <p style="margin-bottom: 2px;"><strong>6. Why is thorough documentation of system modifications critical for engineering continuity?</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Detailed change logs ensure that successor technicians can trace hardware revisions, patch levels, and network configurations without hazardous guesswork, minimizing system downtime during emergencies.
-    </p>
-
-    <p style="margin-bottom: 2px;"><strong>7. Describe the "20-20-20" rule recommended by ergonomists for screen-based computer professionals:</strong></p>
-    <p style="margin-left: 14px; margin-bottom: 6px; color: #334155;">
-      <strong>Answer:</strong> Every 20 minutes spent looking at a computer display, look at an object at least 20 feet away for at least 20 seconds. This relaxes the ciliary eye muscles and significantly mitigates digital eye strain.
-    </p>
-  </div>
-
-  <!-- Assessment End Footer -->
-  <div style="border-top: 2px solid #0f172a; margin-top: 20px; padding-top: 8px; text-align: center; font-size: 9pt; color: #64748b;">
-    <strong>[ END OF EXAMINATION QUESTION PAPER &bull; SETS 01 THROUGH 11 COMPLETED ]</strong>
-    <p style="margin: 2px 0 0 0;">Official Technical Certification Board &bull; All Rights Reserved &bull; Evaluated under ProDoc Examination Standards</p>
+  <!-- Closing Candidate Verification Block -->
+  <div style="margin-top: 18px; border-top: 1.5px solid #0f172a; padding-top: 8px; font-size: 10pt;">
+    <table class="exam-answer-table" style="width: 100%; border-collapse: collapse; border: none;">
+      <tbody>
+        <tr>
+          <td style="width: 50%; padding: 6px 0; border: none;">
+            <strong>Candidate Signature:</strong> _____________________________
+          </td>
+          <td style="width: 50%; padding: 6px 0; text-align: right; border: none;">
+            <strong>Invigilator Signature:</strong> _____________________________
+          </td>
+        </tr>
+        <tr>
+          <td style="width: 50%; padding: 4px 0; border: none; font-size: 9pt; color: #64748b;">
+            Date of Examination: _______________________
+          </td>
+          <td style="width: 50%; padding: 4px 0; text-align: right; border: none; font-size: 9pt; color: #64748b;">
+            Official Council Seal &amp; Verification Stamp
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
 </div>

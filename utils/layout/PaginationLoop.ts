@@ -81,6 +81,23 @@ export class PaginationLoop {
         continue;
       }
 
+      // 2. Handle Explicit Page Breaks (consume cleanly without embedding into next page)
+      const isExplicitPageBreak = node.classList?.contains('prodoc-page-break') || 
+                                  node.getAttribute('data-type') === 'page-break' || 
+                                  node.style?.pageBreakAfter === 'always' || 
+                                  node.style?.breakAfter === 'page';
+      if (isExplicitPageBreak) {
+        if (builder.getCurrentNodes().length > 0) {
+          builder.finishPage();
+          session.currentPageIndex++;
+          session.currentHeight = 0;
+        } else if (builder.getPages().length === 0) {
+          builder.forcePage('<p><br/></p>');
+        }
+        lastWasBreak = true;
+        continue;
+      }
+
       lastWasBreak = false;
 
       // Check if we need to flush page before we start measuring the next block
