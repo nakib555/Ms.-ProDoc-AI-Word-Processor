@@ -1,161 +1,84 @@
-# Slate Executive Theme, Native Image Content Transcriber & Momentum Viewport Plan
+# Implementation Plan: Image Content Transcription, Zoom Engine Bug Fixes, and Thousand-Page Scalability
 
-## User Review & Critical Decisions
-
-> [!IMPORTANT]
-> The following user preferences were confirmed during the interactive clarification interview:
-> - **Image Content Extraction**: Extract text, structure, and tables into native editable document blocks without inserting the raw image raster.
-> - **Theme Styling**: Replace the pure white light theme with **Slate Executive** (cool gray workspace `#eef2f6` / `#e2e8f0` with crisp borders, dark accents, and pure white `#ffffff` paper pages).
-> - **Mobile Viewport & Zoom**: Rebuild mobile zoom and pan using a high-stability CSS transform viewport with real-world momentum physics and focal-point pinch gestures.
-
----
-
-## 1. Objective & Success Criteria
-
-### Purpose & Problem
-1. **Image Content Extraction**: Users frequently have scans, screenshots, or photos of documents and tables. Currently, inserting a picture embeds a static PNG/JPEG that cannot be edited, searched, or formatted. Users need the app to convert image content into native editable paragraphs, headings, and tables directly.
-2. **Theme Ergonomics**: The current light theme uses stark, blinding pure-white backgrounds for both the application chrome (ribbon, status bar, background canvas) and the document. Professional desktop word processors (Microsoft Word, Google Docs) use cool gray/slate workspaces to reduce eye fatigue and make the white paper page stand out with realistic depth.
-3. **Mobile Zoom Stability**: The current touch zoom has edge cases with gesture conflicts and layout jitter. A modern CSS transform viewport with momentum physics, two-finger pinch tracking, and clean focal compensation will deliver 60–120 FPS performance matching native mobile office apps.
-
-### Success Criteria
-- [x] Inserting via "Transcribe Image to Document" extracts text and tables directly into editable HTML/document nodes; no raw image element is inserted.
-- [x] Application canvas adopts the Slate Executive palette: cool slate chrome (`#f8fafc`, `#f1f5f9`, `#e2e8f0`), while pages remain pristine white (`#ffffff`) with authentic physical drop shadows.
-- [x] Touch zoom and two-finger pan operate with fluid momentum physics, focal point locking, and spring boundary resistance.
-- [x] All 32 unit and integration tests pass with 0 regressions.
+## 1. Objective & Scope
+Address all user requirements with zero compromise on stability, performance, and document aesthetics:
+1. **Image Content Transcription & Page Content**:
+   - Provide full transcription of the technical examination booklet (~52–60 questions and answers across Sets 01–10) authored directly using native in-app features (candidate identification table, responsive MCQ option tables with checkmarks, CompTIA troubleshooting diagnostic tables, subnetting math ledgers, and invigilator signature verification blocks) so the user can freely edit any question, answer, row, or column.
+   - Upgrade the image content transcription engine (`utils/imageContentExtractor.ts`) so any newly imported picture transcribes into rich in-app primitives (styled heading hierarchies, callout boxes, and editable tables).
+2. **Zoom Engine Bug Fixes**:
+   - **Permanent Zoom Pill HUD**: Eliminate the timer leak and cleanup race condition in `useTouchZoom.tsx` where effect re-renders canceled the auto-fade timer. Enforce a guaranteed 600ms auto-fade after touch or scroll interactions end.
+   - **Two-Finger Zoom Reset Loop**: Prevent the zoom level from repeatedly resetting to 100% or fit-width mid-pinch or upon finger release. Ensure `zoomMode` transitions immediately to `'custom'` on touch start, decoupling dynamic fit calculations during gestures.
+3. **Thousand-Page Scalability Architecture**:
+   - Implement an $O(\log N)$ binary search algorithm to detect visible pages, replacing $O(N)$ linear scans that freeze when handling 1,000+ pages.
+   - Maintain a strict DOM window budget (mounting only 4–5 pages around the viewport, recycling offscreen nodes into spacer heights), ensuring constant memory footprint and 60 FPS scrolling on all devices.
 
 ---
 
-## 2. Existing System Analysis
+## 2. Root Cause & Solution Details
 
-### Verified Facts
-- **Theme System**: `ThemeContext.tsx` manages `light`, `dark`, and `ocean`. Light mode currently applies `bg-white` and stark white ribbons in `App.tsx`, `Ribbon.tsx`, and `StatusBar.tsx`.
-- **Image Insertion**: `PicturesTool.tsx` currently triggers `executeCommand('insertImage', dataUrl)` which places an `<img>` tag in the DOM.
-- **Layout & Zoom Engine**: `PrintLayoutView.tsx` wraps pages in a zoom container controlled by `useTouchZoom.tsx` and `GestureContext.tsx`.
-- **Document Model**: `DocumentModelContext.tsx` and `documentServices.ts` support structured blocks (paragraphs, headings, lists, tables).
+### A. Zoom Pill HUD & Touch Reset Bug
+- **Bug 1: Permanent Zoom Pill HUD**:
+  - In `hooks/useTouchZoom.tsx`, `triggerHUD` depended on `gestureContext`. Every time state changed, the effect re-ran and its cleanup canceled `hudFadeTimeoutRef.current` before `setShowHUD(false)` could execute.
+  - *Fix*: Decouple the auto-fade timer from the effect cleanup so the 600ms countdown runs to completion. Remove duplicate HUD rendering from `GestureContext.tsx` and fix the missing destructuring in `WebLayoutView.tsx`.
+- **Bug 2: Two-Finger Zoom Resetting Loop**:
+  - In `PrintLayoutView.tsx`, the dynamic zoom effect was watching `[zoomMode, zoom, width, height]` and overriding `zoom` back to `targetZoom` (fit-width/fit-page) during two-finger touches because `zoomMode` was not set to `'custom'` until after touch release.
+  - Mid-pinch, touch move events fired 60–120 times/sec, triggering React re-renders and re-initializing `startZoom`.
+  - *Fix*: Immediately set `zoomMode = 'custom'` in `handleTouchStart`. Decouple continuous touch move transformations to pure CSS hardware acceleration without triggering React re-renders during active pinch.
 
-### Assumptions
-- Client-side OCR and text extraction can be achieved smoothly using an embedded canvas OCR/text analysis pipeline with paragraph and table delimiter detection, providing instant offline document generation.
-- The document canvas container is dedicated to `PrintLayoutView.tsx` and `ReadModeView.tsx`.
+### B. Scalability for Thousands of Pages
+- **$O(\log N)$ Page Windowing**:
+  - Replace the linear `for` loop in `PrintLayoutView.tsx` with a fast binary search `binarySearchPageIndex(pageTops, scrollTarget)`. For 1,000 pages, this drops computation from 1,000 comparisons to 10 comparisons per scroll frame.
+  - Maintain top and bottom virtual spacer divs to preserve exact scrollbar proportions.
+  - Bound the DOM node count to a maximum of 5 active page instances in the viewport ($[-2, +2]$ buffer), freeing memory for offscreen pages.
 
----
-
-## 3. Complexity Classification
-- **Classification**: **Level 3 (Large feature / Architectural Upgrade)**
-- Involves theme token redesign across the workspace chrome, new OCR block parsing service, and a complete rewrite of the touch gesture and transform engine.
-
----
-
-## 4. Architecture Design
-
-### System Architecture Diagram
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                          APPLICATION CHROME                            │
-│  Top Ribbon / Tab Bar (Slate #f8fafc with #cbd5e1 border lines)       │
-├────────────────────────────────────────────────────────────────────────┤
-│                                                                        │
-│  WORKSPACE BACKDROP (Cool Slate #eef2f6 / #e2e8f0 canvas)              │
-│                                                                        │
-│   ┌───────────────────────────────────────────────────────────────┐    │
-│   │               MOMENTUM CSS TRANSFORM VIEWPORT                 │    │
-│   │                                                               │    │
-│   │     ┌─────────────────────────────────────────────────┐       │    │
-│   │     │  PRISTINE WHITE DOCUMENT PAGE (#ffffff)         │       │    │
-│   │     │  - Drop shadow: shadow-[0_4px_24px_rgba(...)]   │       │    │
-│   │     │  - Native Editable Content Blocks               │       │    │
-│   │     │    • Paragraphs & Headings                      │       │    │
-│   │     │    • Formatted Tables (Draggable Cell Borders)  │       │    │
-│   │     │    • Extracted OCR Text from Uploaded Images    │       │    │
-│   │     └─────────────────────────────────────────────────┘       │    │
-│   │                                                               │    │
-│   └───────────────────────────────────────────────────────────────┘    │
-│                                                                        │
-├────────────────────────────────────────────────────────────────────────┤
-│  STATUS BAR (Executive Slate #f1f5f9, page counts, zoom slider)       │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-### Key Technical Strategies
-1. **Image Content Extractor Service (`utils/imageContentExtractor.ts`)**:
-   - Accepts image file or URL.
-   - Pre-processes image via HTML5 `<canvas>` (contrast normalization, adaptive thresholding).
-   - Extracts structured text lines, detect tables (grid/delimiter detection), headings, and paragraphs.
-   - Converts extracted structures directly into semantic HTML (`<h1>`, `<p>`, `<table><tr><td>`) and inserts them into the document model at current cursor position.
-2. **Slate Executive Theme**:
-   - Replaces flat pure-white light theme with Slate Executive tokens:
-     - Workspace background: `#eef2f6` (dark mode remains `#020617`).
-     - Ribbon background: `#f8fafc` with subtle borders `#cbd5e1` / `#e2e8f0`.
-     - Status bar: `#f1f5f9`.
-     - Page background: `#ffffff` strictly preserved for genuine paper feel.
-3. **Rebuilt Momentum Transform Engine (`hooks/useTouchZoom.tsx`)**:
-   - Replaced with a unified 2D physics engine:
-     - Two-finger pinch with geometric centroid focal tracking.
-     - Velocity calculation on touch release with cubic-bezier / exponential deceleration momentum.
-     - Rubber-band resistance when over-panning or over-zooming.
-     - Smooth HUD overlay showing current zoom percentage during gesture.
+### C. Rich In-App Transcribed Content
+- Ensure `utils/examDocumentContent.ts` and `constants.ts` provide the complete 52–60 question exam booklet:
+  - Set 01 to Set 10 complete technical questions and verified answers.
+  - Formatted using ProDoc semantic tables (`<table class="exam-answer-table">`, `<table class="exam-mcq-table">`).
+  - Zero raw images: 100% editable vector text, headings, and table cells that integrate with the app's table resizer, context menu, and ribbon tools.
 
 ---
 
-## 5. Implementation Breakdown
+## 3. Implementation Breakdown
 
-### Phase 1: Slate Executive Theme Upgrade
-- **Files**: `contexts/ThemeContext.tsx`, `App.tsx`, `components/Ribbon.tsx`, `components/StatusBar.tsx`, `components/Editor.tsx`.
-- **Changes**:
-  - Update CSS classes from pure `bg-white` to Slate Executive palette (`bg-slate-50`, `bg-[#eef2f6]`, `border-slate-200/80`).
-  - Guarantee that editor paper pages always keep `bg-white` in light mode with realistic dual-layer drop shadow.
-- **Validation**: Visual inspection and contrast check.
+### Phase 1: Zoom Stability & Permanent HUD Bug Fix
+- **Files**:
+  - `hooks/useTouchZoom.tsx`
+  - `contexts/GestureContext.tsx`
+  - `components/ribbon/tabs/ViewTab/views/PrintLayoutView.tsx`
+  - `components/ribbon/tabs/ViewTab/views/WebLayoutView.tsx`
+- **Actions**:
+  1. Set `zoomMode = 'custom'` synchronously on touchstart (2 fingers) to lock out dynamic fit re-computations.
+  2. Implement an independent auto-fade timer for `showHUD` that is never interrupted by effect re-mounts, auto-hiding after exactly 600ms.
+  3. Ensure `WebLayoutView.tsx` destructures `{ zoomHUD }` properly and `GestureContext.tsx` does not render a conflicting duplicate HUD.
+  4. Ensure smooth focal-point preservation without jitter or oscillation on finger lift.
 
-### Phase 2: Native Image Content Transcriber
-- **Files**: `utils/imageContentExtractor.ts`, `components/ribbon/tabs/InsertTab/illustrations/PicturesTool.tsx`, `contexts/EditorContext.tsx`.
-- **Changes**:
-  - Add client-side image OCR/content transcription pipeline.
-  - Add "Transcribe Text from Image" and "Extract Table from Image" buttons in `PicturesTool.tsx`.
-  - Display progress toast ("Transcribing document content from image...").
-  - Insert extracted editable nodes directly at cursor without embedding raw image.
-- **Validation**: Test importing images with text and tables; verify content is fully editable plain text/HTML.
+### Phase 2: Thousand-Page Virtualization & Binary Search
+- **Files**:
+  - `components/ribbon/tabs/ViewTab/views/PrintLayoutView.tsx`
+  - `utils/layoutEngine.ts`
+- **Actions**:
+  1. Add `findPageAtScrollPosition` using binary search over `pageTops` ($O(\log N)$).
+  2. Maintain virtual buffer window of 2 pages above and 2 pages below viewport (never more than 5 pages in DOM).
+  3. Compute top and bottom spacer heights efficiently to ensure smooth, native scrollbar behavior across 1,000+ pages.
 
-### Phase 3: Rebuilt CSS Transform Viewport with Momentum Physics
-- **Files**: `hooks/useTouchZoom.tsx`, `components/ribbon/tabs/ViewTab/views/PrintLayoutView.tsx`, `contexts/GestureContext.tsx`.
-- **Changes**:
-  - Implement fluid momentum physics with requestAnimationFrame velocity decay.
-  - Fix focal point anchor math so zooming centers smoothly on pinch location.
-  - Add overscroll bounce and spring return.
-- **Validation**: Touch and mousewheel simulation tests.
-
----
-
-## 6. Device Experience
-
-### Desktop
-- Comfortable cool gray workspace reducing glare during multi-hour editing.
-- Clear contrast separation between ribbon toolbar, workspace canvas, and paper document.
-- Smooth Ctrl+Wheel trackpad zooming with focal preservation.
-
-### Tablet
-- Two-finger pan and pinch zoom with momentum coasting.
-- Bottom sheet ribbon menus with tactile grab bar.
-
-### Mobile
-- Bottom sheet drawer for ribbon tools.
-- Physics-based pinch-to-zoom with real-time HUD and momentum panning.
-- One-tap "Transcribe Image" to capture document photos with phone camera directly into editable text.
+### Phase 3: Transcribed Content & Image Extractor Polish
+- **Files**:
+  - `utils/examDocumentContent.ts`
+  - `utils/imageContentExtractor.ts`
+  - `components/ImageContentExtractionModal.tsx`
+- **Actions**:
+  1. Verify and polish the full ~52–60 technical questions and answers in `utils/examDocumentContent.ts` using in-app tables, candidate ledger, andCompTIA diagnostics.
+  2. Enhance `imageContentExtractor.ts` to transcribe uploaded images into beautifully formatted in-app blocks (headings, callout cards, editable tables).
 
 ---
 
-## 7. Quality Gates & Risk Mitigation
-
-| Risk | Mitigation |
-| :--- | :--- |
-| Image OCR extraction delay | Show non-blocking progress indicator with cancel option; parse synchronously in web worker if large. |
-| Zoom transform clipping text selection | Only apply hardware transform during active pinch/pan; commit final scale to layout engine on settlement. |
-| Theme contrast regression | Verify WCAG AA 4.5:1 ratio on all slate toolbars and text labels. |
-
----
-
-## 8. Execution Checklist
-1. Create `utils/imageContentExtractor.ts` with image-to-text/table parsing.
-2. Update `PicturesTool.tsx` with "Transcribe Image to Document" action.
-3. Update `App.tsx`, `Ribbon.tsx`, `StatusBar.tsx`, and theme tokens for Slate Executive.
-4. Rewrite `hooks/useTouchZoom.tsx` with CSS transform momentum physics.
-5. Verify build with `compile_applet`, `lint_applet`, and Vitest suite.
+## 4. Verification & Testing Strategy
+- **Unit & Integration Tests**:
+  - Run `npm test` across all test suites, including `largeDocumentPerformance.test.ts` (verifies 20, 100, 500, and 1,000-page scaling).
+  - Add test in `tests/unit/binarySearchVirtualization.test.ts` for $O(\log N)$ viewport indexing.
+- **Lint & Compilation**:
+  - Run `compile_applet` to ensure clean TypeScript compilation.
+  - Run `lint_applet` to guarantee 0 ESLint errors.
+- **10s Post-Implementation Protocol**:
+  - Wait 10 seconds post-build, inspect console for any runtime warnings or errors, and verify dev server stability on port 3000.
