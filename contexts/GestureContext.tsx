@@ -32,6 +32,7 @@ export interface GestureContextType {
   setIsDraggingSheet: (val: boolean) => void;
   updateGestureState: (patch: Partial<GestureState>) => void;
   registerActiveView: (container: HTMLDivElement | null, content: HTMLDivElement | null) => void;
+  triggerScrollHud: (val?: number) => void;
   zoomHUD: React.ReactNode;
 }
 
@@ -64,22 +65,34 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }, 600);
   }, []);
 
+  const triggerScrollHud = useCallback((val?: number) => {
+    setGestureState(prev => ({
+      ...prev,
+      hudZoom: val !== undefined ? Math.round(val) : prev.hudZoom,
+      showHud: true,
+    }));
+    if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
+    hudTimerRef.current = setTimeout(() => {
+      setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
+    }, 600);
+  }, []);
+
   const setIsPinching = useCallback((val: boolean) => {
     setGestureState(prev => ({
       ...prev,
       isPinching: val,
-      showHud: val ? true : prev.showHud,
+      showHud: val,
     }));
     if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     if (!val) {
       hudTimerRef.current = setTimeout(() => {
         setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
-      }, 400);
+      }, 600);
     } else {
-      // Safety auto-dismiss guard so HUD never remains stuck if touchend is interrupted
+      // Safety auto-dismiss guard in case touchend is interrupted
       hudTimerRef.current = setTimeout(() => {
         setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
-      }, 2500);
+      }, 3000);
     }
   }, []);
 
@@ -121,11 +134,11 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!gestureState.showHud && !gestureState.isPinching) return null;
     return (
       <div
-        className="fixed top-16 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none transition-all duration-150 ease-out animate-in fade-in zoom-in-95"
+        className="fixed top-16 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none transition-all duration-200 ease-out animate-in fade-in zoom-in-95 select-none"
         role="status"
         aria-live="polite"
       >
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/85 dark:bg-slate-100/90 text-white dark:text-slate-900 shadow-2xl backdrop-blur-md border border-white/20 dark:border-black/10 text-xs font-semibold tracking-wide">
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 dark:bg-slate-100/95 text-white dark:text-slate-900 shadow-2xl backdrop-blur-md border border-white/20 dark:border-black/10 text-xs font-semibold tracking-wide">
           {gestureState.hudZoom >= 100 ? (
             <ZoomIn className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-600 animate-pulse" />
           ) : (
@@ -155,10 +168,12 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsDraggingSheet,
     updateGestureState,
     registerActiveView,
+    triggerScrollHud,
     zoomHUD,
   }), [
     gestureState,
     setHudZoom,
+    triggerScrollHud,
     setIsPinching,
     setIsPanning,
     setShowHud,
@@ -188,6 +203,7 @@ const fallbackContextValue: GestureContextType = {
   activeContainerRef: { current: null },
   activeContentRef: { current: null },
   setHudZoom: () => {},
+  triggerScrollHud: () => {},
   setIsPinching: () => {},
   setIsPanning: () => {},
   setShowHud: () => {},

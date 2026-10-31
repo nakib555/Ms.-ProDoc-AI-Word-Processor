@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText, Droplets } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useGestureContext } from '../contexts/GestureContext';
 import { getDocumentStats } from '../utils/textUtils';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
@@ -16,6 +17,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
   const { wordCount, zoom, viewMode, setViewMode, content, currentPage, setCurrentPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
+  const { setHudZoom } = useGestureContext();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
@@ -48,8 +50,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
       if (zoomMode !== 'custom') setZoomMode('custom');
       const direction = e.deltaY > 0 ? -1 : 1;
       setZoom(prev => {
-        const next = prev + (direction * 5); // Faster scroll zoom
-        return Math.min(500, Math.max(10, next));
+        const next = Math.min(500, Math.max(10, prev + (direction * 5)));
+        setHudZoom(next);
+        return next;
       });
     };
 
@@ -195,7 +198,11 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 <button 
                     onClick={() => {
                         if (zoomMode !== 'custom') setZoomMode('custom');
-                        setZoom(z => Math.max(10, z - 10));
+                        setZoom(z => {
+                            const next = Math.max(10, z - 10);
+                            setHudZoom(next);
+                            return next;
+                        });
                     }} 
                     className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom Out"
@@ -211,7 +218,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                         value={zoom} 
                         onChange={(e) => {
                             if (zoomMode !== 'custom') setZoomMode('custom');
-                            setZoom(Number(e.target.value));
+                            const next = Number(e.target.value);
+                            setZoom(next);
+                            setHudZoom(next);
                         }}
                         className="w-16 sm:w-24 h-1 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-500"
                         title="Zoom Level"
@@ -237,7 +246,11 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 <button 
                     onClick={() => {
                         if (zoomMode !== 'custom') setZoomMode('custom');
-                        setZoom(z => Math.min(500, z + 10));
+                        setZoom(z => {
+                            const next = Math.min(500, z + 10);
+                            setHudZoom(next);
+                            return next;
+                        });
                     }} 
                     className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom In"

@@ -9,6 +9,7 @@ import { EditorPage } from '../../../../EditorPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
+import { useGestureContext } from '../../../../../contexts/GestureContext';
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -275,6 +276,64 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
     }
 };
 
+// O(log N) binary search for the first visible page index
+const findFirstVisiblePageIndex = (tops: number[], geometries: { scaledHeight: number }[], targetY: number): number => {
+  if (tops.length === 0) return 0;
+  let low = 0;
+  let high = tops.length - 1;
+  let ans = 0;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const bottom = tops[mid] + (geometries[mid]?.scaledHeight || 1000);
+    if (bottom >= targetY) {
+      ans = mid;
+      high = mid - 1;
+    } else {
+      low = mid + 1;
+    }
+  }
+  return ans;
+};
+
+// O(log N) binary search for the last visible page index
+const findLastVisiblePageIndex = (tops: number[], targetY: number): number => {
+  if (tops.length === 0) return 0;
+  let low = 0;
+  let high = tops.length - 1;
+  let ans = tops.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    if (tops[mid] <= targetY) {
+      ans = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return ans;
+};
+
+// O(log N) binary search for page whose center is closest to centerY
+const findClosestPageIndex = (tops: number[], geometries: { scaledHeight: number }[], centerY: number): number => {
+  if (tops.length === 0) return 1;
+  let low = 0;
+  let high = tops.length - 1;
+  while (low <= high) {
+    const mid = (low + high) >> 1;
+    const center = tops[mid] + (geometries[mid]?.scaledHeight || 1000) / 2;
+    if (center < centerY) {
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+  const i1 = Math.max(0, Math.min(tops.length - 1, high));
+  const i2 = Math.max(0, Math.min(tops.length - 1, low));
+  const dist1 = Math.abs(tops[i1] + (geometries[i1]?.scaledHeight || 1000) / 2 - centerY);
+  const dist2 = Math.abs(tops[i2] + (geometries[i2]?.scaledHeight || 1000) / 2 - centerY);
+  return (dist1 <= dist2 ? i1 : i2) + 1;
+};
+
 export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   width,
   height,
@@ -303,6 +362,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setZoomMode,
     isTableResizing
   } = useEditor();
+  const { triggerScrollHud } = useGestureContext();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
@@ -312,7 +372,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const cursorRestorationRef = useRef<number | null>(null);
 
   // High-performance focal-centered pinch to zoom & double-tap to toggle fit
-  const { zoomHUD } = useTouchZoom({
+  useTouchZoom({
     containerRef: scrollContainerRef,
     contentRef: contentWrapperRef,
     zoom,
@@ -519,26 +579,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     const viewTop = scrollTop;
     const viewBottom = scrollTop + viewportHeight;
 
-    // Find first page visible
-    let firstVis = 0;
-    let lastVis = totalCount - 1;
-
-    for (let i = 0; i < totalCount; i++) {
-      const pTop = pageTops[i];
-      const pBottom = pTop + pageGeometries[i].scaledHeight;
-      if (pBottom >= viewTop) {
-        firstVis = i;
-        break;
-      }
-    }
-
-    for (let i = firstVis; i < totalCount; i++) {
-      const pTop = pageTops[i];
-      if (pTop > viewBottom) {
-        lastVis = Math.max(firstVis, i - 1);
-        break;
-      }
-    }
+    // Fast O(log N) binary search for visible window boundaries
+    const firstVis = findFirstVisiblePageIndex(pageTops, pageGeometries, viewTop);
+    const lastVis = Math.max(firstVis, findLastVisiblePageIndex(pageTops, viewBottom));
 
     let start = Math.max(0, firstVis - VIRTUAL_BUFFER);
     let end = Math.min(totalCount - 1, lastVis + VIRTUAL_BUFFER);
@@ -567,6 +610,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     const container = e.currentTarget;
     const newScrollTop = container.scrollTop;
 
+    // Trigger HUD auto-hide after 600ms of scroll/gesture inactivity
+    triggerScrollHud();
+
     if (rulerContainerRef.current) {
         rulerContainerRef.current.scrollLeft = container.scrollLeft;
     }
@@ -578,28 +624,15 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     scrollAnimFrameRef.current = requestAnimationFrame(() => {
       setScrollTop(newScrollTop);
 
-      // Fast O(1) page indicator tracking based on scroll position
+      // Fast O(log N) binary search page indicator tracking based on scroll position
       const centerY = newScrollTop + (container.clientHeight / 2);
-      let closestPage = 1;
-      let minDistance = Infinity;
-
-      for (let i = 0; i < pageTops.length; i++) {
-        const pageCenter = pageTops[i] + (pageGeometries[i]?.scaledHeight || 1000) / 2;
-        const dist = Math.abs(pageCenter - centerY);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestPage = i + 1;
-        } else if (dist > minDistance && i > closestPage) {
-          // Passed closest
-          break;
-        }
-      }
+      const closestPage = findClosestPageIndex(pageTops, pageGeometries, centerY);
 
       if (closestPage !== currentPage) {
         setCurrentPage(closestPage);
       }
     });
-  }, [currentPage, setCurrentPage, pageTops, pageGeometries]);
+  }, [currentPage, setCurrentPage, pageTops, pageGeometries, triggerScrollHud]);
 
   const setRefs = useCallback((node: HTMLDivElement | null) => {
       scrollContainerRef.current = node;
@@ -638,7 +671,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     <div 
       className="print-layout-mode w-full h-full flex flex-col relative bg-[#eef2f6] dark:bg-[#0b1120] transition-colors duration-300"
     >
-       {zoomHUD}
+       {/* Global zoom HUD is managed authority-wide in GestureProvider */}
 
        {showRuler && width >= 768 && (
          <div 

@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/immutability */
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useGestureContext } from '../contexts/GestureContext';
 
 interface UseTouchZoomOptions {
@@ -28,33 +28,30 @@ interface TouchSample {
 /**
  * High-performance, Physics-Based Touch Viewport Engine:
  * - Direct GPU CSS transform during gestures (zero React re-render overhead at 60-120 FPS)
+ * - Atomic zoom commitment on gesture release (eliminates two-finger reset bug)
  * - True focal-point centroid locking (content under fingers stays pinned)
- * - Momentum inertia scrolling with exponential friction decay (v *= 0.93)
- * - Rubber-band damping beyond minimum (15%) and maximum (500%) zoom boundaries
+ * - Auto-hiding HUD synchronized with GestureContext (600ms auto-fade)
  * - WebKit gesture suppression preventing full-browser viewport resizing
- * - Sleek floating Zoom HUD with real-world physics feedback
  */
 export const useTouchZoom = ({
   containerRef,
   contentRef,
   zoom,
   setZoom,
-  minZoom = 20,
-  maxZoom = 450,
+  minZoom = 15,
+  maxZoom = 500,
   onDoubleTap,
   enabled = true,
 }: UseTouchZoomOptions): TouchZoomResult => {
   const gestureContext = useGestureContext();
   const [isPinching, setIsPinching] = useState(false);
   const [hudZoom, setHudZoom] = useState(zoom);
-  const [showHUD, setShowHUD] = useState(false);
 
   const zoomRef = useRef(zoom);
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
 
-  const hudFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const momentumRafRef = useRef<number | null>(null);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchHistoryRef = useRef<TouchSample[]>([]);
@@ -64,7 +61,7 @@ export const useTouchZoom = ({
     if (containerRef.current !== containerEl) {
       setContainerEl(containerRef.current);
     }
-  }, [containerRef]);
+  }, [containerRef, containerEl]);
 
   // Register active viewport elements with gesture context
   useEffect(() => {
@@ -75,18 +72,10 @@ export const useTouchZoom = ({
     return Math.min(maxZoom, Math.max(minZoom, Math.round(val)));
   }, [minZoom, maxZoom]);
 
-  // Display HUD helper with auto-fade
+  // Display HUD helper synchronized through gestureContext
   const triggerHUD = useCallback((displayZoom: number) => {
     setHudZoom(displayZoom);
-    setShowHUD(true);
     gestureContext.setHudZoom(displayZoom);
-
-    if (hudFadeTimeoutRef.current) clearTimeout(hudFadeTimeoutRef.current);
-    hudFadeTimeoutRef.current = setTimeout(() => {
-      setShowHUD(false);
-      setIsPinching(false);
-      gestureContext.setIsPinching(false);
-    }, 600);
   }, [gestureContext]);
 
   // Stop any active momentum scrolling
@@ -121,6 +110,7 @@ export const useTouchZoom = ({
     const container = containerEl || containerRef.current;
     const content = contentRef?.current ?? null;
     if (!container || !content) {
+      zoomRef.current = targetZoom;
       setZoom(targetZoom);
       triggerHUD(targetZoom);
       return;
@@ -135,14 +125,16 @@ export const useTouchZoom = ({
 
     content.style.transformOrigin = `${fx}px ${fy}px`;
     content.style.willChange = 'transform';
-    content.style.transition = 'transform 240ms cubic-bezier(0.16, 1, 0.3, 1)';
+    content.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)';
     content.style.transform = `scale(${scaleRatio})`;
 
     setIsPinching(true);
+    gestureContext.setIsPinching(true);
     triggerHUD(targetZoom);
 
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
+      zoomRef.current = targetZoom;
       setZoom(targetZoom);
       const newScrollLeft = Math.max(0, fx * scaleRatio - (fx - container.scrollLeft));
       const newScrollTop = Math.max(0, fy * scaleRatio - (fy - container.scrollTop));
@@ -155,8 +147,10 @@ export const useTouchZoom = ({
       container.scrollLeft = newScrollLeft;
       container.scrollTop = newScrollTop;
       setIsPinching(false);
-    }, 240);
-  }, [containerEl, containerRef, contentRef, setZoom, triggerHUD]);
+      gestureContext.setIsPinching(false);
+      transitionTimerRef.current = null;
+    }, 200);
+  }, [containerEl, containerRef, contentRef, setZoom, triggerHUD, gestureContext]);
 
   // Main native gesture listener
   useEffect(() => {
@@ -165,6 +159,19 @@ export const useTouchZoom = ({
 
     const handleTouchStart = (e: TouchEvent) => {
       stopMomentum();
+
+      // If a previous transition timer was pending, flush it cleanly
+      if (transitionTimerRef.current) {
+        clearTimeout(transitionTimerRef.current);
+        transitionTimerRef.current = null;
+        const content = contentRef?.current ?? null;
+        if (content) {
+          content.style.transition = 'none';
+          content.style.transform = '';
+          content.style.transformOrigin = '';
+          content.style.willChange = '';
+        }
+      }
 
       if (e.touches.length === 2) {
         if (e.cancelable) e.preventDefault();
@@ -184,7 +191,7 @@ export const useTouchZoom = ({
           ...state.current,
           isPinching: true,
           startZoom: zoomRef.current,
-          initialDist: dist,
+          initialDist: Math.max(dist, 1),
           initialMidX: midX,
           initialMidY: midY,
           focalX,
@@ -206,6 +213,7 @@ export const useTouchZoom = ({
         }
 
         setIsPinching(true);
+        gestureContext.setIsPinching(true);
         triggerHUD(zoomRef.current);
       } else if (e.touches.length === 1 && !state.current.isPinching) {
         // Record touch history for velocity tracking
@@ -297,69 +305,62 @@ export const useTouchZoom = ({
         } = state.current;
 
         state.current.isPinching = false;
+        setIsPinching(false);
+        gestureContext.setIsPinching(false);
 
         // Calculate settlement zoom level with bounds clamping
         const targetZoom = clampZoom(startZoom * currentScaleFactor);
-        const settledScale = targetZoom / startZoom;
+        
+        // Immediately sync zoomRef to targetZoom so subsequent gestures never read old zoom
+        zoomRef.current = targetZoom;
 
         const content = contentRef?.current ?? null;
+        const scaleRatio = targetZoom / startZoom;
+        const newScrollLeft = Math.max(0, focalX * scaleRatio - (focalX - initialScrollLeft) - currentPanX);
+        const newScrollTop = Math.max(0, focalY * scaleRatio - (focalY - initialScrollTop) - currentPanY);
+
+        // Atomic commit to state: immediately set new zoom and update HUD
+        setZoom(targetZoom);
+        triggerHUD(targetZoom);
+
         if (content) {
-          // Smooth spring-back CSS transition
-          content.style.transition = 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)';
-          content.style.transform = `translate3d(${currentPanX}px, ${currentPanY}px, 0px) scale(${settledScale})`;
+          content.style.transition = 'none';
+          content.style.transform = '';
+          content.style.transformOrigin = '';
+          content.style.willChange = '';
         }
 
-        if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
-        transitionTimerRef.current = setTimeout(() => {
-          setZoom(targetZoom);
-          triggerHUD(targetZoom);
+        container.scrollLeft = newScrollLeft;
+        container.scrollTop = newScrollTop;
 
-          // Focal scroll compensation
-          const scaleRatio = targetZoom / startZoom;
-          const newScrollLeft = Math.max(0, focalX * scaleRatio - (focalX - initialScrollLeft) - currentPanX);
-          const newScrollTop = Math.max(0, focalY * scaleRatio - (focalY - initialScrollTop) - currentPanY);
+        // Momentum pan physics calculation
+        if (touchHistoryRef.current.length >= 2) {
+          const last = touchHistoryRef.current[touchHistoryRef.current.length - 1];
+          const prev = touchHistoryRef.current[0];
+          const dt = Math.max(1, last.time - prev.time);
+          const vx = (last.x - prev.x) / dt;
+          const vy = (last.y - prev.y) / dt;
 
-          if (content) {
-            content.style.transition = 'none';
-            content.style.transform = '';
-            content.style.transformOrigin = '';
-            content.style.willChange = '';
-          }
+          const speed = Math.hypot(vx, vy);
+          if (speed > 0.2) {
+            let curVx = vx * 16;
+            let curVy = vy * 16;
 
-          requestAnimationFrame(() => {
-            container.scrollLeft = newScrollLeft;
-            container.scrollTop = newScrollTop;
+            const runMomentum = () => {
+              container.scrollLeft -= curVx;
+              container.scrollTop -= curVy;
+              curVx *= 0.92;
+              curVy *= 0.92;
 
-            // Momentum pan physics calculation
-            if (touchHistoryRef.current.length >= 2) {
-              const last = touchHistoryRef.current[touchHistoryRef.current.length - 1];
-              const prev = touchHistoryRef.current[0];
-              const dt = Math.max(1, last.time - prev.time);
-              const vx = (last.x - prev.x) / dt;
-              const vy = (last.y - prev.y) / dt;
-
-              const speed = Math.hypot(vx, vy);
-              if (speed > 0.2) {
-                let curVx = vx * 16;
-                let curVy = vy * 16;
-
-                const runMomentum = () => {
-                  container.scrollLeft -= curVx;
-                  container.scrollTop -= curVy;
-                  curVx *= 0.92;
-                  curVy *= 0.92;
-
-                  if (Math.hypot(curVx, curVy) > 0.4) {
-                    momentumRafRef.current = requestAnimationFrame(runMomentum);
-                  } else {
-                    momentumRafRef.current = null;
-                  }
-                };
+              if (Math.hypot(curVx, curVy) > 0.4) {
                 momentumRafRef.current = requestAnimationFrame(runMomentum);
+              } else {
+                momentumRafRef.current = null;
               }
-            }
-          });
-        }, 200);
+            };
+            momentumRafRef.current = requestAnimationFrame(runMomentum);
+          }
+        }
       }
     };
 
@@ -379,6 +380,7 @@ export const useTouchZoom = ({
         const newZoom = clampZoom(zoomRef.current + delta);
         const newScale = newZoom / 100;
 
+        zoomRef.current = newZoom;
         setZoom(newZoom);
         triggerHUD(newZoom);
 
@@ -393,6 +395,8 @@ export const useTouchZoom = ({
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
     container.addEventListener('touchend', handleTouchEnd, { passive: false });
     container.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
     container.addEventListener('wheel', handleWheel, { passive: false });
     container.addEventListener('gesturestart', preventGesture as EventListener, { passive: false });
     container.addEventListener('gesturechange', preventGesture as EventListener, { passive: false });
@@ -400,36 +404,24 @@ export const useTouchZoom = ({
 
     return () => {
       stopMomentum();
-      if (hudFadeTimeoutRef.current) clearTimeout(hudFadeTimeoutRef.current);
       if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
       container.removeEventListener('touchstart', handleTouchStart);
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
       container.removeEventListener('touchcancel', handleTouchEnd);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('gesturestart', preventGesture as EventListener);
       container.removeEventListener('gesturechange', preventGesture as EventListener);
       container.removeEventListener('gestureend', preventGesture as EventListener);
     };
-  }, [containerEl, containerRef, contentRef, clampZoom, setZoom, onDoubleTap, enabled, animateZoomTo, stopMomentum, triggerHUD, minZoom, maxZoom]);
-
-  // Floating Physics Zoom HUD
-  const zoomHUD = useMemo(() => {
-    if (!showHUD) return null;
-    return (
-      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9990] pointer-events-none select-none animate-in fade-in zoom-in-95 duration-150">
-        <div className="px-4 py-2 rounded-full bg-slate-900/85 dark:bg-slate-800/90 text-white backdrop-blur-md shadow-2xl border border-slate-700/60 flex items-center gap-2">
-          <span className="text-xs font-semibold tracking-wider text-indigo-300 uppercase">Zoom</span>
-          <span className="text-sm font-bold font-mono tabular-nums">{hudZoom}%</span>
-        </div>
-      </div>
-    );
-  }, [showHUD, hudZoom]);
+  }, [containerEl, containerRef, contentRef, clampZoom, setZoom, onDoubleTap, enabled, animateZoomTo, stopMomentum, triggerHUD, gestureContext, minZoom, maxZoom]);
 
   return {
     isPinching,
     currentZoom: hudZoom,
-    zoomHUD,
+    zoomHUD: null,
   };
 };
 
