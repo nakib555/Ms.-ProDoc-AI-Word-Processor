@@ -1084,3 +1084,6 @@ export const TableLayoutTab: React.FC = () => {
     </div>
   );
 };
+
+export default TableLayoutTab;
+

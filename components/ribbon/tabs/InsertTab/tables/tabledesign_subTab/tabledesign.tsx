@@ -149,3 +149,6 @@ export const TableDesignTab: React.FC = () => {
     </>
   );
 };
+
+export default TableDesignTab;
+

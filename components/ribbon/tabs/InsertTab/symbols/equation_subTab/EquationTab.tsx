@@ -20,3 +20,6 @@ export const EquationTab: React.FC = () => {
     </EquationTabProvider>
   );
 };
+
+export default EquationTab;
+

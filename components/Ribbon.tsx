@@ -3,34 +3,38 @@ import { RibbonTab } from '../types';
 import { RibbonTabBar } from './ribbon/RibbonTabBar';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
+import { TableDesignTab } from './ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign';
+import { TableLayoutTab } from './ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout';
+import { EquationTab } from './ribbon/tabs/InsertTab/symbols/equation_subTab/EquationTab';
+import { HeaderFooterTab } from './ribbon/tabs/HeaderFooterTab/HeaderFooterTab';
+
 // Helper for resilient safe lazy loading with retry
 const safeLazy = (importFactory: () => Promise<Record<string, React.ComponentType<any>>>, name: string) => 
     React.lazy(async () => {
-        try {
-            const m = await importFactory();
-            return { default: m[name] || (() => <div className="p-3 text-xs text-slate-500">Feature unavailable</div>) };
-        } catch (err) {
-            console.warn(`Failed to dynamically load ${name}, attempting retry...`, err);
+        let lastError = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
             try {
-                // Single retry attempt after short delay
-                await new Promise(res => setTimeout(res, 300));
                 const m = await importFactory();
-                return { default: m[name] || (() => <div className="p-3 text-xs text-slate-500">Feature unavailable</div>) };
-            } catch (retryErr) {
-                console.error(`Final failure loading ${name}:`, retryErr);
-                return { 
-                    default: () => (
-                        <div className="flex items-center gap-2 p-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
-                            <span>Unable to load {name} tools right now.</span>
-                            <button onClick={() => window.location.reload()} className="underline font-semibold">Reload</button>
-                        </div>
-                    ) 
-                };
+                const Comp = m[name] || (m as any).default;
+                if (Comp) return { default: Comp };
+            } catch (err) {
+                lastError = err;
+                console.warn(`Failed attempt ${attempt} loading ${name}, retrying...`, err);
+                await new Promise(res => setTimeout(res, 200 * attempt));
             }
         }
+        console.error(`Final failure loading ${name}:`, lastError);
+        return { 
+            default: () => (
+                <div className="flex items-center gap-2 p-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
+                    <span>Unable to load {name} tools right now.</span>
+                    <button onClick={() => window.location.reload()} className="underline font-semibold">Reload</button>
+                </div>
+            ) 
+        };
     });
 
-// Lazy Load Tabs as factory functions
+// Lazy Load primary Tabs
 const HomeTab = safeLazy(() => import('./ribbon/tabs/HomeTab/HomeTab'), 'HomeTab');
 const InsertTab = safeLazy(() => import('./ribbon/tabs/InsertTab/InsertTab'), 'InsertTab');
 const ViewTab = safeLazy(() => import('./ribbon/tabs/ViewTab/ViewTab'), 'ViewTab');
@@ -41,10 +45,6 @@ const MailingsTab = safeLazy(() => import('./ribbon/tabs/MailingsTab/MailingsTab
 const DrawTab = safeLazy(() => import('./ribbon/tabs/DrawTab/DrawTab'), 'DrawTab');
 const DesignTab = safeLazy(() => import('./ribbon/tabs/DesignTab/DesignTab'), 'DesignTab');
 const ReviewTab = safeLazy(() => import('./ribbon/tabs/ReviewTab/ReviewTab'), 'ReviewTab');
-const TableDesignTab = safeLazy(() => import('./ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign'), 'TableDesignTab');
-const TableLayoutTab = safeLazy(() => import('./ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout'), 'TableLayoutTab');
-const EquationTab = safeLazy(() => import('./ribbon/tabs/InsertTab/symbols/equation_subTab/EquationTab'), 'EquationTab');
-const HeaderFooterTab = safeLazy(() => import('./ribbon/tabs/HeaderFooterTab/HeaderFooterTab'), 'HeaderFooterTab');
 
 interface RibbonProps {
   activeTab: RibbonTab | null;

@@ -42,3 +42,6 @@ export const HeaderFooterTab: React.FC = () => {
     </InsertTabProvider>
   );
 };
+
+export default HeaderFooterTab;
+
