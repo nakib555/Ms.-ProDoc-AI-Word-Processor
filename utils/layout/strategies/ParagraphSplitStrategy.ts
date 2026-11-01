@@ -15,6 +15,28 @@ export class ParagraphSplitStrategy implements SplitStrategy {
   ): SplitResult {
     const remainingSpace = context.remainingSpace;
     const effectiveLimit = Math.max(0, remainingSpace - context.layoutContext.environment.safetyBuffer);
+    const tag = node.tagName.toUpperCase();
+    const isHeading = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(tag);
+    const keepWithNext = isHeading || node.getAttribute('data-keep-with-next') === 'true';
+
+    // MS Word Keep-With-Next Rule:
+    // Headings are atomic blocks and should never be split or left alone at the bottom of a page without subsequent content
+    if (keepWithNext) {
+      const origHeight = context.measure(node);
+      const minRequiredSpace = origHeight + 40; // Needs room for heading + at least 2 lines of subsequent text
+      if (minRequiredSpace > effectiveLimit && context.remainingSpace < context.pageHeight * 0.9) {
+        return {
+          status: SplitStatus.Deferred,
+          keep: null,
+          move: node.cloneNode(true) as HTMLElement,
+          metrics: {
+            originalHeight: origHeight,
+            remainingSpace,
+            overflow: origHeight - remainingSpace
+          }
+        };
+      }
+    }
 
     const keepNode = node.cloneNode(false) as HTMLElement;
     const moveNode = node.cloneNode(false) as HTMLElement;

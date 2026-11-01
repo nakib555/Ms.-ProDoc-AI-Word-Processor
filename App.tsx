@@ -92,10 +92,6 @@ const AppContent: React.FC = () => {
               <Editor />
             </ErrorBoundary>
 
-            
- 
-
-
             {/* File Import Loading State with Progress Bar and Percentage Indicator */}
             {importState?.active && (
               <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/70 z-50 flex items-center justify-center backdrop-blur-md transition-all duration-300 no-print">

@@ -4,9 +4,11 @@ import React, { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallba
 import { createPortal } from 'react-dom';
 import { PageConfig, EditingArea } from '../../types';
 import { PAGE_SIZES } from '../../constants';
+import { getPhysicalDimensions } from '../../utils/measurement';
 import { useMathLive } from '../../hooks/useMathLive';
 import { useEditor } from '../../contexts/EditorContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useGestureContext } from '../../contexts/GestureContext';
 import { ResizerOverlay } from './ResizerOverlay';
 import { TableResizerOverlay } from './TableResizerOverlay';
 import { TableContextMenu } from './TableContextMenu';
@@ -95,6 +97,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     updateEndnote,
     removeEndnote
   } = useEditor();
+
+  const { isGestureLocked } = useGestureContext();
 
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark' || theme === 'ocean';
@@ -982,18 +986,15 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
   };
   
-  // Dimensions in Inches
-  let widthIn = 0;
-  let heightIn = 0;
-  
-  if (config.size === 'Custom' && config.customWidth && config.customHeight) {
-    widthIn = config.customWidth;
-    heightIn = config.customHeight;
-  } else {
-    const base = PAGE_SIZES[config.size as keyof typeof PAGE_SIZES] || PAGE_SIZES['Letter'];
-    widthIn = config.orientation === 'portrait' ? base.width / 96 : base.height / 96;
-    heightIn = config.orientation === 'portrait' ? base.height / 96 : base.width / 96;
-  }
+  // Dimensions in Inches derived from exact physical paper definition
+  const phys = getPhysicalDimensions(
+    config.size as string,
+    config.orientation,
+    config.customWidth,
+    config.customHeight
+  );
+  const widthIn = phys.widthInches;
+  const heightIn = phys.heightInches;
 
   // Minimum body gap (approx 2 inches) used for safe header/footer max height calculation
   const MIN_BODY_GAP_IN = 2; 
@@ -1600,11 +1601,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const safeMaxHeaderHeight = (heightIn - MIN_BODY_GAP_IN) / 2;
   const safeMaxFooterHeight = (heightIn - MIN_BODY_GAP_IN) / 2;
-  const isBodyEditable = true; 
-  const isHeaderFooterEditable = isHeaderFooterMode && !isKeyboardLocked && !selectionMode;
+  const isBodyEditable = !readOnly && !isKeyboardLocked && !isGestureLocked && !selectionMode; 
+  const isHeaderFooterEditable = isHeaderFooterMode && !readOnly && !isKeyboardLocked && !isGestureLocked && !selectionMode;
   let cursorStyle = 'cursor-text';
   if (selectionMode) cursorStyle = 'cursor-crosshair';
-  else if (isKeyboardLocked) cursorStyle = 'cursor-default';
+  else if (isKeyboardLocked || isGestureLocked) cursorStyle = 'cursor-default';
 
 
   return (
@@ -1656,7 +1657,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               ref={headerRef}
               className={`prodoc-header w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
               contentEditable={isHeaderFooterEditable}
-              inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
+              inputMode={isKeyboardLocked || isGestureLocked || selectionMode ? "none" : "text"}
               suppressContentEditableWarning
               onInput={handleHeaderInput}
               onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
@@ -1707,10 +1708,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
                 setEditorElement(el);
               }
             }}
-            className={`prodoc-editor w-full outline-none break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode ? 'pointer-events-none select-none' : ''}`}
+            className={`prodoc-editor w-full outline-none break-words z-10 ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isHeaderFooterMode || isGestureLocked ? 'pointer-events-none select-none' : ''}`}
             contentEditable={!isHeaderFooterMode && isBodyEditable}
 
-            inputMode={isKeyboardLocked ? "none" : "text"}
+            inputMode={isKeyboardLocked || isGestureLocked || selectionMode ? "none" : "text"}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
             onFocus={onFocus}
@@ -1836,7 +1837,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               ref={footerRef}
               className={`prodoc-footer w-full min-h-full outline-none ${isHeaderFooterEditable ? 'cursor-text pointer-events-auto' : 'cursor-default pointer-events-none'}`}
               contentEditable={isHeaderFooterEditable}
-              inputMode={isKeyboardLocked || selectionMode ? "none" : "text"}
+              inputMode={isKeyboardLocked || isGestureLocked || selectionMode ? "none" : "text"}
               suppressContentEditableWarning
               onInput={handleFooterInput}
               onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}

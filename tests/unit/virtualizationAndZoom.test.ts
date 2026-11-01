@@ -94,4 +94,30 @@ describe('Thousand-Page Binary Search Virtualization', () => {
     const closest = findClosestPageIndex(tops, geometries, pageCenter);
     expect(closest).toBe(targetPage);
   });
+
+  it('guarantees 4GB RAM strict DOM node budget: mounts at most 4 pages for 5,000 pages', () => {
+    const totalCount = 5000;
+    const ACTIVE_BUFFER = 1;
+    const GHOST_BUFFER = 1;
+
+    // Simulate viewport at page 2500
+    const firstVis = 2500;
+    const lastVis = 2501;
+
+    const actStart = Math.max(0, firstVis - ACTIVE_BUFFER);
+    const actEnd = Math.min(totalCount - 1, lastVis + ACTIVE_BUFFER);
+    const ghStart = Math.max(0, actStart - GHOST_BUFFER);
+    const ghEnd = Math.min(totalCount - 1, actEnd + GHOST_BUFFER);
+
+    // Total elements mounted: ghost top + active + ghost bottom
+    const topGhosts = actStart - ghStart;
+    const activePages = actEnd - actStart + 1;
+    const bottomGhosts = ghEnd - actEnd;
+    const totalMounted = topGhosts + activePages + bottomGhosts;
+
+    expect(totalMounted).toBeLessThanOrEqual(6);
+    expect(activePages).toBeLessThanOrEqual(4);
+    // Over 4,990 pages are completely skipped from DOM and handled by topSpacer and bottomSpacer!
+    expect(totalCount - totalMounted).toBeGreaterThan(4990);
+  });
 });

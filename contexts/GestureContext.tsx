@@ -4,6 +4,7 @@ import { ZoomIn, ZoomOut } from 'lucide-react';
 export interface GestureState {
   isPinching: boolean;
   isPanning: boolean;
+  isGestureLocked: boolean;
   scale: number;
   panX: number;
   panY: number;
@@ -18,6 +19,7 @@ export interface GestureContextType {
   gestureState: GestureState;
   isPinching: boolean;
   isPanning: boolean;
+  isGestureLocked: boolean;
   hudZoom: number;
   showHud: boolean;
   sheetDragY: number;
@@ -27,6 +29,8 @@ export interface GestureContextType {
   setHudZoom: (val: number) => void;
   setIsPinching: (val: boolean) => void;
   setIsPanning: (val: boolean) => void;
+  setGestureLocked: (locked: boolean) => void;
+  triggerGestureLock: (timeoutMs?: number) => void;
   setShowHud: (val: boolean) => void;
   setSheetDragY: (val: number) => void;
   setIsDraggingSheet: (val: boolean) => void;
@@ -39,6 +43,7 @@ export interface GestureContextType {
 const defaultGestureState: GestureState = {
   isPinching: false,
   isPanning: false,
+  isGestureLocked: false,
   scale: 1,
   panX: 0,
   panY: 0,
@@ -56,24 +61,57 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const activeContainerRef = useRef<HTMLDivElement | null>(null);
   const activeContentRef = useRef<HTMLDivElement | null>(null);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gestureLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setGestureLocked = useCallback((locked: boolean) => {
+    if (gestureLockTimerRef.current) {
+      clearTimeout(gestureLockTimerRef.current);
+      gestureLockTimerRef.current = null;
+    }
+    setGestureState(prev => (prev.isGestureLocked === locked ? prev : { ...prev, isGestureLocked: locked }));
+  }, []);
+
+  const triggerGestureLock = useCallback((timeoutMs: number = 400) => {
+    // Dismiss virtual keyboard and drop focus if an editable element currently has focus
+    if (typeof document !== 'undefined') {
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (activeEl && (activeEl.isContentEditable || activeEl.closest('.prodoc-editor') || activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        activeEl.blur();
+      }
+    }
+
+    setGestureState(prev => prev.isGestureLocked ? prev : { ...prev, isGestureLocked: true });
+
+    if (gestureLockTimerRef.current) {
+      clearTimeout(gestureLockTimerRef.current);
+    }
+    gestureLockTimerRef.current = setTimeout(() => {
+      setGestureState(prev => ({ ...prev, isGestureLocked: false }));
+      gestureLockTimerRef.current = null;
+    }, timeoutMs);
+  }, []);
 
   const setHudZoom = useCallback((val: number) => {
     setGestureState(prev => ({ ...prev, hudZoom: Math.round(val), showHud: true }));
     if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     hudTimerRef.current = setTimeout(() => {
       setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
+      hudTimerRef.current = null;
     }, 600);
   }, []);
 
   const triggerScrollHud = useCallback((val?: number) => {
+    // Only display HUD if an explicit zoom level is passed (never on plain scroll)
+    if (val === undefined) return;
     setGestureState(prev => ({
       ...prev,
-      hudZoom: val !== undefined ? Math.round(val) : prev.hudZoom,
+      hudZoom: Math.round(val),
       showHud: true,
     }));
     if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
     hudTimerRef.current = setTimeout(() => {
       setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
+      hudTimerRef.current = null;
     }, 600);
   }, []);
 
@@ -87,12 +125,14 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!val) {
       hudTimerRef.current = setTimeout(() => {
         setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
+        hudTimerRef.current = null;
       }, 600);
     } else {
-      // Safety auto-dismiss guard in case touchend is interrupted
+      // Safety auto-dismiss guard in case touchend is interrupted or dropped
       hudTimerRef.current = setTimeout(() => {
         setGestureState(prev => ({ ...prev, showHud: false, isPinching: false }));
-      }, 3000);
+        hudTimerRef.current = null;
+      }, 1500);
     }
   }, []);
 
@@ -154,6 +194,7 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     gestureState,
     isPinching: gestureState.isPinching,
     isPanning: gestureState.isPanning,
+    isGestureLocked: gestureState.isGestureLocked,
     hudZoom: gestureState.hudZoom,
     showHud: gestureState.showHud,
     sheetDragY: gestureState.sheetDragY,
@@ -163,6 +204,8 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setHudZoom,
     setIsPinching,
     setIsPanning,
+    setGestureLocked,
+    triggerGestureLock,
     setShowHud,
     setSheetDragY,
     setIsDraggingSheet,
@@ -176,6 +219,8 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     triggerScrollHud,
     setIsPinching,
     setIsPanning,
+    setGestureLocked,
+    triggerGestureLock,
     setShowHud,
     setSheetDragY,
     setIsDraggingSheet,
@@ -196,6 +241,7 @@ const fallbackContextValue: GestureContextType = {
   gestureState: defaultGestureState,
   isPinching: false,
   isPanning: false,
+  isGestureLocked: false,
   hudZoom: 100,
   showHud: false,
   sheetDragY: 0,
@@ -206,6 +252,8 @@ const fallbackContextValue: GestureContextType = {
   triggerScrollHud: () => {},
   setIsPinching: () => {},
   setIsPanning: () => {},
+  setGestureLocked: () => {},
+  triggerGestureLock: () => {},
   setShowHud: () => {},
   setSheetDragY: () => {},
   setIsDraggingSheet: () => {},

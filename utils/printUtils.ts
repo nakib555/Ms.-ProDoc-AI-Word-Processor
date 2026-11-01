@@ -1,5 +1,5 @@
 import { PageConfig } from '../types';
-import { PAGE_SIZES } from '../constants';
+import { getPhysicalDimensions } from './measurement';
 import { paginateContent } from './layoutEngine';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -64,25 +64,22 @@ export const generatePdfPrint = async (
     try {
         const { size, orientation } = config;
         
-        let widthIn = 8.5;
-        let heightIn = 11;
+        const phys = getPhysicalDimensions(
+            size as string,
+            orientation,
+            config.customWidth,
+            config.customHeight
+        );
+        const widthIn = phys.widthInches;
+        const heightIn = phys.heightInches;
 
-        if (size === 'Custom' && config.customWidth && config.customHeight) {
-            widthIn = config.customWidth;
-            heightIn = config.customHeight;
-        } else {
-            const baseSize = PAGE_SIZES[size as string] || PAGE_SIZES['Letter'];
-            widthIn = baseSize.width / 96;
-            heightIn = baseSize.height / 96;
-        }
-
-        if (orientation === 'landscape') {
-            const temp = widthIn;
-            widthIn = heightIn;
-            heightIn = temp;
-        }
-
-        const sizeCss = `${widthIn}in ${heightIn}in`;
+        const sizeCss = size === 'A4' 
+            ? (orientation === 'landscape' ? '297mm 210mm' : '210mm 297mm')
+            : size === 'A3'
+            ? (orientation === 'landscape' ? '420mm 297mm' : '297mm 420mm')
+            : size === 'A5'
+            ? (orientation === 'landscape' ? '210mm 148mm' : '148mm 210mm')
+            : `${widthIn}in ${heightIn}in`;
 
         // Determine which pages to render
         const paginated = paginateContent(content, config);

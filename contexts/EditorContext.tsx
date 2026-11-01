@@ -449,7 +449,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
-  const [documentTitle, setDocumentTitle] = useState("IT Support Exam Questions & Answers (Sets 01 - 11)");
+  const [documentTitle, setDocumentTitle] = useState("National Technical Examination - IT Support & Systems Engineering Study Guide");
   const documentTitleRef = useRef(documentTitle);
   useEffect(() => {
     documentTitleRef.current = documentTitle;
@@ -830,7 +830,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         case 'selectAll': document.execCommand('selectAll'); nativeCommandExecuted = true; break;
         case 'removeFormat': document.execCommand('removeFormat'); nativeCommandExecuted = true; break;
         case 'zoomReset': 
-            setZoomMode('fit-page');
+            setZoomMode('custom');
+            setZoom(100);
             break;
         case 'fitPage': setZoomMode('fit-page'); break;
         case 'fitWidth': setZoomMode('fit-width'); break;

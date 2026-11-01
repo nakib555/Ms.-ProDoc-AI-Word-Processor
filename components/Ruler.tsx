@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import { PageConfig } from '../types';
 import { PAGE_SIZES, PAGE_MARGIN_PADDING } from '../constants';
+import { getPhysicalDimensions } from '../utils/measurement';
 
 interface RulerProps {
   pageConfig: PageConfig;
@@ -11,14 +12,16 @@ interface RulerProps {
 
 export const Ruler: React.FC<RulerProps> = React.memo(({ pageConfig, zoom, onDoubleClick }) => {
   
-  // Width in px (96 DPI)
+  // Width in px (96 DPI) derived from physical measurement core
   const width = useMemo(() => {
-      if (pageConfig.size === 'Custom' && pageConfig.customWidth) {
-          return pageConfig.customWidth * 96;
-      }
-      const base = PAGE_SIZES[pageConfig.size as string] || PAGE_SIZES['Letter'];
-      return pageConfig.orientation === 'portrait' ? base.width : base.height;
-  }, [pageConfig.size, pageConfig.orientation, pageConfig.customWidth]);
+    const phys = getPhysicalDimensions(
+      pageConfig.size as string,
+      pageConfig.orientation,
+      pageConfig.customWidth,
+      pageConfig.customHeight
+    );
+    return phys.widthPx;
+  }, [pageConfig.size, pageConfig.orientation, pageConfig.customWidth, pageConfig.customHeight]);
 
   const scale = zoom / 100;
   

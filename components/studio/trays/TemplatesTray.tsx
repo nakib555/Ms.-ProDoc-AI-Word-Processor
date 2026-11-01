@@ -17,7 +17,7 @@ export const TemplatesTray: React.FC = () => {
     if (!window.confirm('Apply template? This will replace current document contents.')) return;
 
     if (type === 'mcq_exam') {
-      setDocumentTitle('IT Support Exam Questions & Answers (Sets 01 - 11)');
+      setDocumentTitle('IT Support Exam Questions & Answers (Sets 01 - 19)');
       editor.commands.setContent(DEFAULT_CONTENT);
     } else if (type === 'academic') {
       setDocumentTitle('Academic Research Paper');

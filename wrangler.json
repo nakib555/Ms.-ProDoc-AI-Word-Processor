@@ -1,7 +1,6 @@
 {
-  "name": "prodoc-ai-word-processor",
-  "compatibility_date": "2024-11-25",
-  "assets": {
-    "directory": "./dist"
-  }
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-doc-writer",
+  "compatibility_date": "2024-09-23",
+  "pages_build_output_dir": "./dist"
 }

@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState, useMemo, Suspense } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback, Suspense } from 'react';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText, Droplets } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -17,7 +17,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
   const { wordCount, zoom, viewMode, setViewMode, content, currentPage, setCurrentPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
-  const { setHudZoom } = useGestureContext();
+  const { setHudZoom, triggerGestureLock } = useGestureContext();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const [showWordCountDialog, setShowWordCountDialog] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
@@ -34,11 +34,36 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     }
   };
 
-  // Calculate stats only when necessary (when dialog is open or about to open)
   const detailedStats = useMemo(() => {
       if (!showWordCountDialog) return null;
       return getDocumentStats(content);
   }, [content, showWordCountDialog]);
+
+  // Double-tap / double-click zoom toggle solely on the zoom bar
+  const lastZoomBarTapRef = useRef<number>(0);
+  const handleZoomBarReset = useCallback((e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    triggerGestureLock(350);
+    setZoomMode('custom');
+    setZoom(prev => {
+      const next = prev === 100 ? 150 : 100;
+      setHudZoom(next);
+      return next;
+    });
+  }, [triggerGestureLock, setZoomMode, setZoom, setHudZoom]);
+
+  const handleZoomBarTouchEnd = useCallback((e: React.TouchEvent) => {
+    const now = Date.now();
+    if (now - lastZoomBarTapRef.current < 320) {
+      handleZoomBarReset(e);
+      lastZoomBarTapRef.current = 0;
+    } else {
+      lastZoomBarTapRef.current = now;
+    }
+  }, [handleZoomBarReset]);
 
 
   useEffect(() => {
@@ -47,6 +72,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
+      triggerGestureLock(350);
       if (zoomMode !== 'custom') setZoomMode('custom');
       const direction = e.deltaY > 0 ? -1 : 1;
       setZoom(prev => {
@@ -191,12 +217,15 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             {/* Zoom Controls - Optimized for Mobile */}
             <div 
                 ref={zoomControlsRef}
-                className="flex items-center gap-0.5 sm:gap-3 cursor-ew-resize hover:bg-slate-200/70 dark:hover:bg-slate-800/50 rounded-lg px-1 transition-colors"
-                title="Scroll to Zoom"
+                onDoubleClick={handleZoomBarReset}
+                onTouchEnd={handleZoomBarTouchEnd}
+                className="flex items-center gap-0.5 sm:gap-3 cursor-ew-resize hover:bg-slate-200/70 dark:hover:bg-slate-800/50 rounded-lg px-1 transition-colors select-none"
+                title="Scroll to Zoom · Double-tap or double-click to toggle 100% zoom"
             >
                 <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
                 <button 
                     onClick={() => {
+                        triggerGestureLock(350);
                         if (zoomMode !== 'custom') setZoomMode('custom');
                         setZoom(z => {
                             const next = Math.max(10, z - 10);
@@ -217,6 +246,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                         max="500" 
                         value={zoom} 
                         onChange={(e) => {
+                            triggerGestureLock(350);
                             if (zoomMode !== 'custom') setZoomMode('custom');
                             const next = Number(e.target.value);
                             setZoom(next);
@@ -229,6 +259,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 
                 <button 
                     onClick={() => {
+                        triggerGestureLock(350);
                         // Cycle zoom modes on click
                         if (zoomMode === 'custom') setZoomMode('fit-width');
                         else if (zoomMode === 'fit-width') setZoomMode('fit-page');
@@ -245,6 +276,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 
                 <button 
                     onClick={() => {
+                        triggerGestureLock(350);
                         if (zoomMode !== 'custom') setZoomMode('custom');
                         setZoom(z => {
                             const next = Math.min(500, z + 10);
@@ -311,4 +343,5 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 };
 
 
+export { StatusBar };
 export default React.memo(StatusBar);

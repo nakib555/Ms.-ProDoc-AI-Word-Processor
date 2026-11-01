@@ -4,6 +4,7 @@ import { PageConfig } from '../../../../../types';
 import { useMathLive } from '../../../../../hooks/useMathLive';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
+import { useGestureContext } from '../../../../../contexts/GestureContext';
 
 interface WebLayoutViewProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
@@ -30,6 +31,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { setActiveElementType, setZoom, zoomMode, setZoomMode } = useEditor();
+  const { isGestureLocked, triggerGestureLock } = useGestureContext();
 
   const { isPinching } = useTouchZoom({
     containerRef,
@@ -41,16 +43,13 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
       }
       setZoom(newZoomOrUpdater);
     },
-    minZoom: 20,
-    maxZoom: 400,
-    onDoubleTap: () => {
-      if (zoomMode === 'fit-width') {
+    onPinchStart: () => {
+      if (zoomMode !== 'custom') {
         setZoomMode('custom');
-        setZoom(100);
-      } else {
-        setZoomMode('fit-width');
       }
     },
+    minZoom: 20,
+    maxZoom: 400,
   });
   
   // Sync content
@@ -120,16 +119,17 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
       ref={containerRef}
       className="flex-1 w-full overflow-y-auto bg-slate-100 dark:bg-slate-900 p-8 pb-24 md:pb-8 flex flex-col items-center relative touch-pan-x touch-pan-y"
       onClick={onPageClick}
+      onScroll={() => triggerGestureLock(400)}
       style={{ willChange: 'transform' }}
     >
-      {zoomHUD}
       <div 
         ref={editorRef}
-        contentEditable
+        contentEditable={!isGestureLocked}
+        inputMode={isGestureLocked ? "none" : "text"}
         suppressContentEditableWarning
         onInput={onInput}
         onPaste={onPaste}
-        className={`bg-white dark:bg-slate-800 shadow-xl outline-none p-12 min-h-screen w-full max-w-5xl prose dark:prose-invert ${showFormattingMarks ? 'show-formatting-marks' : ''}`}
+        className={`bg-white dark:bg-slate-800 shadow-xl outline-none p-12 min-h-screen w-full max-w-5xl prose dark:prose-invert ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isGestureLocked ? 'pointer-events-none select-none' : ''}`}
         style={{
           ...backgroundStyle,
           ...(isPinching ? {} : {

@@ -36,7 +36,7 @@ export const NewModal: React.FC = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
       <button 
-        onClick={() => { setContent(DEFAULT_CONTENT); setDocumentTitle('IT Support Exam Questions & Answers (Sets 01 - 11)'); closeModal(); }}
+        onClick={() => { setContent(DEFAULT_CONTENT); setDocumentTitle('IT Support Exam Questions & Answers (Sets 01 - 19)'); closeModal(); }}
         className="group text-left"
       >
         <div className="bg-white aspect-[3/4] border border-slate-200 shadow-sm group-hover:shadow-md group-hover:ring-2 ring-blue-500 transition-all p-3 mb-3 rounded-lg overflow-hidden relative">
@@ -48,7 +48,7 @@ export const NewModal: React.FC = () => {
           <div className="w-full h-1 bg-slate-200 mb-1 rounded-sm"></div>
           <div className="w-3/4 h-1 bg-slate-100 mb-1 rounded-sm"></div>
         </div>
-        <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">Full Exam Paper (Sets 01 - 11)</span>
+        <span className="text-sm font-medium text-slate-700 group-hover:text-blue-600">Full Exam Paper (Sets 01 - 19)</span>
       </button>
 
       <button 

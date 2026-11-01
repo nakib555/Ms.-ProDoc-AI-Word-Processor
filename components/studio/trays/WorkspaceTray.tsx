@@ -21,12 +21,12 @@ export const WorkspaceTray: React.FC = () => {
   } = useEditor();
 
   const zoomPresets: StudioDropdownItem[] = [
-    { id: '50', label: '50%', onClick: () => { setZoom(0.5); setZoomMode('custom'); } },
-    { id: '75', label: '75%', onClick: () => { setZoom(0.75); setZoomMode('custom'); } },
-    { id: '100', label: '100% (Normal)', onClick: () => { setZoom(1.0); setZoomMode('custom'); } },
-    { id: '125', label: '125%', onClick: () => { setZoom(1.25); setZoomMode('custom'); } },
-    { id: '150', label: '150%', onClick: () => { setZoom(1.5); setZoomMode('custom'); } },
-    { id: '200', label: '200%', onClick: () => { setZoom(2.0); setZoomMode('custom'); } },
+    { id: '50', label: '50%', onClick: () => { setZoom(50); setZoomMode('custom'); } },
+    { id: '75', label: '75%', onClick: () => { setZoom(75); setZoomMode('custom'); } },
+    { id: '100', label: '100% (Normal)', onClick: () => { setZoom(100); setZoomMode('custom'); } },
+    { id: '125', label: '125%', onClick: () => { setZoom(125); setZoomMode('custom'); } },
+    { id: '150', label: '150%', onClick: () => { setZoom(150); setZoomMode('custom'); } },
+    { id: '200', label: '200%', onClick: () => { setZoom(200); setZoomMode('custom'); } },
     { id: 'div', label: '', divider: true },
     { id: 'fit-width', label: 'Fit to Window Width', onClick: () => setZoomMode('fit-width') },
     { id: 'fit-page', label: 'Fit Entire Page', onClick: () => setZoomMode('fit-page') },
@@ -90,7 +90,7 @@ export const WorkspaceTray: React.FC = () => {
       <StudioButton
         icon={RotateCcw}
         label="Reset (100%)"
-        onClick={() => { setZoom(1.0); setZoomMode('custom'); }}
+        onClick={() => { setZoom(100); setZoomMode('custom'); }}
         title="Reset zoom to 100%"
         size="sm"
       />

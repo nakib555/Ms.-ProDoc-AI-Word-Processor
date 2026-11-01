@@ -6,8 +6,10 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 import { PageConfig } from '../../../../../types';
 import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
+import { GhostPage } from '../../../../ui/GhostPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
 import { PAGE_SIZES } from '../../../../../constants';
+import { getPhysicalDimensions } from '../../../../../utils/measurement';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
 import { useGestureContext } from '../../../../../contexts/GestureContext';
 
@@ -362,7 +364,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setZoomMode,
     isTableResizing
   } = useEditor();
-  const { triggerScrollHud } = useGestureContext();
+  const { triggerGestureLock } = useGestureContext();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
   const rulerContainerRef = useRef<HTMLDivElement>(null);
@@ -382,16 +384,13 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
       setZoom(newZoomOrUpdater);
     },
-    minZoom: 15,
-    maxZoom: 500,
-    onDoubleTap: () => {
-      if (zoomMode === 'fit-width') {
+    onPinchStart: () => {
+      if (zoomMode !== 'custom') {
         setZoomMode('custom');
-        setZoom(100);
-      } else {
-        setZoomMode('fit-width');
       }
     },
+    minZoom: 15,
+    maxZoom: 500,
   });
 
   const lastAppliedFitZoomRef = useRef<number | null>(null);
@@ -405,22 +404,14 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
 
       const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
-      let pageWidth = 0;
-      let pageHeight = 0;
-
-      if (activePageConfig.size === 'Custom' && activePageConfig.customWidth && activePageConfig.customHeight) {
-          pageWidth = activePageConfig.customWidth * 96;
-          pageHeight = activePageConfig.customHeight * 96;
-      } else {
-          const base = PAGE_SIZES[activePageConfig.size as string] || PAGE_SIZES['Letter'];
-          if (activePageConfig.orientation === 'portrait') {
-              pageWidth = base.width;
-              pageHeight = base.height;
-          } else {
-              pageWidth = base.height;
-              pageHeight = base.width;
-          }
-      }
+      const phys = getPhysicalDimensions(
+        activePageConfig.size as string,
+        activePageConfig.orientation,
+        activePageConfig.customWidth,
+        activePageConfig.customHeight
+      );
+      const pageWidth = phys.widthPx;
+      const pageHeight = phys.heightPx;
 
       const padding = 64; // 32px padding on each side
       const availableWidth = Math.max(100, width - padding);
@@ -561,16 +552,38 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       return Math.max(width, max + 64);
   }, [pageGeometries, width]);
 
-  // Compute Virtual Window
-  const VIRTUAL_BUFFER = 2; // Render 2 pages above and 2 pages below viewport
+  // 4GB RAM Optimized Virtual Window for 1000+ Pages with Ghost Shimmer Skeletons
+  // Strict DOM node budget: mounts at most 2-4 pages total (active + ghost buffer)
+  const ACTIVE_BUFFER = 1; // Heavy editable TipTap page window around viewport (1 above, 1 below)
+  const GHOST_BUFFER = 1;  // Minimal animated shimmer GhostPage buffer (1 above, 1 below)
   const viewportHeight = height > 0 ? height : 900;
   
-  const { startIndex, endIndex, topSpacerHeight, bottomSpacerHeight } = useMemo(() => {
+  const { 
+    activeStartIndex, 
+    activeEndIndex, 
+    ghostStartIndex, 
+    ghostEndIndex, 
+    topSpacerHeight, 
+    bottomSpacerHeight 
+  } = useMemo(() => {
     const totalCount = pagesData.length;
-    if (totalCount <= 5) {
+    if (totalCount === 0) {
       return {
-        startIndex: 0,
-        endIndex: totalCount - 1,
+        activeStartIndex: 0,
+        activeEndIndex: -1,
+        ghostStartIndex: 0,
+        ghostEndIndex: 1,
+        topSpacerHeight: 0,
+        bottomSpacerHeight: 0
+      };
+    }
+
+    if (totalCount <= 4) {
+      return {
+        activeStartIndex: 0,
+        activeEndIndex: totalCount - 1,
+        ghostStartIndex: 0,
+        ghostEndIndex: totalCount - 1,
         topSpacerHeight: 0,
         bottomSpacerHeight: 0
       };
@@ -583,24 +596,30 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     const firstVis = findFirstVisiblePageIndex(pageTops, pageGeometries, viewTop);
     const lastVis = Math.max(firstVis, findLastVisiblePageIndex(pageTops, viewBottom));
 
-    let start = Math.max(0, firstVis - VIRTUAL_BUFFER);
-    let end = Math.min(totalCount - 1, lastVis + VIRTUAL_BUFFER);
+    let actStart = Math.max(0, firstVis - ACTIVE_BUFFER);
+    let actEnd = Math.min(totalCount - 1, lastVis + ACTIVE_BUFFER);
 
-    // Keep active page mounted if user has focus
+    // Keep active focused page mounted
     const activeIdx = currentPage - 1;
     if (activeIdx >= 0 && activeIdx < totalCount) {
-      if (activeIdx < start) start = activeIdx;
-      if (activeIdx > end) end = activeIdx;
+      if (activeIdx < actStart) actStart = activeIdx;
+      if (activeIdx > actEnd) actEnd = activeIdx;
     }
 
-    const topSpacer = start > 0 ? (pageTops[start] - pageTops[0]) : 0;
-    const bottomSpacer = end < totalCount - 1 
-      ? (pageTops[totalCount - 1] + pageGeometries[totalCount - 1].scaledHeight) - (pageTops[end] + pageGeometries[end].scaledHeight)
+    // Ghost buffer around active window
+    const ghStart = Math.max(0, actStart - GHOST_BUFFER);
+    const ghEnd = Math.min(totalCount - 1, actEnd + GHOST_BUFFER);
+
+    const topSpacer = ghStart > 0 ? (pageTops[ghStart] - pageTops[0]) : 0;
+    const bottomSpacer = ghEnd < totalCount - 1 
+      ? (pageTops[totalCount - 1] + pageGeometries[totalCount - 1].scaledHeight) - (pageTops[ghEnd] + pageGeometries[ghEnd].scaledHeight)
       : 0;
 
     return {
-      startIndex: start,
-      endIndex: end,
+      activeStartIndex: actStart,
+      activeEndIndex: actEnd,
+      ghostStartIndex: ghStart,
+      ghostEndIndex: ghEnd,
       topSpacerHeight: Math.max(0, topSpacer),
       bottomSpacerHeight: Math.max(0, bottomSpacer)
     };
@@ -610,8 +629,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     const container = e.currentTarget;
     const newScrollTop = container.scrollTop;
 
-    // Trigger HUD auto-hide after 600ms of scroll/gesture inactivity
-    triggerScrollHud();
+    // Auto-lock editing during scroll with 400ms auto-unlock to prevent mobile keyboard popups & layout misalignment
+    triggerGestureLock(400);
 
     if (rulerContainerRef.current) {
         rulerContainerRef.current.scrollLeft = container.scrollLeft;
@@ -632,7 +651,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         setCurrentPage(closestPage);
       }
     });
-  }, [currentPage, setCurrentPage, pageTops, pageGeometries, triggerScrollHud]);
+  }, [currentPage, setCurrentPage, pageTops, pageGeometries, triggerGestureLock]);
 
   const setRefs = useCallback((node: HTMLDivElement | null) => {
       scrollContainerRef.current = node;
@@ -656,16 +675,56 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     }
   }, [currentPage, pageTops, pageGeometries]);
 
-  // Slice visible pages
-  const visiblePages = useMemo(() => {
-    const pages: { pageData: { html: string; config: PageConfig }; index: number }[] = [];
-    for (let i = startIndex; i <= endIndex; i++) {
-      if (pagesData[i]) {
-        pages.push({ pageData: pagesData[i], index: i });
+  // Slice rendered items: top ghost skeletons, active editable pages, and bottom ghost skeletons
+  const renderedItems = useMemo(() => {
+    const totalCount = pagesData.length;
+    if (totalCount === 0) {
+      return [
+        { type: 'ghost' as const, index: 0, pageConfig },
+        { type: 'ghost' as const, index: 1, pageConfig }
+      ];
+    }
+
+    const items: Array<
+      | { type: 'ghost'; index: number; pageConfig: PageConfig }
+      | { type: 'active'; index: number; pageData: { html: string; config: PageConfig } }
+    > = [];
+
+    // 1. Top Ghost Skeletons
+    for (let i = ghostStartIndex; i < activeStartIndex; i++) {
+      if (i < totalCount) {
+        items.push({
+          type: 'ghost',
+          index: i,
+          pageConfig: pagesData[i]?.config || pageConfig
+        });
       }
     }
-    return pages;
-  }, [pagesData, startIndex, endIndex]);
+
+    // 2. Active Editable Pages
+    for (let i = activeStartIndex; i <= activeEndIndex; i++) {
+      if (pagesData[i]) {
+        items.push({
+          type: 'active',
+          index: i,
+          pageData: pagesData[i]
+        });
+      }
+    }
+
+    // 3. Bottom Ghost Skeletons
+    for (let i = activeEndIndex + 1; i <= ghostEndIndex; i++) {
+      if (i < totalCount) {
+        items.push({
+          type: 'ghost',
+          index: i,
+          pageConfig: pagesData[i]?.config || pageConfig
+        });
+      }
+    }
+
+    return items;
+  }, [pagesData, ghostStartIndex, activeStartIndex, activeEndIndex, ghostEndIndex, pageConfig]);
 
   return (
     <div 
@@ -714,39 +773,59 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                   />
                 )}
 
-                {/* Visible Virtual Page Windows */}
-                {visiblePages.map(({ pageData, index }) => {
-                    const geo = pageGeometries[index];
-                    const scaledHeight = geo ? geo.scaledHeight : 1000;
+                {/* Windowed Items: Document-Accurate Ghost Skeletons & Active Pages */}
+                {renderedItems.map((item) => {
+                  const geo = pageGeometries[item.index];
+                  const scaledHeight = geo ? geo.scaledHeight : 1000;
 
+                  if (item.type === 'ghost') {
                     return (
-                        <div 
-                            key={index} 
-                            className="prodoc-page-wrapper box-border shrink-0 relative group"
-                            data-page-index={index}
-                            style={{ 
-                                height: `${scaledHeight}px`
-                            }}
-                        >
-                            <EditorPage
-                                pageNumber={index + 1}
-                                totalPages={pagesData.length}
-                                content={pageData.html}
-                                config={pageData.config}
-                                zoom={actualZoom}
-                                showFormattingMarks={showFormattingMarks}
-                                onContentChange={handlePageUpdate}
-                                onFocus={(e) => handlePageFocus(index, e)}
-                                isActivePage={currentPage === index + 1}
-                                activeEditingArea={activeEditingArea}
-                                setActiveEditingArea={setActiveEditingArea}
-                                headerContent={headerContent}
-                                setHeaderContent={setHeaderContent}
-                                footerContent={footerContent}
-                                setFooterContent={setFooterContent}
-                            />
-                        </div>
+                      <div
+                        key={`ghost-${item.index}`}
+                        className="prodoc-page-wrapper box-border shrink-0 relative transition-opacity duration-300"
+                        data-page-index={item.index}
+                        data-is-ghost="true"
+                        style={{ height: `${scaledHeight}px` }}
+                      >
+                        <GhostPage
+                          pageNumber={item.index + 1}
+                          totalPages={pagesData.length || 1}
+                          config={item.pageConfig}
+                          zoom={actualZoom}
+                        />
+                      </div>
                     );
+                  }
+
+                  const { pageData, index } = item;
+                  return (
+                    <div 
+                      key={index} 
+                      className="prodoc-page-wrapper box-border shrink-0 relative group"
+                      data-page-index={index}
+                      style={{ 
+                        height: `${scaledHeight}px`
+                      }}
+                    >
+                      <EditorPage
+                        pageNumber={index + 1}
+                        totalPages={pagesData.length}
+                        content={pageData.html}
+                        config={pageData.config}
+                        zoom={actualZoom}
+                        showFormattingMarks={showFormattingMarks}
+                        onContentChange={handlePageUpdate}
+                        onFocus={(e) => handlePageFocus(index, e)}
+                        isActivePage={currentPage === index + 1}
+                        activeEditingArea={activeEditingArea}
+                        setActiveEditingArea={setActiveEditingArea}
+                        headerContent={headerContent}
+                        setHeaderContent={setHeaderContent}
+                        footerContent={footerContent}
+                        setFooterContent={setFooterContent}
+                      />
+                    </div>
+                  );
                 })}
 
                 {/* Bottom Virtual Spacer */}
@@ -762,4 +841,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     </div>
   );
 });
+
+
 

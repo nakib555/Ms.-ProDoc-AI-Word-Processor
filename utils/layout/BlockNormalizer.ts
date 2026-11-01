@@ -43,8 +43,20 @@ export class BlockNormalizer {
       !container.firstElementChild.classList.contains('prodoc-page-break')
     ) {
       const wrapper = container.firstElementChild as HTMLElement;
+      const dirAttr = wrapper.getAttribute('dir');
+      const alignStyle = wrapper.style.textAlign;
       while (wrapper.firstChild) {
-        container.insertBefore(wrapper.firstChild, wrapper);
+        const child = wrapper.firstChild;
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement;
+          if (dirAttr && !el.getAttribute('dir')) {
+            el.setAttribute('dir', dirAttr);
+          }
+          if (alignStyle && !el.style.textAlign) {
+            el.style.textAlign = alignStyle;
+          }
+        }
+        container.insertBefore(child, wrapper);
       }
       wrapper.remove();
     }

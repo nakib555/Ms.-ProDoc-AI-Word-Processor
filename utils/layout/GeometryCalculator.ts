@@ -1,38 +1,30 @@
 import { PageConfig } from '../../types';
-import { PAGE_SIZES } from '../../constants';
 import { PageFrame } from './PageFrame';
-
-const DPI = 96;
+import { getPhysicalDimensions, DEFAULT_DPI } from '../measurement';
 
 export class GeometryCalculator {
-  static calculate(config: PageConfig, dpi = DPI): PageFrame {
-    const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
-    let baseW = base.width;
-    let baseH = base.height;
-    if (config.size === 'Custom' && config.customWidth && config.customHeight) {
-      baseW = config.customWidth * dpi;
-      baseH = config.customHeight * dpi;
-    }
+  static calculate(config: PageConfig, dpi = DEFAULT_DPI): PageFrame {
+    const phys = getPhysicalDimensions(
+      config.size as string,
+      config.orientation,
+      config.customWidth,
+      config.customHeight
+    );
 
-    let width: number;
-    let height: number;
-    if (config.orientation === 'portrait') {
-      width = baseW;
-      height = baseH;
-    } else {
-      width = baseH;
-      height = baseW;
-    }
+    // Derived from exact physical definitions
+    const width = (phys.widthTwips / 1440) * dpi;
+    const height = (phys.heightTwips / 1440) * dpi;
 
-    const headerDistPx = (config.headerDistance || 0) * dpi;
-    const footerDistPx = (config.footerDistance || 0) * dpi;
+    const headerDistPx = (config.headerDistance || 0.5) * dpi;
+    const footerDistPx = (config.footerDistance || 0.5) * dpi;
 
-    let marginTop = Math.max(config.margins.top * dpi, headerDistPx);
-    const marginBottom = Math.max(config.margins.bottom * dpi, footerDistPx);
-    let marginLeft = config.margins.left * dpi;
-    const marginRight = config.margins.right * dpi;
+    const m = config.margins || { top: 1, bottom: 1, left: 1, right: 1, gutter: 0 };
+    let marginTop = Math.max(m.top * dpi, headerDistPx);
+    const marginBottom = Math.max(m.bottom * dpi, footerDistPx);
+    let marginLeft = m.left * dpi;
+    const marginRight = m.right * dpi;
 
-    const gutterPx = (config.margins.gutter || 0) * dpi;
+    const gutterPx = (m.gutter || 0) * dpi;
     if (config.gutterPosition === 'top') {
       marginTop += gutterPx;
     } else {
@@ -50,7 +42,7 @@ export class GeometryCalculator {
       marginLeft,
       marginRight,
       bodyWidth,
-      bodyHeight
+      bodyHeight,
     };
   }
 }

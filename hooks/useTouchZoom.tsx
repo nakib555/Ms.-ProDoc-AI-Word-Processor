@@ -10,6 +10,7 @@ interface UseTouchZoomOptions {
   minZoom?: number;
   maxZoom?: number;
   onDoubleTap?: () => void;
+  onPinchStart?: () => void;
   enabled?: boolean;
 }
 
@@ -17,6 +18,7 @@ interface TouchZoomResult {
   isPinching: boolean;
   currentZoom: number;
   zoomHUD: React.ReactNode;
+  animateZoomTo: (targetZoom: number, focalPoint?: { x: number; y: number }) => void;
 }
 
 interface TouchSample {
@@ -32,6 +34,8 @@ interface TouchSample {
  * - True focal-point centroid locking (content under fingers stays pinned)
  * - Auto-hiding HUD synchronized with GestureContext (600ms auto-fade)
  * - WebKit gesture suppression preventing full-browser viewport resizing
+ * - Mobile Edit-Lock integration preventing soft keyboard invocation and layout shift
+ * - Stable listener lifecycle: never detaches during active gestures
  */
 export const useTouchZoom = ({
   containerRef,
@@ -41,6 +45,7 @@ export const useTouchZoom = ({
   minZoom = 15,
   maxZoom = 500,
   onDoubleTap,
+  onPinchStart,
   enabled = true,
 }: UseTouchZoomOptions): TouchZoomResult => {
   const gestureContext = useGestureContext();
@@ -52,9 +57,26 @@ export const useTouchZoom = ({
     zoomRef.current = zoom;
   }, [zoom]);
 
+  // Keep latest callbacks and references in stable refs to prevent listener tear-down during gestures
+  const setZoomRef = useRef(setZoom);
+  const onPinchStartRef = useRef(onPinchStart);
+  const onDoubleTapRef = useRef(onDoubleTap);
+  const gestureContextRef = useRef(gestureContext);
+  const contentRefLatest = useRef(contentRef);
+
+  useEffect(() => {
+    setZoomRef.current = setZoom;
+    onPinchStartRef.current = onPinchStart;
+    onDoubleTapRef.current = onDoubleTap;
+    gestureContextRef.current = gestureContext;
+    contentRefLatest.current = contentRef;
+  });
+
   const momentumRafRef = useRef<number | null>(null);
+  const hudThrottleRafRef = useRef<number | null>(null);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchHistoryRef = useRef<TouchSample[]>([]);
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -65,8 +87,8 @@ export const useTouchZoom = ({
 
   // Register active viewport elements with gesture context
   useEffect(() => {
-    gestureContext.registerActiveView(containerEl || containerRef.current, contentRef?.current ?? null);
-  }, [containerEl, containerRef, contentRef, gestureContext]);
+    gestureContextRef.current.registerActiveView(containerEl || containerRef.current, contentRefLatest.current?.current ?? null);
+  }, [containerEl, containerRef]);
 
   const clampZoom = useCallback((val: number) => {
     return Math.min(maxZoom, Math.max(minZoom, Math.round(val)));
@@ -75,14 +97,27 @@ export const useTouchZoom = ({
   // Display HUD helper synchronized through gestureContext
   const triggerHUD = useCallback((displayZoom: number) => {
     setHudZoom(displayZoom);
-    gestureContext.setHudZoom(displayZoom);
-  }, [gestureContext]);
+    gestureContextRef.current.setHudZoom(displayZoom);
+  }, []);
+
+  // RAF throttler for HUD updates during continuous touch moves
+  const throttledUpdateHUD = useCallback((displayZoom: number) => {
+    if (hudThrottleRafRef.current !== null) return;
+    hudThrottleRafRef.current = requestAnimationFrame(() => {
+      hudThrottleRafRef.current = null;
+      triggerHUD(displayZoom);
+    });
+  }, [triggerHUD]);
 
   // Stop any active momentum scrolling
   const stopMomentum = useCallback(() => {
     if (momentumRafRef.current !== null) {
       cancelAnimationFrame(momentumRafRef.current);
       momentumRafRef.current = null;
+    }
+    if (hudThrottleRafRef.current !== null) {
+      cancelAnimationFrame(hudThrottleRafRef.current);
+      hudThrottleRafRef.current = null;
     }
   }, []);
 
@@ -100,18 +135,18 @@ export const useTouchZoom = ({
     currentScaleFactor: 1,
     currentPanX: 0,
     currentPanY: 0,
-    lastTapTime: 0,
-    lastTapX: 0,
-    lastTapY: 0,
   });
 
   // Smooth programmatic transition for double tap or external zoom
   const animateZoomTo = useCallback((targetZoom: number, focalPoint?: { x: number; y: number }) => {
     const container = containerEl || containerRef.current;
-    const content = contentRef?.current ?? null;
+    const content = contentRefLatest.current?.current ?? null;
+
+    gestureContextRef.current.triggerGestureLock(350);
+
     if (!container || !content) {
       zoomRef.current = targetZoom;
-      setZoom(targetZoom);
+      setZoomRef.current(targetZoom);
       triggerHUD(targetZoom);
       return;
     }
@@ -129,13 +164,13 @@ export const useTouchZoom = ({
     content.style.transform = `scale(${scaleRatio})`;
 
     setIsPinching(true);
-    gestureContext.setIsPinching(true);
+    gestureContextRef.current.setIsPinching(true);
     triggerHUD(targetZoom);
 
     if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     transitionTimerRef.current = setTimeout(() => {
       zoomRef.current = targetZoom;
-      setZoom(targetZoom);
+      setZoomRef.current(targetZoom);
       const newScrollLeft = Math.max(0, fx * scaleRatio - (fx - container.scrollLeft));
       const newScrollTop = Math.max(0, fy * scaleRatio - (fy - container.scrollTop));
 
@@ -147,12 +182,12 @@ export const useTouchZoom = ({
       container.scrollLeft = newScrollLeft;
       container.scrollTop = newScrollTop;
       setIsPinching(false);
-      gestureContext.setIsPinching(false);
+      gestureContextRef.current.setIsPinching(false);
       transitionTimerRef.current = null;
     }, 200);
-  }, [containerEl, containerRef, contentRef, setZoom, triggerHUD, gestureContext]);
+  }, [containerEl, containerRef, triggerHUD]);
 
-  // Main native gesture listener
+  // Main native gesture listener - attaches once to containerEl and never detaches mid-gesture
   useEffect(() => {
     const container = containerEl || containerRef.current;
     if (!container || !enabled) return;
@@ -164,7 +199,7 @@ export const useTouchZoom = ({
       if (transitionTimerRef.current) {
         clearTimeout(transitionTimerRef.current);
         transitionTimerRef.current = null;
-        const content = contentRef?.current ?? null;
+        const content = contentRefLatest.current?.current ?? null;
         if (content) {
           content.style.transition = 'none';
           content.style.transform = '';
@@ -175,6 +210,10 @@ export const useTouchZoom = ({
 
       if (e.touches.length === 2) {
         if (e.cancelable) e.preventDefault();
+        
+        // Immediately notify parent to switch zoomMode to 'custom' synchronously
+        onPinchStartRef.current?.();
+        gestureContextRef.current.triggerGestureLock(400);
 
         const t1 = e.touches[0];
         const t2 = e.touches[1];
@@ -205,7 +244,7 @@ export const useTouchZoom = ({
 
         touchHistoryRef.current = [{ x: midX, y: midY, time: performance.now() }];
 
-        const content = contentRef?.current ?? null;
+        const content = contentRefLatest.current?.current ?? null;
         if (content) {
           content.style.transition = 'none';
           content.style.transformOrigin = `${focalX}px ${focalY}px`;
@@ -213,38 +252,19 @@ export const useTouchZoom = ({
         }
 
         setIsPinching(true);
-        gestureContext.setIsPinching(true);
+        gestureContextRef.current.setIsPinching(true);
         triggerHUD(zoomRef.current);
       } else if (e.touches.length === 1 && !state.current.isPinching) {
-        // Record touch history for velocity tracking
         const t = e.touches[0];
+        touchStartPosRef.current = { x: t.clientX, y: t.clientY };
         touchHistoryRef.current = [{ x: t.clientX, y: t.clientY, time: performance.now() }];
-
-        // Double tap detection
-        const now = Date.now();
-        const delta = now - state.current.lastTapTime;
-        const tapDist = Math.hypot(t.clientX - state.current.lastTapX, t.clientY - state.current.lastTapY);
-
-        if (delta > 50 && delta < 320 && tapDist < 25) {
-          if (e.cancelable) e.preventDefault();
-          if (onDoubleTap) {
-            onDoubleTap();
-          } else {
-            const nextZoom = zoomRef.current >= 130 ? 100 : 150;
-            animateZoomTo(nextZoom, { x: t.clientX, y: t.clientY });
-          }
-          state.current.lastTapTime = 0;
-        } else {
-          state.current.lastTapTime = now;
-          state.current.lastTapX = t.clientX;
-          state.current.lastTapY = t.clientY;
-        }
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length === 2 && state.current.isPinching) {
         if (e.cancelable) e.preventDefault();
+        gestureContextRef.current.triggerGestureLock(400);
 
         const t1 = e.touches[0];
         const t2 = e.touches[1];
@@ -278,20 +298,28 @@ export const useTouchZoom = ({
         touchHistoryRef.current.push({ x: currMidX, y: currMidY, time: now });
         if (touchHistoryRef.current.length > 5) touchHistoryRef.current.shift();
 
-        // Direct hardware-accelerated GPU transform
-        const content = contentRef?.current ?? null;
+        // Direct hardware-accelerated GPU transform - zero React re-render overhead
+        const content = contentRefLatest.current?.current ?? null;
         if (content) {
           content.style.transform = `translate3d(${panX}px, ${panY}px, 0px) scale(${effectiveScale})`;
         }
 
         const displayZoom = Math.round(state.current.startZoom * effectiveScale);
-        triggerHUD(displayZoom);
+        throttledUpdateHUD(displayZoom);
+      } else if (e.touches.length === 1 && !state.current.isPinching) {
+        // When user drags / scrolls with 1 finger on mobile, lock edit mode to prevent keyboard popups
+        const t = e.touches[0];
+        const moveDist = Math.hypot(t.clientX - touchStartPosRef.current.x, t.clientY - touchStartPosRef.current.y);
+        if (moveDist > 6) {
+          gestureContextRef.current.triggerGestureLock(400);
+        }
       }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
       if (state.current.isPinching && e.touches.length < 2) {
         if (e.cancelable) e.preventDefault();
+        gestureContextRef.current.triggerGestureLock(400);
 
         const {
           startZoom,
@@ -306,7 +334,13 @@ export const useTouchZoom = ({
 
         state.current.isPinching = false;
         setIsPinching(false);
-        gestureContext.setIsPinching(false);
+        gestureContextRef.current.setIsPinching(false);
+
+        // Cancel any pending throttled HUD RAF
+        if (hudThrottleRafRef.current !== null) {
+          cancelAnimationFrame(hudThrottleRafRef.current);
+          hudThrottleRafRef.current = null;
+        }
 
         // Calculate settlement zoom level with bounds clamping
         const targetZoom = clampZoom(startZoom * currentScaleFactor);
@@ -314,13 +348,13 @@ export const useTouchZoom = ({
         // Immediately sync zoomRef to targetZoom so subsequent gestures never read old zoom
         zoomRef.current = targetZoom;
 
-        const content = contentRef?.current ?? null;
+        const content = contentRefLatest.current?.current ?? null;
         const scaleRatio = targetZoom / startZoom;
         const newScrollLeft = Math.max(0, focalX * scaleRatio - (focalX - initialScrollLeft) - currentPanX);
         const newScrollTop = Math.max(0, focalY * scaleRatio - (focalY - initialScrollTop) - currentPanY);
 
         // Atomic commit to state: immediately set new zoom and update HUD
-        setZoom(targetZoom);
+        setZoomRef.current(targetZoom);
         triggerHUD(targetZoom);
 
         if (content) {
@@ -368,6 +402,8 @@ export const useTouchZoom = ({
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
+        onPinchStartRef.current?.();
+        gestureContextRef.current.triggerGestureLock(400);
         const rect = container.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
@@ -381,7 +417,7 @@ export const useTouchZoom = ({
         const newScale = newZoom / 100;
 
         zoomRef.current = newZoom;
-        setZoom(newZoom);
+        setZoomRef.current(newZoom);
         triggerHUD(newZoom);
 
         container.scrollLeft = contentX * newScale - mouseX;
@@ -416,12 +452,13 @@ export const useTouchZoom = ({
       container.removeEventListener('gesturechange', preventGesture as EventListener);
       container.removeEventListener('gestureend', preventGesture as EventListener);
     };
-  }, [containerEl, containerRef, contentRef, clampZoom, setZoom, onDoubleTap, enabled, animateZoomTo, stopMomentum, triggerHUD, gestureContext, minZoom, maxZoom]);
+  }, [containerEl, enabled, minZoom, maxZoom, clampZoom, stopMomentum, triggerHUD, throttledUpdateHUD]);
 
   return {
     isPinching,
     currentZoom: hudZoom,
     zoomHUD: null,
+    animateZoomTo,
   };
 };
 
