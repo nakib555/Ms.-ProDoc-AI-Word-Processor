@@ -930,11 +930,11 @@ const PrintSettingsPanel: React.FC<{
                             {isPreparing ? (
                                 exportType === 'pdf' ? (
                                     pdfProgress && pdfProgress.total > 0
-                                        ? `Generating PDF (${pdfProgress.percent}% - ${pdfProgress.current}/${pdfProgress.total})...`
-                                        : 'Preparing PDF...'
+                                        ? `Generating PDF (${pdfProgress.percent}% - Page ${pdfProgress.current}/${pdfProgress.total})...`
+                                        : 'Preparing Fast PDF...'
                                 ) : 'Preparing Export...'
                             ) : exportType === 'pdf' ? (
-                                'Print / Save as PDF'
+                                'Export / Download PDF (.pdf)'
                             ) : exportType === 'doc' ? (
                                 'Export Word Document (.doc)'
                             ) : exportType === 'rtf' ? (
@@ -950,8 +950,18 @@ const PrintSettingsPanel: React.FC<{
                             )}
                         </span>
                     </button>
+
+                    {isPreparing && exportType === 'pdf' && pdfProgress && (
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                            <div 
+                                className="bg-blue-600 h-full rounded-full transition-all duration-300 ease-out"
+                                style={{ width: `${Math.min(100, Math.max(5, pdfProgress.percent))}%` }}
+                            />
+                        </div>
+                    )}
+
                     <p className="text-[10px] text-center text-slate-400">
-                        {exportType === 'pdf' ? 'Direct high-fidelity PDF download' : 'Downloads directly to your system'}
+                        {exportType === 'pdf' ? 'Direct high-speed PDF generation & download' : 'Downloads directly to your system'}
                     </p>
                 </div>
             )}
@@ -1150,14 +1160,7 @@ export const PrintModal: React.FC = () => {
                   );
                   closeModal();
               } else {
-                  // Ensure we are in print layout mode for correct DOM structure
-                  if (viewMode !== 'print') {
-                      setViewMode('print');
-                      // Wait for view transition
-                      await new Promise(resolve => setTimeout(resolve, 300));
-                  }
-                  
-                  // Update global config to match local print settings so the editor reflects the print layout
+                  // Update global config to match local print settings
                   setPageConfig(localConfig);
      
                   await generatePdfPrint(

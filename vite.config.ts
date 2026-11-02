@@ -11,7 +11,33 @@ const __dirname = path.dirname(__filename);
 function cloudflareSpaPlugin(): Plugin {
   return {
     name: 'cloudflare-spa-fallback',
+    buildStart() {
+      // 1. Pre-build: Remove any problematic source redirect files
+      const targets = [
+        path.resolve(__dirname, 'public', '_redirects'),
+        path.resolve(__dirname, '_redirects'),
+        path.resolve(__dirname, 'dist', '_redirects')
+      ];
+      targets.forEach(file => {
+        try {
+          if (fs.existsSync(file)) {
+            fs.unlinkSync(file);
+          }
+        } catch {
+          // Ignore if file cannot be removed
+        }
+      });
+    },
+    generateBundle(_, bundle) {
+      // 2. Bundle generation: Ensure Vite never writes _redirects into dist
+      for (const fileName of Object.keys(bundle)) {
+        if (fileName === '_redirects' || fileName.endsWith('/_redirects')) {
+          delete bundle[fileName];
+        }
+      }
+    },
     closeBundle() {
+      // 3. Post-build: Ensure 200.html exists for SPA fallback, and verify dist/_redirects is absent
       try {
         const distDir = path.resolve(__dirname, 'dist');
         const indexPath = path.join(distDir, 'index.html');
@@ -20,41 +46,14 @@ function cloudflareSpaPlugin(): Plugin {
           fs.copyFileSync(indexPath, fallbackPath);
         }
 
-        const redirectsPath = path.join(distDir, '_redirects');
-        if (fs.existsSync(redirectsPath)) {
-          const content = fs.readFileSync(redirectsPath, 'utf-8');
-          const lines = content.split('\n').filter(line => {
-            const trimmed = line.trim();
-            // Filter out infinite loop rules like /* /index.html 200
-            if (/^\/\*\s+\/(?:index\.html|200\.html)/.test(trimmed)) {
-              return false;
-            }
-            return true;
-          });
-          const cleaned = lines.join('\n').trim();
-          if (cleaned.length === 0) {
-            fs.unlinkSync(redirectsPath);
-          } else {
-            fs.writeFileSync(redirectsPath, cleaned + '\n');
-          }
+        const distRedirects = path.join(distDir, '_redirects');
+        if (fs.existsSync(distRedirects)) {
+          fs.unlinkSync(distRedirects);
         }
 
         const publicRedirects = path.resolve(__dirname, 'public', '_redirects');
         if (fs.existsSync(publicRedirects)) {
-          const content = fs.readFileSync(publicRedirects, 'utf-8');
-          const lines = content.split('\n').filter(line => {
-            const trimmed = line.trim();
-            if (/^\/\*\s+\/(?:index\.html|200\.html)/.test(trimmed)) {
-              return false;
-            }
-            return true;
-          });
-          const cleaned = lines.join('\n').trim();
-          if (cleaned.length === 0) {
-            fs.unlinkSync(publicRedirects);
-          } else {
-            fs.writeFileSync(publicRedirects, cleaned + '\n');
-          }
+          fs.unlinkSync(publicRedirects);
         }
       } catch (err) {
         console.warn('Note on Cloudflare SPA fallback setup:', err);

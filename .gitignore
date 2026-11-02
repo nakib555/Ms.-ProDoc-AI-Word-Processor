@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+_redirects
+public/_redirects
+dist/_redirects
