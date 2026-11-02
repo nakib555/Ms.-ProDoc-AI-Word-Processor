@@ -11,6 +11,8 @@ export interface GhostPageProps {
   zoom: number;
   className?: string;
   style?: React.CSSProperties;
+  headerText?: string;
+  footerText?: string;
 }
 
 export const GhostPage: React.FC<GhostPageProps> = memo(({
@@ -19,7 +21,9 @@ export const GhostPage: React.FC<GhostPageProps> = memo(({
   config,
   zoom,
   className = '',
-  style = {}
+  style = {},
+  headerText,
+  footerText
 }) => {
   const scale = zoom / 100;
   const cfg = config || { size: 'A4', orientation: 'portrait', margins: { top: 1, bottom: 1, left: 1, right: 1 } };
@@ -71,8 +75,12 @@ export const GhostPage: React.FC<GhostPageProps> = memo(({
         </div>
 
         {/* Header Guide Line */}
-        <div className="w-full flex items-center justify-between pb-3 mb-5 border-b border-slate-200/70 dark:border-slate-800/70">
-          <div className="h-2.5 w-44 bg-slate-200 dark:bg-slate-800 rounded-sm" />
+        <div className="w-full flex items-center justify-between pb-3 mb-5 border-b border-slate-200/70 dark:border-slate-800/70 text-[10px] text-slate-400">
+          {headerText ? (
+            <span className="truncate max-w-[70%] font-medium">{headerText.replace('[Header]', '').trim()}</span>
+          ) : (
+            <div className="h-2.5 w-44 bg-slate-200 dark:bg-slate-800 rounded-sm" />
+          )}
           <div className="h-2 w-28 bg-slate-100 dark:bg-slate-800/60 rounded-sm" />
         </div>
 
@@ -155,9 +163,13 @@ export const GhostPage: React.FC<GhostPageProps> = memo(({
         </div>
 
         {/* Footer Guide Line */}
-        <div className="absolute bottom-6 left-0 right-0 px-8 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800/60 pt-3">
-          <div className="h-2 w-32 bg-slate-100 dark:bg-slate-800/50 rounded-sm" />
-          <div className="h-2 w-16 bg-slate-200 dark:bg-slate-800 rounded-sm" />
+        <div className="absolute bottom-6 left-0 right-0 px-8 flex items-center justify-between border-t border-slate-200/60 dark:border-slate-800/60 pt-3 text-[10px] text-slate-400">
+          {footerText ? (
+            <span className="truncate max-w-[70%] font-medium">{footerText.replace(/\[Page \d+\]/g, `Page ${pageNumber}`).trim()}</span>
+          ) : (
+            <div className="h-2 w-32 bg-slate-100 dark:bg-slate-800/50 rounded-sm" />
+          )}
+          <span className="font-mono text-slate-400">{pageNumber}</span>
         </div>
       </div>
     </div>

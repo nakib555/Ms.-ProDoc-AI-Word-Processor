@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useLayoutEffect, useMemo } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { FileText } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
@@ -531,16 +532,17 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     });
   }, [pagesData, actualZoom]);
 
-  // Prefix sums for vertical top positions
+  const GAP = 32;
+
+  // Prefix sums for vertical top positions (used for measurement and ruler compatibility)
   const { pageTops, totalVirtualHeight } = useMemo(() => {
     const tops: number[] = [];
-    const gap = 32; // gap-8
-    let currentY = 32; // pt-8
+    let currentY = 32;
     for (let i = 0; i < pageGeometries.length; i++) {
       tops.push(currentY);
-      currentY += pageGeometries[i].scaledHeight + gap;
+      currentY += pageGeometries[i].scaledHeight + GAP;
     }
-    const total = currentY + 64; // pb-24/pb-8
+    const total = currentY + 64;
     return { pageTops: tops, totalVirtualHeight: total };
   }, [pageGeometries]);
 
@@ -552,78 +554,40 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       return Math.max(width, max + 64);
   }, [pageGeometries, width]);
 
-  // 4GB RAM Optimized Virtual Window for 1000+ Pages with Ghost Shimmer Skeletons
-  // Strict DOM node budget: mounts at most 2-4 pages total (active + ghost buffer)
-  const ACTIVE_BUFFER = 1; // Heavy editable TipTap page window around viewport (1 above, 1 below)
-  const GHOST_BUFFER = 1;  // Minimal animated shimmer GhostPage buffer (1 above, 1 below)
-  const viewportHeight = height > 0 ? height : 900;
-  
-  const { 
-    activeStartIndex, 
-    activeEndIndex, 
-    ghostStartIndex, 
-    ghostEndIndex, 
-    topSpacerHeight, 
-    bottomSpacerHeight 
-  } = useMemo(() => {
-    const totalCount = pagesData.length;
-    if (totalCount === 0) {
-      return {
-        activeStartIndex: 0,
-        activeEndIndex: -1,
-        ghostStartIndex: 0,
-        ghostEndIndex: 1,
-        topSpacerHeight: 0,
-        bottomSpacerHeight: 0
-      };
+  // Multi-column side-by-side calculation
+  const isSideToSide = pageMovement === 'sideToSide';
+  const basePageWidth = pageGeometries[0]?.scaledWidth || 800;
+  const maxPossibleColumns = Math.max(1, Math.floor((width - 48) / (basePageWidth + GAP)));
+  const columnCount = isSideToSide 
+    ? Math.max(1, Math.min(4, maxPossibleColumns))
+    : (actualZoom <= 75 && maxPossibleColumns >= 2 ? Math.min(3, maxPossibleColumns) : 1);
+
+  const totalPagesCount = pagesData.length;
+  const rowCount = Math.max(1, Math.ceil(totalPagesCount / columnCount));
+
+  // Compute maximum height for each virtual row
+  const rowHeights = useMemo(() => {
+    const heights: number[] = [];
+    for (let r = 0; r < rowCount; r++) {
+      let maxH = 0;
+      for (let c = 0; c < columnCount; c++) {
+        const pIdx = r * columnCount + c;
+        if (pIdx < pageGeometries.length) {
+          maxH = Math.max(maxH, pageGeometries[pIdx]?.scaledHeight || 1056);
+        }
+      }
+      heights.push(maxH || 1056);
     }
+    return heights;
+  }, [rowCount, columnCount, pageGeometries]);
 
-    if (totalCount <= 4) {
-      return {
-        activeStartIndex: 0,
-        activeEndIndex: totalCount - 1,
-        ghostStartIndex: 0,
-        ghostEndIndex: totalCount - 1,
-        topSpacerHeight: 0,
-        bottomSpacerHeight: 0
-      };
-    }
-
-    const viewTop = scrollTop;
-    const viewBottom = scrollTop + viewportHeight;
-
-    // Fast O(log N) binary search for visible window boundaries
-    const firstVis = findFirstVisiblePageIndex(pageTops, pageGeometries, viewTop);
-    const lastVis = Math.max(firstVis, findLastVisiblePageIndex(pageTops, viewBottom));
-
-    let actStart = Math.max(0, firstVis - ACTIVE_BUFFER);
-    let actEnd = Math.min(totalCount - 1, lastVis + ACTIVE_BUFFER);
-
-    // Keep active focused page mounted
-    const activeIdx = currentPage - 1;
-    if (activeIdx >= 0 && activeIdx < totalCount) {
-      if (activeIdx < actStart) actStart = activeIdx;
-      if (activeIdx > actEnd) actEnd = activeIdx;
-    }
-
-    // Ghost buffer around active window
-    const ghStart = Math.max(0, actStart - GHOST_BUFFER);
-    const ghEnd = Math.min(totalCount - 1, actEnd + GHOST_BUFFER);
-
-    const topSpacer = ghStart > 0 ? (pageTops[ghStart] - pageTops[0]) : 0;
-    const bottomSpacer = ghEnd < totalCount - 1 
-      ? (pageTops[totalCount - 1] + pageGeometries[totalCount - 1].scaledHeight) - (pageTops[ghEnd] + pageGeometries[ghEnd].scaledHeight)
-      : 0;
-
-    return {
-      activeStartIndex: actStart,
-      activeEndIndex: actEnd,
-      ghostStartIndex: ghStart,
-      ghostEndIndex: ghEnd,
-      topSpacerHeight: Math.max(0, topSpacer),
-      bottomSpacerHeight: Math.max(0, bottomSpacer)
-    };
-  }, [pagesData.length, scrollTop, viewportHeight, pageTops, pageGeometries, currentPage]);
+  // Headless TanStack Virtualizer
+  const rowVirtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => scrollContainerRef.current,
+    estimateSize: (index) => (rowHeights[index] || 1056) + GAP,
+    overscan: 2,
+  });
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
@@ -643,95 +607,41 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     scrollAnimFrameRef.current = requestAnimationFrame(() => {
       setScrollTop(newScrollTop);
 
-      // Fast O(log N) binary search page indicator tracking based on scroll position
+      // Fast binary search page indicator tracking based on scroll position
       const centerY = newScrollTop + (container.clientHeight / 2);
       const closestPage = findClosestPageIndex(pageTops, pageGeometries, centerY);
 
-      if (closestPage !== currentPage) {
+      if (closestPage !== currentPage && closestPage <= totalPagesCount) {
         setCurrentPage(closestPage);
       }
     });
-  }, [currentPage, setCurrentPage, pageTops, pageGeometries, triggerGestureLock]);
+  }, [currentPage, setCurrentPage, pageTops, pageGeometries, totalPagesCount, triggerGestureLock]);
 
   const setRefs = useCallback((node: HTMLDivElement | null) => {
       scrollContainerRef.current = node;
       containerRef(node);
   }, [containerRef]);
 
-  // Jump-to-page support when currentPage changed from external UI
+  // Jump-to-page support using TanStack Virtual scrollToIndex
   useEffect(() => {
-    const targetIdx = currentPage - 1;
-    if (targetIdx >= 0 && targetIdx < pageTops.length && scrollContainerRef.current) {
-      const targetTop = pageTops[targetIdx];
-      const currentScroll = scrollContainerRef.current.scrollTop;
-      const viewH = scrollContainerRef.current.clientHeight;
-      // Only scroll if active page is not currently in viewport
-      if (currentScroll > targetTop + pageGeometries[targetIdx].scaledHeight || currentScroll + viewH < targetTop) {
-        scrollContainerRef.current.scrollTo({
-          top: targetTop - 32,
-          behavior: 'auto'
-        });
-      }
+    const targetRow = Math.floor((currentPage - 1) / columnCount);
+    if (targetRow >= 0 && targetRow < rowCount && scrollContainerRef.current) {
+      rowVirtualizer.scrollToIndex(targetRow, { align: 'auto', behavior: 'auto' });
     }
-  }, [currentPage, pageTops, pageGeometries]);
+  }, [currentPage, columnCount, rowCount, rowVirtualizer]);
 
-  // Slice rendered items: top ghost skeletons, active editable pages, and bottom ghost skeletons
-  const renderedItems = useMemo(() => {
-    const totalCount = pagesData.length;
-    if (totalCount === 0) {
-      return [
-        { type: 'ghost' as const, index: 0, pageConfig },
-        { type: 'ghost' as const, index: 1, pageConfig }
-      ];
-    }
+  // Active focused page index (0-based)
+  const activePageIndex = currentPage - 1;
+  const activeRowIndex = Math.floor(activePageIndex / columnCount);
 
-    const items: Array<
-      | { type: 'ghost'; index: number; pageConfig: PageConfig }
-      | { type: 'active'; index: number; pageData: { html: string; config: PageConfig } }
-    > = [];
-
-    // 1. Top Ghost Skeletons
-    for (let i = ghostStartIndex; i < activeStartIndex; i++) {
-      if (i < totalCount) {
-        items.push({
-          type: 'ghost',
-          index: i,
-          pageConfig: pagesData[i]?.config || pageConfig
-        });
-      }
-    }
-
-    // 2. Active Editable Pages
-    for (let i = activeStartIndex; i <= activeEndIndex; i++) {
-      if (pagesData[i]) {
-        items.push({
-          type: 'active',
-          index: i,
-          pageData: pagesData[i]
-        });
-      }
-    }
-
-    // 3. Bottom Ghost Skeletons
-    for (let i = activeEndIndex + 1; i <= ghostEndIndex; i++) {
-      if (i < totalCount) {
-        items.push({
-          type: 'ghost',
-          index: i,
-          pageConfig: pagesData[i]?.config || pageConfig
-        });
-      }
-    }
-
-    return items;
-  }, [pagesData, ghostStartIndex, activeStartIndex, activeEndIndex, ghostEndIndex, pageConfig]);
+  // Virtual items from TanStack Virtual
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalContainerHeight = rowVirtualizer.getTotalSize();
 
   return (
     <div 
       className="print-layout-mode w-full h-full flex flex-col relative bg-[#eef2f6] dark:bg-[#0b1120] transition-colors duration-300"
     >
-       {/* Global zoom HUD is managed authority-wide in GestureProvider */}
-
        {showRuler && width >= 768 && (
          <div 
             ref={rulerContainerRef}
@@ -756,91 +666,108 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
        >
            <div 
                 ref={contentWrapperRef}
-                className={`min-w-full min-h-full w-fit flex ${isVertical ? 'flex-col items-center' : 'flex-row flex-wrap justify-center content-start'} pt-8 pb-24 md:pb-8 gap-8 transform-gpu will-change-transform`}
-                style={{ minHeight: isVertical ? `${totalVirtualHeight}px` : '100%' }}
+                className="min-w-full min-h-full w-fit relative transform-gpu will-change-transform"
+                style={{ 
+                  height: `${Math.max(totalContainerHeight + 64, totalVirtualHeight)}px`,
+                  minWidth: columnCount > 1 ? `${(basePageWidth + GAP) * columnCount + 64}px` : '100%'
+                }}
                 onClick={(e) => {
                     if (e.target === e.currentTarget && activeEditingArea !== 'body') {
                         setActiveEditingArea('body');
                     }
                 }}
            >
-                {/* Top Virtual Spacer */}
-                {topSpacerHeight > 0 && (
-                  <div 
-                    className="prodoc-virtual-spacer-top pointer-events-none select-none w-full"
-                    style={{ height: `${topSpacerHeight}px`, flexShrink: 0 }}
-                    aria-hidden="true"
-                  />
-                )}
+                {/* TanStack Virtual Rows */}
+                {virtualRows.map((virtualRow) => {
+                  const rowIndex = virtualRow.index;
+                  const rowStartPage = rowIndex * columnCount;
+                  const isNearActiveRow = Math.abs(rowIndex - activeRowIndex) <= 1;
 
-                {/* Windowed Items: Document-Accurate Ghost Skeletons & Active Pages */}
-                {renderedItems.map((item) => {
-                  const geo = pageGeometries[item.index];
-                  const scaledHeight = geo ? geo.scaledHeight : 1000;
-
-                  if (item.type === 'ghost') {
-                    return (
-                      <div
-                        key={`ghost-${item.index}`}
-                        className="prodoc-page-wrapper box-border shrink-0 relative transition-opacity duration-300"
-                        data-page-index={item.index}
-                        data-is-ghost="true"
-                        style={{ height: `${scaledHeight}px` }}
-                      >
-                        <GhostPage
-                          pageNumber={item.index + 1}
-                          totalPages={pagesData.length || 1}
-                          config={item.pageConfig}
-                          zoom={actualZoom}
-                        />
-                      </div>
-                    );
+                  // Collect pages belonging to this row
+                  const rowPageIndices: number[] = [];
+                  for (let c = 0; c < columnCount; c++) {
+                    const pIdx = rowStartPage + c;
+                    if (pIdx < totalPagesCount) {
+                      rowPageIndices.push(pIdx);
+                    }
                   }
 
-                  const { pageData, index } = item;
                   return (
-                    <div 
-                      key={index} 
-                      className="prodoc-page-wrapper box-border shrink-0 relative group"
-                      data-page-index={index}
-                      style={{ 
-                        height: `${scaledHeight}px`
+                    <div
+                      key={virtualRow.key}
+                      data-index={virtualRow.index}
+                      ref={rowVirtualizer.measureElement}
+                      className="absolute top-0 left-0 w-full flex justify-center items-start gap-8 box-border"
+                      style={{
+                        transform: `translateY(${virtualRow.start + 32}px)`,
                       }}
                     >
-                      <EditorPage
-                        pageNumber={index + 1}
-                        totalPages={pagesData.length}
-                        content={pageData.html}
-                        config={pageData.config}
-                        zoom={actualZoom}
-                        showFormattingMarks={showFormattingMarks}
-                        onContentChange={handlePageUpdate}
-                        onFocus={(e) => handlePageFocus(index, e)}
-                        isActivePage={currentPage === index + 1}
-                        activeEditingArea={activeEditingArea}
-                        setActiveEditingArea={setActiveEditingArea}
-                        headerContent={headerContent}
-                        setHeaderContent={setHeaderContent}
-                        footerContent={footerContent}
-                        setFooterContent={setFooterContent}
-                      />
+                      {rowPageIndices.map((pIdx) => {
+                        const pageData = pagesData[pIdx];
+                        const geo = pageGeometries[pIdx];
+                        const scaledHeight = geo ? geo.scaledHeight : 1000;
+                        const isFocusedPage = pIdx === activePageIndex;
+
+                        // Hybrid dispatch: active or near viewport renders live EditorPage, buffer renders GhostPage
+                        const shouldRenderLive = isNearActiveRow || isFocusedPage;
+
+                        if (!shouldRenderLive || !pageData) {
+                          return (
+                            <div
+                              key={`ghost-${pIdx}`}
+                              className="prodoc-page-wrapper box-border shrink-0 relative transition-opacity duration-300"
+                              data-page-index={pIdx}
+                              data-is-ghost="true"
+                              style={{ height: `${scaledHeight}px` }}
+                            >
+                              <GhostPage
+                                pageNumber={pIdx + 1}
+                                totalPages={totalPagesCount || 1}
+                                config={pageData?.config || pageConfig}
+                                zoom={actualZoom}
+                                headerText={headerContent}
+                                footerText={footerContent}
+                              />
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div 
+                            key={pIdx} 
+                            className="prodoc-page-wrapper box-border shrink-0 relative group"
+                            data-page-index={pIdx}
+                            style={{ 
+                              height: `${scaledHeight}px`
+                            }}
+                          >
+                            <EditorPage
+                              pageNumber={pIdx + 1}
+                              totalPages={totalPagesCount}
+                              content={pageData.html}
+                              config={pageData.config}
+                              zoom={actualZoom}
+                              showFormattingMarks={showFormattingMarks}
+                              onContentChange={handlePageUpdate}
+                              onFocus={(e) => handlePageFocus(pIdx, e)}
+                              isActivePage={currentPage === pIdx + 1}
+                              activeEditingArea={activeEditingArea}
+                              setActiveEditingArea={setActiveEditingArea}
+                              headerContent={headerContent}
+                              setHeaderContent={setHeaderContent}
+                              footerContent={footerContent}
+                              setFooterContent={setFooterContent}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}
-
-                {/* Bottom Virtual Spacer */}
-                {bottomSpacerHeight > 0 && (
-                  <div 
-                    className="prodoc-virtual-spacer-bottom pointer-events-none select-none w-full"
-                    style={{ height: `${bottomSpacerHeight}px`, flexShrink: 0 }}
-                    aria-hidden="true"
-                  />
-                )}
            </div>
        </div>
     </div>
   );
 });
 
-
-
+export default PrintLayoutView;
