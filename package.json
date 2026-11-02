@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "deploy": "npx wrangler pages deploy dist"
+    "deploy": "npx wrangler deploy"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.17",
