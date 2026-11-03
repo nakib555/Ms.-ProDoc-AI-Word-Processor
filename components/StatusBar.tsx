@@ -15,7 +15,7 @@ interface StatusBarProps {
 
 const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
-  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, setCurrentPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
+  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, setCurrentPage, goToPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const { setHudZoom, triggerGestureLock } = useGestureContext();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
@@ -28,7 +28,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     e.preventDefault();
     const target = parseInt(jumpPageInput, 10);
     if (!isNaN(target) && target >= 1 && target <= totalPages) {
-      setCurrentPage(target);
+      goToPage(target, { behavior: 'smooth' });
       setShowJumpDialog(false);
       setJumpPageInput('');
     }
@@ -48,12 +48,10 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     }
     triggerGestureLock(350);
     setZoomMode('custom');
-    setZoom(prev => {
-      const next = prev === 100 ? 150 : 100;
-      setHudZoom(next);
-      return next;
-    });
-  }, [triggerGestureLock, setZoomMode, setZoom, setHudZoom]);
+    const next = zoom === 100 ? 150 : 100;
+    setZoom(next);
+    setHudZoom(next);
+  }, [triggerGestureLock, setZoomMode, setZoom, setHudZoom, zoom]);
 
   const handleZoomBarTouchEnd = useCallback((e: React.TouchEvent) => {
     const now = Date.now();
@@ -75,11 +73,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
       triggerGestureLock(350);
       if (zoomMode !== 'custom') setZoomMode('custom');
       const direction = e.deltaY > 0 ? -1 : 1;
-      setZoom(prev => {
-        const next = Math.min(500, Math.max(10, prev + (direction * 5)));
-        setHudZoom(next);
-        return next;
-      });
+      const next = Math.min(500, Math.max(10, zoom + (direction * 5)));
+      setZoom(next);
+      setHudZoom(next);
     };
 
     el.addEventListener('wheel', handleWheel, { passive: false });
@@ -87,7 +83,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     return () => {
       el.removeEventListener('wheel', handleWheel);
     };
-  }, [viewMode, setZoom, zoomMode, setZoomMode]);
+  }, [viewMode, setZoom, zoomMode, setZoomMode, zoom, triggerGestureLock, setHudZoom]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -227,11 +223,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                     onClick={() => {
                         triggerGestureLock(350);
                         if (zoomMode !== 'custom') setZoomMode('custom');
-                        setZoom(z => {
-                            const next = Math.max(10, z - 10);
-                            setHudZoom(next);
-                            return next;
-                        });
+                        const next = Math.max(10, zoom - 10);
+                        setZoom(next);
+                        setHudZoom(next);
                     }} 
                     className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom Out"
@@ -278,11 +272,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                     onClick={() => {
                         triggerGestureLock(350);
                         if (zoomMode !== 'custom') setZoomMode('custom');
-                        setZoom(z => {
-                            const next = Math.min(500, z + 10);
-                            setHudZoom(next);
-                            return next;
-                        });
+                        const next = Math.min(500, zoom + 10);
+                        setZoom(next);
+                        setHudZoom(next);
                     }} 
                     className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom In"

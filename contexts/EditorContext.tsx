@@ -367,6 +367,8 @@ export interface EditorContextType {
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   totalPages: number;
   setTotalPages: React.Dispatch<React.SetStateAction<number>>;
+  goToPage: (page: number, options?: { behavior?: 'smooth' | 'auto' }) => void;
+  pageJumpTarget: { page: number; behavior: 'smooth' | 'auto'; seq: number } | null;
   showJsonInspector: boolean;
   setShowJsonInspector: React.Dispatch<React.SetStateAction<boolean>>;
   
@@ -470,6 +472,14 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [pageJumpTarget, setPageJumpTarget] = useState<{ page: number; behavior: 'smooth' | 'auto'; seq: number } | null>(null);
+
+  const goToPage = useCallback((targetPage: number, options?: { behavior?: 'smooth' | 'auto' }) => {
+    const page = Math.max(1, Math.min(totalPages, targetPage));
+    setCurrentPage(page);
+    setPageJumpTarget({ page, behavior: options?.behavior || 'smooth', seq: Date.now() });
+  }, [totalPages]);
+
   const [showJsonInspector, setShowJsonInspector] = useState(false);
   const [comments, setComments] = useState<DocumentComment[]>([]);
   const [footnotes, setFootnotes] = useState<DocumentFootnote[]>([]);
@@ -1198,6 +1208,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCurrentPage,
     totalPages,
     setTotalPages,
+    goToPage,
+    pageJumpTarget,
     showJsonInspector,
     setShowJsonInspector,
     activeEditingArea,

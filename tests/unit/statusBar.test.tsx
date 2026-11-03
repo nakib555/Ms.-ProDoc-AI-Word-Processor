@@ -31,6 +31,8 @@ const createMockEditorContext = (overrides = {}): any => ({
   setFooterContent: vi.fn(),
   currentPage: 1,
   setCurrentPage: vi.fn(),
+  goToPage: vi.fn(),
+  pageJumpTarget: null,
   totalPages: 5,
   setTotalPages: vi.fn(),
   pageMovement: 'vertical',

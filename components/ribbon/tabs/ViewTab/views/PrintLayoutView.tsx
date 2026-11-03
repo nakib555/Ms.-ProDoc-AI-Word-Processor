@@ -352,6 +352,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setTotalPages, 
     setCurrentPage, 
     currentPage,
+    goToPage,
+    pageJumpTarget,
     pageMovement,
     activeEditingArea,
     setActiveEditingArea,
@@ -373,6 +375,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const contentWrapperRef = useRef<HTMLDivElement | null>(null);
   
   const cursorRestorationRef = useRef<number | null>(null);
+  const isUserScrollingRef = useRef(false);
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastReportedPageRef = useRef(currentPage);
+  const lastProcessedJumpSeqRef = useRef<number>(0);
 
   // High-performance focal-centered pinch to zoom & double-tap to toggle fit
   useTouchZoom({
@@ -501,6 +507,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   }, [setContent]);
 
   const handlePageFocus = useCallback((index: number, e: React.FocusEvent<HTMLDivElement>) => {
+      lastReportedPageRef.current = index + 1;
       setCurrentPage(index + 1);
       if (editorRef) {
           editorRef.current = e.currentTarget;
@@ -585,13 +592,23 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const rowVirtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => scrollContainerRef.current,
-    estimateSize: (index) => (rowHeights[index] || 1056) + GAP,
+    estimateSize: (index) => rowHeights[index] || 1056,
+    gap: GAP,
     overscan: 2,
   });
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     const newScrollTop = container.scrollTop;
+
+    // Mark active user scrolling with auto-reset timer
+    isUserScrollingRef.current = true;
+    if (scrollEndTimerRef.current) {
+      clearTimeout(scrollEndTimerRef.current);
+    }
+    scrollEndTimerRef.current = setTimeout(() => {
+      isUserScrollingRef.current = false;
+    }, 250);
 
     // Auto-lock editing during scroll with 400ms auto-unlock to prevent mobile keyboard popups & layout misalignment
     triggerGestureLock(400);
@@ -612,6 +629,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       const closestPage = findClosestPageIndex(pageTops, pageGeometries, centerY);
 
       if (closestPage !== currentPage && closestPage <= totalPagesCount) {
+        lastReportedPageRef.current = closestPage;
         setCurrentPage(closestPage);
       }
     });
@@ -622,13 +640,72 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       containerRef(node);
   }, [containerRef]);
 
-  // Jump-to-page support using TanStack Virtual scrollToIndex
+  // Handle explicit page jump requests from goToPage (e.g., status bar, bookmarks, navigation)
+  // MS Word behavior:
+  // - When user scrolls naturally with wheel/touchpad: DO NOT scroll or snap to page! Let scrolling flow naturally.
+  // - When user explicitly jumps to a page: Smoothly glide/scroll to the target page with comfortable top margin.
   useEffect(() => {
-    const targetRow = Math.floor((currentPage - 1) / columnCount);
-    if (targetRow >= 0 && targetRow < rowCount && scrollContainerRef.current) {
-      rowVirtualizer.scrollToIndex(targetRow, { align: 'auto', behavior: 'auto' });
+    if (!pageJumpTarget || pageJumpTarget.seq === lastProcessedJumpSeqRef.current) return;
+    lastProcessedJumpSeqRef.current = pageJumpTarget.seq;
+
+    const targetIndex = pageJumpTarget.page - 1;
+    if (targetIndex >= 0 && targetIndex < totalPagesCount && scrollContainerRef.current) {
+      lastReportedPageRef.current = pageJumpTarget.page;
+      const container = scrollContainerRef.current;
+      const behavior = pageJumpTarget.behavior || 'smooth';
+
+      if (columnCount === 1) {
+        // Continuous vertical layout: smoothly glide to page top with 16px padding
+        const targetTop = Math.max(0, (pageTops[targetIndex] ?? 0) - 16);
+        container.scrollTo({
+          top: targetTop,
+          behavior
+        });
+      } else {
+        // Multi-column side-to-side view: use virtualizer row scroll with smooth behavior
+        const targetRow = Math.floor(targetIndex / columnCount);
+        if (targetRow >= 0 && targetRow < rowCount) {
+          rowVirtualizer.scrollToIndex(targetRow, { align: 'start', behavior });
+        }
+      }
     }
-  }, [currentPage, columnCount, rowCount, rowVirtualizer]);
+  }, [pageJumpTarget, columnCount, rowCount, totalPagesCount, pageTops, rowVirtualizer]);
+
+  // Fallback for external direct setCurrentPage calls (e.g. tests or legacy hooks)
+  useEffect(() => {
+    // If the currentPage change was caused by natural user scrolling or clicking inside a page,
+    // DO NOT reposition or snap the scroll container!
+    if (isUserScrollingRef.current || currentPage === lastReportedPageRef.current) {
+      return;
+    }
+
+    lastReportedPageRef.current = currentPage;
+    const targetIndex = currentPage - 1;
+
+    if (targetIndex >= 0 && targetIndex < totalPagesCount && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      if (columnCount === 1) {
+        const targetTop = Math.max(0, (pageTops[targetIndex] ?? 0) - 16);
+        container.scrollTo({
+          top: targetTop,
+          behavior: 'smooth'
+        });
+      } else {
+        const targetRow = Math.floor(targetIndex / columnCount);
+        if (targetRow >= 0 && targetRow < rowCount) {
+          rowVirtualizer.scrollToIndex(targetRow, { align: 'start', behavior: 'smooth' });
+        }
+      }
+    }
+  }, [currentPage, columnCount, rowCount, totalPagesCount, pageTops, rowVirtualizer]);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollEndTimerRef.current) clearTimeout(scrollEndTimerRef.current);
+      if (scrollAnimFrameRef.current) cancelAnimationFrame(scrollAnimFrameRef.current);
+    };
+  }, []);
 
   // Active focused page index (0-based)
   const activePageIndex = currentPage - 1;
@@ -662,7 +739,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent touch-pan-x touch-pan-y"
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
-          style={{ scrollBehavior: 'auto' }} 
        >
            <div 
                 ref={contentWrapperRef}

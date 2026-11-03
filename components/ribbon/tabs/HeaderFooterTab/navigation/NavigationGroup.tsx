@@ -12,6 +12,7 @@ export const NavigationGroup: React.FC = () => {
     activeEditingArea,
     currentPage,
     setCurrentPage,
+    goToPage,
     totalPages,
     pageConfig,
     setPageConfig
@@ -20,20 +21,18 @@ export const NavigationGroup: React.FC = () => {
   const handlePrevious = () => {
     if (currentPage > 1) {
       const targetPage = currentPage - 1;
-      setCurrentPage(targetPage);
+      goToPage(targetPage, { behavior: 'smooth' });
       const targetEl = document.querySelector(`[data-page-index="${targetPage - 1}"] .prodoc-${activeEditingArea === 'footer' ? 'footer' : 'header'}`);
       (targetEl as HTMLElement)?.focus();
-      (targetEl as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
       const targetPage = currentPage + 1;
-      setCurrentPage(targetPage);
+      goToPage(targetPage, { behavior: 'smooth' });
       const targetEl = document.querySelector(`[data-page-index="${targetPage - 1}"] .prodoc-${activeEditingArea === 'footer' ? 'footer' : 'header'}`);
       (targetEl as HTMLElement)?.focus();
-      (targetEl as HTMLElement)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 

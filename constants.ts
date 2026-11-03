@@ -1,6 +1,5 @@
 
 import { RibbonTab, MarginValues } from './types';
-import { FULL_EXAM_DOCUMENT_HTML } from './utils/examDocumentContent';
 
 export const FONTS = [
   'Arial', 'Inter', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Noto Serif',
@@ -22,7 +21,43 @@ export const TABS = [
   RibbonTab.VIEW
 ];
 
-export const DEFAULT_CONTENT = FULL_EXAM_DOCUMENT_HTML;
+export const DEFAULT_CONTENT = `
+<h1 style="font-size: 24pt; font-weight: bold; color: #1e293b; margin-bottom: 8px;">Document Title</h1>
+<p style="font-size: 11pt; color: #64748b; margin-bottom: 24px;">Professional Document &bull; ProDoc Editor</p>
+<p style="font-size: 11pt; line-height: 1.5; color: #334155; margin-bottom: 16px;">
+  Welcome to your document. This editor provides Microsoft Word-level precision with exact physical page dimensions, typography, and pure vector PDF export.
+</p>
+<h2 style="font-size: 16pt; font-weight: 600; color: #1e293b; margin-top: 24px; margin-bottom: 12px;">Core Capabilities</h2>
+<ul style="font-size: 11pt; line-height: 1.6; color: #334155; margin-bottom: 20px;">
+  <li><strong>Pure Vector PDF:</strong> Sharp, selectable, and copyable text at any zoom level with true ISO 216 &amp; North American dimensions.</li>
+  <li><strong>Word-Grade Pagination:</strong> Automated widow/orphan control, table cell preservation, and multi-column flows.</li>
+  <li><strong>International Typography:</strong> Native DOM shaping with complex script support for English, Bengali, and Arabic.</li>
+</ul>
+<table style="width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-top: 16px; margin-bottom: 24px; font-size: 10.5pt;">
+  <thead>
+    <tr style="background-color: #f8fafc;">
+      <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; font-weight: 600; color: #1e293b;">Feature</th>
+      <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; font-weight: 600; color: #1e293b;">Engine Implementation</th>
+      <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: center; font-weight: 600; color: #1e293b;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #cbd5e1; padding: 8px 12px; color: #334155;">Vector Rendering</td>
+      <td style="border: 1px solid #cbd5e1; padding: 8px 12px; color: #334155;">jsPDF vector graphics &amp; text coordinates</td>
+      <td style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: center; color: #16a34a; font-weight: 600;">Active</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #cbd5e1; padding: 8px 12px; color: #334155;">Layout Precision</td>
+      <td style="border: 1px solid #cbd5e1; padding: 8px 12px; color: #334155;">Twip-based double precision conversions</td>
+      <td style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: center; color: #16a34a; font-weight: 600;">Active</td>
+    </tr>
+  </tbody>
+</table>
+<p style="font-size: 11pt; line-height: 1.5; color: #334155;">
+  Start typing to edit this document, or insert tables, formulas, and images using the ribbon above.
+</p>
+`;
 
 // Layout Constants
 export const PAGE_MARGIN_PADDING = 24;

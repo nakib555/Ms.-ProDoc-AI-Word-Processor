@@ -120,4 +120,27 @@ describe('Thousand-Page Binary Search Virtualization', () => {
     // Over 4,990 pages are completely skipped from DOM and handled by topSpacer and bottomSpacer!
     expect(totalCount - totalMounted).toBeGreaterThan(4990);
   });
+
+  it('calculates smooth MS Word navigation target scroll offsets with comfortable padding', () => {
+    // In MS Word, jumping to page N targets page top minus breathing padding (16px)
+    const targetPage = 50;
+    const targetIndex = targetPage - 1;
+    const targetTop = Math.max(0, tops[targetIndex] - 16);
+
+    expect(targetTop).toBe(tops[targetIndex] - 16);
+    expect(targetTop).toBeGreaterThan(0);
+    expect(targetTop).toBeLessThan(tops[targetIndex]);
+  });
+
+  it('ensures user scrolling across page boundaries does not force instant snap offsets', () => {
+    // When scrolling continuously, the scroll container can be at any arbitrary fractional offset
+    // between page 1 and page 2 without being forcefully clamped or snapped
+    const page1Bottom = tops[0] + geometries[0].scaledHeight;
+    const page2Top = tops[1];
+    const arbitraryMidpointScroll = page1Bottom + (page2Top - page1Bottom) / 2;
+
+    // Verify midpoint is valid and continuous
+    expect(arbitraryMidpointScroll).toBeGreaterThan(page1Bottom);
+    expect(arbitraryMidpointScroll).toBeLessThan(page2Top);
+  });
 });

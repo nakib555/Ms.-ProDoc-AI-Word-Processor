@@ -1,8 +1,7 @@
 import { PageConfig } from '../types';
 import { getPhysicalDimensions } from './measurement';
 import { paginateContent } from './layoutEngine';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { generateVectorPdfFromPages } from './vectorPdfEngine';
 
 export interface PrintOptions {
     range: 'all' | 'current' | 'custom';
@@ -14,6 +13,9 @@ export interface PrintOptions {
     preferNativePrint?: boolean;
     scale?: number;
     concurrency?: number;
+    forceVectorPdf?: boolean;
+    autoDownload?: boolean;
+    returnBlob?: boolean;
 }
 
 /**
@@ -47,37 +49,6 @@ export const calculatePrintMargins = (config: PageConfig, pageNumber: number = 1
         }
     }
     return { top, right, bottom, left };
-};
-
-/**
- * Extracts searchable text boxes efficiently without per-word DOM layout thrashing
- */
-const extractPageTextItems = (wrapper: HTMLElement): Array<{ text: string; x: number; y: number; fontSize: number }> => {
-    const items: Array<{ text: string; x: number; y: number; fontSize: number }> = [];
-    try {
-        const wrapperRect = wrapper.getBoundingClientRect();
-        const elements = wrapper.querySelectorAll<HTMLElement>(
-            'p, h1, h2, h3, h4, h5, h6, li, td, th, blockquote, .prodoc-print-header, .prodoc-print-footer'
-        );
-        for (let i = 0; i < elements.length; i++) {
-            const el = elements[i];
-            const text = el.innerText?.trim();
-            if (!text) continue;
-            const rect = el.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0) continue;
-
-            // Convert CSS px to PDF points (1 in = 96 px = 72 pt)
-            const x = (rect.left - wrapperRect.left) * (72 / 96);
-            const y = (rect.top - wrapperRect.top + Math.min(rect.height, 18) * 0.8) * (72 / 96);
-            const style = window.getComputedStyle(el);
-            const parsedFontSize = parseFloat(style.fontSize) || 11;
-            const fontSize = Math.max(6, Math.min(48, parsedFontSize * (72 / 96)));
-            items.push({ text, x, y, fontSize });
-        }
-    } catch (_e) {
-        // Fallback safely if DOM measurement is constrained
-    }
-    return items;
 };
 
 /**
@@ -341,7 +312,7 @@ export const generatePdfPrint = async (
 
         // Check if running in automated test suite environment (where window.print is mocked and asserted)
         // or user explicitly requested instant native print
-        const isTestEnv = (typeof process !== 'undefined' && process.env?.VITEST !== undefined) || options.preferNativePrint;
+        const isTestEnv = (typeof process !== 'undefined' && process.env?.VITEST !== undefined && !options.forceVectorPdf) || options.preferNativePrint;
 
         if (isTestEnv) {
             styleEl = document.createElement('style');
@@ -382,94 +353,18 @@ export const generatePdfPrint = async (
             return;
         }
 
-        // --- Optimized High-Speed Client-Side jsPDF Generation ---
-        const pdfOrientation = orientation === 'landscape' ? 'landscape' : 'portrait';
-        const pdfWidth = widthIn * 72; // in points (1 in = 72 pt)
-        const pdfHeight = heightIn * 72;
-
-        const pdf = new jsPDF({
-            orientation: pdfOrientation,
-            unit: 'pt',
-            format: [pdfWidth, pdfHeight],
-            compress: true,
-        });
-
+        // --- High-Fidelity Pure Vector PDF Generation (MS Word Fidelity) ---
         const pageWrappers = Array.from(portalEl.querySelectorAll<HTMLElement>('.prodoc-print-page-wrapper'));
-        const totalToRender = pageWrappers.length;
 
-        // Default scale is 2 (192 DPI), reducing pixel volume by ~56% vs scale 3 while maintaining crisp print text
-        const renderScale = options.scale || 2;
-        const concurrency = Math.min(2, Math.max(1, options.concurrency || 2));
-
-        let completedPages = 0;
-
-        // Process in concurrent batches to utilize multi-core browser layout threads
-        for (let i = 0; i < totalToRender; i += concurrency) {
-            const batchIndices: number[] = [];
-            for (let b = 0; b < concurrency && (i + b) < totalToRender; b++) {
-                batchIndices.push(i + b);
-            }
-
-            const batchResults = await Promise.all(
-                batchIndices.map(async (pageIdx) => {
-                    const wrapper = pageWrappers[pageIdx];
-                    const canvas = await html2canvas(wrapper, {
-                        scale: renderScale,
-                        useCORS: true,
-                        logging: false,
-                        backgroundColor: config.pageColor || '#ffffff',
-                        windowWidth: widthIn * 96,
-                        windowHeight: heightIn * 96,
-                    });
-
-                    const imgData = canvas.toDataURL('image/jpeg', 0.92);
-                    const textItems = extractPageTextItems(wrapper);
-
-                    // Reclaim memory from canvas immediately
-                    canvas.width = 0;
-                    canvas.height = 0;
-
-                    return { pageIdx, imgData, textItems };
-                })
-            );
-
-            // Append rendered batch to PDF sequentially
-            for (const { pageIdx, imgData, textItems } of batchResults) {
-                if (pageIdx > 0) {
-                    pdf.addPage([pdfWidth, pdfHeight], pdfOrientation);
-                }
-
-                pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-
-                // Embed selectable invisible vector text layer without layout thrashing
-                if (textItems && textItems.length > 0) {
-                    try {
-                        pdf.setFont('helvetica');
-                        for (let t = 0; t < textItems.length; t++) {
-                            const item = textItems[t];
-                            pdf.setFontSize(item.fontSize);
-                            pdf.text(item.text, item.x, item.y, { renderingMode: 'invisible' });
-                        }
-                    } catch (_textErr) {
-                        // Keep PDF generation intact if font embedding encounters any issue
-                    }
-                }
-
-                completedPages++;
-                if (options.onProgress) {
-                    const percent = Math.min(100, Math.round((completedPages / totalToRender) * 100));
-                    options.onProgress(percent, completedPages, totalToRender);
-                }
-            }
-        }
-
-        if (options.onProgress) {
-            options.onProgress(100, totalToRender, totalToRender);
-        }
-
-        const rawTitle = options.documentTitle || 'Document';
-        const safeTitle = rawTitle.replace(/[^\w\s-]/g, '').trim() || 'Document';
-        pdf.save(`${safeTitle}.pdf`);
+        await generateVectorPdfFromPages(pageWrappers, config, {
+            range: options.range,
+            pages: options.pages,
+            currentPage: options.currentPage,
+            documentTitle: options.documentTitle,
+            onProgress: options.onProgress,
+            autoDownload: options.autoDownload !== false,
+            returnBlob: options.returnBlob,
+        });
 
         // Portal Cleanup
         if (portalEl && portalEl.parentNode) {

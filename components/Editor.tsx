@@ -12,6 +12,7 @@ import { ReadLayoutView } from './ribbon/tabs/ViewTab/views/ReadLayoutView';
 const ResponsiveContainer = ({ children }: { children: (size: { width: number, height: number }) => React.ReactNode }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
+    const rafRef = useRef<number | null>(null);
 
     useLayoutEffect(() => {
         if (!ref.current) return;
@@ -19,15 +20,25 @@ const ResponsiveContainer = ({ children }: { children: (size: { width: number, h
         const updateSize = () => {
             if (ref.current) {
                 const { width, height } = ref.current.getBoundingClientRect();
-                setSize({ width, height });
+                setSize(prev => (Math.abs(prev.width - width) < 0.5 && Math.abs(prev.height - height) < 0.5) ? prev : { width, height });
             }
         };
 
         updateSize();
 
-        const observer = new ResizeObserver(updateSize);
+        const observer = new ResizeObserver(() => {
+            if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+            rafRef.current = requestAnimationFrame(() => {
+                updateSize();
+                rafRef.current = null;
+            });
+        });
+
         observer.observe(ref.current);
-        return () => observer.disconnect();
+        return () => {
+            observer.disconnect();
+            if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+        };
     }, []);
 
     return (
