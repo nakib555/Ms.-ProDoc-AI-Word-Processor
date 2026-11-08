@@ -1,6 +1,0 @@
-{
-  "summary": "Implementation plan to rewrite the PDF export system into a true Microsoft Word-level client-side vector engine. Replaces html2canvas whole-page rasterization with direct jsPDF vector primitives (selectable vector text, vector lines, table borders, cell backgrounds, embedded fonts, and Unicode support) without relying on the browser print dialog.",
-  "updatedAt": "2026-11-03T11:30:34.343903648Z",
-  "requestFeedback": true,
-  "userFacing": true
-}

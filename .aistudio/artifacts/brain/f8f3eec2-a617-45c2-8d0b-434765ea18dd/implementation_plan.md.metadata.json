@@ -1,6 +1,0 @@
-{
-  "summary":  "Engineering plan to integrate TanStack Virtual with a hybrid rendering pipeline, enabling seamless 60fps scrolling and editing across thousands of document pages with realistic ghost skeletons in both single-page vertical and multi-page side-by-side view modes.",
-  "updatedAt":  "2026-11-02T09:23:25.183867338Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}
