@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
 export interface GestureState {
@@ -62,6 +62,13 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const activeContentRef = useRef<HTMLDivElement | null>(null);
   const hudTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gestureLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (hudTimerRef.current) clearTimeout(hudTimerRef.current);
+      if (gestureLockTimerRef.current) clearTimeout(gestureLockTimerRef.current);
+    };
+  }, []);
 
   const setGestureLocked = useCallback((locked: boolean) => {
     if (gestureLockTimerRef.current) {

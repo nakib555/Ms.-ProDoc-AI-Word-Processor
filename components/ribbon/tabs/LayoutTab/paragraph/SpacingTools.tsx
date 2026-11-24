@@ -5,9 +5,9 @@ import { ParagraphInput } from '../common/LayoutTools';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const SpacingTools: React.FC = () => {
-  const { editor } = useEditor();
-  const [before, setBefore] = useState('0');
-  const [after, setAfter] = useState('0');
+  const { editor, applyBlockStyle } = useEditor();
+  const [before, setBefore] = useState('0 pt');
+  const [after, setAfter] = useState('0 pt');
 
   useEffect(() => {
     if (!editor) return;
@@ -28,20 +28,20 @@ export const SpacingTools: React.FC = () => {
   }, [editor]);
 
   const handleBeforeChange = (val: string) => {
-      if (!editor) return;
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = num * 1.33; // pt to px
-          editor.chain().focus().updateAttributes('paragraph', { spacingBefore: px }).run();
+          const px = Math.round(num * 1.33 * 10) / 10; // pt to px
+          setBefore(`${num} pt`);
+          applyBlockStyle({ marginTop: `${px}px` });
       }
   };
 
   const handleAfterChange = (val: string) => {
-      if (!editor) return;
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = num * 1.33; // pt to px
-          editor.chain().focus().updateAttributes('paragraph', { spacingAfter: px }).run();
+          const px = Math.round(num * 1.33 * 10) / 10; // pt to px
+          setAfter(`${num} pt`);
+          applyBlockStyle({ marginBottom: `${px}px` });
       }
   };
 

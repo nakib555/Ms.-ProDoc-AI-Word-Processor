@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useGestureContext } from '../contexts/GestureContext';
+import { isAnyModalOpen, isEventInsideModal } from '../utils/modalScroll';
 
 interface UseTouchZoomOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -12,6 +13,7 @@ interface UseTouchZoomOptions {
   onDoubleTap?: () => void;
   onPinchStart?: () => void;
   enabled?: boolean;
+  calibrationScale?: number;
 }
 
 interface TouchZoomResult {
@@ -47,15 +49,20 @@ export const useTouchZoom = ({
   onDoubleTap,
   onPinchStart,
   enabled = true,
+  calibrationScale = 1,
 }: UseTouchZoomOptions): TouchZoomResult => {
   const gestureContext = useGestureContext();
   const [isPinching, setIsPinching] = useState(false);
   const [hudZoom, setHudZoom] = useState(zoom);
 
   const zoomRef = useRef(zoom);
+  const calibrationScaleRef = useRef(calibrationScale);
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
+  useEffect(() => {
+    calibrationScaleRef.current = calibrationScale;
+  }, [calibrationScale]);
 
   // Keep latest callbacks and references in stable refs to prevent listener tear-down during gestures
   const setZoomRef = useRef(setZoom);
@@ -400,6 +407,7 @@ export const useTouchZoom = ({
 
     // Trackpad pinch-to-zoom (Wheel with Ctrl key)
     const handleWheel = (e: WheelEvent) => {
+      if (isEventInsideModal(e.target) || isAnyModalOpen()) return;
       if (e.ctrlKey) {
         e.preventDefault();
         onPinchStartRef.current?.();
@@ -408,13 +416,13 @@ export const useTouchZoom = ({
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        const currentScale = zoomRef.current / 100;
+        const currentScale = (zoomRef.current / 100) * calibrationScaleRef.current;
         const contentX = (container.scrollLeft + mouseX) / currentScale;
         const contentY = (container.scrollTop + mouseY) / currentScale;
 
         const delta = -e.deltaY * 0.4;
         const newZoom = clampZoom(zoomRef.current + delta);
-        const newScale = newZoom / 100;
+        const newScale = (newZoom / 100) * calibrationScaleRef.current;
 
         zoomRef.current = newZoom;
         setZoomRef.current(newZoom);

@@ -1,40 +1,21 @@
 
-import React, { useState, Suspense } from 'react';
+import React from 'react';
 import { ListOrdered } from 'lucide-react';
 import { RibbonButton } from '../../../../common/RibbonButton';
 import { useEditor } from '../../../../../../contexts/EditorContext';
-import { PageConfig } from '../../../../../../types';
-
-const PageSetupDialog = React.lazy(() => import('./LineNumberingOptions/PageSetupDialog').then(m => ({ default: m.PageSetupDialog })));
 
 export const LineNumbersTool: React.FC = () => {
-  const { setPageConfig, pageConfig } = useEditor();
-  const [showDialog, setShowDialog] = useState(false);
-
-  const handleSave = (newConfig: PageConfig) => {
-      setPageConfig(newConfig);
-      setShowDialog(false);
-  };
+  const { openPageSetup, pageConfig } = useEditor();
+  const isEnabled = Boolean(pageConfig.lineNumbers?.enabled);
 
   return (
-    <>
-        <RibbonButton 
-            icon={ListOrdered} 
-            label="Line Numbers" 
-            onClick={() => setShowDialog(true)} 
-            hasArrow 
-            iconClassName="text-teal-600 dark:text-teal-400"
-        />
-        {showDialog && (
-             <Suspense fallback={null}>
-                <PageSetupDialog 
-                    isOpen={showDialog}
-                    onClose={() => setShowDialog(false)}
-                    config={pageConfig}
-                    onSave={handleSave}
-                />
-             </Suspense>
-         )}
-    </>
+    <RibbonButton 
+      icon={ListOrdered} 
+      label="Line Numbers" 
+      onClick={() => openPageSetup('layout')} 
+      hasArrow 
+      className={isEnabled ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300' : ''}
+      iconClassName="text-teal-600 dark:text-teal-400"
+    />
   );
 };

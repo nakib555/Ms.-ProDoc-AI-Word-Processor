@@ -2,23 +2,78 @@ import React from 'react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const StyleGallery: React.FC = () => {
-  const { executeCommand, customStyles, applyCustomStyle } = useEditor();
+  const {
+    executeCommand,
+    applyBlockStyle,
+    applyAdvancedStyle,
+    customStyles,
+    applyCustomStyle,
+  } = useEditor();
+
+  const applyBuiltInStyle = (styleName: string) => {
+    switch (styleName) {
+      case 'Normal':
+        executeCommand('formatBlock', 'P');
+        applyBlockStyle({ marginTop: '0pt', marginBottom: '8pt', lineHeight: '1.15' });
+        applyAdvancedStyle({ fontSize: '11pt', fontWeight: '400', fontStyle: 'normal', color: '' });
+        break;
+      case 'No Spacing':
+        executeCommand('formatBlock', 'P');
+        applyBlockStyle({ marginTop: '0pt', marginBottom: '0pt', lineHeight: '1.0' });
+        applyAdvancedStyle({ fontSize: '11pt', fontWeight: '400', fontStyle: 'normal', color: '' });
+        break;
+      case 'Heading 1':
+        executeCommand('formatBlock', 'H1');
+        applyBlockStyle({ marginTop: '12pt', marginBottom: '4pt', lineHeight: '1.15' });
+        applyAdvancedStyle({ fontSize: '20pt', fontWeight: '300', fontStyle: 'normal', color: '#2563eb' });
+        break;
+      case 'Heading 2':
+        executeCommand('formatBlock', 'H2');
+        applyBlockStyle({ marginTop: '10pt', marginBottom: '4pt', lineHeight: '1.15' });
+        applyAdvancedStyle({ fontSize: '16pt', fontWeight: '600', fontStyle: 'normal', color: '#2563eb' });
+        break;
+      case 'Title':
+        executeCommand('formatBlock', 'H1');
+        applyBlockStyle({ marginTop: '0pt', marginBottom: '6pt', lineHeight: '1.1' });
+        applyAdvancedStyle({ fontSize: '28pt', fontWeight: '600', fontStyle: 'normal', color: '#0f172a' });
+        break;
+      case 'Subtitle':
+        executeCommand('formatBlock', 'H3');
+        applyBlockStyle({ marginTop: '0pt', marginBottom: '8pt', lineHeight: '1.15' });
+        applyAdvancedStyle({ fontSize: '13pt', fontWeight: '400', fontStyle: 'italic', color: '#64748b' });
+        break;
+      case 'Quote':
+        executeCommand('formatBlock', 'BLOCKQUOTE');
+        applyBlockStyle({
+          marginTop: '8pt',
+          marginBottom: '8pt',
+          paddingLeft: '12px',
+          borderLeft: '3px solid #cbd5e1',
+        });
+        applyAdvancedStyle({ fontStyle: 'italic', color: '#475569' });
+        break;
+      case 'Emphasis':
+        executeCommand('italic');
+        applyAdvancedStyle({ fontStyle: 'italic', color: '#334155' });
+        break;
+    }
+  };
 
   return (
     <div className="grid grid-rows-2 grid-flow-col gap-1 h-full overflow-x-auto max-w-[280px] px-1 no-scrollbar">
         {[
-          { name: 'Normal', tag: 'P', className: 'font-sans' },
-          { name: 'No Spacing', tag: 'P', className: 'font-sans leading-tight' },
-          { name: 'Heading 1', tag: 'H1', className: 'text-blue-600 font-light text-lg' },
-          { name: 'Heading 2', tag: 'H2', className: 'text-blue-600 font-semibold' },
-          { name: 'Title', tag: 'H1', className: 'text-slate-900 text-xl font-medium' },
-          { name: 'Subtitle', tag: 'H3', className: 'text-slate-500 font-normal italic' },
-          { name: 'Quote', tag: 'BLOCKQUOTE', className: 'text-slate-600 border-l-2 border-slate-300 pl-2 italic' },
-          { name: 'Emphasis', tag: 'EM', className: 'italic text-slate-700' },
+          { name: 'Normal', className: 'font-sans' },
+          { name: 'No Spacing', className: 'font-sans leading-tight' },
+          { name: 'Heading 1', className: 'text-blue-600 font-light text-lg' },
+          { name: 'Heading 2', className: 'text-blue-600 font-semibold' },
+          { name: 'Title', className: 'text-slate-900 text-xl font-medium' },
+          { name: 'Subtitle', className: 'text-slate-500 font-normal italic' },
+          { name: 'Quote', className: 'text-slate-600 border-l-2 border-slate-300 pl-2 italic' },
+          { name: 'Emphasis', className: 'italic text-slate-700' },
         ].map((style) => (
             <button
                 key={style.name}
-                onClick={() => executeCommand('formatBlock', style.tag)}
+                onClick={() => applyBuiltInStyle(style.name)}
                 className="flex items-center px-3 min-w-[100px] h-[28px] bg-white border border-slate-200 hover:bg-slate-50 hover:border-blue-300 hover:shadow-sm rounded-sm transition-all group overflow-hidden text-left"
             >
                 <span className={`text-[11px] whitespace-nowrap overflow-hidden text-ellipsis ${style.className}`}>

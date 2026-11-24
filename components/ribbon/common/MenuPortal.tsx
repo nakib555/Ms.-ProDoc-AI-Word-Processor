@@ -263,9 +263,10 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
   if (isMobile) {
     return ReactDOM.createPortal(
       <div 
-        className="fixed inset-0 z-[9999] flex flex-col justify-end pointer-events-none select-none"
+        className="fixed inset-0 z-[9999] flex flex-col justify-end pointer-events-none select-none overscroll-contain"
         role="dialog"
         aria-modal="true"
+        data-modal-backdrop="true"
         aria-label={displayTitle}
       >
         {/* Backdrop Overlay with Smooth Fade and Blur */}
@@ -363,7 +364,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
       />
       <div 
           ref={menuRef}
-          className="bg-white dark:bg-[#1e293b] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col py-1.5 animate-in fade-in zoom-in-95 duration-100 dark:text-slate-200"
+          className="bg-white dark:bg-[#1e293b] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col py-1.5 animate-in fade-in zoom-in-95 duration-100 dark:text-slate-200 overscroll-contain"
           style={desktopStyle}
           onClick={(e) => e.stopPropagation()}
       >

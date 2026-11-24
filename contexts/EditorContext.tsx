@@ -17,7 +17,7 @@ import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import { Node, mergeAttributes } from '@tiptap/core';
 
-import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea, DocumentFootnote, DocumentEndnote } from '../types';
+import { SaveStatus, ViewMode, PageConfig, CustomStyle, ReadModeConfig, ActiveElementType, PageMovement, EditingArea, DocumentFootnote, DocumentEndnote, MeasurementUnit, ZoomLayoutMode } from '../types';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { DEFAULT_CONTENT, PAGE_SIZES, MARGIN_PRESETS } from '../constants';
 import { jsonDocumentToHtml, htmlToJSONDocument, DocumentComment } from '../utils/documentModel';
@@ -28,6 +28,82 @@ import { IdentityExtension } from '../components/editor/extensions/IdentityExten
 import { CommentExtension } from '../components/editor/extensions/CommentExtension';
 import { FootnoteReferenceExtension } from '../components/editor/extensions/FootnoteReferenceExtension';
 import { EndnoteReferenceExtension } from '../components/editor/extensions/EndnoteReferenceExtension';
+import {
+  DocumentHistoryEngine,
+  DocumentSnapshot,
+  HistoryEntry,
+  HistoryCommitMode,
+  clonePageConfig,
+} from '../utils/historyManager';
+import {
+  getPhysicalDimensions,
+  getScreenCalibration,
+  setScreenCalibration,
+  ScreenCalibration,
+  loadMeasurementUnit,
+  saveMeasurementUnit,
+  loadDefaultPageConfig,
+  getCalibrationScale,
+} from '../utils/measurement';
+
+const countWordsFromHtml = (html: string): number => {
+  if (!html) return 0;
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+  return text ? text.split(/\s+/).length : 0;
+};
+
+const countCharsFromHtml = (html: string): number => {
+  if (!html) return 0;
+  return html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').length;
+};
+
+const sanitizePastedHtml = (rawHtml: string, stripFormatting: boolean): string => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(rawHtml, 'text/html');
+  doc.querySelectorAll('script, style, meta, link, iframe, object, embed').forEach((el) => el.remove());
+  doc.body.querySelectorAll('*').forEach((el) => {
+    Array.from(el.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on') || (name === 'href' && attr.value.trim().toLowerCase().startsWith('javascript:'))) {
+        el.removeAttribute(attr.name);
+      } else if (stripFormatting && (name === 'style' || name === 'class' || name === 'color' || name === 'face' || name === 'size')) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+  return doc.body.innerHTML;
+};
+
+const INITIAL_PAGE_CONFIG: PageConfig = {
+  size: 'Letter',
+  orientation: 'portrait',
+  marginPreset: 'compactReport',
+  margins: MARGIN_PRESETS.compactReport || { top: 0.75, bottom: 0.75, left: 0.75, right: 0.75, gutter: 0 },
+  background: 'none',
+  headerDistance: 0.4,
+  footerDistance: 0.4,
+  verticalAlign: 'top',
+  sectionStart: 'newpage',
+  differentOddEven: false,
+  differentFirstPage: false,
+  gutterPosition: 'left',
+  multiplePages: 'normal',
+  applyTo: 'wholeDocument',
+  sheetsPerBooklet: 'all',
+};
+
+const getHydratedInitialPageConfig = (): PageConfig => {
+  const saved = loadDefaultPageConfig();
+  if (!saved) return clonePageConfig(INITIAL_PAGE_CONFIG);
+  return clonePageConfig({
+    ...INITIAL_PAGE_CONFIG,
+    ...saved,
+    margins: {
+      ...INITIAL_PAGE_CONFIG.margins,
+      ...(saved.margins || {}),
+    },
+  });
+};
 
 // Custom Paragraph Extension for Indent/Spacing
 const CustomParagraph = Paragraph.extend({
@@ -319,18 +395,33 @@ const CustomTable = Table.extend({
   }
 });
 
+export interface ToastNotification {
+  id: number;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+}
+
 // Define custom types for TipTap integration
 export interface EditorContextType {
   editor: Editor | null;
   content: string;
-  setContent: (content: string, emitUpdate?: boolean) => void;
+  setContent: (content: string, emitUpdate?: boolean, options?: { historyMode?: HistoryCommitMode }) => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  historyApplySeq: number;
   wordCount: number;
+  charCount: number;
   zoom: number;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
+  zoomLayout: ZoomLayoutMode;
+  setZoomLayout: React.Dispatch<React.SetStateAction<ZoomLayoutMode>>;
+  measurementUnit: MeasurementUnit;
+  setMeasurementUnit: (unit: MeasurementUnit) => void;
+  screenCalibration: ScreenCalibration;
+  updateScreenCalibration: (patch: Partial<ScreenCalibration>) => void;
+  calibrationScale: number;
   viewMode: ViewMode;
   setViewMode: React.Dispatch<React.SetStateAction<ViewMode>>;
   pageMovement: PageMovement;
@@ -344,7 +435,18 @@ export interface EditorContextType {
   setPageConfig: React.Dispatch<React.SetStateAction<PageConfig>>;
   showPageSetup: boolean;
   setShowPageSetup: React.Dispatch<React.SetStateAction<boolean>>;
-  pageDimensions: any;
+  pageSetupInitialTab: 'margins' | 'paper' | 'layout';
+  openPageSetup: (tab?: 'margins' | 'paper' | 'layout') => void;
+  showPageBordersDialog: boolean;
+  setShowPageBordersDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  showWordCountDialog: boolean;
+  setShowWordCountDialog: React.Dispatch<React.SetStateAction<boolean>>;
+  toast: ToastNotification | null;
+  showToast: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
+  dismissToast: () => void;
+  formatPainterStyles: Record<string, string> | null;
+  applyFormatPainterToSelection: () => boolean;
+  pageDimensions: { width: number; height: number; widthInches: number; heightInches: number; widthMm: number; heightMm: number };
   registerContainer: (node: HTMLDivElement | null) => void;
   showRuler: boolean;
   setShowRuler: React.Dispatch<React.SetStateAction<boolean>>;
@@ -423,7 +525,6 @@ export interface EditorContextType {
   zoomMode: 'custom' | 'fit-width' | 'fit-page';
   setZoomMode: React.Dispatch<React.SetStateAction<'custom' | 'fit-width' | 'fit-page'>>;
 
-  // Viewport Base Zoom (for relative zoom)
   // Selection Mode
   selectionMode: boolean;
   setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -460,8 +561,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [creationDate] = useState(() => new Date());
   const [lastModified, setLastModified] = useState(() => new Date());
   const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
   const [zoom, setZoom] = useState(100);
   const [zoomMode, setZoomMode] = useState<'custom' | 'fit-width' | 'fit-page'>('custom');
+  const [zoomLayout, setZoomLayout] = useState<ZoomLayoutMode>('single');
+  const [measurementUnit, setMeasurementUnitState] = useState<MeasurementUnit>(() => loadMeasurementUnit());
+  const [screenCalibration, setScreenCalibrationState] = useState<ScreenCalibration>(() => getScreenCalibration());
   const [viewMode, setViewMode] = useState<ViewMode>('print');
   const [pageMovement, setPageMovement] = useState<PageMovement>('vertical');
 
@@ -469,7 +574,56 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [showFormattingMarks, setShowFormattingMarks] = useState(false);
   const [activeElementType, setActiveElementType] = useState<ActiveElementType>('text');
   const [showPageSetup, setShowPageSetup] = useState(false);
-  
+  const [pageSetupInitialTab, setPageSetupInitialTab] = useState<'margins' | 'paper' | 'layout'>('margins');
+  const [showPageBordersDialog, setShowPageBordersDialog] = useState(false);
+  const [showWordCountDialog, setShowWordCountDialog] = useState(false);
+  const [toast, setToast] = useState<ToastNotification | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [customStyles, setCustomStyles] = useState<CustomStyle[]>([]);
+  const [formatPainterStyles, setFormatPainterStyles] = useState<Record<string, string> | null>(null);
+  const formatPainterStylesRef = useRef<Record<string, string> | null>(null);
+
+  useEffect(() => {
+    formatPainterStylesRef.current = formatPainterStyles;
+  }, [formatPainterStyles]);
+
+  const setMeasurementUnit = useCallback((unit: MeasurementUnit) => {
+    saveMeasurementUnit(unit);
+    setMeasurementUnitState(unit);
+  }, []);
+
+  const updateScreenCalibration = useCallback((patch: Partial<ScreenCalibration>) => {
+    setScreenCalibration(patch);
+    setScreenCalibrationState(getScreenCalibration());
+  }, []);
+
+  const calibrationScale = useMemo(() => getCalibrationScale(screenCalibration), [screenCalibration]);
+
+  const openPageSetup = useCallback((tab: 'margins' | 'paper' | 'layout' = 'margins') => {
+    setPageSetupInitialTab(tab);
+    setShowPageSetup(true);
+  }, []);
+
+  const dismissToast = useCallback(() => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
+    }
+    setToast(null);
+  }, []);
+
+  const showToast = useCallback((message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    const id = Date.now();
+    setToast({ id, message, type });
+    toastTimerRef.current = setTimeout(() => {
+      setToast((current) => (current?.id === id ? null : current));
+      toastTimerRef.current = null;
+    }, 3500);
+  }, []);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageJumpTarget, setPageJumpTarget] = useState<{ page: number; behavior: 'smooth' | 'auto'; seq: number } | null>(null);
@@ -514,12 +668,12 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
   
   // Default Header/Footer content
-  const [headerContent, setHeaderContent] = useState('');
-  const [footerContent, setFooterContent] = useState('');
+  const [headerContent, setHeaderContentRaw] = useState('');
+  const [footerContent, setFooterContentRaw] = useState('');
   
   // First Page Header/Footer content
-  const [firstHeaderContent, setFirstHeaderContent] = useState('');
-  const [firstFooterContent, setFirstFooterContent] = useState('');
+  const [firstHeaderContent, setFirstHeaderContentRaw] = useState('');
+  const [firstFooterContent, setFirstFooterContentRaw] = useState('');
   
   const [isKeyboardLocked, setIsKeyboardLocked] = useState(false);
   const [isTableResizerEnabled, setIsTableResizerEnabled] = useState(false);
@@ -528,28 +682,15 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [hasActiveSelection, setHasActiveSelection] = useState(false);
   const [selectionAction, setSelectionAction] = useState<any | null>(null);
 
-  const [pageConfig, setPageConfig] = useState<PageConfig>({
-    size: 'Letter',
-    orientation: 'portrait',
-    marginPreset: 'compactReport',
-    margins: MARGIN_PRESETS.compactReport || { top: 0.75, bottom: 0.75, left: 0.75, right: 0.75, gutter: 0 },
-    background: 'none',
-    headerDistance: 0.4,
-    footerDistance: 0.4,
-    verticalAlign: 'top',
-    sectionStart: 'newpage',
-    differentOddEven: false,
-    differentFirstPage: false,
-    gutterPosition: 'left',
-    multiplePages: 'normal',
-    applyTo: 'wholeDocument',
-    sheetsPerBooklet: 'all'
-  });
+  const initialHydratedPageConfig = useMemo(() => getHydratedInitialPageConfig(), []);
+  const [pageConfig, setPageConfigRaw] = useState<PageConfig>(() => clonePageConfig(initialHydratedPageConfig));
 
-  const pageConfigRef = useRef(pageConfig);
-  useEffect(() => {
-    pageConfigRef.current = pageConfig;
-  }, [pageConfig]);
+  const contentRef = useRef<string>(DEFAULT_CONTENT);
+  const pageConfigRef = useRef<PageConfig>(clonePageConfig(initialHydratedPageConfig));
+  const headerContentRef = useRef<string>('');
+  const footerContentRef = useRef<string>('');
+  const firstHeaderContentRef = useRef<string>('');
+  const firstFooterContentRef = useRef<string>('');
 
   const [readConfig, setReadConfig] = useState<ReadModeConfig>({
     theme: 'light',
@@ -564,6 +705,108 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [contentState, setContentState] = useState<string>(DEFAULT_CONTENT);
   const autoSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const footnoteRelabelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Absolute independent document history engine
+  const isApplyingHistoryRef = useRef(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const [historyApplySeq, setHistoryApplySeq] = useState(0);
+  const historyEngineRef = useRef<DocumentHistoryEngine>(
+    new DocumentHistoryEngine(
+      {
+        content: DEFAULT_CONTENT,
+        pageConfig: clonePageConfig(initialHydratedPageConfig),
+        headerContent: '',
+        footerContent: '',
+        firstHeaderContent: '',
+        firstFooterContent: '',
+      },
+      { maxEntries: 150, debounceMs: 450 }
+    )
+  );
+
+  useEffect(() => {
+    setWordCount(countWordsFromHtml(DEFAULT_CONTENT));
+    setCharCount(countCharsFromHtml(DEFAULT_CONTENT));
+    const engine = historyEngineRef.current;
+    return () => {
+      engine.dispose();
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const buildSnapshot = useCallback((overrides?: Partial<DocumentSnapshot>): DocumentSnapshot => ({
+    content: overrides?.content ?? contentRef.current,
+    pageConfig: clonePageConfig(overrides?.pageConfig ?? pageConfigRef.current),
+    headerContent: overrides?.headerContent ?? headerContentRef.current,
+    footerContent: overrides?.footerContent ?? footerContentRef.current,
+    firstHeaderContent: overrides?.firstHeaderContent ?? firstHeaderContentRef.current,
+    firstFooterContent: overrides?.firstFooterContent ?? firstFooterContentRef.current,
+  }), []);
+
+  const syncHistoryState = useCallback(() => {
+    setCanUndo(historyEngineRef.current.canUndo());
+    setCanRedo(historyEngineRef.current.canRedo());
+  }, []);
+
+  const setPageConfig: React.Dispatch<React.SetStateAction<PageConfig>> = useCallback((action) => {
+    const prev = pageConfigRef.current;
+    const next = typeof action === 'function' ? action(prev) : action;
+    const clonedNext = clonePageConfig(next);
+    pageConfigRef.current = clonedNext;
+    setPageConfigRaw(clonedNext);
+    if (!isApplyingHistoryRef.current) {
+      if (historyEngineRef.current.commit(buildSnapshot({ pageConfig: clonedNext }), 'immediate')) {
+        syncHistoryState();
+      }
+    }
+  }, [buildSnapshot, syncHistoryState]);
+
+  const setHeaderContent: React.Dispatch<React.SetStateAction<string>> = useCallback((action) => {
+    const next = typeof action === 'function' ? action(headerContentRef.current) : action;
+    headerContentRef.current = next;
+    setHeaderContentRaw(next);
+    if (!isApplyingHistoryRef.current) {
+      if (historyEngineRef.current.commit(buildSnapshot({ headerContent: next }), 'debounced', undefined, 'headerContent')) {
+        syncHistoryState();
+      }
+    }
+  }, [buildSnapshot, syncHistoryState]);
+
+  const setFooterContent: React.Dispatch<React.SetStateAction<string>> = useCallback((action) => {
+    const next = typeof action === 'function' ? action(footerContentRef.current) : action;
+    footerContentRef.current = next;
+    setFooterContentRaw(next);
+    if (!isApplyingHistoryRef.current) {
+      if (historyEngineRef.current.commit(buildSnapshot({ footerContent: next }), 'debounced', undefined, 'footerContent')) {
+        syncHistoryState();
+      }
+    }
+  }, [buildSnapshot, syncHistoryState]);
+
+  const setFirstHeaderContent: React.Dispatch<React.SetStateAction<string>> = useCallback((action) => {
+    const next = typeof action === 'function' ? action(firstHeaderContentRef.current) : action;
+    firstHeaderContentRef.current = next;
+    setFirstHeaderContentRaw(next);
+    if (!isApplyingHistoryRef.current) {
+      if (historyEngineRef.current.commit(buildSnapshot({ firstHeaderContent: next }), 'debounced', undefined, 'firstHeaderContent')) {
+        syncHistoryState();
+      }
+    }
+  }, [buildSnapshot, syncHistoryState]);
+
+  const setFirstFooterContent: React.Dispatch<React.SetStateAction<string>> = useCallback((action) => {
+    const next = typeof action === 'function' ? action(firstFooterContentRef.current) : action;
+    firstFooterContentRef.current = next;
+    setFirstFooterContentRaw(next);
+    if (!isApplyingHistoryRef.current) {
+      if (historyEngineRef.current.commit(buildSnapshot({ firstFooterContent: next }), 'debounced', undefined, 'firstFooterContent')) {
+        syncHistoryState();
+      }
+    }
+  }, [buildSnapshot, syncHistoryState]);
 
   // --- TipTap Initialization ---
   const editor = useTipTapEditor({
@@ -708,14 +951,22 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     },
     onUpdate: ({ editor }) => {
+      if (isApplyingHistoryRef.current) return;
       // Debounce heavy autosave serialization (1000ms idle)
       if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
       autoSaveDebounceRef.current = setTimeout(() => {
-        if (!editor.isDestroyed) {
+        if (!editor.isDestroyed && !isApplyingHistoryRef.current) {
           const html = editor.getHTML();
-          setContentState(html);
-          setWordCount(editor.storage.characterCount?.words?.() || 0);
-          setLastModified(new Date());
+          if (html !== contentRef.current) {
+            contentRef.current = html;
+            setContentState(html);
+            setWordCount(editor.storage.characterCount?.words?.() || countWordsFromHtml(html));
+            setCharCount(countCharsFromHtml(html));
+            setLastModified(new Date());
+            if (historyEngineRef.current.commit(buildSnapshot({ content: html }), 'immediate')) {
+              syncHistoryState();
+            }
+          }
           triggerAutoSave(documentTitleRef.current, html, pageConfigRef.current, footnotesRef.current, endnotesRef.current);
         }
       }, 1000);
@@ -769,159 +1020,481 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   });
 
-  const setContent = useCallback((content: string, emitUpdate = true) => {
-    setContentState(content);
-    if (editor && emitUpdate) {
-        editor.commands.setContent(content);
-    }
-  }, [editor]);
+  const setContent = useCallback((
+    content: string,
+    emitUpdate = true,
+    options?: { historyMode?: HistoryCommitMode }
+  ) => {
+    const mode: HistoryCommitMode = isApplyingHistoryRef.current ? 'none' : (options?.historyMode ?? 'immediate');
 
+    if (content !== contentRef.current) {
+      contentRef.current = content;
+      setContentState(content);
+      setWordCount(countWordsFromHtml(content));
+      setCharCount(countCharsFromHtml(content));
+      setLastModified(new Date());
+    }
+
+    if (historyEngineRef.current.commit(buildSnapshot({ content }), mode)) {
+      syncHistoryState();
+    }
+
+    if (editor && emitUpdate && !editor.isDestroyed) {
+      editor.commands.setContent(content, false);
+    }
+
+    if (autoSaveDebounceRef.current) clearTimeout(autoSaveDebounceRef.current);
+    autoSaveDebounceRef.current = setTimeout(() => {
+      triggerAutoSave(documentTitleRef.current, contentRef.current, pageConfigRef.current, footnotesRef.current, endnotesRef.current);
+    }, 1000);
+  }, [editor, buildSnapshot, syncHistoryState, triggerAutoSave]);
+
+  const applyHistoryEntry = useCallback((entry: HistoryEntry) => {
+    isApplyingHistoryRef.current = true;
+    try {
+      const snap = entry.snapshot;
+      const clonedConfig = clonePageConfig(snap.pageConfig);
+
+      contentRef.current = snap.content;
+      pageConfigRef.current = clonedConfig;
+      headerContentRef.current = snap.headerContent;
+      footerContentRef.current = snap.footerContent;
+      firstHeaderContentRef.current = snap.firstHeaderContent;
+      firstFooterContentRef.current = snap.firstFooterContent;
+
+      setContentState(snap.content);
+      setPageConfigRaw(clonedConfig);
+      setHeaderContentRaw(snap.headerContent);
+      setFooterContentRaw(snap.footerContent);
+      setFirstHeaderContentRaw(snap.firstHeaderContent);
+      setFirstFooterContentRaw(snap.firstFooterContent);
+      setWordCount(countWordsFromHtml(snap.content));
+      setCharCount(countCharsFromHtml(snap.content));
+      setLastModified(new Date());
+
+      if (editor && !editor.isDestroyed) {
+        editor.commands.setContent(snap.content, false);
+      }
+
+      setHistoryApplySeq(s => s + 1);
+      syncHistoryState();
+      triggerAutoSave(documentTitleRef.current, snap.content, clonedConfig, footnotesRef.current, endnotesRef.current);
+    } finally {
+      isApplyingHistoryRef.current = false;
+    }
+  }, [editor, syncHistoryState, triggerAutoSave]);
+
+  const undo = useCallback(() => {
+    const entry = historyEngineRef.current.undo();
+    if (entry) {
+      applyHistoryEntry(entry);
+    }
+  }, [applyHistoryEntry]);
+
+  const redo = useCallback(() => {
+    const entry = historyEngineRef.current.redo();
+    if (entry) {
+      applyHistoryEntry(entry);
+    }
+  }, [applyHistoryEntry]);
+
+  const applyAdvancedStyle = useCallback((styles: React.CSSProperties) => {
+    historyEngineRef.current.flush();
+    if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
+      editorRef.current.focus();
+    }
+
+    if (styles.fontFamily) {
+      document.execCommand('fontName', false, styles.fontFamily);
+    }
+    if (styles.fontSize) {
+      document.execCommand('fontSize', false, '7');
+      const fonts = document.querySelectorAll('font[size="7"]');
+      fonts.forEach(f => {
+        f.removeAttribute('size');
+        (f as HTMLElement).style.fontSize = styles.fontSize as string;
+      });
+    }
+    if (styles.color) {
+      document.execCommand('foreColor', false, styles.color);
+    }
+    if (styles.backgroundColor) {
+      document.execCommand('hiliteColor', false, styles.backgroundColor);
+    }
+
+    const extraEntries = Object.entries(styles).filter(
+      ([k, v]) => v !== undefined && v !== '' && !['fontFamily', 'fontSize', 'color', 'backgroundColor'].includes(k)
+    );
+    if (extraEntries.length > 0) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+        const range = sel.getRangeAt(0);
+        try {
+          const span = document.createElement('span');
+          extraEntries.forEach(([k, v]) => {
+            (span.style as any)[k] = v;
+          });
+          const extracted = range.extractContents();
+          span.appendChild(extracted);
+          range.insertNode(span);
+          sel.removeAllRanges();
+          const afterRange = document.createRange();
+          afterRange.selectNodeContents(span);
+          sel.addRange(afterRange);
+        } catch {
+          // Fallback to anchor parent styling
+          let node = sel.anchorNode;
+          if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+          if (node && node instanceof HTMLElement && !node.classList.contains('prodoc-editor')) {
+            extraEntries.forEach(([k, v]) => {
+              (node!.style as any)[k] = v;
+            });
+          }
+        }
+      }
+    }
+
+    if (editorRef.current) {
+      editorRef.current.dataset.commitImmediate = 'true';
+      editorRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, []);
+
+  const applyFormatPainterToSelection = useCallback(() => {
+    const captured = formatPainterStylesRef.current;
+    if (!captured) return false;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+
+    const anchorEl = sel.anchorNode?.nodeType === Node.TEXT_NODE ? sel.anchorNode.parentElement : (sel.anchorNode as HTMLElement | null);
+    if (!anchorEl || !anchorEl.closest('.prodoc-editor')) return false;
+
+    const stylePatch: React.CSSProperties = {};
+    if (captured.fontFamily) stylePatch.fontFamily = captured.fontFamily;
+    if (captured.fontSize) stylePatch.fontSize = captured.fontSize;
+    if (captured.color) stylePatch.color = captured.color;
+    if (captured.backgroundColor && captured.backgroundColor !== 'rgba(0, 0, 0, 0)' && captured.backgroundColor !== 'transparent') {
+      stylePatch.backgroundColor = captured.backgroundColor;
+    }
+    if (captured.fontWeight) stylePatch.fontWeight = captured.fontWeight as any;
+    if (captured.fontStyle) stylePatch.fontStyle = captured.fontStyle as any;
+    if (captured.textDecorationLine && captured.textDecorationLine !== 'none') {
+      stylePatch.textDecorationLine = captured.textDecorationLine;
+    }
+
+    applyAdvancedStyle(stylePatch);
+    setFormatPainterStyles(null);
+    return true;
+  }, [applyAdvancedStyle]);
 
   const executeCommand = useCallback((command: string, value?: string) => {
+    if (command === 'undo') {
+      undo();
+      return;
+    }
+    if (command === 'redo') {
+      redo();
+      return;
+    }
+
     let nativeCommandExecuted = false;
+
+    // Seal any prior typing burst before executing an explicit command
+    historyEngineRef.current.flush();
+
+    if (command === 'zoomReset') {
+      setZoomMode('custom');
+      setZoomLayout('single');
+      setZoom(100);
+      return;
+    }
+    if (command === 'fitPage') {
+      setZoomMode('fit-page');
+      return;
+    }
+    if (command === 'fitWidth') {
+      setZoomLayout('single');
+      setZoomMode('fit-width');
+      return;
+    }
+    if (command === 'save') {
+      manualSave(documentTitleRef.current, contentRef.current, pageConfigRef.current, footnotesRef.current, endnotesRef.current);
+      showToast('Document saved.', 'success');
+      return;
+    }
+    if (command === 'formatPainter') {
+      if (formatPainterStylesRef.current) {
+        setFormatPainterStyles(null);
+        showToast('Format Painter cleared.', 'info');
+        return;
+      }
+      const sel = window.getSelection();
+      let node: Node | null = sel && sel.rangeCount > 0 ? sel.anchorNode : null;
+      if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      if (node instanceof HTMLElement && node.closest('.prodoc-editor')) {
+        const computed = window.getComputedStyle(node);
+        setFormatPainterStyles({
+          fontFamily: computed.fontFamily,
+          fontSize: computed.fontSize,
+          fontWeight: computed.fontWeight,
+          fontStyle: computed.fontStyle,
+          textDecorationLine: computed.textDecorationLine,
+          color: computed.color,
+          backgroundColor: computed.backgroundColor,
+        });
+        showToast('Format Painter active — select target text to apply formatting.', 'info');
+      } else {
+        showToast('Place your cursor inside formatted text before activating Format Painter.', 'warning');
+      }
+      return;
+    }
 
     // Focus the editorRef if it's not already focused
     if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
-        editorRef.current.focus();
+      editorRef.current.focus();
     }
 
     switch (command) {
-        case 'bold': document.execCommand('bold'); nativeCommandExecuted = true; break;
-        case 'italic': document.execCommand('italic'); nativeCommandExecuted = true; break;
-        case 'underline': document.execCommand('underline'); nativeCommandExecuted = true; break;
-        case 'strikeThrough': document.execCommand('strikeThrough'); nativeCommandExecuted = true; break;
-        case 'justifyLeft': document.execCommand('justifyLeft'); nativeCommandExecuted = true; break;
-        case 'justifyCenter': document.execCommand('justifyCenter'); nativeCommandExecuted = true; break;
-        case 'justifyRight': document.execCommand('justifyRight'); nativeCommandExecuted = true; break;
-        case 'justifyFull': document.execCommand('justifyFull'); nativeCommandExecuted = true; break;
-        case 'insertUnorderedList': document.execCommand('insertUnorderedList'); nativeCommandExecuted = true; break;
-        case 'insertOrderedList': document.execCommand('insertOrderedList'); nativeCommandExecuted = true; break;
-        case 'formatBlock': 
-            document.execCommand('formatBlock', false, value);
-            nativeCommandExecuted = true;
-            break;
-        case 'insertImage': document.execCommand('insertImage', false, value); nativeCommandExecuted = true; break;
-        case 'createLink': document.execCommand('createLink', false, value); nativeCommandExecuted = true; break;
-        case 'undo': document.execCommand('undo'); nativeCommandExecuted = true; break;
-        case 'redo': document.execCommand('redo'); nativeCommandExecuted = true; break;
-        case 'foreColor': document.execCommand('foreColor', false, value); nativeCommandExecuted = true; break;
-        case 'hiliteColor': 
-            if (value === 'transparent') document.execCommand('hiliteColor', false, 'transparent');
-            else document.execCommand('hiliteColor', false, value); 
-            nativeCommandExecuted = true;
-            break;
-        case 'insertTable': 
-            if (value) {
-                const { rows, cols } = JSON.parse(value);
-                let tableHTML = '<table border="1" style="width: 100%; border-collapse: collapse;"><tbody>';
-                for (let i = 0; i < rows; i++) {
-                    tableHTML += '<tr>';
-                    for (let j = 0; j < cols; j++) {
-                        tableHTML += '<td style="padding: 8px;"><br></td>';
-                    }
-                    tableHTML += '</tr>';
-                }
-                tableHTML += '</tbody></table><p><br></p>';
-                document.execCommand('insertHTML', false, tableHTML);
-                nativeCommandExecuted = true;
-                
-                // Switch to table design tab after a short delay to allow selection to update
-                setTimeout(() => {
-                    const event = new CustomEvent('prodoc:switchTab', { detail: 'table-design' });
-                    window.dispatchEvent(event);
-                }, 100);
+      case 'bold': document.execCommand('bold'); nativeCommandExecuted = true; break;
+      case 'italic': document.execCommand('italic'); nativeCommandExecuted = true; break;
+      case 'underline': document.execCommand('underline'); nativeCommandExecuted = true; break;
+      case 'strikeThrough': document.execCommand('strikeThrough'); nativeCommandExecuted = true; break;
+      case 'subscript': document.execCommand('subscript'); nativeCommandExecuted = true; break;
+      case 'superscript': document.execCommand('superscript'); nativeCommandExecuted = true; break;
+      case 'indent': document.execCommand('indent'); nativeCommandExecuted = true; break;
+      case 'outdent': document.execCommand('outdent'); nativeCommandExecuted = true; break;
+      case 'justifyLeft': document.execCommand('justifyLeft'); nativeCommandExecuted = true; break;
+      case 'justifyCenter': document.execCommand('justifyCenter'); nativeCommandExecuted = true; break;
+      case 'justifyRight': document.execCommand('justifyRight'); nativeCommandExecuted = true; break;
+      case 'justifyFull': document.execCommand('justifyFull'); nativeCommandExecuted = true; break;
+      case 'insertUnorderedList': document.execCommand('insertUnorderedList'); nativeCommandExecuted = true; break;
+      case 'insertOrderedList': document.execCommand('insertOrderedList'); nativeCommandExecuted = true; break;
+      case 'formatBlock':
+        document.execCommand('formatBlock', false, value);
+        nativeCommandExecuted = true;
+        break;
+      case 'insertImage': document.execCommand('insertImage', false, value); nativeCommandExecuted = true; break;
+      case 'createLink': document.execCommand('createLink', false, value); nativeCommandExecuted = true; break;
+      case 'foreColor': document.execCommand('foreColor', false, value); nativeCommandExecuted = true; break;
+      case 'hiliteColor':
+        if (value === 'transparent') document.execCommand('hiliteColor', false, 'transparent');
+        else document.execCommand('hiliteColor', false, value);
+        nativeCommandExecuted = true;
+        break;
+      case 'insertTable':
+        if (value) {
+          const { rows, cols } = JSON.parse(value);
+          let tableHTML = '<table border="1" style="width: 100%; border-collapse: collapse;"><tbody>';
+          for (let i = 0; i < rows; i++) {
+            tableHTML += '<tr>';
+            for (let j = 0; j < cols; j++) {
+              tableHTML += '<td style="padding: 8px;"><br></td>';
             }
-            break;
-        case 'insertHTML': 
-            document.execCommand('insertHTML', false, value!); 
-            nativeCommandExecuted = true;
-            break;
-        case 'insertText': document.execCommand('insertText', false, value!); nativeCommandExecuted = true; break;
-        case 'selectAll': document.execCommand('selectAll'); nativeCommandExecuted = true; break;
-        case 'removeFormat': document.execCommand('removeFormat'); nativeCommandExecuted = true; break;
-        case 'zoomReset': 
-            setZoomMode('custom');
-            setZoom(100);
-            break;
-        case 'fitPage': setZoomMode('fit-page'); break;
-        case 'fitWidth': setZoomMode('fit-width'); break;
-        case 'save': 
-            if (editor) {
-                manualSave(documentTitleRef.current, editor.getHTML(), pageConfigRef.current, footnotesRef.current, endnotesRef.current); 
+            tableHTML += '</tr>';
+          }
+          tableHTML += '</tbody></table><p><br></p>';
+          document.execCommand('insertHTML', false, tableHTML);
+          nativeCommandExecuted = true;
+
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'table-design' }));
+          }, 100);
+        }
+        break;
+      case 'insertHTML':
+        document.execCommand('insertHTML', false, value!);
+        nativeCommandExecuted = true;
+        break;
+      case 'insertText': document.execCommand('insertText', false, value!); nativeCommandExecuted = true; break;
+      case 'selectAll': document.execCommand('selectAll'); nativeCommandExecuted = true; break;
+      case 'removeFormat': {
+        document.execCommand('removeFormat');
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const root = editorRef.current || document;
+          const inlineCandidates = root.querySelectorAll('span, font, strong, em, b, i, u, s, strike, sub, sup');
+          inlineCandidates.forEach((el) => {
+            if (range.intersectsNode(el) && el instanceof HTMLElement && !el.classList.contains('prodoc-page-break') && !el.classList.contains('prodoc-column-break')) {
+              el.removeAttribute('color');
+              el.removeAttribute('face');
+              el.removeAttribute('size');
+              el.style.fontSize = '';
+              el.style.fontFamily = '';
+              el.style.color = '';
+              el.style.backgroundColor = '';
+              el.style.fontWeight = '';
+              el.style.fontStyle = '';
+              el.style.textDecoration = '';
+              el.style.letterSpacing = '';
+              el.style.textTransform = '';
+              el.style.fontVariant = '';
             }
-            break;
-        case 'pageBreak': 
-            document.execCommand('insertHTML', false, '<div class="prodoc-page-break" data-type="page-break" style="page-break-after: always;"><hr></div><p><br></p>');
-            nativeCommandExecuted = true;
-            break;
-        case 'cut': 
-            document.execCommand('cut');
-            nativeCommandExecuted = true;
-            break;
-        case 'copy':
-             document.execCommand('copy');
-             nativeCommandExecuted = true;
-             break;
-        case 'formatPainter':
-             // Placeholder for format painter state logic
-             break;
-        default: console.warn(`Command ${command} not implemented`);
+          });
+        }
+        nativeCommandExecuted = true;
+        break;
+      }
+      case 'pageBreak':
+        document.execCommand('insertHTML', false, '<div class="prodoc-page-break" data-type="page-break" style="page-break-after: always;"><hr></div><p><br></p>');
+        nativeCommandExecuted = true;
+        break;
+      case 'columnBreak':
+        document.execCommand('insertHTML', false, '<div class="prodoc-column-break" data-type="column-break" style="break-after: column; -webkit-column-break-after: always;"><hr></div><p><br></p>');
+        nativeCommandExecuted = true;
+        break;
+      case 'textWrappingBreak':
+        document.execCommand('insertHTML', false, '<br class="prodoc-text-wrapping-break" style="clear: both;" />');
+        nativeCommandExecuted = true;
+        break;
+      case 'cut':
+        document.execCommand('cut');
+        nativeCommandExecuted = true;
+        break;
+      case 'copy':
+        document.execCommand('copy');
+        nativeCommandExecuted = true;
+        break;
+      default:
+        console.warn(`Command ${command} not implemented`);
     }
 
     if (nativeCommandExecuted && editorRef.current) {
-        const newHtml = editorRef.current.innerHTML;
-        if (editor) {
-            editor.commands.setContent(newHtml);
-        }
-        const event = new Event('input', { bubbles: true });
-        editorRef.current.dispatchEvent(event);
+      editorRef.current.dataset.commitImmediate = 'true';
+      editorRef.current.dispatchEvent(new Event('input', { bubbles: true }));
     }
-  }, [editor, manualSave, editorRef]);
+  }, [undo, redo, manualSave, editorRef, showToast]);
 
-  // Legacy style compatibility functions
-  const applyAdvancedStyle = (styles: React.CSSProperties) => {
-      if (styles.fontFamily) {
-          document.execCommand('fontName', false, styles.fontFamily);
-      }
-      if (styles.fontSize) {
-          // Fallback trick for exact font sizes in contentEditable
-          document.execCommand('fontSize', false, '7');
-          const fonts = document.querySelectorAll('font[size="7"]');
-          fonts.forEach(f => {
-              f.removeAttribute('size');
-              f.style.fontSize = styles.fontSize as string;
-          });
-      }
-      
-      if (editorRef.current) {
-          const event = new Event('input', { bubbles: true });
-          editorRef.current.dispatchEvent(event);
-      }
-  };
+  const applyBlockStyle = useCallback((styles: React.CSSProperties) => {
+    historyEngineRef.current.flush();
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
 
-  const applyBlockStyle = (styles: React.CSSProperties) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      
-      let node = selection.anchorNode;
-      if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
-      
-      while (node && node !== editorRef.current) {
-          const el = node as HTMLElement;
-          if (['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'LI', 'TD', 'TH'].includes(el.tagName)) {
-              Object.assign(el.style, styles);
-              break;
+    const BLOCK_TAGS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'LI', 'TD', 'TH', 'BLOCKQUOTE', 'PRE']);
+    const appliedBlocks = new Set<HTMLElement>();
+    const range = selection.getRangeAt(0);
+
+    // Traverse all intersecting blocks across active editor containers
+    const activeContainers = Array.from(document.querySelectorAll('.prodoc-editor')) as HTMLElement[];
+    if (editorRef.current && !activeContainers.includes(editorRef.current)) {
+      activeContainers.unshift(editorRef.current);
+    }
+
+    if (!range.collapsed) {
+      activeContainers.forEach((container) => {
+        if (!range.intersectsNode(container)) return;
+        const candidates = container.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, td, th, div');
+        candidates.forEach((candidate) => {
+          if (
+            candidate instanceof HTMLElement &&
+            !candidate.classList.contains('prodoc-editor') &&
+            !candidate.classList.contains('prodoc-page-break') &&
+            !candidate.classList.contains('prodoc-column-break') &&
+            BLOCK_TAGS.has(candidate.tagName) &&
+            range.intersectsNode(candidate)
+          ) {
+            Object.assign(candidate.style, styles);
+            appliedBlocks.add(candidate);
           }
-          node = node.parentElement;
+        });
+      });
+    }
+
+    // Fallback or collapsed caret: nearest enclosing block element
+    if (appliedBlocks.size === 0) {
+      let node: Node | null = selection.anchorNode;
+      if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      while (node && node instanceof HTMLElement && !node.classList.contains('prodoc-editor')) {
+        if (BLOCK_TAGS.has(node.tagName)) {
+          Object.assign(node.style, styles);
+          appliedBlocks.add(node);
+          break;
+        }
+        node = node.parentElement;
       }
-      
-      if (editorRef.current) {
-          const event = new Event('input', { bubbles: true });
-          editorRef.current.dispatchEvent(event);
+    }
+
+    const targetEditor = (selection.anchorNode instanceof HTMLElement
+      ? selection.anchorNode.closest('.prodoc-editor')
+      : selection.anchorNode?.parentElement?.closest('.prodoc-editor')) as HTMLElement | null || editorRef.current;
+
+    if (targetEditor) {
+      targetEditor.setAttribute('data-commit-immediate', 'true');
+      targetEditor.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, []);
+
+  const handlePasteSpecial = useCallback(async (type: 'keep-source' | 'merge' | 'text-only') => {
+    historyEngineRef.current.flush();
+    if (editorRef.current && document.activeElement !== editorRef.current && !editorRef.current.contains(document.activeElement)) {
+      editorRef.current.focus();
+    }
+
+    let htmlData = '';
+    let plainData = '';
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        if (typeof navigator.clipboard.read === 'function' && type !== 'text-only') {
+          try {
+            const items = await navigator.clipboard.read();
+            for (const item of items) {
+              if (item.types.includes('text/html') && !htmlData) {
+                const blob = await item.getType('text/html');
+                htmlData = await blob.text();
+              }
+              if (item.types.includes('text/plain') && !plainData) {
+                const blob = await item.getType('text/plain');
+                plainData = await blob.text();
+              }
+            }
+          } catch {
+            // Fallback to readText below
+          }
+        }
+        if (!htmlData && !plainData && typeof navigator.clipboard.readText === 'function') {
+          plainData = await navigator.clipboard.readText();
+        }
       }
-  };
-  
-  const handlePasteSpecial = useCallback(async (type: 'keep-source' | 'merge' | 'text-only') => {}, []); // TipTap handles paste
+    } catch {
+      showToast('Clipboard access was denied. Please use Ctrl+V / Cmd+V directly.', 'warning');
+      return;
+    }
+
+    if (!htmlData && !plainData) {
+      showToast('Clipboard is empty or cannot be read by the browser.', 'info');
+      return;
+    }
+
+    if (type === 'text-only') {
+      const textSource = plainData || htmlData.replace(/<[^>]+>/g, '');
+      const escapedLines = textSource
+        .split(/\r?\n/)
+        .map((line) => {
+          const escaped = line
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+          return escaped ? `<p>${escaped}</p>` : '<p><br></p>';
+        })
+        .join('');
+      document.execCommand('insertHTML', false, escapedLines);
+    } else if (htmlData) {
+      const cleaned = sanitizePastedHtml(htmlData, type === 'merge');
+      document.execCommand('insertHTML', false, cleaned);
+    } else {
+      const escapedLines = plainData
+        .split(/\r?\n/)
+        .map((line) => `<p>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '<br>'}</p>`)
+        .join('');
+      document.execCommand('insertHTML', false, escapedLines);
+    }
+
+    if (editorRef.current) {
+      editorRef.current.dataset.commitImmediate = 'true';
+      editorRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, [showToast]);
 
   const importFile = useCallback(async (file: File) => {
     if (!file) return;
@@ -969,7 +1542,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             } else {
               htmlContent = `<p>${textContent}</p>`;
             }
-          } catch (e) {
+          } catch {
             htmlContent = `<p>${textContent}</p>`;
           }
         } else {
@@ -979,10 +1552,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       setImportState({ active: true, percent: 90, status: 'Injecting content into editor...' });
-      
-      if (editor) {
-        editor.commands.setContent(htmlContent);
-      }
+
+      setContent(htmlContent, true, { historyMode: 'immediate' });
       setDocumentTitle(nameWithoutExt);
 
       try {
@@ -1010,23 +1581,73 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (error: any) {
       console.error('Failed to import file:', error);
       setImportState({ active: false, percent: 0, status: '' });
-      alert("Could not open this file: " + (error?.message || "Unknown error"));
+      showToast("Could not open this file: " + (error?.message || "Unknown error"), 'error');
     }
-  }, [editor, setDocumentTitle, pageConfig, setPageConfig, setImportState]);
+  }, [setContent, setDocumentTitle, pageConfig, setPageConfig, setImportState, showToast]);
 
-  const pageDimensions = useMemo(() => ({ width: 816, height: 1056 }), []); // Default Letter
-  
-  const addCustomStyle = useCallback((name: string) => {}, []);
-  const applyCustomStyle = useCallback((style: CustomStyle) => {}, []);
-  const applyAdvancedStyleCallback = useCallback((styles: React.CSSProperties) => applyAdvancedStyle(styles), []);
-  const applyBlockStyleCallback = useCallback((styles: React.CSSProperties) => applyBlockStyle(styles), []);
+  const pageDimensions = useMemo(() => {
+    const phys = getPhysicalDimensions(pageConfig.size, pageConfig.orientation, pageConfig.customWidth, pageConfig.customHeight);
+    return {
+      width: phys.widthPx,
+      height: phys.heightPx,
+      widthInches: phys.widthInches,
+      heightInches: phys.heightInches,
+      widthMm: phys.widthMm,
+      heightMm: phys.heightMm,
+    };
+  }, [pageConfig.size, pageConfig.orientation, pageConfig.customWidth, pageConfig.customHeight]);
+
+  const addCustomStyle = useCallback((name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    let capturedStyles: React.CSSProperties = { fontFamily: 'Calibri, sans-serif', fontSize: '14.6667px', color: '#0f172a' };
+    let tagName = 'P';
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      let node: Node | null = sel.anchorNode;
+      if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+      if (node instanceof HTMLElement) {
+        const computed = window.getComputedStyle(node);
+        capturedStyles = {
+          fontFamily: computed.fontFamily,
+          fontSize: computed.fontSize,
+          fontWeight: computed.fontWeight as any,
+          fontStyle: computed.fontStyle as any,
+          color: computed.color,
+          textDecoration: computed.textDecorationLine !== 'none' ? computed.textDecorationLine : undefined,
+        };
+        const block = node.closest('h1, h2, h3, h4, h5, h6, p, blockquote');
+        if (block) tagName = block.tagName;
+      }
+    }
+    const newStyle: CustomStyle = {
+      id: `custom-style-${Date.now()}`,
+      name: trimmed,
+      styles: capturedStyles,
+      tagName,
+    };
+    setCustomStyles((prev) => [...prev, newStyle]);
+    showToast(`Created custom style "${trimmed}".`, 'success');
+  }, [showToast]);
+
+  const applyCustomStyle = useCallback((style: CustomStyle) => {
+    if (style.tagName && ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE'].includes(style.tagName)) {
+      executeCommand('formatBlock', style.tagName);
+    }
+    if (style.styles) {
+      applyAdvancedStyle(style.styles);
+    }
+  }, [executeCommand, applyAdvancedStyle]);
+
+  const applyAdvancedStyleCallback = useCallback((styles: React.CSSProperties) => applyAdvancedStyle(styles), [applyAdvancedStyle]);
+  const applyBlockStyleCallback = useCallback((styles: React.CSSProperties) => applyBlockStyle(styles), [applyBlockStyle]);
   const registerContainer = useCallback((node: HTMLDivElement | null) => { containerRef.current = node; }, []);
 
   const addComment = useCallback((text: string) => {
     if (!editor) return;
     const { from, to } = editor.state.selection;
     if (from === to) {
-      alert("Please select some text to comment on.");
+      showToast("Please select some text to comment on.", 'warning');
       return;
     }
     const id = `comment-${Date.now()}`;
@@ -1035,13 +1656,13 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setComments(prev => [...prev, {
       id,
       anchorId,
-      author: 'Current User', // Stub, we can wire up identity later
+      author: 'Current User',
       content: text,
       createdAt: new Date().toISOString(),
       resolved: false
     }]);
     setShowComments(true);
-  }, [editor]);
+  }, [editor, showToast]);
 
   const resolveComment = useCallback((id: string) => {
     setComments(prev => prev.map(c => c.id === id ? { ...c, resolved: true } : c));
@@ -1163,15 +1784,24 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     editor,
     content: contentState,
     setContent,
-    undo: () => editor?.chain().focus().undo().run(),
-    redo: () => editor?.chain().focus().redo().run(),
-    canUndo: editor?.can().undo() || false,
-    canRedo: editor?.can().redo() || false,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    historyApplySeq,
     wordCount,
+    charCount,
     zoom,
     setZoom,
     zoomMode,
     setZoomMode,
+    zoomLayout,
+    setZoomLayout,
+    measurementUnit,
+    setMeasurementUnit,
+    screenCalibration,
+    updateScreenCalibration,
+    calibrationScale,
     viewMode,
     setViewMode,
     pageMovement,
@@ -1185,6 +1815,17 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setPageConfig,
     showPageSetup,
     setShowPageSetup,
+    pageSetupInitialTab,
+    openPageSetup,
+    showPageBordersDialog,
+    setShowPageBordersDialog,
+    showWordCountDialog,
+    setShowWordCountDialog,
+    toast,
+    showToast,
+    dismissToast,
+    formatPainterStyles,
+    applyFormatPainterToSelection,
     pageDimensions,
     registerContainer,
     showRuler,
@@ -1196,7 +1837,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     creationDate,
     showFormattingMarks,
     setShowFormattingMarks,
-    customStyles: [] as CustomStyle[],
+    customStyles,
     addCustomStyle,
     applyCustomStyle,
     applyAdvancedStyle: applyAdvancedStyleCallback,
@@ -1263,16 +1904,38 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     editor,
     contentState,
     setContent,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    historyApplySeq,
     wordCount,
+    charCount,
     zoom,
     zoomMode,
+    zoomLayout,
+    measurementUnit,
+    setMeasurementUnit,
+    screenCalibration,
+    updateScreenCalibration,
+    calibrationScale,
     viewMode,
     pageMovement,
     readConfig,
     saveStatus,
     executeCommand,
     pageConfig,
+    setPageConfig,
     showPageSetup,
+    pageSetupInitialTab,
+    openPageSetup,
+    showPageBordersDialog,
+    showWordCountDialog,
+    toast,
+    showToast,
+    dismissToast,
+    formatPainterStyles,
+    applyFormatPainterToSelection,
     pageDimensions,
     registerContainer,
     showRuler,
@@ -1280,6 +1943,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     lastModified,
     creationDate,
     showFormattingMarks,
+    customStyles,
     addCustomStyle,
     applyCustomStyle,
     applyAdvancedStyleCallback,
@@ -1289,12 +1953,18 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setActiveElementType,
     currentPage,
     totalPages,
+    goToPage,
+    pageJumpTarget,
     showJsonInspector,
     activeEditingArea,
     headerContent,
+    setHeaderContent,
     footerContent,
+    setFooterContent,
     firstHeaderContent,
+    setFirstHeaderContent,
     firstFooterContent,
+    setFirstFooterContent,
     isKeyboardLocked,
     isTableResizerEnabled,
     isTableResizing,

@@ -6,7 +6,7 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 import { globalTocEngine } from '../../../../../utils/tocEngine';
 
 export const UpdateTableTool: React.FC = () => {
-  const { executeCommand, content, editor } = useEditor();
+  const { content, editor, showToast } = useEditor();
 
   const handleUpdate = () => {
     if (!editor) return;
@@ -14,7 +14,7 @@ export const UpdateTableTool: React.FC = () => {
     // Check if TOC exists
     const hasToc = content.includes('data-type="toc"');
     if (!hasToc) {
-      alert("No Table of Contents found in document to update.");
+      showToast('No Table of Contents found in document to update.', 'warning');
       return;
     }
 

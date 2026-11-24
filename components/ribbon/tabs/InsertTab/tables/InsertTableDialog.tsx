@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface InsertTableDialogProps {
   isOpen: boolean;
@@ -17,9 +18,18 @@ export const InsertTableDialog: React.FC<InsertTableDialogProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-700">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+      data-modal-backdrop="true"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-700"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold dark:text-white">Insert Table</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
@@ -72,6 +82,7 @@ export const InsertTableDialog: React.FC<InsertTableDialogProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

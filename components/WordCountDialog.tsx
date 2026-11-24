@@ -1,96 +1,192 @@
-
-import React, { useState } from 'react';
-import { Check } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { X, FileText } from 'lucide-react';
+import { useEditor } from '../contexts/EditorContext';
 
 interface WordCountDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  stats: {
-    pages: number;
-    words: number;
-    charsNoSpaces: number;
-    charsWithSpaces: number;
-    paragraphs: number;
-    lines: number;
-  };
 }
 
-export const WordCountDialog: React.FC<WordCountDialogProps> = ({ isOpen, onClose, stats }) => {
-  const [includeNotes, setIncludeNotes] = useState(true);
+const stripHtml = (html: string) =>
+  (html || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+
+export const WordCountDialog: React.FC<WordCountDialogProps> = ({ isOpen, onClose }) => {
+  const {
+    content,
+    wordCount,
+    charCount,
+    totalPages,
+    headerContent,
+    footerContent,
+    firstHeaderContent,
+    firstFooterContent,
+    footnotes,
+    endnotes,
+  } = useEditor();
+
+  const [includeNotesAndHf, setIncludeNotesAndHf] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
+  const stats = useMemo(() => {
+    const parser = typeof DOMParser !== 'undefined' ? new DOMParser() : null;
+    let paragraphs = 0;
+    let lines = 0;
+    let charsNoSpaces = 0;
+
+    const plainBody = (content || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
+    charsNoSpaces = plainBody.replace(/\s+/g, '').length;
+
+    if (parser) {
+      const doc = parser.parseFromString(content || '', 'text/html');
+      const blockEls = doc.body.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, pre');
+      blockEls.forEach((el) => {
+        if ((el.textContent || '').trim().length > 0) paragraphs++;
+      });
+      const brCount = doc.body.querySelectorAll('br').length;
+      lines = Math.max(paragraphs, paragraphs + brCount);
+    }
+
+    let extraWords = 0;
+    let extraCharsWithSpaces = 0;
+    let extraCharsNoSpaces = 0;
+
+    if (includeNotesAndHf) {
+      const extraChunks = [
+        headerContent,
+        footerContent,
+        firstHeaderContent,
+        firstFooterContent,
+        ...footnotes.map((f) => f.content),
+        ...endnotes.map((e) => e.content),
+      ];
+      extraChunks.forEach((chunk) => {
+        const clean = stripHtml(chunk);
+        if (clean) {
+          extraWords += clean.split(/\s+/).length;
+          extraCharsWithSpaces += clean.length;
+          extraCharsNoSpaces += clean.replace(/\s+/g, '').length;
+        }
+      });
+    }
+
+    const totalWords = wordCount + extraWords;
+    const totalCharsWithSpaces = charCount + extraCharsWithSpaces;
+    const totalCharsNoSpaces = charsNoSpaces + extraCharsNoSpaces;
+    const readingMinutes = Math.max(1, Math.ceil(totalWords / 200));
+
+    return {
+      pages: totalPages,
+      words: totalWords,
+      charsNoSpaces: totalCharsNoSpaces,
+      charsWithSpaces: totalCharsWithSpaces,
+      paragraphs,
+      lines,
+      readingMinutes,
+    };
+  }, [
+    content,
+    wordCount,
+    charCount,
+    totalPages,
+    includeNotesAndHf,
+    headerContent,
+    footerContent,
+    firstHeaderContent,
+    firstFooterContent,
+    footnotes,
+    endnotes,
+  ]);
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div 
-        className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-[320px] overflow-hidden animate-in zoom-in-95 duration-100 font-sans text-sm select-none"
+  const rows = [
+    { label: 'Pages', value: stats.pages.toLocaleString() },
+    { label: 'Words', value: stats.words.toLocaleString() },
+    { label: 'Characters (no spaces)', value: stats.charsNoSpaces.toLocaleString() },
+    { label: 'Characters (with spaces)', value: stats.charsWithSpaces.toLocaleString() },
+    { label: 'Paragraphs', value: stats.paragraphs.toLocaleString() },
+    { label: 'Lines (approx.)', value: stats.lines.toLocaleString() },
+    { label: 'Estimated reading time', value: `~${stats.readingMinutes} min` },
+  ];
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm overscroll-contain"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      data-modal-backdrop="true"
+      aria-labelledby="word-count-dialog-title"
+    >
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm max-h-[90vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800">
-          <span className="font-semibold text-slate-900 dark:text-slate-100 text-xs">Word Count</span>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
+          <div className="flex items-center gap-2">
+            <FileText size={16} className="text-blue-600 dark:text-blue-400" />
+            <h2 id="word-count-dialog-title" className="text-sm font-bold">
+              Word Count
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            aria-label="Close Word Count dialog"
+          >
+            <X size={16} />
+          </button>
         </div>
 
-        {/* Content */}
-        <div className="px-5 py-4 space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-1">
-             <span className="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wide">Statistics</span>
+        <div className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Statistics
           </div>
-          
-          <div className="space-y-2.5 text-xs">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600 dark:text-slate-400">Pages</span>
-              <span className="font-semibold font-mono text-slate-900 dark:text-slate-100">{stats.pages}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600 dark:text-slate-400">Words</span>
-              <span className="font-semibold font-mono text-slate-900 dark:text-slate-100">{stats.words}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600 dark:text-slate-400">Characters (no spaces)</span>
-              <span className="font-semibold font-mono text-slate-900 dark:text-slate-100">{stats.charsNoSpaces}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600 dark:text-slate-400">Characters (with spaces)</span>
-              <span className="font-semibold font-mono text-slate-900 dark:text-slate-100">{stats.charsWithSpaces}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600 dark:text-slate-400">Paragraphs</span>
-              <span className="font-semibold font-mono text-slate-900 dark:text-slate-100">{stats.paragraphs}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-600 dark:text-slate-400">Lines</span>
-              <span className="font-semibold font-mono text-slate-900 dark:text-slate-100">{stats.lines}</span>
-            </div>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            {rows.map((row) => (
+              <div key={row.label} className="flex items-center justify-between px-3.5 py-2 text-xs bg-white dark:bg-slate-900">
+                <span className="text-slate-600 dark:text-slate-300">{row.label}</span>
+                <span className="font-mono tabular-nums font-bold text-slate-900 dark:text-slate-100">
+                  {row.value}
+                </span>
+              </div>
+            ))}
           </div>
 
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
-             <button 
-                type="button"
-                className="flex items-start gap-2 cursor-pointer group w-full text-left"
-                onClick={() => setIncludeNotes(!includeNotes)}
-             >
-                <div 
-                    className={`mt-0.5 w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${includeNotes ? 'bg-indigo-600 border-indigo-600' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}
-                >
-                    {includeNotes && <Check size={10} className="text-white" strokeWidth={3} />}
-                </div>
-                <span className="text-[11px] text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white">Include textboxes, footnotes and endnotes</span>
-             </button>
-          </div>
+          <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={includeNotesAndHf}
+              onChange={(e) => setIncludeNotesAndHf(e.target.checked)}
+              className="accent-blue-600 rounded"
+            />
+            <span>Include headers, footers, footnotes &amp; endnotes</span>
+          </label>
         </div>
 
-        {/* Footer */}
-        <div className="bg-slate-50 dark:bg-slate-800/80 px-4 py-3 flex justify-end border-t border-slate-200 dark:border-slate-800">
-           <button 
-             type="button"
-             onClick={onClose}
-             className="px-5 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 text-xs font-semibold shadow-xs transition-all active:scale-95 cursor-pointer"
-           >
-             Close
-           </button>
+        <div className="flex justify-end px-5 py-3.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 shrink-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Close
+          </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

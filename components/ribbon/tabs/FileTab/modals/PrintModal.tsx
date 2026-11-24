@@ -11,7 +11,8 @@ import {
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useFileTab } from '../FileTabContext';
 import { paginateContent } from '../../../../../utils/layoutEngine';
-import { PAGE_SIZES, MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
+import { MARGIN_PRESETS, PAPER_FORMATS } from '../../../../../constants';
+import { getPhysicalDimensions } from '../../../../../utils/measurement';
 import { PageConfig, ExportType } from '../../../../../types';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { generatePdfPrint, calculatePrintMargins } from '../../../../../utils/printUtils';
@@ -173,23 +174,14 @@ const renderPageContent = (
 ) => {
     const cfg = page.config;
     
-    let widthIn = 8.5;
-    let heightIn = 11;
-    
-    if (cfg.size === 'Custom' && cfg.customWidth && cfg.customHeight) {
-        widthIn = cfg.customWidth;
-        heightIn = cfg.customHeight;
-    } else {
-        const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
-        widthIn = base.width / 96;
-        heightIn = base.height / 96;
-    }
-
-    if (cfg.orientation === 'landscape') {
-        const temp = widthIn;
-        widthIn = heightIn;
-        heightIn = temp;
-    }
+    const phys = getPhysicalDimensions(
+        cfg.size as string,
+        cfg.orientation,
+        cfg.customWidth,
+        cfg.customHeight
+    );
+    const widthIn = phys.widthInches;
+    const heightIn = phys.heightInches;
 
     const margins = calculatePrintMargins(cfg, index + 1);
     const defaultHeaderDist = cfg.headerDistance || 0.5;
@@ -348,23 +340,13 @@ const DesktopPrintPreview: React.FC<{
                 const availableWidth = containerWidth - padding;
                 
                 const firstPageConfig = pages[0].config;
-                let widthIn = 8.5;
-                if (firstPageConfig.size === 'Custom' && firstPageConfig.customWidth) {
-                    widthIn = firstPageConfig.customWidth;
-                } else {
-                    const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
-                    widthIn = baseSize.width / 96;
-                }
-
-                if (firstPageConfig.orientation === 'landscape') {
-                    if (firstPageConfig.size === 'Custom' && firstPageConfig.customHeight) {
-                        widthIn = firstPageConfig.customHeight;
-                    } else {
-                        const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
-                        widthIn = baseSize.height / 96;
-                    }
-                }
-                const widthPx = widthIn * 96;
+                const phys = getPhysicalDimensions(
+                    firstPageConfig.size as string,
+                    firstPageConfig.orientation,
+                    firstPageConfig.customWidth,
+                    firstPageConfig.customHeight
+                );
+                const widthPx = phys.widthPx;
                 
                 const newScale = Math.min(1.2, Math.max(0.4, availableWidth / widthPx));
                 setScale(newScale);
@@ -379,7 +361,7 @@ const DesktopPrintPreview: React.FC<{
     return (
         <div 
             ref={containerRef}
-            className="flex-1 bg-[#525659] dark:bg-slate-950/70 relative overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 flex flex-col items-center p-8"
+            className="flex-1 min-h-0 bg-[#525659] dark:bg-slate-950/70 relative overflow-y-auto overscroll-contain scrollbar-thin scrollbar-thumb-slate-600 flex flex-col items-center p-8"
         >
              {pages.length === 0 || isPreparing ? (
                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
@@ -430,23 +412,13 @@ const MobilePrintPreview: React.FC<{
                 const availableWidth = Math.max(0, containerWidth - padding);
                 
                 const firstPageConfig = pages[0].config;
-                let widthIn = 8.5;
-                if (firstPageConfig.size === 'Custom' && firstPageConfig.customWidth) {
-                    widthIn = firstPageConfig.customWidth;
-                } else {
-                    const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
-                    widthIn = baseSize.width / 96;
-                }
-
-                if (firstPageConfig.orientation === 'landscape') {
-                    if (firstPageConfig.size === 'Custom' && firstPageConfig.customHeight) {
-                        widthIn = firstPageConfig.customHeight;
-                    } else {
-                        const baseSize = PAGE_SIZES[firstPageConfig.size as string] || PAGE_SIZES['Letter'];
-                        widthIn = baseSize.height / 96;
-                    }
-                }
-                const docWidthPx = widthIn * 96;
+                const phys = getPhysicalDimensions(
+                    firstPageConfig.size as string,
+                    firstPageConfig.orientation,
+                    firstPageConfig.customWidth,
+                    firstPageConfig.customHeight
+                );
+                const docWidthPx = phys.widthPx;
                 
                 const newScale = Math.min(0.85, availableWidth / docWidthPx);
                 if (newScale > 0) setScale(newScale);
@@ -463,10 +435,10 @@ const MobilePrintPreview: React.FC<{
     }, [pages, isVisible]);
 
     return (
-        <div className="flex-1 relative overflow-hidden flex flex-col bg-[#f0f2f5] dark:bg-slate-950">
+        <div className="flex-1 min-h-0 relative overflow-hidden flex flex-col bg-[#f0f2f5] dark:bg-slate-950">
             <div 
                 ref={containerRef}
-                className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col items-center p-4 pb-32"
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain overflow-x-hidden flex flex-col items-center p-4 pb-32"
             >
                 {pages.length === 0 || isPreparing ? (
                      <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3">
@@ -762,7 +734,7 @@ const PrintSettingsPanel: React.FC<{
     };
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-slate-900">
+        <div className="flex flex-col flex-1 min-h-0 h-full bg-white dark:bg-slate-900">
             {!isMobile && (
                 <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
                      <button 
@@ -777,7 +749,7 @@ const PrintSettingsPanel: React.FC<{
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 custom-scrollbar">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 py-6 space-y-6 custom-scrollbar">
                 {/* File Details Section */}
                 <div className="space-y-4">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">File Details</h3>
@@ -970,7 +942,7 @@ const PrintSettingsPanel: React.FC<{
 };
 
 export const PrintModal: React.FC = () => {
-  const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle, setPageConfig, currentPage, viewMode, setViewMode } = useEditor();
+  const { content, pageConfig: globalConfig, headerContent, footerContent, documentTitle, setPageConfig, currentPage, viewMode, setViewMode, showToast } = useEditor();
   const { closeModal } = useFileTab();
   
   const [mobileTab, setMobileTab] = useState<'settings' | 'preview'>('settings');
@@ -1027,16 +999,14 @@ export const PrintModal: React.FC = () => {
             pageFooter = pageFooter.replace(/\[Page \d+\]/g, `[Page ${pageIdx + 1}]`)
                                    .replace(/<span class="page-number-placeholder">.*?<\/span>/g, `${pageIdx + 1}`);
             
-            let wIn = 8.5;
-            let hIn = 11;
-            if (docConfig.size === 'Custom' && docConfig.customWidth && docConfig.customHeight) {
-              wIn = docConfig.customWidth;
-              hIn = docConfig.customHeight;
-            } else {
-              const base = PAGE_SIZES[docConfig.size as string] || PAGE_SIZES['Letter'];
-              wIn = docConfig.orientation === 'landscape' ? base.height / 96 : base.width / 96;
-              hIn = docConfig.orientation === 'landscape' ? base.width / 96 : base.height / 96;
-            }
+            const phys = getPhysicalDimensions(
+              docConfig.size as string,
+              docConfig.orientation,
+              docConfig.customWidth,
+              docConfig.customHeight
+            );
+            const wIn = phys.widthInches;
+            const hIn = phys.heightInches;
             
             pages.push({
               html: page.html,
@@ -1070,7 +1040,7 @@ export const PrintModal: React.FC = () => {
     const savedDocs = JSON.parse(localStorage.getItem('saved_documents') || '{}');
     const docNames = Object.keys(savedDocs);
     if (docNames.length === 0) {
-      alert("No saved documents found to export.");
+      showToast('No saved documents found to export.', 'warning');
       return;
     }
 
@@ -1273,7 +1243,7 @@ export const PrintModal: React.FC = () => {
 
   return (
     <div 
-        className="flex flex-col md:flex-row w-full h-full bg-white dark:bg-slate-950 overflow-hidden md:rounded-2xl"
+        className="flex flex-col md:flex-row flex-1 min-h-0 w-full h-full bg-white dark:bg-slate-950 overflow-hidden md:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
     >
         {isMobile && (
@@ -1308,7 +1278,7 @@ export const PrintModal: React.FC = () => {
         )}
 
         <div className={`
-            w-full md:w-[360px] flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full
+            w-full md:w-[360px] flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full min-h-0 flex-1 md:flex-none
             ${isMobile ? (mobileTab === 'settings' ? 'flex' : 'hidden') : 'flex'}
         `}>
             <PrintSettingsPanel 
@@ -1333,7 +1303,7 @@ export const PrintModal: React.FC = () => {
         </div>
 
         <div className={`
-            flex-1 bg-[#525659] dark:bg-slate-950 relative overflow-hidden flex flex-col
+            flex-1 min-h-0 bg-[#525659] dark:bg-slate-950 relative overflow-hidden flex flex-col
             ${isMobile ? (mobileTab === 'preview' ? 'flex' : 'hidden') : 'flex'}
         `}>
             {isMobile ? (

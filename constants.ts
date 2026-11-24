@@ -1,5 +1,6 @@
 
 import { RibbonTab, MarginValues } from './types';
+import { PHYSICAL_PAPER_SIZES } from './utils/measurement';
 
 export const FONTS = [
   'Arial', 'Inter', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'Noto Serif',
@@ -14,7 +15,7 @@ export const FONT_SIZES = [
 export const TABS = [
   RibbonTab.FORMAT,
   RibbonTab.INSERT,
-  RibbonTab.CANVAS,
+  RibbonTab.LAYOUT,
   RibbonTab.STRUCTURE,
   RibbonTab.COLLABORATE,
   RibbonTab.TEMPLATES,
@@ -62,105 +63,13 @@ export const DEFAULT_CONTENT = `
 // Layout Constants
 export const PAGE_MARGIN_PADDING = 24;
 
-// NOTE: Width/Height in Pixels @ 96 DPI (1 inch = 96px)
-export const PAGE_SIZES: Record<string, { width: number, height: number }> = {
-  // --- ISO A-Series ---
-  'A0': { width: 3179, height: 4494 },
-  'A1': { width: 2245, height: 3179 },
-  'A2': { width: 1588, height: 2245 },
-  'A3': { width: 1122, height: 1588 },
-  'A4': { width: 794, height: 1122 },
-  'A5': { width: 560, height: 794 },
-  'A6': { width: 396, height: 560 },
-  'A7': { width: 279, height: 396 },
-  'A8': { width: 197, height: 279 },
-  'A9': { width: 140, height: 197 },
-  'A10': { width: 98, height: 140 },
-
-  // --- ISO B-Series ---
-  'B0': { width: 3780, height: 5344 },
-  'B1': { width: 2672, height: 3780 },
-  'B2': { width: 1890, height: 2672 },
-  'B3': { width: 1334, height: 1890 },
-  'B4': { width: 945, height: 1334 },
-  'B5': { width: 665, height: 945 },
-  'B6': { width: 472, height: 665 },
-  'B7': { width: 332, height: 472 },
-  'B8': { width: 234, height: 332 },
-  'B9': { width: 166, height: 234 },
-  'B10': { width: 117, height: 166 },
-  
-  // Legacy JIS Support
-  'B4 (JIS)': { width: 945, height: 1334 },
-  'B5 (JIS)': { width: 665, height: 945 },
-
-  // --- North American ---
-  'Letter': { width: 816, height: 1056 },
-  'Legal': { width: 816, height: 1344 },
-  'Half Letter': { width: 528, height: 816 },
-  'Statement': { width: 528, height: 816 },
-  'Junior Legal': { width: 480, height: 768 },
-  'Tabloid': { width: 1056, height: 1632 },
-  'Ledger': { width: 1632, height: 1056 },
-  'Executive': { width: 696, height: 1008 },
-  'Government Letter': { width: 768, height: 1008 },
-  'Government Legal': { width: 768, height: 1248 },
-  'Folio': { width: 816, height: 1248 },
-  'Quarto': { width: 768, height: 960 },
-  'Note': { width: 816, height: 1056 },
-
-  // --- Architectural ---
-  'Arch A': { width: 864, height: 1152 },
-  'Arch B': { width: 1152, height: 1728 },
-  'Arch C': { width: 1728, height: 2304 },
-  'Arch D': { width: 2304, height: 3456 },
-  'Arch E': { width: 3456, height: 4608 },
-  'Arch E1': { width: 2880, height: 4032 },
-  'Arch E2': { width: 2496, height: 3648 },
-  'Arch E3': { width: 2592, height: 3744 },
-
-  // --- Engineering ---
-  'ANSI C': { width: 1632, height: 2112 },
-  'ANSI D': { width: 2112, height: 3264 },
-  'ANSI E': { width: 3264, height: 4224 },
-
-  // --- Photo ---
-  '2R': { width: 240, height: 336 },
-  '3R': { width: 336, height: 480 },
-  '4R': { width: 384, height: 576 },
-  '5R': { width: 480, height: 672 },
-  '6R': { width: 576, height: 768 },
-  '8R': { width: 768, height: 960 },
-  '10R': { width: 960, height: 1152 },
-  '11x14': { width: 1056, height: 1344 },
-  '12x18': { width: 1152, height: 1728 },
-  '16x20': { width: 1536, height: 1920 },
-  '20x24': { width: 1920, height: 2304 },
-
-  // --- Envelopes ---
-  'Envelope #6 3/4': { width: 348, height: 624 },
-  'Envelope #8': { width: 348, height: 720 },
-  'Envelope #9': { width: 372, height: 852 },
-  'Envelope #10': { width: 396, height: 912 },
-  'Envelope #11': { width: 432, height: 996 },
-  'Envelope #12': { width: 456, height: 1056 },
-  'Envelope #14': { width: 480, height: 1104 },
-  'Envelope Monarch': { width: 372, height: 720 },
-  'Envelope DL': { width: 416, height: 831 },
-  'Envelope C4': { width: 866, height: 1225 },
-  'Envelope C5': { width: 612, height: 866 },
-  'Envelope C6': { width: 431, height: 612 },
-  'Envelope B4': { width: 945, height: 1334 },
-  'Envelope B5': { width: 665, height: 945 },
-
-  // --- Cards & Misc ---
-  'Index Card 3x5': { width: 288, height: 480 },
-  'Index Card 4x6': { width: 384, height: 576 },
-  'Index Card 5x8': { width: 480, height: 768 },
-  'Postcard': { width: 408, height: 576 },
-  'Square 5x5': { width: 480, height: 480 },
-  'Square 6x6': { width: 576, height: 576 },
-};
+// Derived directly from canonical PHYSICAL_PAPER_SIZES @ 96 DPI (1 inch = 96px)
+export const PAGE_SIZES: Record<string, { width: number; height: number }> = Object.fromEntries(
+  Object.entries(PHYSICAL_PAPER_SIZES).map(([key, def]) => [
+    key,
+    { width: def.widthPx, height: def.heightPx },
+  ])
+);
 
 export const PAPER_FORMATS = [
   // --- Standard North American ---

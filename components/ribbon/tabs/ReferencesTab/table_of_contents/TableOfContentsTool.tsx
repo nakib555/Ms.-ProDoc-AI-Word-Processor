@@ -9,14 +9,14 @@ import { globalTocEngine } from '../../../../../utils/tocEngine';
 
 export const TableOfContentsTool: React.FC = () => {
   const { activeMenu, menuPos, closeMenu } = useReferencesTab();
-  const { executeCommand, content } = useEditor();
+  const { executeCommand, content, showToast } = useEditor();
   const menuId = 'toc';
 
   const generateTOC = () => {
       const items = globalTocEngine.scanHeadings(content);
       
       if (items.length === 0) {
-          alert("No headings found to generate Table of Contents.");
+          showToast('No headings (Heading 1/2/3) found to generate Table of Contents.', 'warning');
           closeMenu();
           return;
       }

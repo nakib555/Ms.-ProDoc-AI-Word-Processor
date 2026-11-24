@@ -13,12 +13,33 @@ import { useEditor } from '../../../../../../contexts/EditorContext';
 import { TablePropertiesDialog } from '../TablePropertiesDialog';
 import { TableFormulaDialog } from '../TableFormulaDialog';
 import { BorderTool } from './BorderTool';
+import {
+  insertTableRow,
+  insertTableColumn,
+  deleteTableRow,
+  deleteTableColumn,
+  mergeTableCells,
+  splitTableCell,
+  distributeTableRows,
+  distributeTableColumns,
+  getCellGridPosition,
+  getCellsInLogicalColumn,
+  getSelectedTableCells,
+  clearSelectedCellHighlights,
+  ensureEditorHasBlock,
+  selectTableTarget,
+  toggleTableGridlines,
+} from '../../../../../../utils/tableUtils';
 
 export const TableLayoutTab: React.FC = () => {
-  const { executeCommand } = useEditor();
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
   const [isFormulaOpen, setIsFormulaOpen] = useState(false);
   const [isAutoFitOpen, setIsAutoFitOpen] = useState(false);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [gridlinesOn, setGridlinesOn] = useState<boolean>(() => {
+    if (typeof document === 'undefined') return false;
+    return !!document.querySelector('.prodoc-editor.show-table-gridlines');
+  });
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null);
   const [activeCell, setActiveCell] = useState<HTMLTableCellElement | null>(null);
 
@@ -27,48 +48,50 @@ export const TableLayoutTab: React.FC = () => {
   const [colWidth, setColWidth] = useState<number>(120);
   const [resizeScope, setResizeScope] = useState<'column' | 'cell'>('column');
 
+  const getCurrentCell = (): HTMLTableCellElement | null => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const anchor = selection.anchorNode;
+    const el = anchor?.nodeType === Node.ELEMENT_NODE ? (anchor as HTMLElement) : anchor?.parentElement;
+    return (el?.closest('td, th') as HTMLTableCellElement | null) || null;
+  };
+
   // --- Helper Functions ---
   const runOnCell = (fn: (cell: HTMLTableCellElement) => void) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      let node = selection.anchorNode as HTMLElement;
-      while(node && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
-          node = node.parentNode as HTMLElement;
-          if (!node || node.nodeName === 'BODY') return;
-      }
-      if (node) {
-          const editorEl = node.closest('.prodoc-editor');
-          fn(node as HTMLTableCellElement);
-          if (editorEl) {
-              editorEl.dispatchEvent(new Event('input', { bubbles: true }));
-          }
+      const cell = getCurrentCell();
+      if (!cell) return;
+      const editorEl = cell.closest('.prodoc-editor') as HTMLElement | null;
+      fn(cell);
+      if (editorEl) {
+          editorEl.dataset.commitImmediate = 'true';
+          editorEl.dispatchEvent(new Event('input', { bubbles: true }));
       }
   };
 
   const runOnRow = (fn: (row: HTMLTableRowElement) => void) => {
       runOnCell((cell) => {
-          const row = cell.parentNode as HTMLTableRowElement;
+          const row = cell.closest('tr') as HTMLTableRowElement | null;
           if (row) fn(row);
       });
   };
 
   const runOnTable = (fn: (table: HTMLTableElement) => void) => {
       runOnCell((cell) => {
-          const table = cell.closest('table');
+          const table = cell.closest('table') as HTMLTableElement | null;
           if (table) fn(table);
       });
   };
 
-  // Detect cell dimensions live when cursor changes position
+  // Detect cell dimensions live when cursor changes position (never dispatch input here)
   useEffect(() => {
     const handleSelectionChange = () => {
-      runOnCell((cell) => {
-        if (cell) {
-          const rect = cell.getBoundingClientRect();
-          if (rect.width > 0) setColWidth(Math.round(rect.width));
-          if (rect.height > 0) setRowHeight(Math.round(rect.height));
-        }
-      });
+      const cell = getCurrentCell();
+      if (!cell) return;
+      const w = cell.offsetWidth;
+      const row = cell.closest('tr') as HTMLElement | null;
+      const h = row?.offsetHeight || cell.offsetHeight;
+      if (w > 0) setColWidth(Math.round(w));
+      if (h > 0) setRowHeight(Math.round(h));
     };
     document.addEventListener('selectionchange', handleSelectionChange);
     return () => document.removeEventListener('selectionchange', handleSelectionChange);
@@ -76,162 +99,94 @@ export const TableLayoutTab: React.FC = () => {
 
   // --- Actions ---
 
-  const withResizeTransition = (fn: (table: HTMLTableElement) => void) => {
-      runOnTable((table) => {
+  const withResizeTransition = (fn: (table: HTMLTableElement, cell: HTMLTableCellElement) => void) => {
+      runOnCell((cell) => {
+          const table = cell.closest('table') as HTMLTableElement | null;
+          if (!table) return;
           table.classList.add('is-resizing');
-          fn(table);
+          fn(table, cell);
           setTimeout(() => {
               table.classList.remove('is-resizing');
-          }, 300);
+          }, 260);
       });
   };
 
-  const deleteRow = () => {
-      runOnTable((table) => {
-          const selection = window.getSelection();
-          if (!selection || selection.rangeCount === 0) return;
-          let node = selection.anchorNode as HTMLElement;
-          while(node && node.nodeName !== 'TR') {
-              node = node.parentNode as HTMLElement;
-              if (!node || node.nodeName === 'BODY') return;
-          }
-          if (node && node.nodeName === 'TR') {
-              table.classList.add('is-resizing');
-              node.classList.remove('is-inserted');
-              node.classList.add('is-deleting');
-              node.addEventListener('animationend', () => {
-                  node.remove();
-                  table.classList.remove('is-resizing');
-                  const editorEl = table.closest('.prodoc-editor');
-                  if (editorEl) {
-                      editorEl.dispatchEvent(new Event('input', { bubbles: true }));
-                  }
-              }, { once: true });
-          }
-      });
+  const handleSelectScope = (scope: 'cell' | 'row' | 'col' | 'table') => {
+      const cell = getCurrentCell();
+      const table = cell?.closest('table') as HTMLTableElement | null;
+      if (cell && table) {
+          selectTableTarget(table, cell, scope);
+      }
+      setIsSelectOpen(false);
   };
+
+  const handleToggleGridlines = () => {
+      const next = toggleTableGridlines();
+      setGridlinesOn(next);
+  };
+
+  const deleteRow = () => runOnCell((cell) => {
+      const table = cell.closest('table') as HTMLTableElement | null;
+      if (!table) return;
+      deleteTableRow(table, cell);
+  });
   
-  const deleteCol = () => withResizeTransition((table) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      let node = selection.anchorNode as HTMLElement;
-      while(node && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
-          node = node.parentNode as HTMLElement;
-          if (!node || node.nodeName === 'BODY') return;
-      }
-      if (node) {
-          const index = (node as HTMLTableCellElement).cellIndex;
-          for (let i = 0; i < table.rows.length; i++) {
-              if (table.rows[i].cells[index]) table.rows[i].deleteCell(index);
-          }
-      }
+  const deleteCol = () => withResizeTransition((table, cell) => {
+      deleteTableColumn(table, cell);
   });
 
-  const deleteTable = () => runOnTable((table) => table.remove());
-
-  const insertRow = (where: 'above' | 'below') => runOnTable((table) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      let node = selection.anchorNode as HTMLElement;
-      while(node && node.nodeName !== 'TR') {
-          node = node.parentNode as HTMLElement;
-          if (!node || node.nodeName === 'BODY') return;
+  const deleteTable = () => {
+      const cell = getCurrentCell();
+      const table = cell?.closest('table') as HTMLTableElement | null;
+      if (!table) return;
+      const editorEl = table.closest('.prodoc-editor') as HTMLElement | null;
+      clearSelectedCellHighlights(table);
+      table.remove();
+      ensureEditorHasBlock(editorEl);
+      if (editorEl) {
+          editorEl.dataset.commitImmediate = 'true';
+          editorEl.dispatchEvent(new Event('input', { bubbles: true }));
       }
-      if (node && node.nodeName === 'TR') {
-          table.classList.add('is-resizing');
-          const row = node as HTMLTableRowElement;
-          const newRow = row.parentNode!.insertBefore(row.cloneNode(true), where === 'above' ? row : row.nextSibling);
-          Array.from(newRow.childNodes).forEach((c: any) => c.innerHTML = '<br>');
+  };
 
+  const insertRow = (where: 'above' | 'below') => withResizeTransition((table, cell) => {
+      const newRow = insertTableRow(table, cell, where);
+      if (newRow) {
           newRow.classList.remove('is-deleting');
-          requestAnimationFrame(() => {
-              newRow.classList.add('is-inserted');
-          });
-
-          newRow.addEventListener('animationend', () => {
-              newRow.classList.remove('is-inserted');
-              table.classList.remove('is-resizing');
-          }, { once: true });
+          requestAnimationFrame(() => newRow.classList.add('is-inserted'));
+          setTimeout(() => newRow.classList.remove('is-inserted'), 320);
       }
   });
 
-  const insertCol = (where: 'left' | 'right') => withResizeTransition((table) => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
-      let node = selection.anchorNode as HTMLElement;
-      while(node && node.nodeName !== 'TD' && node.nodeName !== 'TH') {
-          node = node.parentNode as HTMLElement;
-          if (!node || node.nodeName === 'BODY') return;
-      }
-      if (node) {
-          const cell = node as HTMLTableCellElement;
-          const index = cell.cellIndex;
-          for (let i = 0; i < table.rows.length; i++) {
-              const row = table.rows[i];
-              const targetIndex = where === 'left' ? index : index + 1;
-              if (targetIndex <= row.cells.length) {
-                  const newCell = row.insertCell(targetIndex);
-                  newCell.innerHTML = '<br>';
-                  const neighbor = row.cells[index];
-                  if (neighbor) {
-                      newCell.style.border = neighbor.style.border;
-                      newCell.style.padding = neighbor.style.padding;
-                      newCell.style.backgroundColor = neighbor.style.backgroundColor;
-                  }
-              }
-          }
-      }
+  const insertCol = (where: 'left' | 'right') => withResizeTransition((table, cell) => {
+      insertTableColumn(table, cell, where);
   });
 
   const mergeCells = () => runOnCell((cell) => {
-      const nextSibling = cell.nextElementSibling as HTMLTableCellElement;
-      if (nextSibling) {
-          const currentColSpan = cell.colSpan || 1;
-          const nextColSpan = nextSibling.colSpan || 1;
-          cell.colSpan = currentColSpan + nextColSpan;
-          
-          // Merge content
-          if (nextSibling.innerText.trim()) {
-              cell.innerHTML += " " + nextSibling.innerHTML;
-          }
-          nextSibling.remove();
-      }
+      const table = cell.closest('table') as HTMLTableElement | null;
+      if (table) mergeTableCells(table, cell);
   });
 
   const splitCells = () => runOnCell((cell) => {
-      const colspan = cell.colSpan;
-      if (colspan > 1) {
-          // If currently spanned, reduce span and insert new cell
-          cell.colSpan = Math.floor(colspan / 2);
-          const newCell = cell.cloneNode(true) as HTMLTableCellElement;
-          newCell.colSpan = Math.ceil(colspan / 2);
-          newCell.innerHTML = "<br>"; 
-          cell.parentNode?.insertBefore(newCell, cell.nextSibling);
-      } else {
-          // Split a standard cell: This forces a table structure change or insert
-          // Simple approach: Insert a new cell next to it.
-          const newCell = cell.cloneNode(true) as HTMLTableCellElement;
-          newCell.innerHTML = "<br>";
-          cell.parentNode?.insertBefore(newCell, cell.nextSibling);
-      }
+      const table = cell.closest('table') as HTMLTableElement | null;
+      if (table) splitTableCell(table, cell);
   });
 
   const splitTable = () => runOnRow((row) => {
       const table = row.closest('table');
       if (!table) return;
       
-      const rowIndex = row.rowIndex;
-      if (rowIndex === 0) return; // Can't split at top
+      const rowIndex = Array.from(table.rows).indexOf(row);
+      if (rowIndex <= 0) return;
 
-      const newTable = table.cloneNode(false) as HTMLTableElement; // Clone structure/styles only
-      
-      // Move rows to new table
+      const newTable = table.cloneNode(false) as HTMLTableElement;
+      const newBody = document.createElement('tbody');
       const rows = Array.from(table.rows);
       for (let i = rowIndex; i < rows.length; i++) {
-          newTable.appendChild(rows[i]);
+          newBody.appendChild(rows[i]);
       }
+      newTable.appendChild(newBody);
 
-      // Insert spacing and new table
       const spacer = document.createElement('p');
       spacer.innerHTML = '<br>';
       table.parentNode?.insertBefore(spacer, table.nextSibling);
@@ -239,19 +194,27 @@ export const TableLayoutTab: React.FC = () => {
   });
 
   const setAlign = (vertical: string, horizontal: string) => runOnCell((cell) => {
-      cell.style.verticalAlign = vertical;
-      cell.style.textAlign = horizontal;
+      const table = cell.closest('table') as HTMLTableElement | null;
+      const targets = table ? getSelectedTableCells(table) : [cell];
+      (targets.length > 0 ? targets : [cell]).forEach((c) => {
+          c.style.verticalAlign = vertical;
+          c.style.textAlign = horizontal;
+      });
   });
 
   const setTextDirection = () => runOnCell((cell) => {
-      const current = cell.style.writingMode;
-      if (current === 'vertical-rl') {
-          cell.style.writingMode = 'horizontal-tb';
-          cell.style.transform = 'none';
-      } else {
-          cell.style.writingMode = 'vertical-rl';
-          cell.style.transform = 'rotate(180deg)';
-      }
+      const table = cell.closest('table') as HTMLTableElement | null;
+      const targets = table ? getSelectedTableCells(table) : [cell];
+      (targets.length > 0 ? targets : [cell]).forEach((c) => {
+          const current = c.style.writingMode;
+          if (current === 'vertical-rl') {
+              c.style.writingMode = 'horizontal-tb';
+              c.style.transform = 'none';
+          } else {
+              c.style.writingMode = 'vertical-rl';
+              c.style.transform = 'rotate(180deg)';
+          }
+      });
   });
 
   const autoFit = (mode: 'contents' | 'window' | 'fixed') => runOnTable((table) => {
@@ -294,29 +257,39 @@ export const TableLayoutTab: React.FC = () => {
 
   const distributeRows = () => runOnTable((table) => {
       table.classList.add('is-resizing');
-      const rows = Array.from(table.rows);
-      // Calculate max height
-      let maxH = 0;
-      rows.forEach(r => maxH = Math.max(maxH, r.getBoundingClientRect().height));
-      // Apply to all
-      rows.forEach(r => r.style.height = `${maxH}px`);
+      distributeTableRows(table);
       setTimeout(() => {
           table.classList.remove('is-resizing');
-      }, 300);
+      }, 260);
   });
 
   const distributeCols = () => runOnTable((table) => {
       table.classList.add('is-resizing');
-      // Simple equal distribution for first row cells
-      if (table.rows.length > 0) {
-          const cells = Array.from(table.rows[0].cells);
-          const pct = 100 / cells.length;
-          cells.forEach(c => c.style.width = `${pct}%`);
-      }
+      distributeTableColumns(table);
       setTimeout(() => {
           table.classList.remove('is-resizing');
-      }, 300);
+      }, 260);
   });
+
+  const applyWidthToScope = (cell: HTMLTableCellElement, widthPx: number) => {
+      if (resizeScope === 'cell') {
+          cell.style.width = `${widthPx}px`;
+          cell.style.minWidth = '';
+      } else {
+          const table = cell.closest('table') as HTMLTableElement | null;
+          if (!table) return;
+          const pos = getCellGridPosition(table, cell);
+          if (!pos) return;
+          table.style.tableLayout = 'fixed';
+          const colCells = getCellsInLogicalColumn(table, pos.colIndex);
+          colCells.forEach((c) => {
+              if ((c.colSpan || 1) === 1) {
+                  c.style.width = `${widthPx}px`;
+                  c.style.minWidth = '';
+              }
+          });
+      }
+  };
 
   const openProperties = () => {
       runOnTable((table) => {
@@ -510,17 +483,32 @@ export const TableLayoutTab: React.FC = () => {
       {/* 1. Table Management Section */}
       <RibbonSection title="Table">
         <div className="flex items-center h-full gap-1 p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
-          <RibbonButton 
-            icon={MousePointer2} 
-            label="Select" 
-            title="Select Table" 
-            onClick={() => executeCommand('selectAll')} 
-          />
+          <div className="relative flex items-center h-full">
+            <RibbonButton 
+              icon={MousePointer2} 
+              label="Select" 
+              hasArrow
+              title="Select Cell, Column, Row, or Table" 
+              onClick={() => setIsSelectOpen(!isSelectOpen)} 
+            />
+            {isSelectOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsSelectOpen(false)} />
+                <div className="absolute top-full left-0 mt-1 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 z-50">
+                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('cell')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Cell</button>
+                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('col')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Column</button>
+                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('row')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Row</button>
+                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('table')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Table</button>
+                </div>
+              </>
+            )}
+          </div>
           <RibbonButton 
             icon={Grid} 
             label="Gridlines" 
-            title="Toggle Table Gridlines" 
-            onClick={() => {}} 
+            title="View/Hide Table Gridlines" 
+            active={gridlinesOn}
+            onClick={handleToggleGridlines} 
           />
           <RibbonButton 
             icon={TableProperties} 
@@ -608,10 +596,10 @@ export const TableLayoutTab: React.FC = () => {
             onMouseDown={(e) => e.preventDefault()}
             className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
             onClick={mergeCells}
-            title="Merge Selected Cells Right"
+            title="Merge Selected Cells"
           >
             <Merge size={13} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
-            <span>Merge Right</span>
+            <span>Merge Cells</span>
           </button>
           <button
             onMouseDown={(e) => e.preventDefault()}
@@ -702,24 +690,9 @@ export const TableLayoutTab: React.FC = () => {
                 value={`${colWidth}px`}
                 onChange={(e) => {
                   const val = parseInt(e.target.value.replace(/\D/g, ''), 10);
-                  if (!isNaN(val) && val >= 25) {
+                  if (!isNaN(val) && val >= 20) {
                     setColWidth(val);
-                    runOnCell((cell) => {
-                      if (resizeScope === 'cell') {
-                        cell.style.width = `${val}px`;
-                        cell.style.minWidth = `${val}px`;
-                      } else {
-                        const table = cell.closest('table');
-                        if (!table) return;
-                        const idx = cell.cellIndex;
-                        Array.from(table.rows).forEach(r => {
-                          if (r.cells[idx]) {
-                            r.cells[idx].style.width = `${val}px`;
-                            r.cells[idx].style.minWidth = `${val}px`;
-                          }
-                        });
-                      }
-                    });
+                    runOnCell((cell) => applyWidthToScope(cell, val));
                   }
                 }}
                 className="w-11 text-center text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent outline-none"
@@ -731,22 +704,7 @@ export const TableLayoutTab: React.FC = () => {
                   onClick={() => {
                     const next = colWidth + 5;
                     setColWidth(next);
-                    runOnCell((cell) => {
-                      if (resizeScope === 'cell') {
-                        cell.style.width = `${next}px`;
-                        cell.style.minWidth = `${next}px`;
-                      } else {
-                        const table = cell.closest('table');
-                        if (!table) return;
-                        const idx = cell.cellIndex;
-                        Array.from(table.rows).forEach(r => {
-                          if (r.cells[idx]) {
-                            r.cells[idx].style.width = `${next}px`;
-                            r.cells[idx].style.minWidth = `${next}px`;
-                          }
-                        });
-                      }
-                    });
+                    runOnCell((cell) => applyWidthToScope(cell, next));
                   }}
                   className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-600 transition-colors"
                   title="Increase Width"
@@ -757,24 +715,9 @@ export const TableLayoutTab: React.FC = () => {
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
-                    const next = Math.max(25, colWidth - 5);
+                    const next = Math.max(20, colWidth - 5);
                     setColWidth(next);
-                    runOnCell((cell) => {
-                      if (resizeScope === 'cell') {
-                        cell.style.width = `${next}px`;
-                        cell.style.minWidth = `${next}px`;
-                      } else {
-                        const table = cell.closest('table');
-                        if (!table) return;
-                        const idx = cell.cellIndex;
-                        Array.from(table.rows).forEach(r => {
-                          if (r.cells[idx]) {
-                            r.cells[idx].style.width = `${next}px`;
-                            r.cells[idx].style.minWidth = `${next}px`;
-                          }
-                        });
-                      }
-                    });
+                    runOnCell((cell) => applyWidthToScope(cell, next));
                   }}
                   className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-600 transition-colors"
                   title="Decrease Width"

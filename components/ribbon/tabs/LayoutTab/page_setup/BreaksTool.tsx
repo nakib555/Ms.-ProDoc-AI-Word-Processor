@@ -40,10 +40,10 @@ export const BreaksTool: React.FC = () => {
                  <button onClick={() => { executeCommand('pageBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group">
                      <PanelTop size={14} className="text-slate-400 group-hover:text-blue-600"/> Page
                  </button>
-                 <button className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group" onClick={() => closeMenu()}>
+                 <button onClick={() => { executeCommand('columnBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group">
                      <Columns size={14} className="text-slate-400 group-hover:text-blue-600"/> Column
                  </button>
-                 <button className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 group" onClick={() => closeMenu()}>
+                 <button onClick={() => { executeCommand('textWrappingBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 group">
                      <WrapText size={14} className="text-slate-400 group-hover:text-blue-600"/> Text Wrapping
                  </button>
                  

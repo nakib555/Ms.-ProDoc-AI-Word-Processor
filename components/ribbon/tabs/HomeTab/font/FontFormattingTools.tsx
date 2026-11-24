@@ -41,7 +41,7 @@ export const FontFormattingTools: React.FC = () => {
             break;
     }
 
-    document.execCommand('insertText', false, newText);
+    executeCommand('insertText', newText);
     closeMenu();
   };
 

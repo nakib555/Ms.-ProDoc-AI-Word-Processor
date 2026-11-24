@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/immutability, @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { LayoutGrid } from 'lucide-react';
+import { normalizeBorderColorValue } from '../../../../../utils/tableUtils';
 
 interface TablePropertiesDialogProps {
   isOpen: boolean;
@@ -92,16 +94,16 @@ export const TablePropertiesDialog: React.FC<TablePropertiesDialogProps> = ({
         setVerticalAlign(vAlign as 'top' | 'middle' | 'bottom');
 
         // Border detection
-        const border = firstCell.style.border;
+        const border = firstCell.style.border || firstCell.style.borderColor || '';
         if (border) {
           if (border.includes('2px')) setBorderWidth('2px');
           else setBorderWidth('1px');
 
-          if (border.includes('rgb') || border.includes('#')) {
-            if (border.includes('3b82f6') || border.includes('rgb(59, 130, 246)')) setBorderColor('#3b82f6');
-            else if (border.includes('ef4444') || border.includes('rgb(239, 68, 68)')) setBorderColor('#ef4444');
-            else if (border.includes('22c55e') || border.includes('rgb(34, 197, 94)')) setBorderColor('#22c55e');
-            else setBorderColor('#cbd5e1');
+          const normalizedColor = normalizeBorderColorValue(border);
+          if (normalizedColor) {
+            setBorderColor(normalizedColor);
+          } else {
+            setBorderColor('#cbd5e1');
           }
         }
 
@@ -346,13 +348,19 @@ export const TablePropertiesDialog: React.FC<TablePropertiesDialogProps> = ({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+      data-modal-backdrop="true"
+      onClick={onClose}
+    >
       <div 
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3">
+        <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3 shrink-0">
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-5 h-5 text-indigo-600" />
             <h2 className="text-lg font-bold text-slate-800 dark:text-white">Table Properties</h2>
@@ -365,7 +373,7 @@ export const TablePropertiesDialog: React.FC<TablePropertiesDialogProps> = ({
           </button>
         </div>
         
-        <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+        <div className="space-y-4 flex-1 min-h-0 max-h-[450px] overflow-y-auto overscroll-contain pr-1">
           {/* Table Information */}
           <div className="text-xs font-mono bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-150 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 flex justify-around">
             <div><span className="text-slate-400">Rows:</span> {table.rows.length}</div>
@@ -643,6 +651,7 @@ export const TablePropertiesDialog: React.FC<TablePropertiesDialogProps> = ({
               <div className="grid grid-cols-2 gap-1.5">
                 {[
                   { label: 'No Border', value: 'none' },
+                  { label: 'Black', value: '#000000' },
                   { label: 'Default', value: '#cbd5e1' },
                   { label: 'Blue Accent', value: '#3b82f6' },
                   { label: 'Red Danger', value: '#ef4444' }
@@ -763,7 +772,7 @@ export const TablePropertiesDialog: React.FC<TablePropertiesDialogProps> = ({
           </div>
         </div>
         
-        <div className="flex justify-end gap-2 mt-6 border-t border-slate-100 dark:border-slate-700 pt-3">
+        <div className="flex justify-end gap-2 mt-6 border-t border-slate-100 dark:border-slate-700 pt-3 shrink-0">
           <button 
             type="button"
             onClick={onClose}
@@ -780,6 +789,7 @@ export const TablePropertiesDialog: React.FC<TablePropertiesDialogProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

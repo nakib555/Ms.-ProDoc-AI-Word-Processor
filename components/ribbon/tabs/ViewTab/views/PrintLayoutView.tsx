@@ -9,10 +9,11 @@ import { Ruler } from '../../../../Ruler';
 import { EditorPage } from '../../../../EditorPage';
 import { GhostPage } from '../../../../ui/GhostPage';
 import { paginateContent } from '../../../../../utils/layoutEngine';
-import { PAGE_SIZES } from '../../../../../constants';
 import { getPhysicalDimensions } from '../../../../../utils/measurement';
+import { HistoryCommitMode } from '../../../../../utils/historyManager';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
 import { useGestureContext } from '../../../../../contexts/GestureContext';
+import { isAnyModalOpen } from '../../../../../utils/modalScroll';
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -30,7 +31,7 @@ interface PrintLayoutViewProps {
   width: number;
   height: number;
   content: string;
-  setContent: (content: string) => void;
+  setContent: (content: string, emitUpdate?: boolean, options?: { historyMode?: HistoryCommitMode }) => void;
   pageConfig: PageConfig;
   zoom: number;
   showRuler: boolean;
@@ -361,15 +362,29 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     setHeaderContent,
     footerContent,
     setFooterContent,
+    firstHeaderContent,
+    setFirstHeaderContent,
+    firstFooterContent,
+    setFirstFooterContent,
     editorRef,
     setZoom,
     zoomMode,
     setZoomMode,
-    isTableResizing
+    zoomLayout,
+    calibrationScale,
+    measurementUnit,
+    setMeasurementUnit,
+    setPageConfig,
+    openPageSetup,
+    isTableResizing,
+    historyApplySeq,
   } = useEditor();
   const { triggerGestureLock } = useGestureContext();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
+  const pagesDataRef = useRef(pagesData);
+  pagesDataRef.current = pagesData;
+
   const rulerContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const contentWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -379,12 +394,15 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReportedPageRef = useRef(currentPage);
   const lastProcessedJumpSeqRef = useRef<number>(0);
+  const lastSelfSyncedContentRef = useRef<string | null>(null);
+  const lastProcessedHistorySeqRef = useRef<number>(historyApplySeq);
 
   // High-performance focal-centered pinch to zoom & double-tap to toggle fit
   useTouchZoom({
     containerRef: scrollContainerRef,
     contentRef: contentWrapperRef,
     zoom,
+    calibrationScale,
     setZoom: (newZoomOrUpdater) => {
       if (zoomMode !== 'custom') {
         setZoomMode('custom');
@@ -402,7 +420,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   const lastAppliedFitZoomRef = useRef<number | null>(null);
 
-  // Dynamic Zoom Logic
+  // Dynamic Zoom Logic (accounts for calibrationScale and Multiple Pages 2-up layout)
   useEffect(() => {
       if (width <= 0 || height <= 0) return;
       if (zoomMode !== 'fit-page' && zoomMode !== 'fit-width') {
@@ -417,17 +435,21 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         activePageConfig.customWidth,
         activePageConfig.customHeight
       );
-      const pageWidth = phys.widthPx;
-      const pageHeight = phys.heightPx;
+      const pageWidth = phys.widthPx * calibrationScale;
+      const pageHeight = phys.heightPx * calibrationScale;
 
       const padding = 64; // 32px padding on each side
       const availableWidth = Math.max(100, width - padding);
       const availableHeight = Math.max(100, height - padding);
 
-      const zoomW = (availableWidth / pageWidth) * 100;
+      const effectiveWidthPerPage = zoomMode === 'fit-page' && zoomLayout === 'multiple'
+        ? Math.max(120, (availableWidth - 32) / 2)
+        : availableWidth;
+
+      const zoomW = (effectiveWidthPerPage / pageWidth) * 100;
       const zoomH = (availableHeight / pageHeight) * 100;
-      const fitPageZoom = Math.round(Math.min(zoomW, zoomH));
-      const fitWidthZoom = Math.round(zoomW);
+      const fitPageZoom = Math.max(15, Math.round(Math.min(zoomW, zoomH)));
+      const fitWidthZoom = Math.max(15, Math.round(zoomW));
 
       const targetZoom = zoomMode === 'fit-page' ? fitPageZoom : fitWidthZoom;
 
@@ -435,7 +457,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           lastAppliedFitZoomRef.current = targetZoom;
           setZoom(targetZoom);
       }
-  }, [width, height, pageConfig, currentPage, pagesData, zoomMode, zoom, setZoom]);
+  }, [width, height, pageConfig, currentPage, pagesData, zoomMode, zoomLayout, calibrationScale, zoom, setZoom]);
 
   // Actual scale used for rendering
   const actualZoom = zoom;
@@ -443,33 +465,45 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   useEffect(() => {
     if (isTableResizing) return;
     let isMounted = true;
-    
-    const delay = 200;
-    
-    const timer = setTimeout(() => {
-        if (!isMounted) return;
-        
-        const currentCursor = getGlobalCursorPosition();
-        
-        // Use requestAnimationFrame to avoid blocking the main thread immediately
-        requestAnimationFrame(() => {
-             const result = paginateContent(content, pageConfig);
-             
-             setPagesData(result.pages);
-             setTotalPages(result.pages.length);
-             
-             if (currentCursor !== null) {
-                 cursorRestorationRef.current = currentCursor;
-             }
-        });
-        
-    }, delay);
 
-    return () => { 
-        isMounted = false; 
-        clearTimeout(timer);
+    const isHistoryRestore = historyApplySeq !== lastProcessedHistorySeqRef.current;
+    const isExternalContentChange = lastSelfSyncedContentRef.current !== content;
+
+    if (isHistoryRestore) {
+      lastProcessedHistorySeqRef.current = historyApplySeq;
+    }
+
+    const runPagination = () => {
+      if (!isMounted) return;
+      const currentCursor = getGlobalCursorPosition();
+
+      requestAnimationFrame(() => {
+        if (!isMounted) return;
+        const result = paginateContent(content, pageConfig);
+        pagesDataRef.current = result.pages;
+        setPagesData(result.pages);
+        setTotalPages(result.pages.length);
+
+        if (currentCursor !== null) {
+          cursorRestorationRef.current = currentCursor;
+        }
+      });
     };
-  }, [content, pageConfig, setTotalPages, isTableResizing]);
+
+    if (isHistoryRestore || isExternalContentChange) {
+      lastSelfSyncedContentRef.current = content;
+      runPagination();
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    const timer = setTimeout(runPagination, 200);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [content, pageConfig, setTotalPages, isTableResizing, historyApplySeq]);
 
   useLayoutEffect(() => {
       if (cursorRestorationRef.current !== null) {
@@ -488,22 +522,20 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
   const [scrollTop, setScrollTop] = useState(0);
   const scrollAnimFrameRef = useRef<number | null>(null);
-  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handlePageUpdate = useCallback((newHtml: string, pageIndex: number) => {
-    setPagesData(currentPages => {
-        const updatedPages = [...currentPages];
-        if (updatedPages[pageIndex] && updatedPages[pageIndex].html !== newHtml) {
-            updatedPages[pageIndex] = { ...updatedPages[pageIndex], html: newHtml };
-            if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
-            syncTimeoutRef.current = setTimeout(() => {
-                const fullContent = updatedPages.map(p => p.html).join('');
-                setContent(fullContent);
-            }, 600);
-            return updatedPages;
-        }
-        return currentPages;
-    });
+  const handlePageUpdate = useCallback((newHtml: string, pageIndex: number, historyMode: HistoryCommitMode = 'debounced') => {
+    const currentPages = pagesDataRef.current;
+    const targetPage = currentPages[pageIndex];
+    if (!targetPage || targetPage.html === newHtml) return;
+
+    const updatedPages = [...currentPages];
+    updatedPages[pageIndex] = { ...targetPage, html: newHtml };
+    pagesDataRef.current = updatedPages;
+    setPagesData(updatedPages);
+
+    const fullContent = updatedPages.map(p => p.html).join('');
+    lastSelfSyncedContentRef.current = fullContent;
+    setContent(fullContent, false, { historyMode });
   }, [setContent]);
 
   const handlePageFocus = useCallback((index: number, e: React.FocusEvent<HTMLDivElement>) => {
@@ -514,63 +546,83 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
   }, [setCurrentPage, editorRef]);
 
-  const isVertical = pageMovement === 'vertical';
   const activePageConfig = pagesData[currentPage - 1]?.config || pageConfig;
 
-  // Geometry calculation for all pages
+  // Geometry calculation for all pages using exact physical dimensions and calibrationScale
   const pageGeometries = useMemo(() => {
-    const scale = actualZoom / 100;
+    const renderScale = (actualZoom / 100) * calibrationScale;
     return pagesData.map(p => {
       const cfg = p.config;
-      let w = 0;
-      let h = 0;
-      if (cfg.size === 'Custom' && cfg.customWidth && cfg.customHeight) {
-        w = cfg.customWidth * 96;
-        h = cfg.customHeight * 96;
-      } else {
-        const base = PAGE_SIZES[cfg.size as string] || PAGE_SIZES['Letter'];
-        w = cfg.orientation === 'portrait' ? base.width : base.height;
-        h = cfg.orientation === 'portrait' ? base.height : base.width;
-      }
+      const phys = getPhysicalDimensions(
+        (cfg.size as string) || 'Letter',
+        cfg.orientation || 'portrait',
+        cfg.customWidth,
+        cfg.customHeight
+      );
       return {
-        scaledWidth: Math.round(w * scale),
-        scaledHeight: Math.round(h * scale)
+        scaledWidth: Math.round(phys.widthPx * renderScale),
+        scaledHeight: Math.round(phys.heightPx * renderScale)
       };
     });
-  }, [pagesData, actualZoom]);
+  }, [pagesData, actualZoom, calibrationScale]);
 
   const GAP = 32;
+  const CANVAS_PAD = 32;
 
   // Prefix sums for vertical top positions (used for measurement and ruler compatibility)
   const { pageTops, totalVirtualHeight } = useMemo(() => {
     const tops: number[] = [];
-    let currentY = 32;
+    let currentY = CANVAS_PAD;
     for (let i = 0; i < pageGeometries.length; i++) {
       tops.push(currentY);
       currentY += pageGeometries[i].scaledHeight + GAP;
     }
-    const total = currentY + 64;
+    const total = currentY + CANVAS_PAD;
     return { pageTops: tops, totalVirtualHeight: total };
   }, [pageGeometries]);
 
-  const maxPageWidth = useMemo(() => {
+  const maxSinglePageWidth = useMemo(() => {
       let max = 0;
       pageGeometries.forEach(g => {
         if (g.scaledWidth > max) max = g.scaledWidth;
       });
-      return Math.max(width, max + 64);
-  }, [pageGeometries, width]);
+      return max;
+  }, [pageGeometries]);
 
   // Multi-column side-by-side calculation
-  const isSideToSide = pageMovement === 'sideToSide';
+  const isSideToSide = pageMovement === 'side-to-side';
   const basePageWidth = pageGeometries[0]?.scaledWidth || 800;
   const maxPossibleColumns = Math.max(1, Math.floor((width - 48) / (basePageWidth + GAP)));
-  const columnCount = isSideToSide 
+  const columnCount = (isSideToSide || zoomLayout === 'multiple')
     ? Math.max(1, Math.min(4, maxPossibleColumns))
     : (actualZoom <= 75 && maxPossibleColumns >= 2 ? Math.min(3, maxPossibleColumns) : 1);
 
   const totalPagesCount = pagesData.length;
   const rowCount = Math.max(1, Math.ceil(totalPagesCount / columnCount));
+
+  const maxRowWidth = useMemo(() => {
+    if (pageGeometries.length === 0) return 0;
+    if (columnCount === 1) return maxSinglePageWidth;
+    let maxW = 0;
+    for (let r = 0; r < rowCount; r++) {
+      let rowW = 0;
+      let countInRow = 0;
+      for (let c = 0; c < columnCount; c++) {
+        const pIdx = r * columnCount + c;
+        if (pIdx < pageGeometries.length) {
+          rowW += pageGeometries[pIdx].scaledWidth;
+          countInRow++;
+        }
+      }
+      if (countInRow > 1) {
+        rowW += (countInRow - 1) * GAP;
+      }
+      if (rowW > maxW) maxW = rowW;
+    }
+    return maxW;
+  }, [pageGeometries, columnCount, rowCount, maxSinglePageWidth]);
+
+  const contentTotalWidth = Math.max(width, maxRowWidth + CANVAS_PAD * 2);
 
   // Compute maximum height for each virtual row
   const rowHeights = useMemo(() => {
@@ -597,6 +649,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     overscan: 2,
   });
 
+  // Re-measure virtual rows whenever zoom or column layout changes so pages never overlap or clip
+  useEffect(() => {
+    rowVirtualizer.measure();
+  }, [actualZoom, columnCount, rowHeights, rowVirtualizer]);
+
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     const newScrollTop = container.scrollTop;
@@ -611,7 +668,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     }, 250);
 
     // Auto-lock editing during scroll with 400ms auto-unlock to prevent mobile keyboard popups & layout misalignment
-    triggerGestureLock(400);
+    if (!isAnyModalOpen()) {
+      triggerGestureLock(400);
+    }
 
     if (rulerContainerRef.current) {
         rulerContainerRef.current.scrollLeft = container.scrollLeft;
@@ -714,10 +773,11 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   // Virtual items from TanStack Virtual
   const virtualRows = rowVirtualizer.getVirtualItems();
   const totalContainerHeight = rowVirtualizer.getTotalSize();
+  const contentTotalHeight = Math.max(height, totalContainerHeight + CANVAS_PAD * 2, totalVirtualHeight);
 
   return (
     <div 
-      className="print-layout-mode w-full h-full flex flex-col relative bg-[#eef2f6] dark:bg-[#0b1120] transition-colors duration-300"
+      className="print-layout-mode w-full h-full min-w-0 min-h-0 flex flex-col relative bg-[#eef2f6] dark:bg-[#0b1120] transition-colors duration-300"
     >
        {showRuler && width >= 768 && (
          <div 
@@ -726,26 +786,36 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
             style={{ height: '25px' }}
             onMouseDown={(e) => e.preventDefault()}
          >
-             <div style={{ width: maxPageWidth, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
-                 <div style={{ transformOrigin: 'top left', display: 'inline-block' }}>
-                    <Ruler pageConfig={activePageConfig} zoom={actualZoom} />
-                 </div>
+             <div style={{ width: `${contentTotalWidth}px`, minWidth: '100%', display: 'flex', justifyContent: 'center' }}>
+                 <Ruler
+                   pageConfig={activePageConfig}
+                   zoom={actualZoom}
+                   calibrationScale={calibrationScale}
+                   unit={measurementUnit}
+                   onUnitChange={setMeasurementUnit}
+                   onPageConfigChange={setPageConfig}
+                   onDoubleClick={() => openPageSetup('margins')}
+                 />
              </div>
          </div>
        )}
 
        <div 
           ref={setRefs}
-          className="flex-1 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent touch-pan-x touch-pan-y"
+          className="flex-1 min-h-0 min-w-0 relative overflow-auto scrollbar-thin scrollbar-thumb-slate-400 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent touch-pan-x touch-pan-y"
+          style={{ overflow: 'auto' }}
           onScroll={handleScroll}
           onDoubleClick={() => setActiveEditingArea('body')}
        >
            <div 
                 ref={contentWrapperRef}
-                className="min-w-full min-h-full w-fit relative transform-gpu will-change-transform"
+                className="relative box-border transform-gpu will-change-transform"
                 style={{ 
-                  height: `${Math.max(totalContainerHeight + 64, totalVirtualHeight)}px`,
-                  minWidth: columnCount > 1 ? `${(basePageWidth + GAP) * columnCount + 64}px` : '100%'
+                  width: `${contentTotalWidth}px`,
+                  minWidth: '100%',
+                  height: `${contentTotalHeight}px`,
+                  minHeight: '100%',
+                  padding: `${CANVAS_PAD}px`,
                 }}
                 onClick={(e) => {
                     if (e.target === e.currentTarget && activeEditingArea !== 'body') {
@@ -773,14 +843,15 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                       key={virtualRow.key}
                       data-index={virtualRow.index}
                       ref={rowVirtualizer.measureElement}
-                      className="absolute top-0 left-0 w-full flex justify-center items-start gap-8 box-border"
+                      className="absolute top-0 left-0 w-full flex justify-center items-start gap-8 px-8 box-border"
                       style={{
-                        transform: `translateY(${virtualRow.start + 32}px)`,
+                        transform: `translateY(${virtualRow.start + CANVAS_PAD}px)`,
                       }}
                     >
                       {rowPageIndices.map((pIdx) => {
                         const pageData = pagesData[pIdx];
                         const geo = pageGeometries[pIdx];
+                        const scaledWidth = geo ? geo.scaledWidth : 816;
                         const scaledHeight = geo ? geo.scaledHeight : 1000;
                         const isFocusedPage = pIdx === activePageIndex;
 
@@ -794,13 +865,14 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                               className="prodoc-page-wrapper box-border shrink-0 relative transition-opacity duration-300"
                               data-page-index={pIdx}
                               data-is-ghost="true"
-                              style={{ height: `${scaledHeight}px` }}
+                              style={{ width: `${scaledWidth}px`, height: `${scaledHeight}px` }}
                             >
                               <GhostPage
                                 pageNumber={pIdx + 1}
                                 totalPages={totalPagesCount || 1}
                                 config={pageData?.config || pageConfig}
                                 zoom={actualZoom}
+                                calibrationScale={calibrationScale}
                                 headerText={headerContent}
                                 footerText={footerContent}
                               />
@@ -814,6 +886,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                             className="prodoc-page-wrapper box-border shrink-0 relative group"
                             data-page-index={pIdx}
                             style={{ 
+                              width: `${scaledWidth}px`,
                               height: `${scaledHeight}px`
                             }}
                           >
@@ -823,16 +896,22 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                               content={pageData.html}
                               config={pageData.config}
                               zoom={actualZoom}
+                              calibrationScale={calibrationScale}
                               showFormattingMarks={showFormattingMarks}
                               onContentChange={handlePageUpdate}
                               onFocus={(e) => handlePageFocus(pIdx, e)}
                               isActivePage={currentPage === pIdx + 1}
+                              historyApplySeq={historyApplySeq}
                               activeEditingArea={activeEditingArea}
                               setActiveEditingArea={setActiveEditingArea}
                               headerContent={headerContent}
                               setHeaderContent={setHeaderContent}
                               footerContent={footerContent}
                               setFooterContent={setFooterContent}
+                              firstHeaderContent={firstHeaderContent}
+                              setFirstHeaderContent={setFirstHeaderContent}
+                              firstFooterContent={firstFooterContent}
+                              setFirstFooterContent={setFirstFooterContent}
                             />
                           </div>
                         );

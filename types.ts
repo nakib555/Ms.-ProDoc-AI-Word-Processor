@@ -51,6 +51,22 @@ export const RibbonTab = {
 
 export type ViewMode = 'print' | 'web' | 'read';
 export type PageMovement = 'vertical' | 'side-to-side';
+export type MeasurementUnit = 'in' | 'cm' | 'mm';
+export type ZoomLayoutMode = 'single' | 'multiple';
+
+export interface PageBorderConfig {
+  style: 'none' | 'box' | 'shadow' | '3d';
+  lineStyle: 'solid' | 'dashed' | 'dotted' | 'double';
+  color: string;
+  widthPt: number;
+  sides?: {
+    top: boolean;
+    right: boolean;
+    bottom: boolean;
+    left: boolean;
+  };
+  marginPt?: number;
+}
 
 export type SaveStatus = 'saved' | 'saving' | 'unsaved';
 
@@ -121,6 +137,7 @@ export interface PageConfig {
   background: PageBackground;
   pageColor?: string;
   watermark?: string;
+  pageBorder?: PageBorderConfig;
   
   // Advanced Layout - Page Setup Dialog
   headerDistance: number; // inches from edge

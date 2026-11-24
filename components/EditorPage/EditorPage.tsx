@@ -3,6 +3,7 @@ import React, { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallba
 
 import { createPortal } from 'react-dom';
 import { PageConfig, EditingArea } from '../../types';
+import { HistoryCommitMode } from '../../utils/historyManager';
 import { PAGE_SIZES } from '../../constants';
 import { getPhysicalDimensions } from '../../utils/measurement';
 import { useMathLive } from '../../hooks/useMathLive';
@@ -15,6 +16,25 @@ import { TableContextMenu } from './TableContextMenu';
 import { TablePropertiesModal } from './TablePropertiesModal';
 import { SortModal } from './SortModal';
 import { EditorEmptyState } from '../editor/EditorEmptyState';
+import {
+  clearSelectedCellHighlights,
+  deleteTableColumn,
+  deleteTableRow,
+  ensureEditorHasBlock,
+  focusTableCellLikeWord,
+  getSelectedTableCells,
+  insertTableColumn,
+  insertTableRow,
+  mergeTableCells,
+  normalizeBorderColorValue,
+  selectTableCellsRect,
+  splitTableCell,
+} from '../../utils/tableUtils';
+import { latexToLinearUnicode } from '../../utils/equationPresets';
+import {
+  MathFieldEl,
+  setLastActiveMathField,
+} from '../ribbon/tabs/InsertTab/symbols/equation_subTab/common/mathUtils';
 
 interface EditorPageProps {
   content: string;
@@ -22,10 +42,12 @@ interface EditorPageProps {
   totalPages: number;
   config: PageConfig;
   zoom: number;
+  calibrationScale?: number;
   readOnly?: boolean;
-  onContentChange?: (html: string, pageIndex: number) => void;
+  onContentChange?: (html: string, pageIndex: number, historyMode?: HistoryCommitMode) => void;
   onFocus?: (e: React.FocusEvent<HTMLDivElement>) => void;
   showFormattingMarks: boolean;
+  historyApplySeq?: number;
   
   // Header/Footer Props
   activeEditingArea?: EditingArea;
@@ -61,6 +83,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   totalPages,
   config,
   zoom,
+  calibrationScale = 1,
   readOnly,
   onContentChange,
   onFocus,
@@ -76,17 +99,20 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   firstFooterContent = '',
   setFirstFooterContent,
   isActivePage = false,
+  historyApplySeq = 0,
 }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [editorElement, setEditorElement] = useState<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
-  const scale = zoom / 100;
+  const scale = (zoom / 100) * calibrationScale;
   const { 
     isKeyboardLocked, 
     isTableResizerEnabled, 
     selectionMode, 
+    formatPainterStyles,
+    applyFormatPainterToSelection,
     undo, 
     redo, 
     setActiveElementType,
@@ -132,6 +158,16 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const [selectedImage, setSelectedImage] = useState<HTMLElement | null>(null);
   const [selectedTable, setSelectedTable] = useState<HTMLTableElement | null>(null);
   const [tables, setTables] = useState<HTMLTableElement[]>([]);
+  const lastSelectedCellRef = useRef<HTMLTableCellElement | null>(null);
+
+  // Equation Options Popover State
+  const [equationMenu, setEquationMenu] = useState<{
+    wrapper: HTMLElement;
+    mathField: MathFieldEl;
+    x: number;
+    y: number;
+  } | null>(null);
+  const equationMenuRef = useRef<HTMLDivElement>(null);
 
   // Custom Table Context Menu State
   const [contextMenu, setContextMenu] = useState<{
@@ -240,12 +276,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           if (border.includes('2px')) setBorderWidth('2px');
           else setBorderWidth('1px');
 
-          if (border.includes('rgb') || border.includes('#')) {
-            if (border.includes('3b82f6') || border.includes('rgb(59, 130, 246)')) setBorderColor('#3b82f6');
-            else if (border.includes('ef4444') || border.includes('rgb(239, 68, 68)')) setBorderColor('#ef4444');
-            else if (border.includes('22c55e') || border.includes('rgb(34, 197, 94)')) setBorderColor('#22c55e');
-            else setBorderColor('#cbd5e1');
-          }
+          setBorderColor(normalizeBorderColorValue(border));
         }
 
         // Column width detection
@@ -525,7 +556,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     setIsSortModalOpen(false);
 
     if (onContentChange && editorRef.current) {
-      onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
     }
   };
 
@@ -533,27 +564,22 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const cell = contextMenu.cell;
     const table = contextMenu.table;
     if (!cell || !table) return;
-    const row = cell.parentNode as HTMLTableRowElement;
-    if (row) {
-      table.classList.add('is-resizing');
-      const newRow = row.parentNode!.insertBefore(row.cloneNode(true), where === 'above' ? row : row.nextSibling);
-      Array.from(newRow.childNodes).forEach((c: any) => (c.innerHTML = '<br>'));
-      
+    table.classList.add('is-resizing');
+    const newRow = insertTableRow(table, cell, where);
+    if (newRow) {
       newRow.classList.remove('is-deleting');
       requestAnimationFrame(() => {
         newRow.classList.add('is-inserted');
       });
-
       newRow.addEventListener('animationend', () => {
         newRow.classList.remove('is-inserted');
       }, { once: true });
-
-      setTimeout(() => {
-        table.classList.remove('is-resizing');
-      }, 300);
-      if (onContentChange && editorRef.current) {
-        onContentChange(editorRef.current.innerHTML, pageNumber - 1);
-      }
+    }
+    setTimeout(() => {
+      table.classList.remove('is-resizing');
+    }, 300);
+    if (onContentChange && editorRef.current) {
+      onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
     }
   };
 
@@ -562,64 +588,34 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const table = contextMenu.table;
     if (!cell || !table) return;
     table.classList.add('is-resizing');
-    const index = cell.cellIndex;
-    for (let i = 0; i < table.rows.length; i++) {
-      const row = table.rows[i];
-      const targetIndex = where === 'left' ? index : index + 1;
-      if (targetIndex <= row.cells.length) {
-        const newCell = row.insertCell(targetIndex);
-        newCell.innerHTML = '<br>';
-        const neighbor = row.cells[index];
-        if (neighbor) {
-          newCell.style.border = neighbor.style.border;
-          newCell.style.padding = neighbor.style.padding;
-          newCell.style.backgroundColor = neighbor.style.backgroundColor;
-        }
-      }
-    }
+    insertTableColumn(table, cell, where);
     setTimeout(() => {
       table.classList.remove('is-resizing');
     }, 300);
     if (onContentChange && editorRef.current) {
-      onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
     }
   };
 
   const mergeCells = () => {
     const cell = contextMenu.cell;
-    if (!cell) return;
-    const nextSibling = cell.nextElementSibling as HTMLTableCellElement;
-    if (nextSibling) {
-      const currentColSpan = cell.colSpan || 1;
-      const nextColSpan = nextSibling.colSpan || 1;
-      cell.colSpan = currentColSpan + nextColSpan;
-      if (nextSibling.innerText.trim()) {
-        cell.innerHTML += " " + nextSibling.innerHTML;
-      }
-      nextSibling.remove();
+    const table = contextMenu.table;
+    if (!cell || !table) return;
+    if (mergeTableCells(table, cell)) {
       if (onContentChange && editorRef.current) {
-        onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+        onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
       }
     }
   };
 
   const splitCells = () => {
     const cell = contextMenu.cell;
-    if (!cell) return;
-    const colspan = cell.colSpan;
-    if (colspan > 1) {
-      cell.colSpan = Math.floor(colspan / 2);
-      const newCell = cell.cloneNode(true) as HTMLTableCellElement;
-      newCell.colSpan = Math.ceil(colspan / 2);
-      newCell.innerHTML = "<br>";
-      cell.parentNode?.insertBefore(newCell, cell.nextSibling);
-    } else {
-      const newCell = cell.cloneNode(true) as HTMLTableCellElement;
-      newCell.innerHTML = "<br>";
-      cell.parentNode?.insertBefore(newCell, cell.nextSibling);
-    }
-    if (onContentChange && editorRef.current) {
-      onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+    const table = contextMenu.table;
+    if (!cell || !table) return;
+    if (splitTableCell(table, cell)) {
+      if (onContentChange && editorRef.current) {
+        onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+      }
     }
   };
 
@@ -627,18 +623,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const cell = contextMenu.cell;
     const table = contextMenu.table;
     if (!cell || !table) return;
-    const row = cell.parentNode as HTMLTableRowElement;
-    if (row) {
-      table.classList.add('is-resizing');
-      row.classList.remove('is-inserted');
-      row.classList.add('is-deleting');
-      setTimeout(() => {
-        row.remove();
-        table.classList.remove('is-resizing');
-        if (onContentChange && editorRef.current) {
-          onContentChange(editorRef.current.innerHTML, pageNumber - 1);
-        }
-      }, 300);
+    deleteTableRow(table, cell);
+    if (onContentChange && editorRef.current) {
+      onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
     }
   };
 
@@ -646,25 +633,20 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const cell = contextMenu.cell;
     const table = contextMenu.table;
     if (!cell || !table) return;
-    table.classList.add('is-resizing');
-    const index = cell.cellIndex;
-    for (let i = 0; i < table.rows.length; i++) {
-      if (table.rows[i].cells[index]) table.rows[i].deleteCell(index);
-    }
-    setTimeout(() => {
-      table.classList.remove('is-resizing');
-    }, 300);
+    deleteTableColumn(table, cell);
     if (onContentChange && editorRef.current) {
-      onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
     }
   };
 
   const deleteTable = () => {
     const table = contextMenu.table;
     if (table) {
+      clearSelectedCellHighlights(table);
       table.remove();
+      ensureEditorHasBlock(editorRef.current);
       if (onContentChange && editorRef.current) {
-        onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+        onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
       }
     }
   };
@@ -736,7 +718,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           });
 
           if (onContentChange && editorRef.current) {
-            onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+            onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
           }
         }
         break;
@@ -912,7 +894,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     setIsTablePropertiesOpen(false);
 
     if (onContentChange && editorRef.current) {
-      onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
     }
   };
 
@@ -955,7 +937,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       editorRef.current.focus();
     }
     if (onContentChange) {
-      onContentChange(outlineHtml, pageNumber - 1);
+      onContentChange(outlineHtml, pageNumber - 1, 'immediate');
     }
   };
 
@@ -1001,7 +983,62 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   useMathLive(content, editorRef);
 
-  // --- Image Handling ---
+  // Listen for Equation Options dropdown (▼) clicks when this page is active
+  useEffect(() => {
+    if (!isActivePage) {
+      setEquationMenu(null);
+      return;
+    }
+
+    const handleOpenEquationMenu = (e: Event) => {
+      const detail = (e as CustomEvent).detail as {
+        wrapper?: HTMLElement;
+        mathField?: MathFieldEl;
+        rect?: DOMRect;
+      } | undefined;
+      if (!detail?.wrapper || !detail?.mathField || !editorRef.current?.contains(detail.wrapper)) return;
+
+      const menuW = 216;
+      const menuH = 220;
+      const pad = 12;
+      const rect = detail.rect || detail.wrapper.getBoundingClientRect();
+      const x = Math.max(pad, Math.min(rect.left, window.innerWidth - menuW - pad));
+      const y =
+        rect.bottom + 6 + menuH > window.innerHeight - pad
+          ? Math.max(pad, rect.top - menuH - 6)
+          : rect.bottom + 6;
+
+      setEquationMenu({
+        wrapper: detail.wrapper,
+        mathField: detail.mathField,
+        x,
+        y,
+      });
+    };
+
+    const handleDismiss = (e: Event) => {
+      if (e.type === 'keydown' && (e as KeyboardEvent).key !== 'Escape') return;
+      if (
+        e.type === 'mousedown' &&
+        equationMenuRef.current &&
+        equationMenuRef.current.contains(e.target as Node)
+      ) {
+        return;
+      }
+      setEquationMenu(null);
+    };
+
+    window.addEventListener('prodoc:equation-menu', handleOpenEquationMenu);
+    document.addEventListener('mousedown', handleDismiss);
+    window.addEventListener('keydown', handleDismiss);
+    return () => {
+      window.removeEventListener('prodoc:equation-menu', handleOpenEquationMenu);
+      document.removeEventListener('mousedown', handleDismiss);
+      window.removeEventListener('keydown', handleDismiss);
+    };
+  }, [isActivePage]);
+
+  // --- Image & Table Click Handling ---
   const handleEditorClick = (e: React.MouseEvent) => {
     if (selectionMode) handleSmartClick(e);
     const target = e.target as HTMLElement;
@@ -1011,18 +1048,28 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     } else {
       setSelectedImage(null);
     }
-    
-    const table = target.closest('table');
+
+    const table = target.closest('table') as HTMLTableElement | null;
+    const clickedCell = target.closest('td, th') as HTMLTableCellElement | null;
     if (table) {
-      setSelectedTable(table as HTMLTableElement);
+      setSelectedTable(table);
+      if (clickedCell && e.shiftKey && lastSelectedCellRef.current && table.contains(lastSelectedCellRef.current)) {
+        e.preventDefault();
+        selectTableCellsRect(table, lastSelectedCellRef.current, clickedCell);
+      } else if (clickedCell) {
+        clearSelectedCellHighlights(editorRef.current || undefined);
+        lastSelectedCellRef.current = clickedCell;
+      }
     } else {
       setSelectedTable(null);
+      clearSelectedCellHighlights(editorRef.current || undefined);
+      lastSelectedCellRef.current = null;
     }
   };
 
   const handleImageUpdate = () => {
     if (editorRef.current && onContentChange) {
-      onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+      onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
     }
   };
 
@@ -1081,13 +1128,19 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     return found;
   };
 
+  // Clear stale selections on history restore
+  useEffect(() => {
+    setSelectedImage(null);
+    setSelectedTable(null);
+  }, [historyApplySeq]);
+
   // Sync content to editable div
   useLayoutEffect(() => {
     if (editorRef.current) {
       const activeEl = document.activeElement;
       const isMathFieldFocused = activeEl && activeEl.tagName.toLowerCase() === 'math-field' && editorRef.current.contains(activeEl);
       if (isMathFieldFocused) return;
-      if (selectedImage) return;
+      if (selectedImage && editorRef.current.contains(selectedImage)) return;
 
       if (editorRef.current.innerHTML !== content) {
         const isFocused = document.activeElement === editorRef.current || editorRef.current.contains(document.activeElement);
@@ -1109,7 +1162,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         }
       }
     }
-  }, [content, pageNumber, totalPages, selectedImage]);
+  }, [content, pageNumber, totalPages, selectedImage, historyApplySeq]);
 
   // Track selection to update active element type (e.g., for showing Table tabs)
   useEffect(() => {
@@ -1188,23 +1241,20 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   }, [activeFooterContent, pageNumber]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    if (onContentChange) onContentChange(e.currentTarget.innerHTML, pageNumber - 1);
-  };
-
-  const selectCellContent = (cell: HTMLTableCellElement) => {
-    const range = document.createRange();
-    range.selectNodeContents(cell);
-    const sel = window.getSelection();
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-    cell.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const isImmediate = e.currentTarget.dataset.commitImmediate === 'true';
+    if (isImmediate) {
+      delete e.currentTarget.dataset.commitImmediate;
+    }
+    if (onContentChange) {
+      onContentChange(e.currentTarget.innerHTML, pageNumber - 1, isImmediate ? 'immediate' : 'debounced');
+    }
   };
 
   const handleTableNavigation = (e: React.KeyboardEvent): boolean => {
     if (e.key !== 'Tab') return false;
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return false;
-    let node = sel.anchorNode;
+    let node: Node | null = sel.anchorNode;
     let cell: HTMLTableCellElement | null = null;
     while (node && node !== editorRef.current) {
       if (node.nodeName === 'TD' || node.nodeName === 'TH') {
@@ -1215,31 +1265,61 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     }
     if (!cell) return false;
     e.preventDefault();
-    const row = cell.parentElement as HTMLTableRowElement;
-    const table = row.parentElement?.closest('table') as HTMLTableElement;
+    const row = cell.closest('tr') as HTMLTableRowElement | null;
+    const table = row?.closest('table') as HTMLTableElement | null;
     if (!table || !row) return true;
-    const allRows = Array.from(table.rows);
-    const currentRowIndex = allRows.indexOf(row);
-    const cells = Array.from(row.cells);
-    const currentCellIndex = cell.cellIndex;
+
+    clearSelectedCellHighlights(table);
+    const validRows = Array.from(table.rows).filter(
+      (r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0
+    );
+    const currentRowIndex = validRows.indexOf(row);
+    const rowCells = Array.from(row.cells);
+    const currentCellIndex = rowCells.indexOf(cell);
 
     if (!e.shiftKey) {
-      if (currentCellIndex < cells.length - 1) selectCellContent(cells[currentCellIndex + 1]);
-      else if (currentRowIndex < allRows.length - 1) {
-        const nextRow = allRows[currentRowIndex + 1];
-        if (nextRow.cells.length > 0) selectCellContent(nextRow.cells[0]);
+      if (currentCellIndex >= 0 && currentCellIndex < rowCells.length - 1) {
+        focusTableCellLikeWord(rowCells[currentCellIndex + 1]);
+      } else if (currentRowIndex >= 0 && currentRowIndex < validRows.length - 1) {
+        const nextRow = validRows[currentRowIndex + 1];
+        if (nextRow.cells.length > 0) focusTableCellLikeWord(nextRow.cells[0]);
+      } else if (table.getAttribute('data-split-bottom') === 'true' && pageNumber < totalPages) {
+        const nextEditor = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
+        const contTable = nextEditor?.querySelector('table[data-continuation="true"]') as HTMLTableElement | null;
+        const contRows = contTable
+          ? Array.from(contTable.rows).filter((r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0)
+          : [];
+        if (contRows.length > 0 && contRows[0].cells.length > 0) {
+          nextEditor?.focus();
+          focusTableCellLikeWord(contRows[0].cells[0]);
+        }
       } else {
-        const newRow = row.cloneNode(true) as HTMLTableRowElement;
-        Array.from(newRow.cells).forEach((c) => (c.innerHTML = '<br>'));
-        row.parentElement?.appendChild(newRow);
-        selectCellContent(newRow.cells[0]);
-        if (onContentChange && editorRef.current) onContentChange(editorRef.current.innerHTML, pageNumber - 1);
+        const newRow = insertTableRow(table, cell, 'below');
+        if (newRow?.cells[0]) {
+          focusTableCellLikeWord(newRow.cells[0]);
+        }
+        if (onContentChange && editorRef.current) {
+          onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+        }
       }
     } else {
-      if (currentCellIndex > 0) selectCellContent(cells[currentCellIndex - 1]);
-      else if (currentRowIndex > 0) {
-        const prevRow = allRows[currentRowIndex - 1];
-        if (prevRow.cells.length > 0) selectCellContent(prevRow.cells[prevRow.cells.length - 1]);
+      if (currentCellIndex > 0) {
+        focusTableCellLikeWord(rowCells[currentCellIndex - 1]);
+      } else if (currentRowIndex > 0) {
+        const prevRow = validRows[currentRowIndex - 1];
+        if (prevRow.cells.length > 0) focusTableCellLikeWord(prevRow.cells[prevRow.cells.length - 1]);
+      } else if (table.getAttribute('data-continuation') === 'true' && pageNumber > 1) {
+        const prevEditor = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
+        const prevTables = prevEditor ? Array.from(prevEditor.querySelectorAll('table[data-split-bottom="true"]')) as HTMLTableElement[] : [];
+        const splitTop = prevTables[prevTables.length - 1];
+        const prevRows = splitTop
+          ? Array.from(splitTop.rows).filter((r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0)
+          : [];
+        const lastPrevRow = prevRows[prevRows.length - 1];
+        if (lastPrevRow && lastPrevRow.cells.length > 0) {
+          prevEditor?.focus();
+          focusTableCellLikeWord(lastPrevRow.cells[lastPrevRow.cells.length - 1]);
+        }
       }
     }
     return true;
@@ -1277,7 +1357,62 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     if (!selection || !selection.rangeCount || !editorRef.current) return;
     const range = selection.getRangeAt(0);
 
+    // Clear selected table cell contents on Backspace/Delete without removing table structure
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      const anchorEl =
+        range.anchorContainer instanceof Element
+          ? range.anchorContainer
+          : range.anchorContainer?.parentElement;
+      const activeTable =
+        (anchorEl?.closest('table') as HTMLTableElement | null) ||
+        (editorRef.current.querySelector('table:has(.selectedCell)') as HTMLTableElement | null);
+      if (activeTable) {
+        const selectedCells = getSelectedTableCells(activeTable);
+        if (selectedCells.length > 1) {
+          e.preventDefault();
+          selectedCells.forEach((c) => {
+            c.innerHTML = '<br>';
+          });
+          clearSelectedCellHighlights(activeTable);
+          focusTableCellLikeWord(selectedCells[0], false);
+          if (onContentChange) {
+            onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+          }
+          return;
+        }
+      }
+    }
+
     if (e.key === 'ArrowDown') {
+      const anchorEl =
+        range.anchorContainer instanceof Element
+          ? range.anchorContainer
+          : range.anchorContainer?.parentElement;
+      const currentCell = anchorEl?.closest('td, th') as HTMLTableCellElement | null;
+      const currentTable = currentCell?.closest('table') as HTMLTableElement | null;
+      const currentRow = currentCell?.closest('tr') as HTMLTableRowElement | null;
+
+      if (currentTable && currentRow && !currentTable.nextElementSibling && editorRef.current.contains(currentTable)) {
+        const validRows = Array.from(currentTable.rows).filter(
+          (r) => r.getAttribute('data-repeated-header-row') !== 'true'
+        );
+        if (validRows[validRows.length - 1] === currentRow && pageNumber === totalPages) {
+          e.preventDefault();
+          const p = document.createElement('p');
+          p.innerHTML = '<br>';
+          currentTable.after(p);
+          const nextRange = document.createRange();
+          nextRange.setStart(p, 0);
+          nextRange.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(nextRange);
+          if (onContentChange) {
+            onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+          }
+          return;
+        }
+      }
+
       const editorRect = editorRef.current.getBoundingClientRect();
       const rangeRect = range.getBoundingClientRect();
       const cursorBottom = rangeRect.bottom !== 0 ? rangeRect.bottom : editorRect.bottom;
@@ -1436,6 +1571,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     if (superLongPressTimerRef.current) clearTimeout(superLongPressTimerRef.current);
     pointerStartRef.current = null;
+  };
+
+  const handleEditorPointerUp = () => {
+    handleSmartPointerUp();
+    if (formatPainterStyles) {
+      applyFormatPainterToSelection();
+    }
   };
 
   const handleSmartClick = (e: React.MouseEvent) => {
@@ -1604,8 +1746,114 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const isBodyEditable = !readOnly && !isKeyboardLocked && !isGestureLocked && !selectionMode; 
   const isHeaderFooterEditable = isHeaderFooterMode && !readOnly && !isKeyboardLocked && !isGestureLocked && !selectionMode;
   let cursorStyle = 'cursor-text';
-  if (selectionMode) cursorStyle = 'cursor-crosshair';
+  if (selectionMode || formatPainterStyles) cursorStyle = 'cursor-crosshair';
   else if (isKeyboardLocked || isGestureLocked) cursorStyle = 'cursor-default';
+
+  const columnCount = config.columns || 1;
+  const bodyHeightIn = Math.max(1, heightIn - margins.top - margins.bottom);
+
+  const [lineNumberRows, setLineNumberRows] = useState<{ topPx: number; num: number; visible: boolean }[]>([]);
+  const lineNumbersEnabled = Boolean(config.lineNumbers?.enabled);
+  const lineStartAt = Math.max(1, config.lineNumbers?.startAt ?? 1);
+  const lineCountBy = Math.max(1, config.lineNumbers?.countBy ?? 1);
+  const lineRestartEachPage = config.lineNumbers?.restartEachPage ?? true;
+
+  useLayoutEffect(() => {
+    if (!lineNumbersEnabled || !editorRef.current) {
+      setLineNumberRows([]);
+      return;
+    }
+    const ed = editorRef.current;
+    const edRect = ed.getBoundingClientRect();
+    const safeScale = scale || 1;
+    const startNumber = lineRestartEachPage
+      ? lineStartAt
+      : lineStartAt + (pageNumber - 1) * 40;
+
+    const rows: { topPx: number; num: number; visible: boolean }[] = [];
+    const blocks = Array.from(
+      ed.querySelectorAll<HTMLElement>('p, h1, h2, h3, h4, h5, h6, li, blockquote, pre')
+    );
+
+    let lineIdx = 0;
+    const pushLine = (screenTop: number) => {
+      const topPx = (screenTop - edRect.top) / safeScale;
+      const num = startNumber + lineIdx;
+      rows.push({
+        topPx,
+        num,
+        visible: lineIdx % lineCountBy === 0,
+      });
+      lineIdx++;
+    };
+
+    for (const block of blocks) {
+      if (
+        block.classList.contains('prodoc-page-break') ||
+        block.classList.contains('prodoc-column-break') ||
+        block.classList.contains('prodoc-section-break')
+      ) {
+        continue;
+      }
+      const bRect = block.getBoundingClientRect();
+      if (bRect.height <= 0) continue;
+
+      let lineTops: number[] = [];
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(block);
+        const rects = Array.from(range.getClientRects()).filter((r) => r.height > 2 && r.width > 0.5);
+        for (const r of rects) {
+          const lastTop = lineTops[lineTops.length - 1];
+          if (lastTop === undefined || Math.abs(r.top - lastTop) > 4 * safeScale) {
+            lineTops.push(r.top);
+          }
+        }
+      } catch {
+        lineTops = [];
+      }
+
+      if (lineTops.length === 0) {
+        pushLine(bRect.top);
+      } else {
+        for (const t of lineTops) {
+          pushLine(t);
+        }
+      }
+    }
+
+    setLineNumberRows(rows);
+  }, [
+    lineNumbersEnabled,
+    lineStartAt,
+    lineCountBy,
+    lineRestartEachPage,
+    pageNumber,
+    content,
+    scale,
+    margins.left,
+    margins.right,
+    margins.top,
+    margins.bottom,
+    columnCount,
+    config.size,
+    config.orientation,
+  ]);
+
+  const pageBorder = config.pageBorder;
+  const hasPageBorder = Boolean(pageBorder && pageBorder.style !== 'none');
+  const pageBorderSides = pageBorder?.sides || { top: true, right: true, bottom: true, left: true };
+  const pageBorderMarginPt = pageBorder?.marginPt ?? 24;
+  const pageBorderWidthPt =
+    pageBorder?.lineStyle === 'double'
+      ? Math.max(3, pageBorder?.widthPt || 1)
+      : Math.max(0.5, pageBorder?.widthPt || 1);
+  const pageBorderLineStyle = pageBorder?.lineStyle || 'solid';
+  const pageBorderColor = pageBorder?.color || '#1e293b';
+  const lineNumberDistIn = Math.min(
+    config.lineNumbers?.distanceFromText ?? 0.25,
+    Math.max(0.1, margins.left - 0.15)
+  );
 
 
   return (
@@ -1680,6 +1928,54 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           </div>
         )}
 
+        {hasPageBorder && (
+          <div
+            className="prodoc-page-border-frame pointer-events-none absolute z-20"
+            style={{
+              top: `${pageBorderMarginPt}pt`,
+              right: `${pageBorderMarginPt}pt`,
+              bottom: `${pageBorderMarginPt}pt`,
+              left: `${pageBorderMarginPt}pt`,
+              borderTop: pageBorderSides.top ? `${pageBorderWidthPt}pt ${pageBorderLineStyle} ${pageBorderColor}` : 'none',
+              borderRight: pageBorderSides.right ? `${pageBorderWidthPt}pt ${pageBorderLineStyle} ${pageBorderColor}` : 'none',
+              borderBottom: pageBorderSides.bottom ? `${pageBorderWidthPt}pt ${pageBorderLineStyle} ${pageBorderColor}` : 'none',
+              borderLeft: pageBorderSides.left ? `${pageBorderWidthPt}pt ${pageBorderLineStyle} ${pageBorderColor}` : 'none',
+              boxShadow:
+                pageBorder?.style === 'shadow'
+                  ? `3pt 3pt 0 0 ${pageBorderColor}55`
+                  : pageBorder?.style === '3d'
+                  ? 'inset 1.5pt 1.5pt 0 rgba(255,255,255,0.65), inset -1.5pt -1.5pt 0 rgba(15,23,42,0.28)'
+                  : undefined,
+            }}
+          />
+        )}
+
+        {lineNumbersEnabled && lineNumberRows.length > 0 && (
+          <div
+            className="prodoc-line-numbers pointer-events-none select-none absolute z-20"
+            style={{
+              top: `${margins.top}in`,
+              left: 0,
+              width: `calc(${margins.left}in - ${lineNumberDistIn}in)`,
+              height: `${bodyHeightIn}in`,
+            }}
+            aria-hidden="true"
+          >
+            {lineNumberRows.map(
+              (row) =>
+                row.visible && (
+                  <span
+                    key={row.num}
+                    className="absolute right-0 text-[8.5pt] leading-none font-mono text-slate-400 dark:text-slate-500"
+                    style={{ top: `${row.topPx + 2}px` }}
+                  >
+                    {row.num}
+                  </span>
+                )
+            )}
+          </div>
+        )}
+
         {/* Body */}
         <div 
           className={`relative w-full h-full overflow-clip transition-opacity duration-300 ${isHeaderFooterMode ? 'opacity-60 cursor-pointer' : 'opacity-100'}`}
@@ -1719,7 +2015,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             onContextMenu={handleContextMenu}
             onPointerDown={handleSmartPointerDown}
             onPointerMove={handleSmartPointerMove}
-            onPointerUp={handleSmartPointerUp}
+            onPointerUp={handleEditorPointerUp}
             onPointerCancel={handleSmartPointerUp}
             suppressContentEditableWarning={true}
             style={{ 
@@ -1728,8 +2024,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               lineHeight: '1.35',
               color: config.pageColor ? '#000000' : defaultPaperInk, 
               flex: config.verticalAlign === 'justify' ? '1 1 auto' : undefined, 
-              minHeight: '100%',
-              columnCount: config.columns || 1,
+              minHeight: columnCount > 1 ? undefined : '100%',
+              height: columnCount > 1 ? `${bodyHeightIn}in` : undefined,
+              maxHeight: columnCount > 1 ? `${bodyHeightIn}in` : undefined,
+              columnCount,
               columnGap: `${config.columnGap || 0.5}in`,
               columnFill: 'auto',
               hyphens: config.hyphenation ? 'auto' : 'none',
@@ -1932,6 +2230,107 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             onClose={() => setIsSortModalOpen(false)}
             onApply={applySortColumn}
           />
+
+          {/* Floating Equation Options Popover (triggered by ▼ handle) */}
+          {equationMenu && createPortal(
+            <div
+              ref={equationMenuRef}
+              className="fixed z-[9999] w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1.5 text-xs text-slate-700 dark:text-slate-200 print:hidden"
+              style={{ left: equationMenu.x, top: equationMenu.y }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Equation Options
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const isBlock = equationMenu.wrapper.getAttribute('data-display') === 'block';
+                  equationMenu.wrapper.setAttribute('data-display', isBlock ? 'inline' : 'block');
+                  if (onContentChange && editorRef.current) {
+                    onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+                  }
+                  setEquationMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-between transition-colors"
+              >
+                <span>
+                  {equationMenu.wrapper.getAttribute('data-display') === 'block'
+                    ? 'Change to Inline'
+                    : 'Change to Display'}
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {equationMenu.wrapper.getAttribute('data-display') === 'block' ? 'Inline' : 'Block'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                  navigator.clipboard?.writeText(raw).catch(() => {});
+                  setEquationMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+              >
+                Copy LaTeX Source
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                  navigator.clipboard?.writeText(latexToLinearUnicode(raw)).catch(() => {});
+                  setEquationMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+              >
+                Copy Linear Text
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                  const span = document.createElement('span');
+                  span.textContent = latexToLinearUnicode(raw);
+                  equationMenu.wrapper.replaceWith(span);
+                  setLastActiveMathField(null);
+                  if (onContentChange && editorRef.current) {
+                    onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+                  }
+                  setEquationMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+              >
+                Convert to Linear Text
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'equation' }));
+                  equationMenu.mathField.focus();
+                  setEquationMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+              >
+                Equation Tools Tab
+              </button>
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              <button
+                type="button"
+                onClick={() => {
+                  equationMenu.wrapper.remove();
+                  setLastActiveMathField(null);
+                  if (onContentChange && editorRef.current) {
+                    onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+                  }
+                  setEquationMenu(null);
+                }}
+                className="w-full text-left px-3 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+              >
+                Delete Equation
+              </button>
+            </div>,
+            document.body
+          )}
         </>
       )}
     </div>
@@ -1941,10 +2340,12 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
   return (
     prev.isActivePage === next.isActivePage &&
+    prev.historyApplySeq === next.historyApplySeq &&
     prev.content === next.content &&
     prev.pageNumber === next.pageNumber &&
     prev.totalPages === next.totalPages &&
     prev.zoom === next.zoom &&
+    prev.calibrationScale === next.calibrationScale &&
     prev.readOnly === next.readOnly &&
     prev.showFormattingMarks === next.showFormattingMarks &&
     prev.activeEditingArea === next.activeEditingArea &&
@@ -1954,10 +2355,14 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
     prev.firstFooterContent === next.firstFooterContent &&
     prev.config.size === next.config.size &&
     prev.config.orientation === next.config.orientation &&
+    prev.config.customWidth === next.config.customWidth &&
+    prev.config.customHeight === next.config.customHeight &&
+    prev.config.verticalAlign === next.config.verticalAlign &&
     prev.config.margins.top === next.config.margins.top &&
     prev.config.margins.bottom === next.config.margins.bottom &&
     prev.config.margins.left === next.config.margins.left &&
     prev.config.margins.right === next.config.margins.right &&
+    prev.config.margins.gutter === next.config.margins.gutter &&
     prev.config.differentFirstPage === next.config.differentFirstPage &&
     prev.config.headerDistance === next.config.headerDistance &&
     prev.config.footerDistance === next.config.footerDistance &&
@@ -1966,7 +2371,9 @@ const arePropsEqual = (prev: EditorPageProps, next: EditorPageProps) => {
     prev.config.background === next.config.background &&
     prev.config.columns === next.config.columns &&
     prev.config.columnGap === next.config.columnGap &&
-    prev.config.hyphenation === next.config.hyphenation
+    prev.config.hyphenation === next.config.hyphenation &&
+    JSON.stringify(prev.config.lineNumbers) === JSON.stringify(next.config.lineNumbers) &&
+    JSON.stringify(prev.config.pageBorder) === JSON.stringify(next.config.pageBorder)
   );
 };
 

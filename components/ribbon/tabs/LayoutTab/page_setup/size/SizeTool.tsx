@@ -9,12 +9,12 @@ import { PageSize, PageConfig } from '../../../../../../types';
 import { PAPER_FORMATS } from '../../../../../../constants';
 
 export const SizeTool: React.FC = () => {
-  const { pageConfig, setPageConfig, setShowPageSetup } = useEditor();
+  const { pageConfig, setPageConfig, openPageSetup } = useEditor();
   const { activeMenu, menuPos, closeMenu } = useLayoutTab();
   const menuId = 'size';
 
   const handleSizeChange = (size: PageSize) => {
-      setPageConfig(prev => ({ ...prev, size }));
+      setPageConfig(prev => ({ ...prev, size, customWidth: undefined, customHeight: undefined }));
       closeMenu();
   };
 
@@ -63,7 +63,7 @@ export const SizeTool: React.FC = () => {
                              <Icon size={18} className={`flex-shrink-0 ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : `text-slate-400 group-hover:${iconColor}`}`} strokeWidth={1.75} />
                              <div className="flex-1 min-w-0">
                                  <div className={`font-semibold text-xs truncate ${isSelected ? 'text-indigo-950 dark:text-indigo-100' : 'text-slate-800 dark:text-slate-200'}`}>{item.label}</div>
-                                 <div className={`text-[10px] ${isSelected ? 'text-indigo-600/80 dark:text-indigo-300/80' : 'text-slate-400 dark:text-slate-500'}`}>{item.width} x {item.height}</div>
+                                 <div className={`text-[10px] ${isSelected ? 'text-indigo-600/80 dark:text-indigo-300/80' : 'text-slate-400 dark:text-slate-500'}`}>{item.width} × {item.height}</div>
                              </div>
                              {isSelected && (
                                  <div className="w-5 h-5 rounded-full bg-indigo-600 dark:bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-xs ml-2 animate-in zoom-in-75">
@@ -76,7 +76,7 @@ export const SizeTool: React.FC = () => {
                  <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                  <button 
                     className="w-full text-left px-3.5 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-200 rounded-xl transition-all active:scale-[0.99]"
-                    onClick={() => { closeMenu(); setShowPageSetup(true); }}
+                    onClick={() => { closeMenu(); openPageSetup('paper'); }}
                     onMouseDown={(e) => e.preventDefault()}
                  >
                     More Paper Sizes...

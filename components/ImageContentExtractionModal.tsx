@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FileText, Table as TableIcon, AlignLeft, Sparkles, X, Check, 
   Upload, Globe, RefreshCw, AlertCircle, Copy
@@ -98,12 +99,21 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="bg-[#ffffff] dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100">
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200 overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+      data-modal-backdrop="true"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#ffffff] dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Header */}
-        <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-200/60 dark:border-indigo-800/60">
               <Sparkles size={18} />
@@ -129,7 +139,7 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-6">
           {/* Source Selector Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -294,7 +304,7 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
           <button
             type="button"
             onClick={onClose}
@@ -314,6 +324,7 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -7,13 +7,13 @@ import { DropdownRibbonButton } from '../common/DesignTools';
 import { MenuPortal } from '../../../common/MenuPortal';
 
 export const ThemesTool: React.FC = () => {
-  const { executeCommand } = useEditor();
+  const { executeCommand, showToast } = useEditor();
   const { activeMenu, menuPos, closeMenu } = useDesignTab();
   const menuId = 'themes';
 
   const applyTheme = (fontHead: string, fontBody: string) => {
       executeCommand('fontName', fontBody);
-      alert(`Applied Theme: ${fontHead} / ${fontBody}`);
+      showToast(`Applied Theme: ${fontHead} / ${fontBody}`, 'success');
       closeMenu();
   };
 

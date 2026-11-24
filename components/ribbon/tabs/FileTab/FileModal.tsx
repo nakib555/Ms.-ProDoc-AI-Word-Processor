@@ -1,5 +1,6 @@
 
 import React, { Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useFileTab } from './FileTabContext';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -51,8 +52,14 @@ export const FileModal: React.FC = () => {
 
   const isPrint = activeModal === 'print' || activeModal === 'save_as';
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 no-print" onClick={closeModal}>
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 no-print overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+      data-modal-backdrop="true"
+      onClick={closeModal}
+    >
       <div 
          className={`
              bg-white dark:bg-slate-900 w-full rounded-2xl sm:rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-white/20 overflow-hidden
@@ -73,10 +80,11 @@ export const FileModal: React.FC = () => {
         )}
         
         {/* Modal Content */}
-        <div className={`overflow-y-auto bg-[#f8fafc] dark:bg-slate-950 scrollbar-thin scrollbar-thumb-slate-200 flex-1 ${isPrint ? 'p-0 overflow-hidden' : 'p-4 md:p-6 lg:p-8'}`}>
+        <div className={`min-h-0 bg-[#f8fafc] dark:bg-slate-950 scrollbar-thin scrollbar-thumb-slate-200 flex-1 ${isPrint ? 'p-0 overflow-hidden flex flex-col' : 'overflow-y-auto overscroll-contain p-4 md:p-6 lg:p-8'}`}>
            {renderModalContent()}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

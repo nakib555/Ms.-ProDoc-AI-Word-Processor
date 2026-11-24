@@ -81,7 +81,43 @@ export class PaginationLoop {
         continue;
       }
 
-      // 2. Handle Explicit Page Breaks (consume cleanly without embedding into next page)
+      // 2. Handle Explicit Column Breaks
+      const isExplicitColumnBreak = node.classList?.contains('prodoc-column-break') ||
+                                    node.getAttribute('data-type') === 'column-break';
+      if (isExplicitColumnBreak) {
+        const cols = session.pageConfig.columns || 1;
+        const colHeight = Math.max(1, session.pageFrame.bodyHeight);
+        if (cols <= 1) {
+          if (builder.getCurrentNodes().length > 0) {
+            builder.finishPage();
+            session.currentPageIndex++;
+            session.currentHeight = 0;
+          } else if (builder.getPages().length === 0) {
+            builder.forcePage('<p><br/></p>');
+          }
+          lastWasBreak = true;
+          continue;
+        }
+        const currentCol = Math.floor(session.currentHeight / colHeight);
+        if (currentCol + 1 < cols) {
+          builder.append(node);
+          session.currentHeight = (currentCol + 1) * colHeight;
+          lastWasBreak = true;
+          continue;
+        } else {
+          if (builder.getCurrentNodes().length > 0) {
+            builder.finishPage();
+            session.currentPageIndex++;
+            session.currentHeight = 0;
+          } else if (builder.getPages().length === 0) {
+            builder.forcePage('<p><br/></p>');
+          }
+          lastWasBreak = true;
+          continue;
+        }
+      }
+
+      // 3. Handle Explicit Page Breaks (consume cleanly without embedding into next page)
       const isExplicitPageBreak = node.classList?.contains('prodoc-page-break') || 
                                   node.getAttribute('data-type') === 'page-break' || 
                                   node.style?.pageBreakAfter === 'always' || 

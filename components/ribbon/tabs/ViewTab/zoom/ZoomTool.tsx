@@ -5,20 +5,20 @@ import { RibbonButton } from '../../../common/RibbonButton';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const ZoomTool: React.FC = () => {
-    const { zoom, zoomMode, setZoomMode } = useEditor();
-    
-    const handleZoomClick = () => {
-        if (zoomMode === 'custom') setZoomMode('fit-width');
-        else if (zoomMode === 'fit-width') setZoomMode('fit-page');
-        else setZoomMode('custom');
+    const { zoom, setZoomLayout, setPageMovement, executeCommand } = useEditor();
+
+    const handleAutoFit = () => {
+        setPageMovement('vertical');
+        setZoomLayout('single');
+        executeCommand('fitWidth');
     };
 
     return (
         <RibbonButton 
             icon={Search} 
             label={`${Number(zoom).toFixed(0)}%`} 
-            title="Cycle Zoom Mode"
-            onClick={handleZoomClick} 
+            title="Auto-fit zoom to screen"
+            onClick={handleAutoFit} 
         />
     );
 };

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, Replace, ArrowRight, ChevronRight, SearchX } from 'lucide-react';
+import { useEditor } from '../../../../../contexts/EditorContext';
 
 interface FindReplaceDialogProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
   editorRef,
   initialMode = 'find'
 }) => {
+  const { content, setContent, totalPages } = useEditor();
   const [mode, setMode] = useState<'find' | 'replace'>(initialMode);
   const [findText, setFindText] = useState('');
   const [replaceText, setReplaceText] = useState('');
@@ -49,56 +51,74 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
     }
   }, [initialMode, isOpen]);
 
-  // Helper to get all matches in the editor
-  const getAllMatches = useCallback(() => {
-    if (!editorRef.current || !findText) return [];
-
+  const buildRegex = useCallback((): RegExp | null => {
+    if (!findText) return null;
     const flags = matchCase ? 'g' : 'gi';
     let patternSource = findText;
-
     if (!useRegex) {
-      // Escape regex chars
       patternSource = patternSource.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
     if (wholeWord && !useRegex) {
       patternSource = `\\b${patternSource}\\b`;
     }
-
-    let regex;
     try {
-      regex = new RegExp(patternSource, flags);
+      return new RegExp(patternSource, flags);
     } catch (_e) {
       setMessage('Invalid Regex');
-      return [];
+      return null;
     }
+  }, [findText, matchCase, wholeWord, useRegex]);
 
-    const walker = document.createTreeWalker(
-      editorRef.current,
-      NodeFilter.SHOW_TEXT,
-      null
-    );
+  const getEditorContainers = useCallback((): HTMLElement[] => {
+    const all = Array.from(document.querySelectorAll<HTMLElement>('[id^="prodoc-editor-"]'));
+    if (all.length > 0) {
+      all.sort((a, b) => {
+        const numA = parseInt(a.id.replace('prodoc-editor-', ''), 10) || 0;
+        const numB = parseInt(b.id.replace('prodoc-editor-', ''), 10) || 0;
+        return numA - numB;
+      });
+      return all;
+    }
+    return editorRef.current ? [editorRef.current] : [];
+  }, [editorRef]);
 
-    const matches: { node: Node; start: number; end: number }[] = [];
-    let currentNode: Node | null;
+  // Helper to get all matches across all mounted document pages
+  const getAllMatches = useCallback(() => {
+    const containers = getEditorContainers();
+    if (containers.length === 0 || !findText) return [];
 
-    while ((currentNode = walker.nextNode())) {
-      const text = currentNode.textContent || '';
-      let match;
-      regex.lastIndex = 0; // Reset for safety
-      while ((match = regex.exec(text)) !== null) {
-        matches.push({
-          node: currentNode,
-          start: match.index,
-          end: match.index + match[0].length,
-        });
-        // Prevent infinite loop with zero-length matches
-        if (match.index === regex.lastIndex) {
+    const regex = buildRegex();
+    if (!regex) return [];
+
+    const matches: { node: Node; start: number; end: number; container: HTMLElement }[] = [];
+
+    for (const container of containers) {
+      const walker = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+
+      let currentNode: Node | null;
+      while ((currentNode = walker.nextNode())) {
+        const text = currentNode.textContent || '';
+        let match;
+        regex.lastIndex = 0;
+        while ((match = regex.exec(text)) !== null) {
+          matches.push({
+            node: currentNode,
+            start: match.index,
+            end: match.index + match[0].length,
+            container,
+          });
+          if (match.index === regex.lastIndex) {
             regex.lastIndex++;
+          }
         }
       }
     }
     return matches;
-  }, [editorRef, findText, matchCase, wholeWord, useRegex]);
+  }, [getEditorContainers, findText, buildRegex]);
 
   const findNext = () => {
     const matches = getAllMatches();
@@ -106,79 +126,109 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
       setMessage('No matches found.');
       return;
     }
-    setMessage('');
 
     const selection = window.getSelection();
     let nextMatch = matches[0];
+    let nextIndex = 0;
 
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
-      // Find the first match that starts after the current selection end
-      // We iterate matches (which are in document order)
-      for (const m of matches) {
-        // Compare node positions
+      for (let idx = 0; idx < matches.length; idx++) {
+        const m = matches[idx];
         const pos = range.endContainer.compareDocumentPosition(m.node);
-        
+
         if (pos & Node.DOCUMENT_POSITION_FOLLOWING) {
-             // m.node comes after range.endContainer
-             nextMatch = m;
-             break;
-        } else if (range.endContainer === m.node) {
-             // Same node, check offset
-             if (m.start >= range.endOffset) {
-                 nextMatch = m;
-                 break;
-             }
+          nextMatch = m;
+          nextIndex = idx;
+          break;
+        } else if (range.endContainer === m.node && m.start >= range.endOffset) {
+          nextMatch = m;
+          nextIndex = idx;
+          break;
         }
       }
     }
 
-    // Select the match
     const newRange = document.createRange();
     newRange.setStart(nextMatch.node, nextMatch.start);
     newRange.setEnd(nextMatch.node, nextMatch.end);
     selection?.removeAllRanges();
     selection?.addRange(newRange);
-    
-    // Scroll into view
+
     if (nextMatch.node.parentElement) {
-        nextMatch.node.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      nextMatch.node.parentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+    setMessage(`Match ${nextIndex + 1} of ${matches.length}`);
   };
 
   const replaceCurrent = () => {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-        findNext();
-        return;
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+      findNext();
+      return;
     }
 
-    // In a real app, we would verify the selection matches the query strictly.
-    // Here we assume the user just clicked Find Next or has valid selection.
-    if (!selection.isCollapsed) {
-        document.execCommand('insertText', false, replaceText);
+    const anchorNode = selection.anchorNode;
+    const container = anchorNode
+      ? (anchorNode instanceof HTMLElement ? anchorNode : anchorNode.parentElement)?.closest('.prodoc-editor') as HTMLElement | null
+      : null;
+
+    if (container) {
+      container.dataset.commitImmediate = 'true';
     }
+    document.execCommand('insertText', false, replaceText);
     findNext();
   };
 
   const replaceAll = () => {
+    const regex = buildRegex();
+    if (!regex) return;
+
+    const containers = getEditorContainers();
+
+    // If virtualized pages exist beyond mounted containers, update full content HTML safely via DOMParser
+    if (totalPages > containers.length && content) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null);
       let count = 0;
-      // Limit to prevent infinite loops or browser hang
-      for(let i=0; i<1000; i++) {
-          const matches = getAllMatches();
-          if (matches.length === 0) break;
-          
-          const m = matches[0]; // Always take first match in document order
-          
-          // Manual DOM manipulation to replace text
-          const text = m.node.textContent || '';
-          const before = text.slice(0, m.start);
-          const after = text.slice(m.end);
-          m.node.textContent = before + replaceText + after;
-          
-          count++;
+      let node: Node | null;
+      while ((node = walker.nextNode())) {
+        const text = node.textContent || '';
+        const localMatches = text.match(regex);
+        if (localMatches && localMatches.length > 0) {
+          count += localMatches.length;
+          node.textContent = text.replace(regex, replaceText);
+        }
       }
-      setMessage(`Replaced ${count} occurrences.`);
+      if (count > 0) {
+        setContent(doc.body.innerHTML, true, { historyMode: 'immediate' });
+      }
+      setMessage(`Replaced ${count} occurrence${count === 1 ? '' : 's'}.`);
+      return;
+    }
+
+    let count = 0;
+    const modifiedContainers = new Set<HTMLElement>();
+
+    for (let i = 0; i < 1000; i++) {
+      const matches = getAllMatches();
+      if (matches.length === 0) break;
+
+      const m = matches[0];
+      const text = m.node.textContent || '';
+      const before = text.slice(0, m.start);
+      const after = text.slice(m.end);
+      m.node.textContent = before + replaceText + after;
+      modifiedContainers.add(m.container);
+      count++;
+    }
+
+    modifiedContainers.forEach((container) => {
+      container.dataset.commitImmediate = 'true';
+      container.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    setMessage(`Replaced ${count} occurrence${count === 1 ? '' : 's'}.`);
   };
 
   if (!isOpen) return null;

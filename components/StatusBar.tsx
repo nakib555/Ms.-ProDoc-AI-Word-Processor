@@ -1,13 +1,11 @@
 
-import React, { useRef, useEffect, useState, useMemo, useCallback, Suspense } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText, Droplets } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useGestureContext } from '../contexts/GestureContext';
-import { getDocumentStats } from '../utils/textUtils';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
-
-const WordCountDialog = React.lazy(() => import('./WordCountDialog').then(m => ({ default: m.WordCountDialog })));
+import { isAnyModalOpen, isEventInsideModal } from '../utils/modalScroll';
 
 interface StatusBarProps {
   position?: 'top' | 'bottom';
@@ -15,11 +13,30 @@ interface StatusBarProps {
 
 const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
-  const { wordCount, zoom, viewMode, setViewMode, content, currentPage, setCurrentPage, goToPage, totalPages, setZoom, isKeyboardLocked, setIsKeyboardLocked, isTableResizerEnabled, setIsTableResizerEnabled, selectionMode, setSelectionMode, zoomMode, setZoomMode } = useEditor();
+  const {
+    wordCount,
+    zoom,
+    viewMode,
+    setViewMode,
+    currentPage,
+    goToPage,
+    totalPages,
+    setZoom,
+    isKeyboardLocked,
+    setIsKeyboardLocked,
+    isTableResizerEnabled,
+    setIsTableResizerEnabled,
+    selectionMode,
+    setSelectionMode,
+    zoomMode,
+    setZoomMode,
+    setZoomLayout,
+    setPageMovement,
+    setShowWordCountDialog,
+  } = useEditor();
   const { theme, toggleTheme } = useTheme();
   const { setHudZoom, triggerGestureLock } = useGestureContext();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
-  const [showWordCountDialog, setShowWordCountDialog] = useState(false);
   const [showMobileTools, setShowMobileTools] = useState(false);
   const [showJumpDialog, setShowJumpDialog] = useState(false);
   const [jumpPageInput, setJumpPageInput] = useState('');
@@ -34,34 +51,28 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     }
   };
 
-  const detailedStats = useMemo(() => {
-      if (!showWordCountDialog) return null;
-      return getDocumentStats(content);
-  }, [content, showWordCountDialog]);
-
-  // Double-tap / double-click zoom toggle solely on the zoom bar
-  const lastZoomBarTapRef = useRef<number>(0);
-  const handleZoomBarReset = useCallback((e?: React.SyntheticEvent) => {
+  // Double-tap / double-click zoom number to auto-fit page to screen
+  const lastZoomTapRef = useRef<number>(0);
+  const handleZoomAutoFit = useCallback((e?: React.SyntheticEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     triggerGestureLock(350);
-    setZoomMode('custom');
-    const next = zoom === 100 ? 150 : 100;
-    setZoom(next);
-    setHudZoom(next);
-  }, [triggerGestureLock, setZoomMode, setZoom, setHudZoom, zoom]);
+    setPageMovement?.('vertical');
+    setZoomLayout?.('single');
+    setZoomMode('fit-width');
+  }, [triggerGestureLock, setPageMovement, setZoomLayout, setZoomMode]);
 
-  const handleZoomBarTouchEnd = useCallback((e: React.TouchEvent) => {
+  const handleZoomTouchEnd = useCallback((e: React.TouchEvent) => {
     const now = Date.now();
-    if (now - lastZoomBarTapRef.current < 320) {
-      handleZoomBarReset(e);
-      lastZoomBarTapRef.current = 0;
+    if (now - lastZoomTapRef.current < 320) {
+      handleZoomAutoFit(e);
+      lastZoomTapRef.current = 0;
     } else {
-      lastZoomBarTapRef.current = now;
+      lastZoomTapRef.current = now;
     }
-  }, [handleZoomBarReset]);
+  }, [handleZoomAutoFit]);
 
 
   useEffect(() => {
@@ -69,6 +80,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     if (!el) return;
 
     const handleWheel = (e: WheelEvent) => {
+      if (isEventInsideModal(e.target) || isAnyModalOpen()) return;
       e.preventDefault();
       triggerGestureLock(350);
       if (zoomMode !== 'custom') setZoomMode('custom');
@@ -120,7 +132,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             <div 
                 className="flex items-center gap-1.5 hover:bg-slate-200/80 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer transition-all px-2 py-0.5 rounded active:bg-slate-300 dark:active:bg-slate-700 whitespace-nowrap" 
                 title="Click for detailed statistics"
-                onClick={() => setShowWordCountDialog(true)}
+                onClick={() => setShowWordCountDialog?.(true)}
             >
                 <Type size={14} className="shrink-0" />
                 <span className="hidden sm:inline">{wordCount} words</span>
@@ -213,10 +225,8 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             {/* Zoom Controls - Optimized for Mobile */}
             <div 
                 ref={zoomControlsRef}
-                onDoubleClick={handleZoomBarReset}
-                onTouchEnd={handleZoomBarTouchEnd}
                 className="flex items-center gap-0.5 sm:gap-3 cursor-ew-resize hover:bg-slate-200/70 dark:hover:bg-slate-800/50 rounded-lg px-1 transition-colors select-none"
-                title="Scroll to Zoom · Double-tap or double-click to toggle 100% zoom"
+                title="Scroll to Zoom · Double-click zoom percentage to auto-fit screen"
             >
                 <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
                 <button 
@@ -252,18 +262,14 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 </div>
                 
                 <button 
-                    onClick={() => {
-                        triggerGestureLock(350);
-                        // Cycle zoom modes on click
-                        if (zoomMode === 'custom') setZoomMode('fit-width');
-                        else if (zoomMode === 'fit-width') setZoomMode('fit-page');
-                        else setZoomMode('custom');
-                    }}
-                    className="w-12 sm:w-20 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center justify-end gap-1"
-                    title={`Current: ${zoomMode === 'custom' ? 'Custom' : zoomMode === 'fit-width' ? 'Fit Width' : 'Fit Page'} (Click to cycle)`}
+                    type="button"
+                    onDoubleClick={handleZoomAutoFit}
+                    onTouchEnd={handleZoomTouchEnd}
+                    className="w-14 sm:w-24 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center justify-end gap-1 cursor-pointer"
+                    title="Double-click zoom percentage to auto-fit screen"
                 >
                     <span className="text-slate-500 dark:text-slate-400 font-semibold text-[9px] uppercase tracking-tighter hidden sm:inline">
-                        {zoomMode === 'fit-width' ? 'Width' : zoomMode === 'fit-page' ? 'Page' : ''}
+                        {zoomMode === 'fit-width' ? 'Fit' : zoomMode === 'fit-page' ? 'Page' : ''}
                     </span>
                     <span>{Number(zoom).toFixed(0)}%</span>
                 </button>
@@ -285,19 +291,18 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
           </div>
         </div>
 
-        {showWordCountDialog && detailedStats && (
-            <Suspense fallback={<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/5"><div className="bg-white p-4 rounded shadow"><LoadingSpinner className="w-8 h-8" /></div></div>}>
-                <WordCountDialog 
-                    isOpen={showWordCountDialog}
-                    onClose={() => setShowWordCountDialog(false)}
-                    stats={detailedStats}
-                />
-            </Suspense>
-        )}
-
-        {showJumpDialog && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4 animate-in fade-in duration-150">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl max-w-xs w-full text-slate-900 dark:text-slate-100">
+        {showJumpDialog && createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4 animate-in fade-in duration-150 overscroll-contain"
+            role="dialog"
+            aria-modal="true"
+            data-modal-backdrop="true"
+            onClick={() => { setShowJumpDialog(false); setJumpPageInput(''); }}
+          >
+            <div
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl max-w-xs w-full text-slate-900 dark:text-slate-100"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h4 className="text-sm font-bold mb-1">Go to Page</h4>
               <p className="text-xs text-slate-500 mb-3">Enter page number (1 to {totalPages}):</p>
               <form onSubmit={handleJumpSubmit} className="flex flex-col gap-3">
@@ -328,7 +333,8 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
     </>
   );

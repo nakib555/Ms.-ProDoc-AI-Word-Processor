@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { HyperFormula } from 'hyperformula';
 import { 
     X, Calculator, MousePointer2, Check, ArrowRight, 
@@ -426,7 +427,7 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
 
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <>
             {/* Minimal Single-Line Floating Bar View for selection steps */}
             {step !== 'setup' && (
@@ -533,11 +534,17 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
 
             {/* Step 1: Beautiful Initial Setup Dialog Box */}
             {step === 'setup' && (
-                <>
-                    {/* Standard Dialog backdrop */}
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[99]" onClick={onClose} />
-                    
-                    <div className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] z-[100] w-[92vw] max-w-[420px] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+                <div
+                  className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[99] flex items-center justify-center p-4 overscroll-contain"
+                  role="dialog"
+                  aria-modal="true"
+                  data-modal-backdrop="true"
+                  onClick={onClose}
+                >
+                    <div
+                      className="w-[92vw] max-w-[420px] max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                         {/* Title Header */}
                         <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
                             <div className="flex items-center gap-2.5">
@@ -635,7 +642,7 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
                         </div>
 
                         {/* Actions footer */}
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5 shrink-0">
                             <button 
                                 onClick={onClose} 
                                 className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-xl transition-colors"
@@ -650,8 +657,9 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
                             </button>
                         </div>
                     </div>
-                </>
+                </div>
             )}
-        </>
+        </>,
+        document.body
     );
 };

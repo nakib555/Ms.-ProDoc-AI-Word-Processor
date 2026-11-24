@@ -9,6 +9,11 @@ import { GestureProvider } from '../../contexts/GestureContext';
 const createMockEditorContext = (overrides = {}): any => ({
   content: '<p>Document content testing status bar</p>',
   setContent: vi.fn(),
+  undo: vi.fn(),
+  redo: vi.fn(),
+  canUndo: false,
+  canRedo: false,
+  historyApplySeq: 0,
   title: 'Test Document',
   setTitle: vi.fn(),
   viewMode: 'print',
@@ -74,13 +79,15 @@ describe('StatusBar Component', () => {
     expect(screen.getByText('100%')).toBeDefined();
   });
 
-  it('triggers zoom reset on double-clicking the zoom percentage bar', () => {
-    const setZoomMock = vi.fn();
+  it('triggers auto-fit screen on double-clicking the zoom percentage number', () => {
     const setZoomModeMock = vi.fn();
+    const setZoomLayoutMock = vi.fn();
+    const setPageMovementMock = vi.fn();
     const mockEditor = createMockEditorContext({
       zoom: 150,
-      setZoom: setZoomMock,
       setZoomMode: setZoomModeMock,
+      setZoomLayout: setZoomLayoutMock,
+      setPageMovement: setPageMovementMock,
     });
 
     render(
@@ -96,24 +103,23 @@ describe('StatusBar Component', () => {
     const zoomPercentageEl = screen.getByText('150%');
     expect(zoomPercentageEl).toBeDefined();
 
-    // Double click the zoom percentage bar to trigger handleZoomBarReset
+    // Double click the zoom percentage number to return to auto-fit screen
     fireEvent.doubleClick(zoomPercentageEl);
 
-    expect(setZoomMock).toHaveBeenCalledTimes(1);
-    const updater = setZoomMock.mock.calls[0][0];
-    expect(typeof updater).toBe('function');
-    expect(updater(150)).toBe(100);
-    expect(updater(100)).toBe(150);
-    expect(setZoomModeMock).toHaveBeenCalledWith('custom');
+    expect(setPageMovementMock).toHaveBeenCalledWith('vertical');
+    expect(setZoomLayoutMock).toHaveBeenCalledWith('single');
+    expect(setZoomModeMock).toHaveBeenCalledWith('fit-width');
   });
 
-  it('triggers double tap zoom reset via touch events on the zoom bar', () => {
-    const setZoomMock = vi.fn();
+  it('triggers double tap auto-fit screen via touch events on the zoom percentage number', () => {
     const setZoomModeMock = vi.fn();
+    const setZoomLayoutMock = vi.fn();
+    const setPageMovementMock = vi.fn();
     const mockEditor = createMockEditorContext({
       zoom: 150,
-      setZoom: setZoomMock,
       setZoomMode: setZoomModeMock,
+      setZoomLayout: setZoomLayoutMock,
+      setPageMovement: setPageMovementMock,
     });
 
     render(
@@ -128,13 +134,12 @@ describe('StatusBar Component', () => {
 
     const zoomPercentageEl = screen.getByText('150%');
 
-    // Simulate two rapid touch ends
+    // Simulate two rapid touch ends on the zoom percentage number
     fireEvent.touchEnd(zoomPercentageEl);
     fireEvent.touchEnd(zoomPercentageEl);
 
-    expect(setZoomMock).toHaveBeenCalledTimes(1);
-    const updater = setZoomMock.mock.calls[0][0];
-    expect(typeof updater).toBe('function');
-    expect(updater(150)).toBe(100);
+    expect(setPageMovementMock).toHaveBeenCalledWith('vertical');
+    expect(setZoomLayoutMock).toHaveBeenCalledWith('single');
+    expect(setZoomModeMock).toHaveBeenCalledWith('fit-width');
   });
 });

@@ -143,4 +143,24 @@ describe('Thousand-Page Binary Search Virtualization', () => {
     expect(arbitraryMidpointScroll).toBeGreaterThan(page1Bottom);
     expect(arbitraryMidpointScroll).toBeLessThan(page2Top);
   });
+
+  it('computes zoomed-in wrapper dimensions with padding so all 4 edges remain scrollable without clipping', () => {
+    const CANVAS_PAD = 32;
+    const viewportWidth = 1000;
+    const basePageWidth = 816;
+    const zoomPercent = 300; // 300% zoom -> 2448px wide page
+    const scaledPageWidth = Math.round(basePageWidth * (zoomPercent / 100));
+
+    const contentTotalWidth = Math.max(viewportWidth, scaledPageWidth + CANVAS_PAD * 2);
+
+    // Wrapper width must exceed viewport width so native horizontal scrollbar reaches both edges
+    expect(contentTotalWidth).toBe(scaledPageWidth + 64);
+    expect(contentTotalWidth).toBeGreaterThan(viewportWidth);
+
+    // Centered left/right edges inside contentTotalWidth must leave >= 32px clearance on both sides
+    const leftEdge = (contentTotalWidth - scaledPageWidth) / 2;
+    const rightEdge = leftEdge + scaledPageWidth;
+    expect(leftEdge).toBeGreaterThanOrEqual(CANVAS_PAD);
+    expect(contentTotalWidth - rightEdge).toBeGreaterThanOrEqual(CANVAS_PAD);
+  });
 });

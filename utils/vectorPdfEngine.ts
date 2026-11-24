@@ -186,6 +186,45 @@ export async function renderVectorPage(
     pdf.restoreGraphicsState();
   }
 
+  // 2b. Render Page Border (if configured)
+  if (pageConfig.pageBorder && pageConfig.pageBorder.style !== 'none') {
+    const pb = pageConfig.pageBorder;
+    const sides = pb.sides || { top: true, right: true, bottom: true, left: true };
+    const marginPt = pb.marginPt ?? 24;
+    const widthPt = Math.max(0.5, pb.widthPt || 1);
+    const borderColor = parseCssColor(pb.color) || { r: 30, g: 41, b: 59, a: 1 };
+    const x1 = marginPt;
+    const y1 = marginPt;
+    const x2 = Math.max(x1 + 10, pageWidthPt - marginPt);
+    const y2 = Math.max(y1 + 10, pageHeightPt - marginPt);
+
+    pdf.saveGraphicsState();
+    pdf.setDrawColor(borderColor.r, borderColor.g, borderColor.b);
+    pdf.setLineWidth(widthPt);
+
+    if (pb.lineStyle === 'dashed') {
+      (pdf as unknown as { setLineDashPattern?: (d: number[], p: number) => void }).setLineDashPattern?.([4, 2], 0);
+    } else if (pb.lineStyle === 'dotted') {
+      (pdf as unknown as { setLineDashPattern?: (d: number[], p: number) => void }).setLineDashPattern?.([1, 2], 0);
+    }
+
+    if (sides.top) pdf.line(x1, y1, x2, y1);
+    if (sides.right) pdf.line(x2, y1, x2, y2);
+    if (sides.bottom) pdf.line(x1, y2, x2, y2);
+    if (sides.left) pdf.line(x1, y1, x1, y2);
+
+    if (pb.lineStyle === 'double') {
+      const gap = Math.max(2, widthPt * 1.4);
+      pdf.setLineWidth(Math.max(0.4, widthPt * 0.6));
+      if (sides.top) pdf.line(x1 + gap, y1 + gap, x2 - gap, y1 + gap);
+      if (sides.right) pdf.line(x2 - gap, y1 + gap, x2 - gap, y2 - gap);
+      if (sides.bottom) pdf.line(x1 + gap, y2 - gap, x2 - gap, y2 - gap);
+      if (sides.left) pdf.line(x1 + gap, y1 + gap, x1 + gap, y2 - gap);
+    }
+
+    pdf.restoreGraphicsState();
+  }
+
   // 3. Render Header (if present)
   const headerEl = pageWrapper.querySelector<HTMLElement>('.prodoc-print-header');
   if (headerEl) {
@@ -201,6 +240,44 @@ export async function renderVectorPage(
   // 5. Render Page Body Vector Elements
   const bodyEl = pageWrapper.querySelector<HTMLElement>('.prodoc-print-body') || pageWrapper;
   await renderElementTreeVector(pdf, bodyEl, pageRect, scaleX, scaleY);
+
+  // 6. Render Line Numbers (if enabled)
+  if (pageConfig.lineNumbers?.enabled) {
+    const startAt = Math.max(1, pageConfig.lineNumbers.startAt ?? 1);
+    const countBy = Math.max(1, pageConfig.lineNumbers.countBy ?? 1);
+    const leftMarginIn = pageConfig.margins?.left ?? 1;
+    const distIn = Math.min(pageConfig.lineNumbers.distanceFromText ?? 0.25, Math.max(0.1, leftMarginIn - 0.15));
+    const gutterXPt = Math.max(12, (leftMarginIn - distIn) * 72);
+
+    const blocks = Array.from(
+      bodyEl.querySelectorAll<HTMLElement>('p, h1, h2, h3, h4, h5, h6, li, blockquote, pre')
+    );
+    let lineNum = startAt;
+    pdf.saveGraphicsState();
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(100, 116, 139);
+
+    for (const block of blocks) {
+      if (block.classList.contains('prodoc-page-break') || block.classList.contains('prodoc-column-break')) {
+        continue;
+      }
+      const bRect = block.getBoundingClientRect();
+      if (bRect.height <= 0) continue;
+      const bStyle = window.getComputedStyle(block);
+      const fontSizePx = parseFloat(bStyle.fontSize) || 14.67;
+      const lineHeightPx = parseFloat(bStyle.lineHeight) || fontSizePx * 1.35;
+      const estLines = Math.max(1, Math.round(bRect.height / lineHeightPx));
+      for (let l = 0; l < estLines; l++) {
+        if ((lineNum - startAt) % countBy === 0) {
+          const lineY = (bRect.top - pageRect.top + l * lineHeightPx + fontSizePx * 0.9) * scaleY;
+          pdf.text(String(lineNum), gutterXPt, lineY, { align: 'right' });
+        }
+        lineNum++;
+      }
+    }
+    pdf.restoreGraphicsState();
+  }
 }
 
 /**

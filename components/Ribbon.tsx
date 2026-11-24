@@ -7,6 +7,7 @@ import { TableDesignTab } from './ribbon/tabs/InsertTab/tables/tabledesign_subTa
 import { TableLayoutTab } from './ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout';
 import { EquationTab } from './ribbon/tabs/InsertTab/symbols/equation_subTab/EquationTab';
 import { HeaderFooterTab } from './ribbon/tabs/HeaderFooterTab/HeaderFooterTab';
+import { isAnyModalOpen, isEventInsideModal } from '../utils/modalScroll';
 
 // Helper for resilient safe lazy loading with retry
 const safeLazy = (importFactory: () => Promise<Record<string, React.ComponentType<any>>>, name: string) => 
@@ -87,6 +88,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
     const el = scrollContainerRef.current;
     if (el) {
       const onWheel = (e: WheelEvent) => {
+        if (isEventInsideModal(e.target) || isAnyModalOpen()) return;
         if (e.deltaY === 0) return;
         if (el.scrollWidth > el.clientWidth) {
            e.preventDefault();

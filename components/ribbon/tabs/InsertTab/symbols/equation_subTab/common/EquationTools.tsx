@@ -4,7 +4,8 @@ import { ChevronDown } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
 import { MenuPortal } from '../../../../../common/MenuPortal';
 import { useEditor } from '../../../../../../../contexts/EditorContext';
-import { insertMathStructure } from './mathUtils';
+import { insertMathStructure, insertSymbolAtSelection } from './mathUtils';
+import { isAnyModalOpen, isEventInsideModal } from '../../../../../../../utils/modalScroll';
 
 // Use 'as any' to bypass IntrinsicElements check for custom element
 const MathField = 'math-field' as any;
@@ -64,6 +65,7 @@ const HorizontalScrollContainer: React.FC<{ children: React.ReactNode, className
         const el = ref.current;
         if (el) {
             const onWheel = (e: WheelEvent) => {
+                if (isEventInsideModal(e.target) || isAnyModalOpen()) return;
                 if (e.deltaY === 0) return;
                 if (el.scrollWidth > el.clientWidth) {
                     e.preventDefault();
@@ -102,13 +104,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
     };
 
     const insertSymbol = (symbol: string) => {
-        const activeEl = document.activeElement;
-        const isMathField = activeEl?.tagName.toLowerCase() === 'math-field';
-        if (isMathField) {
-            (activeEl as any).executeCommand(['insert', symbol, { focus: true }]);
-        } else {
-            executeCommand('insertText', symbol);
-        }
+        insertSymbolAtSelection(symbol);
     };
 
     return (

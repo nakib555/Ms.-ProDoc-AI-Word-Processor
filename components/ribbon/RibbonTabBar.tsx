@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState, memo, useCallback } from 'react';
 import { RibbonTab } from '../../types';
 import { useEditor } from '../../contexts/EditorContext';
+import { isAnyModalOpen, isEventInsideModal } from '../../utils/modalScroll';
 import { 
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp,
   PenLine, Plus, Layout, Palette,
@@ -203,6 +204,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
     const el = scrollContainerRef.current;
     if (el) {
       const onWheel = (e: WheelEvent) => {
+        if (isEventInsideModal(e.target) || isAnyModalOpen()) return;
         if (e.deltaY === 0) return;
         if (el.scrollWidth > el.clientWidth) {
           e.preventDefault();

@@ -9,7 +9,7 @@ interface IWindowWithSpeech extends Window {
 
 export const useDictation = () => {
   const [isListening, setIsListening] = useState(false);
-  const { executeCommand, editorRef } = useEditor();
+  const { executeCommand, editorRef, showToast } = useEditor();
   const recognitionRef = useRef<any>(null);
 
   const stopListening = useCallback(() => {
@@ -34,7 +34,7 @@ export const useDictation = () => {
     const SpeechRecognitionClass = win.SpeechRecognition || win.webkitSpeechRecognition;
 
     if (!SpeechRecognitionClass) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
+      showToast('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.', 'warning');
       return;
     }
 

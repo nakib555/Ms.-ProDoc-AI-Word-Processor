@@ -5,11 +5,11 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 import { FormattingCard } from '../common/DesignTools';
 
 export const StyleGalleryTool: React.FC = () => {
-  const { executeCommand } = useEditor();
+  const { executeCommand, showToast } = useEditor();
 
-  const applyTheme = (fontHead: string, fontBody: string) => {
+  const applyTheme = (_fontHead: string, fontBody: string) => {
       executeCommand('fontName', fontBody);
-      // Mock theme application
+      showToast(`Applied style font: ${fontBody}`, 'info');
   };
 
   return (
@@ -33,7 +33,7 @@ export const StyleGalleryTool: React.FC = () => {
              <button 
                 className="p-0.5 hover:bg-slate-200 rounded text-slate-500"
                 title="More Styles"
-                onClick={() => alert("Show full gallery")}
+                onClick={() => showToast('Scroll the style gallery horizontally to preview all built-in sets.', 'info')}
              >
                  <ChevronDown size={10} />
              </button>

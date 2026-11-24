@@ -128,12 +128,18 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+      data-modal-backdrop="true"
+      onClick={onClose}
+    >
       <div 
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3">
+        <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3 shrink-0">
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-5 h-5 text-indigo-600" />
             <h2 className="text-lg font-bold text-slate-800 dark:text-white">Table Properties</h2>
@@ -147,7 +153,7 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
           </button>
         </div>
         
-        <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
+        <div className="space-y-4 flex-1 min-h-0 max-h-[450px] overflow-y-auto overscroll-contain pr-1">
           {/* Table Information */}
           {propertiesTable && (
             <div className="text-xs font-mono bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-150 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 flex justify-around">
@@ -431,6 +437,7 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
                 onChange={(e) => setBorderColor(e.target.value)}
                 className="w-full text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-650 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
+                <option value="#000000">Black</option>
                 <option value="#cbd5e1">Slate Gray</option>
                 <option value="#3b82f6">Ocean Blue</option>
                 <option value="#ef4444">Coral Red</option>
@@ -550,7 +557,7 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
           </div>
         </div>
         
-        <div className="flex justify-end gap-2 mt-6 border-t border-slate-100 dark:border-slate-700 pt-3">
+        <div className="flex justify-end gap-2 mt-6 border-t border-slate-100 dark:border-slate-700 pt-3 shrink-0">
           <button 
             type="button"
             onClick={onClose}

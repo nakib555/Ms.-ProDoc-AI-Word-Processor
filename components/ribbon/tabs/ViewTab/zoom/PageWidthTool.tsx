@@ -5,12 +5,13 @@ import { SmallRibbonButton } from '../common/ViewTools';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const PageWidthTool: React.FC = () => {
-  const { executeCommand, setPageMovement } = useEditor();
+  const { executeCommand, setPageMovement, setZoomLayout } = useEditor();
   return (
     <SmallRibbonButton 
         icon={ArrowLeftRight} 
         label="Page Width" 
         onClick={() => {
+            setZoomLayout('single');
             setPageMovement('vertical');
             executeCommand('fitWidth');
         }} 

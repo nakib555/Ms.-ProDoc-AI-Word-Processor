@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/immutability, @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { useEditor } from '../../contexts/EditorContext';
+import { buildTableGrid, getCellsInLogicalColumn, mergeContinuationTables } from '../../utils/tableUtils';
 
 interface TableResizerOverlayProps {
   target: HTMLTableElement;
@@ -80,19 +81,36 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       if (!parentEl) return;
       const containerRect = parentEl.getBoundingClientRect();
       const tableRect = target.getBoundingClientRect();
+      const safeScale = scale || 1;
       
       const cols = [];
-      if (target.rows.length > 0) {
-        const firstRow = target.rows[0];
-        for (let i = 0; i < firstRow.cells.length; i++) {
-          const cell = firstRow.cells[i];
-          const cellRect = cell.getBoundingClientRect();
+      const grid = buildTableGrid(target);
+      for (let colIdx = 0; colIdx < grid.colCount; colIdx++) {
+        let repCell: HTMLTableCellElement | null = null;
+        for (let r = 0; r < grid.matrix.length; r++) {
+          const slot = grid.matrix[r][colIdx];
+          if (slot && slot.originCol + slot.colSpan - 1 === colIdx && slot.colSpan === 1) {
+            repCell = slot.cell;
+            break;
+          }
+        }
+        if (!repCell) {
+          for (let r = 0; r < grid.matrix.length; r++) {
+            const slot = grid.matrix[r][colIdx];
+            if (slot && slot.originCol + slot.colSpan - 1 === colIdx) {
+              repCell = slot.cell;
+              break;
+            }
+          }
+        }
+        if (repCell) {
+          const cellRect = repCell.getBoundingClientRect();
           cols.push({
-            index: i,
-            left: (cellRect.right - containerRect.left) / scale,
-            top: (tableRect.top - containerRect.top) / scale,
-            height: tableRect.height / scale,
-            cell,
+            index: colIdx,
+            left: (cellRect.right - containerRect.left) / safeScale,
+            top: (tableRect.top - containerRect.top) / safeScale,
+            height: tableRect.height / safeScale,
+            cell: repCell,
           });
         }
       }
@@ -103,9 +121,9 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
         const rowRect = row.getBoundingClientRect();
         rows.push({
           index: i,
-          left: (tableRect.left - containerRect.left) / scale,
-          top: (rowRect.bottom - containerRect.top) / scale,
-          width: tableRect.width / scale,
+          left: (tableRect.left - containerRect.left) / safeScale,
+          top: (rowRect.bottom - containerRect.top) / safeScale,
+          width: tableRect.width / safeScale,
           row,
         });
       }
@@ -113,23 +131,43 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       setHandles({ cols, rows });
     };
     
+    let rafId: number | null = null;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleUpdateHandles = () => {
+      if (debounceTimer !== null) clearTimeout(debounceTimer);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          updateHandles();
+        });
+      }, 32);
+    };
+
     updateHandles();
     
-    const observer = new MutationObserver(updateHandles);
+    const observer = new MutationObserver(scheduleUpdateHandles);
     observer.observe(target, { attributes: true, childList: true, subtree: true, characterData: true });
     
-    const resizeObserver = new ResizeObserver(updateHandles);
+    const resizeObserver = new ResizeObserver(scheduleUpdateHandles);
     resizeObserver.observe(target);
     
-    window.addEventListener('resize', updateHandles);
+    window.addEventListener('resize', scheduleUpdateHandles);
     return () => {
       observer.disconnect();
       resizeObserver.disconnect();
-      window.removeEventListener('resize', updateHandles);
+      window.removeEventListener('resize', scheduleUpdateHandles);
+      if (debounceTimer !== null) clearTimeout(debounceTimer);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [target, container, scale, isResizing]);
 
-  const handleColPointerDown = (e: React.PointerEvent<HTMLDivElement>, cell: HTMLTableCellElement, index: number) => {
+  const handleColPointerDown = (e: React.PointerEvent<HTMLDivElement>, cell: HTMLTableCellElement, colIndex: number) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -138,26 +176,50 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     const { logicalTableIndex } = getLogicalTableAndRowIndex(target, firstRow);
     if (logicalTableIndex === -1) return;
 
+    const grid = buildTableGrid(target);
+    if (colIndex < 0 || colIndex >= grid.colCount) return;
+
+    const leftColCells = getCellsInLogicalColumn(target, colIndex);
+    const hasNextCol = colIndex + 1 < grid.colCount;
+    const rightColCells = hasNextCol ? getCellsInLogicalColumn(target, colIndex + 1) : [];
+
+    // Find 1-span representative cells for reliable initial widths
+    const leftRepCell = leftColCells.find((c) => (c.colSpan || 1) === 1) || cell;
+    const rightRepCell = hasNextCol
+      ? (rightColCells.find((c) => (c.colSpan || 1) === 1) || rightColCells[0] || null)
+      : null;
+
     setIsResizing(true);
     setIsTableResizing(true);
-    setActiveHandle({ type: 'col', index });
+    setActiveHandle({ type: 'col', index: colIndex });
     document.body.style.cursor = 'col-resize';
     document.body.classList.add('is-table-resizing');
     
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
-    } catch (err) {
+    } catch {
       // ignore
     }
     
     target.classList.add('is-dragging');
     target.style.tableLayout = 'fixed';
 
-    // Lock all column widths of the first row to their current offsetWidth so they do not shift during dragging
-    for (let j = 0; j < firstRow.cells.length; j++) {
-      const c = firstRow.cells[j];
-      if (!c.style.width) {
-        c.style.width = `${c.offsetWidth}px`;
+    // Lock all column widths cleanly and clear minWidth so dragging can shrink as well as grow
+    for (let c = 0; c < grid.colCount; c++) {
+      const colCells = getCellsInLogicalColumn(target, c);
+      const singleSpan = colCells.find((cl) => (cl.colSpan || 1) === 1);
+      if (singleSpan && !singleSpan.style.width) {
+        const measuredW = singleSpan.offsetWidth;
+        colCells.forEach((cl) => {
+          if ((cl.colSpan || 1) === 1) {
+            cl.style.width = `${measuredW}px`;
+            cl.style.minWidth = '';
+          }
+        });
+      } else {
+        colCells.forEach((cl) => {
+          cl.style.minWidth = '';
+        });
       }
     }
 
@@ -168,13 +230,13 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     const handleEl = e.currentTarget as HTMLDivElement;
     const parentEl = container.parentElement;
     const containerRect = parentEl ? parentEl.getBoundingClientRect() : { left: 0 };
-    const cellRect = cell.getBoundingClientRect();
-    const startLeft = (cellRect.right - containerRect.left) / scale - 7 / scale;
+    const safeScale = scale || 1;
+    const cellRect = leftRepCell.getBoundingClientRect();
+    const startLeft = (cellRect.right - containerRect.left) / safeScale - 7 / safeScale;
     
     const startX = e.clientX;
-    const startWidth = cell.offsetWidth;
-    const nextCell = cell.parentElement?.children[index + 1] as HTMLTableCellElement | null;
-    const nextStartWidth = nextCell ? nextCell.offsetWidth : 0;
+    const startWidth = leftRepCell.offsetWidth;
+    const nextStartWidth = rightRepCell ? rightRepCell.offsetWidth : 0;
     const tableStartWidth = target.offsetWidth;
     const initialContent = content;
 
@@ -184,22 +246,29 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     let latestActualNewWidth = startWidth;
 
     const handlePointerMove = (ev: PointerEvent) => {
-      const deltaX = (ev.clientX - startX) / scale;
+      const deltaX = (ev.clientX - startX) / safeScale;
       
       if (handleEl) {
         handleEl.style.left = `${startLeft + deltaX}px`;
       }
       
-      if (nextCell) {
+      if (rightRepCell) {
         const newWidth = Math.max(20, startWidth + deltaX);
         latestNewNextWidth = Math.max(20, nextStartWidth - (newWidth - startWidth));
         latestActualWidth = startWidth + (nextStartWidth - latestNewNextWidth);
         
-        for (let i = 0; i < target.rows.length; i++) {
-          const r = target.rows[i];
-          if (r.cells[index]) r.cells[index].style.width = `${latestActualWidth}px`;
-          if (r.cells[index + 1]) r.cells[index + 1].style.width = `${latestNewNextWidth}px`;
-        }
+        leftColCells.forEach((c) => {
+          if ((c.colSpan || 1) === 1) {
+            c.style.width = `${latestActualWidth}px`;
+            c.style.minWidth = '';
+          }
+        });
+        rightColCells.forEach((c) => {
+          if ((c.colSpan || 1) === 1) {
+            c.style.width = `${latestNewNextWidth}px`;
+            c.style.minWidth = '';
+          }
+        });
       } else {
         const newWidth = Math.max(20, startWidth + deltaX);
         const maxTableWidth = container.offsetWidth;
@@ -210,10 +279,12 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
         latestActualNewWidth = latestNewTableWidth - tableStartWidth + startWidth;
 
         target.style.width = `${latestNewTableWidth}px`;
-        for (let i = 0; i < target.rows.length; i++) {
-          const r = target.rows[i];
-          if (r.cells[index]) r.cells[index].style.width = `${latestActualNewWidth}px`;
-        }
+        leftColCells.forEach((c) => {
+          if ((c.colSpan || 1) === 1) {
+            c.style.width = `${latestActualNewWidth}px`;
+            c.style.minWidth = '';
+          }
+        });
       }
     };
 
@@ -227,44 +298,41 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
 
-      // Apply the final values and update global HTML content ONCE on release
+      // Apply final column widths to canonical content HTML ONCE on release
       const parser = new DOMParser();
       const doc = parser.parseFromString(initialContent, 'text/html');
       const body = doc.body;
+      mergeContinuationTables(body);
 
-      const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
-      splitTables.forEach(splitTable => {
-          const repeatedHeaders = Array.from(splitTable.querySelectorAll('tr[data-repeated-header-row="true"]'));
-          repeatedHeaders.forEach(rh => rh.remove());
-          
-          const prev = splitTable.previousElementSibling;
-          if (prev && prev.tagName === 'TABLE' && prev.getAttribute('data-split-bottom') === 'true') {
-              while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
-              prev.removeAttribute('data-split-bottom');
-              splitTable.remove();
-          } else {
-              splitTable.removeAttribute('data-continuation');
-          }
-      });
-
-      const tables = Array.from(body.querySelectorAll('table'));
+      const tables = Array.from(body.querySelectorAll('table')) as HTMLTableElement[];
       const tbl = tables[logicalTableIndex];
       if (tbl) {
-          if (nextCell) {
-              for (let i = 0; i < tbl.rows.length; i++) {
-                  const r = tbl.rows[i];
-                  if (r.cells[index]) r.cells[index].style.width = `${latestActualWidth}px`;
-                  if (r.cells[index + 1]) r.cells[index + 1].style.width = `${latestNewNextWidth}px`;
-              }
+          tbl.style.tableLayout = 'fixed';
+          const tblLeftCells = getCellsInLogicalColumn(tbl, colIndex);
+          if (rightRepCell) {
+              const tblRightCells = getCellsInLogicalColumn(tbl, colIndex + 1);
+              tblLeftCells.forEach((c) => {
+                if ((c.colSpan || 1) === 1) {
+                  c.style.width = `${latestActualWidth}px`;
+                  c.style.minWidth = '';
+                }
+              });
+              tblRightCells.forEach((c) => {
+                if ((c.colSpan || 1) === 1) {
+                  c.style.width = `${latestNewNextWidth}px`;
+                  c.style.minWidth = '';
+                }
+              });
           } else {
               tbl.style.width = `${latestNewTableWidth}px`;
-              for (let i = 0; i < tbl.rows.length; i++) {
-                  const r = tbl.rows[i];
-                  if (r.cells[index]) r.cells[index].style.width = `${latestActualNewWidth}px`;
-              }
+              tblLeftCells.forEach((c) => {
+                if ((c.colSpan || 1) === 1) {
+                  c.style.width = `${latestActualNewWidth}px`;
+                  c.style.minWidth = '';
+                }
+              });
           }
-          const updatedContent = body.innerHTML;
-          setContent(updatedContent);
+          setContent(body.innerHTML);
       }
 
       onUpdate();
@@ -289,7 +357,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
-    } catch (err) {
+    } catch {
       // ignore
     }
     
@@ -298,8 +366,9 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     const handleEl = e.currentTarget as HTMLDivElement;
     const parentEl = container.parentElement;
     const containerRect = parentEl ? parentEl.getBoundingClientRect() : { top: 0 };
+    const safeScale = scale || 1;
     const rowRect = row.getBoundingClientRect();
-    const startTop = (rowRect.bottom - containerRect.top) / scale - 7 / scale;
+    const startTop = (rowRect.bottom - containerRect.top) / safeScale - 7 / safeScale;
 
     const startY = e.clientY;
     const startHeight = row.offsetHeight;
@@ -307,7 +376,7 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
     let latestNewHeight = startHeight;
 
     const handlePointerMove = (ev: PointerEvent) => {
-      const deltaY = (ev.clientY - startY) / scale;
+      const deltaY = (ev.clientY - startY) / safeScale;
       if (handleEl) {
         handleEl.style.top = `${startTop + deltaY}px`;
       }
@@ -325,32 +394,16 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
 
-      // Parse the initial content, merge split tables, set row height, and update global content ONCE on release
       const parser = new DOMParser();
       const doc = parser.parseFromString(initialContent, 'text/html');
       const body = doc.body;
+      mergeContinuationTables(body);
 
-      const splitTables = Array.from(body.querySelectorAll('table[data-continuation="true"]'));
-      splitTables.forEach(splitTable => {
-          const repeatedHeaders = Array.from(splitTable.querySelectorAll('tr[data-repeated-header-row="true"]'));
-          repeatedHeaders.forEach(rh => rh.remove());
-          
-          const prev = splitTable.previousElementSibling;
-          if (prev && prev.tagName === 'TABLE' && prev.getAttribute('data-split-bottom') === 'true') {
-              while (splitTable.firstChild) prev.appendChild(splitTable.firstChild);
-              prev.removeAttribute('data-split-bottom');
-              splitTable.remove();
-          } else {
-              splitTable.removeAttribute('data-continuation');
-          }
-      });
-
-      const tables = Array.from(body.querySelectorAll('table'));
+      const tables = Array.from(body.querySelectorAll('table')) as HTMLTableElement[];
       const tbl = tables[logicalTableIndex];
       if (tbl && tbl.rows[logicalRowIndex]) {
           tbl.rows[logicalRowIndex].style.height = `${latestNewHeight}px`;
-          const updatedContent = body.innerHTML;
-          setContent(updatedContent);
+          setContent(body.innerHTML);
       }
 
       onUpdate();

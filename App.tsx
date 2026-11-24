@@ -15,12 +15,33 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { GestureProvider } from './contexts/GestureContext';
 import { PageSetupDialog } from './components/ribbon/tabs/LayoutTab/page_setup/Margins/CustomMargin/PageSetupDialog';
+import { PageBordersDialog } from './components/ribbon/tabs/DesignTab/page_background/PageBordersDialog';
+import { WordCountDialog } from './components/WordCountDialog';
 import { FileTabProvider, useFileTab } from './components/ribbon/tabs/FileTab/FileTabContext';
 import { FileModal } from './components/ribbon/tabs/FileTab/FileModal';
+import { X, CheckCircle2, AlertTriangle, Info, AlertCircle } from 'lucide-react';
+import { handleGlobalModalWheel } from './utils/modalScroll';
 
 const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<RibbonTab | null>(RibbonTab.HOME);
-  const { viewMode, showPageSetup, setShowPageSetup, pageConfig, setPageConfig, importState, importFile } = useEditor();
+  const {
+    viewMode,
+    showPageSetup,
+    setShowPageSetup,
+    pageSetupInitialTab,
+    showPageBordersDialog,
+    setShowPageBordersDialog,
+    showWordCountDialog,
+    setShowWordCountDialog,
+    toast,
+    dismissToast,
+    pageConfig,
+    setPageConfig,
+    importState,
+    importFile,
+    undo,
+    redo,
+  } = useEditor();
   const { setActiveModal } = useFileTab();
 
   const handleTabChange = useCallback((tab: RibbonTab) => {
@@ -49,18 +70,43 @@ const AppContent: React.FC = () => {
       return () => window.removeEventListener('prodoc:open-file', handleOpenFile);
   }, [importFile]);
 
-  // Intercept Ctrl+P / Cmd+P globally to eliminate device print engine dialogs
+  // Intercept Ctrl+P / Cmd+P and global Ctrl+Z / Ctrl+Y / Cmd+Shift+Z shortcuts
   useEffect(() => {
       const handleGlobalKeyDown = (e: KeyboardEvent) => {
           if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
               e.preventDefault();
               e.stopPropagation();
               setActiveModal('print');
+              return;
+          }
+          if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+              const target = e.target as HTMLElement | null;
+              const isPlainFormField = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT');
+              if (isPlainFormField) return;
+
+              const key = e.key.toLowerCase();
+              if (key === 'z') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.shiftKey) {
+                      redo();
+                  } else {
+                      undo();
+                  }
+              } else if (key === 'y') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  redo();
+              }
           }
       };
       window.addEventListener('keydown', handleGlobalKeyDown, { capture: true });
-      return () => window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
-  }, [setActiveModal]);
+      window.addEventListener('wheel', handleGlobalModalWheel, { capture: true, passive: false });
+      return () => {
+        window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
+        window.removeEventListener('wheel', handleGlobalModalWheel, { capture: true });
+      };
+  }, [setActiveModal, undo, redo]);
 
   const isReadMode = viewMode === 'read';
 
@@ -83,9 +129,9 @@ const AppContent: React.FC = () => {
           </ErrorBoundary>
         )}
         
-        <div className="flex-1 flex overflow-hidden relative z-0 w-full">
+        <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden relative z-0 w-full">
           <div 
-            className="flex-1 flex flex-col overflow-hidden relative bg-[#eef2f6] dark:bg-[#0b1120] transition-[colors,transform] duration-200 ease-out will-change-transform"
+            className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden relative bg-[#eef2f6] dark:bg-[#0b1120] transition-[colors,transform] duration-200 ease-out will-change-transform"
             style={{ willChange: 'transform' }}
           >
             <ErrorBoundary>
@@ -171,6 +217,7 @@ const AppContent: React.FC = () => {
       {showPageSetup && (
         <PageSetupDialog 
             isOpen={showPageSetup}
+            initialTab={pageSetupInitialTab}
             onClose={() => setShowPageSetup(false)}
             config={pageConfig}
             onSave={(newConfig) => {
@@ -178,6 +225,41 @@ const AppContent: React.FC = () => {
                 setShowPageSetup(false);
             }}
         />
+      )}
+
+      {/* Global Page Borders Dialog */}
+      <PageBordersDialog
+        isOpen={showPageBordersDialog}
+        onClose={() => setShowPageBordersDialog(false)}
+      />
+
+      {/* Global Word Count Dialog */}
+      <WordCountDialog
+        isOpen={showWordCountDialog}
+        onClose={() => setShowWordCountDialog(false)}
+      />
+
+      {/* Non-blocking Accessible Toast Banner */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-11 right-5 z-[120] max-w-sm flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl shadow-xl border backdrop-blur-md text-xs font-medium transition-all duration-150 bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 no-print"
+        >
+          {toast.type === 'success' && <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />}
+          {toast.type === 'warning' && <AlertTriangle size={15} className="text-amber-600 shrink-0" />}
+          {toast.type === 'error' && <AlertCircle size={15} className="text-red-600 shrink-0" />}
+          {toast.type === 'info' && <Info size={15} className="text-blue-600 shrink-0" />}
+          <span className="flex-1 leading-snug">{toast.message}</span>
+          <button
+            type="button"
+            onClick={dismissToast}
+            className="p-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            aria-label="Dismiss notification"
+          >
+            <X size={13} />
+          </button>
+        </div>
       )}
 
       {/* Global File Modals (Open, New, Save As, Export, Print, Share) */}

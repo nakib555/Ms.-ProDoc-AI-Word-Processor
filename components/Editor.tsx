@@ -8,35 +8,52 @@ import { GhostDocument } from './ui/GhostDocument';
 import { PrintLayoutView } from './ribbon/tabs/ViewTab/views/PrintLayoutView';
 import { WebLayoutView } from './ribbon/tabs/ViewTab/views/WebLayoutView';
 import { ReadLayoutView } from './ribbon/tabs/ViewTab/views/ReadLayoutView';
+import { HistoryCommitMode } from '../utils/historyManager';
 
 const ResponsiveContainer = ({ children }: { children: (size: { width: number, height: number }) => React.ReactNode }) => {
     const ref = useRef<HTMLDivElement>(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
     const rafRef = useRef<number | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useLayoutEffect(() => {
-        if (!ref.current) return;
+        const el = ref.current;
+        if (!el) return;
+        let mounted = true;
         
-        const updateSize = () => {
-            if (ref.current) {
-                const { width, height } = ref.current.getBoundingClientRect();
-                setSize(prev => (Math.abs(prev.width - width) < 0.5 && Math.abs(prev.height - height) < 0.5) ? prev : { width, height });
-            }
+        const commitSize = () => {
+            if (!mounted || !ref.current) return;
+            const { width, height } = ref.current.getBoundingClientRect();
+            setSize(prev => (Math.abs(prev.width - width) < 0.5 && Math.abs(prev.height - height) < 0.5) ? prev : { width, height });
         };
 
-        updateSize();
+        // Initial measurement
+        commitSize();
 
-        const observer = new ResizeObserver(() => {
-            if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-            rafRef.current = requestAnimationFrame(() => {
-                updateSize();
+        const scheduleDebouncedResize = () => {
+            if (debounceTimerRef.current !== null) {
+                clearTimeout(debounceTimerRef.current);
+            }
+            if (rafRef.current !== null) {
+                cancelAnimationFrame(rafRef.current);
                 rafRef.current = null;
-            });
-        });
+            }
+            debounceTimerRef.current = setTimeout(() => {
+                debounceTimerRef.current = null;
+                rafRef.current = requestAnimationFrame(() => {
+                    rafRef.current = null;
+                    commitSize();
+                });
+            }, 60);
+        };
 
-        observer.observe(ref.current);
+        const observer = new ResizeObserver(scheduleDebouncedResize);
+        observer.observe(el);
+
         return () => {
+            mounted = false;
             observer.disconnect();
+            if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current);
             if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
         };
     }, []);
@@ -53,9 +70,8 @@ const Editor: React.FC = () => {
   const { theme } = useTheme();
   const { isPinching, isPanning } = useGestureContext();
   
-  const handleContentChange = useCallback((newContent: string) => {
-      // Sync content back to editor context (and Tiptap)
-      setContent(newContent);
+  const handleContentChange = useCallback((newContent: string, emitUpdate = false, options?: { historyMode?: HistoryCommitMode }) => {
+      setContent(newContent, emitUpdate, options);
   }, [setContent]);
 
   const isDarkMode = theme === 'dark' || theme === 'ocean';
@@ -85,7 +101,7 @@ const Editor: React.FC = () => {
 
         
         {viewMode === 'print' ? (
-            <div className="flex-1 h-full w-full print-layout-mode overflow-clip flex flex-col">
+            <div className="flex-1 min-h-0 min-w-0 h-full w-full print-layout-mode overflow-clip flex flex-col">
                 <ResponsiveContainer>
                     {({ height, width }) => (
                         <PrintLayoutView 
@@ -103,11 +119,20 @@ const Editor: React.FC = () => {
                 </ResponsiveContainer>
             </div>
         ) : (
-            <div className="flex-1 h-full w-full web-layout-mode overflow-clip flex flex-col">
+            <div className="flex-1 min-h-0 min-w-0 h-full w-full web-layout-mode overflow-clip flex flex-col">
                 <WebLayoutView 
                     editorRef={editorRef}
                     content={content}
-                    onInput={(e) => handleContentChange(e.currentTarget.innerHTML)}
+                    onInput={(e) => {
+                      const el = e.currentTarget;
+                      const isImmediate = el.dataset.commitImmediate === 'true';
+                      if (isImmediate) {
+                        delete el.dataset.commitImmediate;
+                      }
+                      handleContentChange(el.innerHTML, false, {
+                        historyMode: isImmediate ? 'immediate' : 'debounced',
+                      });
+                    }}
                     onPaste={() => {}}
                     onPageClick={() => {}}
                     pageConfig={pageConfig}

@@ -17,11 +17,14 @@ export const StudioHeader: React.FC = () => {
     documentTitle, 
     setDocumentTitle, 
     saveStatus, 
-    executeCommand, 
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    setContent,
     setShowPageSetup, 
     setShowJsonInspector,
     wordCount, 
-    charCount, 
     zoom, 
     setZoom,
     editor,
@@ -97,7 +100,7 @@ export const StudioHeader: React.FC = () => {
       shortcut: 'Ctrl+N',
       onClick: () => {
         if (window.confirm('Create a new blank document? Any unsaved edits will be lost.')) {
-          editor?.commands.setContent('<p></p>');
+          setContent('<p></p>', true, { historyMode: 'immediate' });
           setDocumentTitle('Untitled Document');
         }
       }
@@ -249,14 +252,16 @@ export const StudioHeader: React.FC = () => {
       <div className="hidden md:flex items-center gap-1">
         <StudioButton
           icon={RotateCcw}
-          onClick={() => executeCommand('undo')}
+          onClick={undo}
+          disabled={!canUndo}
           title="Undo"
           shortcut="Ctrl+Z"
           size="sm"
         />
         <StudioButton
           icon={RotateCw}
-          onClick={() => executeCommand('redo')}
+          onClick={redo}
+          disabled={!canRedo}
           title="Redo"
           shortcut="Ctrl+Y"
           size="sm"
@@ -275,8 +280,6 @@ export const StudioHeader: React.FC = () => {
         {/* Document Stats Counter */}
         <div className="hidden xl:flex items-center text-[11px] text-slate-500 dark:text-slate-400 px-2 font-mono">
           <span>{wordCount} words</span>
-          <span className="mx-1.5 opacity-40">·</span>
-          <span>{charCount} chars</span>
         </div>
 
         <StudioDivider className="hidden xl:block" />

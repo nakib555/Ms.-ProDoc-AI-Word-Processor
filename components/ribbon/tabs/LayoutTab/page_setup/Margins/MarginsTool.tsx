@@ -9,7 +9,7 @@ import { MARGIN_PRESETS } from '../../../../../../constants';
 import { MarginPreset, MarginValues } from '../../../../../../types';
 
 export const MarginsTool: React.FC = () => {
-  const { setPageConfig, pageConfig, setShowPageSetup } = useEditor();
+  const { setPageConfig, pageConfig, openPageSetup } = useEditor();
   const { activeMenu, menuPos, closeMenu } = useLayoutTab();
   const menuId = 'margins';
 
@@ -28,7 +28,7 @@ export const MarginsTool: React.FC = () => {
 
   const openCustomDialog = () => {
       closeMenu();
-      setShowPageSetup(true);
+      openPageSetup('margins');
   };
 
   const formatLabel = (key: string) => {

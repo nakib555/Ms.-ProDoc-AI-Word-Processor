@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Settings, X, ChevronDown, Check, Type, MoreHorizontal } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { FONTS, FONT_SIZES } from '../../../../../constants';
@@ -202,17 +203,20 @@ export const FontDialogLauncher: React.FC = () => {
         <Settings size={12} strokeWidth={2.5} />
       </button>
 
-      {isOpen && (
+      {isOpen && createPortal(
         <div 
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain"
+            role="dialog"
+            aria-modal="true"
+            data-modal-backdrop="true"
             onClick={() => setIsOpen(false)}
         >
           <div 
-            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 font-sans select-none ring-1 ring-black/5"
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 font-sans select-none ring-1 ring-black/5"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shrink-0">
                 <div className="flex items-center gap-2 text-slate-800 dark:text-white">
                     <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                         <Type size={16} />
@@ -225,13 +229,13 @@ export const FontDialogLauncher: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="px-6 border-b border-slate-100 dark:border-slate-800 flex gap-2 bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="px-6 border-b border-slate-100 dark:border-slate-800 flex gap-2 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
                 <TabButton active={activeTab === 'font'} onClick={() => setActiveTab('font')} label="Font" />
                 <TabButton active={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} label="Advanced" />
             </div>
 
             {/* Content Area */}
-            <div className="p-6 h-[400px] overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900">
+            <div className="p-6 flex-1 min-h-0 max-h-[400px] overflow-y-auto overscroll-contain custom-scrollbar bg-white dark:bg-slate-900">
                 {activeTab === 'font' && (
                     <div className="space-y-6">
                         {/* Font Selection Grid */}
@@ -399,7 +403,7 @@ export const FontDialogLauncher: React.FC = () => {
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
                 <button 
                     onClick={() => setIsOpen(false)}
                     className="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 shadow-sm transition-all"
@@ -414,7 +418,8 @@ export const FontDialogLauncher: React.FC = () => {
                 </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

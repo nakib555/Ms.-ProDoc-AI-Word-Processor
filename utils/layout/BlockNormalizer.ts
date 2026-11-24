@@ -1,3 +1,5 @@
+import { mergeContinuationTables } from '../tableUtils';
+
 export class BlockNormalizer {
   private static fragmentContainer: HTMLDivElement | null = null;
 
@@ -14,26 +16,8 @@ export class BlockNormalizer {
     const container = BlockNormalizer.getContainer();
     container.innerHTML = html;
 
-    // Merge previously split contiguous tables (Improvement #1 & #6)
-    const splitTables = container.querySelectorAll('table[data-continuation="true"]');
-    for (let i = 0; i < splitTables.length; i++) {
-      const splitTable = splitTables[i] as HTMLElement;
-      const repeatedHeaders = splitTable.querySelectorAll('tr[data-repeated-header-row="true"]');
-      for (let j = 0; j < repeatedHeaders.length; j++) {
-        repeatedHeaders[j].remove();
-      }
-
-      const prev = splitTable.previousElementSibling;
-      if (prev && prev.tagName === 'TABLE') {
-        while (splitTable.firstChild) {
-          prev.appendChild(splitTable.firstChild);
-        }
-        prev.removeAttribute('data-split-bottom');
-        splitTable.remove();
-      } else {
-        splitTable.removeAttribute('data-continuation');
-      }
-    }
+    // Merge previously split contiguous tables cleanly without nesting <tbody> elements
+    mergeContinuationTables(container);
 
     // If the content is wrapped in generic container <div> elements, unwrap them so block pagination works on individual paragraphs, tables, and headings
     while (

@@ -5,9 +5,9 @@ import { ParagraphInput } from '../common/LayoutTools';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const IndentTools: React.FC = () => {
-  const { editor } = useEditor();
-  const [leftIndent, setLeftIndent] = useState('0');
-  const [rightIndent, setRightIndent] = useState('0');
+  const { editor, applyBlockStyle } = useEditor();
+  const [leftIndent, setLeftIndent] = useState('0 cm');
+  const [rightIndent, setRightIndent] = useState('0 cm');
 
   useEffect(() => {
     if (!editor) return;
@@ -28,20 +28,20 @@ export const IndentTools: React.FC = () => {
   }, [editor]);
 
   const handleLeftChange = (val: string) => {
-      if (!editor) return;
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = num * 37.8; // cm to px
-          editor.chain().focus().updateAttributes('paragraph', { indent: px }).run();
+          const px = Math.round(num * 37.8 * 10) / 10; // cm to px
+          setLeftIndent(`${num} cm`);
+          applyBlockStyle({ marginLeft: `${px}px` });
       }
   };
 
   const handleRightChange = (val: string) => {
-      if (!editor) return;
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = num * 37.8; // cm to px
-          editor.chain().focus().updateAttributes('paragraph', { marginRight: px }).run();
+          const px = Math.round(num * 37.8 * 10) / 10; // cm to px
+          setRightIndent(`${num} cm`);
+          applyBlockStyle({ marginRight: `${px}px` });
       }
   };
 

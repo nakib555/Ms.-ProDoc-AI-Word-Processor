@@ -237,7 +237,7 @@ tr.table-row-keep-together,
 
 .ProseMirror .selectedCell:after,
 .prodoc-editor .selectedCell:after {
-  background: rgba(200, 200, 255, 0.4);
+  background: rgba(59, 130, 246, 0.22);
   content: "";
   left: 0;
   right: 0;
@@ -246,6 +246,12 @@ tr.table-row-keep-together,
   pointer-events: none;
   position: absolute;
   z-index: 2;
+}
+
+.prodoc-editor.show-table-gridlines td,
+.prodoc-editor.show-table-gridlines th {
+  outline: 1px dashed rgba(100, 116, 139, 0.45);
+  outline-offset: -1px;
 }
 
 .ProseMirror img,
@@ -372,8 +378,16 @@ tr.table-row-keep-together,
   display: inline-flex;
 }
 
+.equation-wrapper[data-display="block"] {
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  margin: 0.75rem auto;
+  padding: 6px 12px;
+}
+
 math-field {
-  min-width: 20px;
+  min-width: 24px;
   min-height: 24px;
   outline: none;
   border: none;
@@ -386,6 +400,18 @@ math-field {
   .no-print { display: none !important; }
   body { background: white; }
   .ProseMirror { padding: 0; margin: 0; }
+  .prodoc-editor.show-table-gridlines td,
+  .prodoc-editor.show-table-gridlines th {
+    outline: none !important;
+  }
+  .equation-handle,
+  .equation-dropdown {
+    display: none !important;
+  }
+  .equation-wrapper {
+    border-color: transparent !important;
+    background-color: transparent !important;
+  }
   
   .prodoc-page-break {
       height: 0;

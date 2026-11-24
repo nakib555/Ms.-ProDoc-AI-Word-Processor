@@ -9,6 +9,7 @@ export interface GhostPageProps {
   totalPages: number;
   config: PageConfig;
   zoom: number;
+  calibrationScale?: number;
   className?: string;
   style?: React.CSSProperties;
   headerText?: string;
@@ -20,12 +21,13 @@ export const GhostPage: React.FC<GhostPageProps> = memo(({
   totalPages,
   config,
   zoom,
+  calibrationScale = 1,
   className = '',
   style = {},
   headerText,
   footerText
 }) => {
-  const scale = zoom / 100;
+  const scale = (zoom / 100) * calibrationScale;
   const cfg = config || { size: 'A4', orientation: 'portrait', margins: { top: 1, bottom: 1, left: 1, right: 1 } };
 
   // Resolve exact physical page dimensions

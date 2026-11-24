@@ -9,7 +9,7 @@ import { TableGridPicker } from './TableGridPicker';
 import { InsertTableDialog } from './InsertTableDialog';
 
 export const TableTool: React.FC = () => {
-  const { executeCommand } = useEditor();
+  const { executeCommand, showToast } = useEditor();
   const { activeMenu, closeMenu, getTriggerElement } = useInsertTab();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -47,7 +47,7 @@ export const TableTool: React.FC = () => {
                  <button className="w-full text-left px-3 py-3 sm:py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm sm:text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2 group" onClick={() => { setIsDialogOpen(true); closeMenu(); }}>
                     <TableProperties className="w-4 h-4 sm:w-[14px] sm:h-[14px] text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400"/> Insert Table...
                  </button>
-                 <button className="w-full text-left px-3 py-3 sm:py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm sm:text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2 group" onClick={() => { alert("Draw Table is not supported yet."); closeMenu(); }}>
+                 <button className="w-full text-left px-3 py-3 sm:py-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-sm sm:text-xs text-slate-700 dark:text-slate-300 flex items-center gap-2 group" onClick={() => { showToast('Use the Table Grid Picker or Insert Table dialog to insert custom tables.', 'info'); closeMenu(); }}>
                     <PenLine className="w-4 h-4 sm:w-[14px] sm:h-[14px] text-slate-500 dark:text-slate-400 group-hover:text-orange-600 dark:group-hover:text-orange-400"/> Draw Table
                  </button>
              </div>
