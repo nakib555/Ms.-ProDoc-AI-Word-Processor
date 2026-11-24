@@ -45,6 +45,33 @@ const isBlock = (el: HTMLElement) => {
     return BLOCK_TAGS.includes(el.tagName);
 };
 
+interface TableCellCursorAnchor {
+    logicalTableIndex: number;
+    logicalRowIndex: number;
+    cellIndex: number;
+    textOffsetInCell: number;
+}
+
+interface CursorSnapshot {
+    globalOffset: number;
+    tableAnchor: TableCellCursorAnchor | null;
+}
+
+let scratchTableContainer: HTMLDivElement | null = null;
+const getPageTablesFromSource = (pageNum: number, pagesHtml?: { html: string }[]): HTMLTableElement[] => {
+    const domEl = document.getElementById(`prodoc-editor-${pageNum}`);
+    if (domEl) {
+        return Array.from(domEl.querySelectorAll('table')) as HTMLTableElement[];
+    }
+    const pageHtml = pagesHtml?.[pageNum - 1]?.html;
+    if (!pageHtml || typeof document === 'undefined') return [];
+    if (!scratchTableContainer) {
+        scratchTableContainer = document.createElement('div');
+    }
+    scratchTableContainer.innerHTML = pageHtml;
+    return Array.from(scratchTableContainer.querySelectorAll('table')) as HTMLTableElement[];
+};
+
 const getNodeTextLength = (node: Node): number => {
     if (node.nodeType === Node.TEXT_NODE) {
         return (node.nodeValue || "").length;
@@ -52,6 +79,9 @@ const getNodeTextLength = (node: Node): number => {
     
     if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as HTMLElement;
+        if (el.tagName === 'TR' && el.getAttribute('data-repeated-header-row') === 'true') {
+            return 0;
+        }
         if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.classList.contains('prodoc-section-break')) {
             return 1;
         }
@@ -71,43 +101,6 @@ const getNodeTextLength = (node: Node): number => {
     }
     
     return 0;
-};
-
-const getGlobalCursorPosition = (): number | null => {
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return null;
-    const range = sel.getRangeAt(0);
-    
-    let pageElement: HTMLElement | null = null;
-    let pageIndex = -1;
-    let curr: Node | null = range.startContainer;
-
-    while(curr) {
-        if (curr.nodeType === Node.ELEMENT_NODE) {
-            const el = curr as HTMLElement;
-            if (el.id && el.id.startsWith('prodoc-editor-')) {
-                pageElement = el;
-                pageIndex = parseInt(el.id.replace('prodoc-editor-', ''), 10);
-                break;
-            }
-        }
-        curr = curr.parentNode;
-    }
-
-    if (!pageElement || pageIndex === -1) return null;
-
-    let globalOffset = 0;
-
-    for (let i = 1; i < pageIndex; i++) {
-        const pEl = document.getElementById(`prodoc-editor-${i}`);
-        if (pEl) {
-            globalOffset += getNodeTextLength(pEl);
-        }
-    }
-
-    globalOffset += getOffsetInNode(pageElement, range.startContainer, range.startOffset);
-
-    return globalOffset;
 };
 
 const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number => {
@@ -133,6 +126,9 @@ const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number
             offset += (node.nodeValue || "").length;
         } else if (node.nodeType === Node.ELEMENT_NODE) {
              const el = node as HTMLElement;
+             if (el.tagName === 'TR' && el.getAttribute('data-repeated-header-row') === 'true') {
+                 return;
+             }
              if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR' || el.classList.contains('prodoc-section-break')) {
                  offset += 1;
              } else {
@@ -160,47 +156,121 @@ const getOffsetInNode = (root: Node, target: Node, targetOffset: number): number
     return offset;
 };
 
-const restoreGlobalCursor = (globalOffset: number) => {
-    const pages = document.querySelectorAll('[id^="prodoc-editor-"]');
-    const totalPages = pages.length;
+const getCursorSnapshot = (pagesHtml: { html: string }[]): CursorSnapshot | null => {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return null;
+    const range = sel.getRangeAt(0);
     
-    let currentTotal = 0;
-    
-    for (let i = 1; i <= totalPages; i++) {
-        const el = document.getElementById(`prodoc-editor-${i}`);
-        if (!el) continue;
-        
-        const pageLen = getNodeTextLength(el);
-        const contentLen = isBlock(el) ? pageLen - 1 : pageLen;
-        
-        if (globalOffset < currentTotal + contentLen) {
-            const localOffset = Math.max(0, globalOffset - currentTotal);
-            setCursorInNode(el, localOffset);
-            return;
+    let pageElement: HTMLElement | null = null;
+    let pageIndex = -1;
+    let curr: Node | null = range.startContainer;
+
+    while(curr) {
+        if (curr.nodeType === Node.ELEMENT_NODE) {
+            const el = curr as HTMLElement;
+            if (el.id && el.id.startsWith('prodoc-editor-')) {
+                pageElement = el;
+                pageIndex = parseInt(el.id.replace('prodoc-editor-', ''), 10);
+                break;
+            }
         }
-        
-        if (globalOffset === currentTotal + contentLen) {
-             if (i === totalPages) {
-                 setCursorInNode(el, contentLen);
-                 return;
-             }
-             globalOffset += 1;
-        }
-        
-        currentTotal += pageLen;
+        curr = curr.parentNode;
     }
-    
-    if (totalPages > 0) {
-        const lastPage = document.getElementById(`prodoc-editor-${totalPages}`);
-        if (lastPage) {
-             const lastLen = getNodeTextLength(lastPage);
-             const contentLen = isBlock(lastPage) ? lastLen - 1 : lastLen;
-             setCursorInNode(lastPage, contentLen); 
+
+    if (!pageElement || pageIndex === -1) return null;
+
+    let globalOffset = 0;
+    for (let i = 1; i < pageIndex; i++) {
+        const pEl = document.getElementById(`prodoc-editor-${i}`);
+        if (pEl) {
+            globalOffset += getNodeTextLength(pEl);
         }
     }
+    globalOffset += getOffsetInNode(pageElement, range.startContainer, range.startOffset);
+
+    let tableAnchor: TableCellCursorAnchor | null = null;
+    const startEl = range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? (range.startContainer as HTMLElement)
+        : range.startContainer.parentElement;
+    const cell = startEl?.closest('td, th') as HTMLTableCellElement | null;
+    const row = cell?.closest('tr') as HTMLTableRowElement | null;
+    const table = row?.closest('table') as HTMLTableElement | null;
+
+    if (cell && row && table && pageElement.contains(table)) {
+        let logicalTableIdx = -1;
+        let currentLogicalRowCount = 0;
+        let foundTarget = false;
+
+        for (let p = 1; p <= pageIndex && !foundTarget; p++) {
+            const tables = getPageTablesFromSource(p, pagesHtml);
+            for (const tbl of tables) {
+                const isContinuation = tbl.getAttribute('data-continuation') === 'true';
+                if (!isContinuation || logicalTableIdx === -1) {
+                    logicalTableIdx++;
+                    currentLogicalRowCount = 0;
+                }
+                const validRows = Array.from(tbl.rows).filter(
+                    (r) => r.getAttribute('data-repeated-header-row') !== 'true'
+                );
+                if (p === pageIndex && tbl === table) {
+                    const rowInTbl = validRows.indexOf(row);
+                    const cellIndex = Array.from(row.cells).indexOf(cell);
+                    if (rowInTbl >= 0 && cellIndex >= 0) {
+                        tableAnchor = {
+                            logicalTableIndex: logicalTableIdx,
+                            logicalRowIndex: currentLogicalRowCount + rowInTbl,
+                            cellIndex,
+                            textOffsetInCell: getOffsetInNode(cell, range.startContainer, range.startOffset),
+                        };
+                    }
+                    foundTarget = true;
+                    break;
+                }
+                currentLogicalRowCount += validRows.length;
+            }
+        }
+    }
+
+    return { globalOffset, tableAnchor };
 };
 
-const setCursorInNode = (root: HTMLElement, offset: number) => {
+const findTargetPageForTableAnchor = (
+    pages: { html: string }[],
+    anchor: TableCellCursorAnchor
+): number | null => {
+    if (typeof document === 'undefined') return null;
+    if (!scratchTableContainer) {
+        scratchTableContainer = document.createElement('div');
+    }
+    let logicalTableIdx = -1;
+    let currentRowOffset = 0;
+
+    for (let pIdx = 0; pIdx < pages.length; pIdx++) {
+        scratchTableContainer.innerHTML = pages[pIdx].html;
+        const tables = Array.from(scratchTableContainer.querySelectorAll('table')) as HTMLTableElement[];
+        for (const tbl of tables) {
+            const isContinuation = tbl.getAttribute('data-continuation') === 'true';
+            if (!isContinuation || logicalTableIdx === -1) {
+                logicalTableIdx++;
+                currentRowOffset = 0;
+            }
+            const validRows = Array.from(tbl.rows).filter(
+                (r) => r.getAttribute('data-repeated-header-row') !== 'true'
+            );
+            if (
+                logicalTableIdx === anchor.logicalTableIndex &&
+                anchor.logicalRowIndex >= currentRowOffset &&
+                anchor.logicalRowIndex < currentRowOffset + validRows.length
+            ) {
+                return pIdx + 1;
+            }
+            currentRowOffset += validRows.length;
+        }
+    }
+    return null;
+};
+
+const setCursorInNode = (root: HTMLElement, offset: number, focusContainer?: HTMLElement) => {
     let currentCount = 0;
     let found = false;
     const range = document.createRange();
@@ -221,7 +291,20 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
             currentCount += len;
         } else if (node.nodeType === Node.ELEMENT_NODE) {
             const el = node as HTMLElement;
+            if (el.tagName === 'TR' && el.getAttribute('data-repeated-header-row') === 'true') {
+                return;
+            }
             if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR' || el.classList.contains('prodoc-section-break')) {
+                if (el.tagName === 'BR' && currentCount === offset) {
+                    const parent = el.parentNode;
+                    if (parent) {
+                        const idx = Array.prototype.indexOf.call(parent.childNodes, el);
+                        range.setStart(parent, Math.max(0, idx));
+                        range.collapse(true);
+                        found = true;
+                        return;
+                    }
+                }
                 if (currentCount + 1 >= offset) {
                     range.setStartAfter(node);
                     range.collapse(true);
@@ -242,7 +325,7 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
         }
     };
 
-    if (offset === 0) {
+    if (offset <= 0) {
         range.setStart(root, 0);
         range.collapse(true);
         found = true;
@@ -250,34 +333,115 @@ const setCursorInNode = (root: HTMLElement, offset: number) => {
         walk(root);
     }
 
+    (focusContainer || root).focus();
+    const sel = window.getSelection();
+    if (!sel) return;
+
     if (found) {
-        root.focus(); 
-        const sel = window.getSelection();
-        if (sel) {
-            sel.removeAllRanges();
-            sel.addRange(range);
-            
-            const rect = range.getBoundingClientRect();
-            if (rect.top === 0 && rect.height === 0) {
-                 const el = range.startContainer.nodeType === Node.TEXT_NODE 
-                    ? range.startContainer.parentElement 
-                    : range.startContainer as HTMLElement;
-                 el?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
-            } else if (rect.top < 50 || rect.bottom > window.innerHeight - 50) {
-                 const el = range.startContainer.nodeType === Node.TEXT_NODE 
-                    ? range.startContainer.parentElement 
-                    : range.startContainer as HTMLElement;
-                 el?.scrollIntoView({ behavior: 'auto', block: 'center' });
-            }
+        sel.removeAllRanges();
+        sel.addRange(range);
+        
+        const rect = range.getBoundingClientRect();
+        if (rect.top === 0 && rect.height === 0) {
+             const el = range.startContainer.nodeType === Node.TEXT_NODE 
+                ? range.startContainer.parentElement 
+                : range.startContainer as HTMLElement;
+             el?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        } else if (rect.top < 50 || rect.bottom > window.innerHeight - 50) {
+             const el = range.startContainer.nodeType === Node.TEXT_NODE 
+                ? range.startContainer.parentElement 
+                : range.startContainer as HTMLElement;
+             el?.scrollIntoView({ behavior: 'auto', block: 'center' });
         }
     } else {
-        const range = document.createRange();
-        range.selectNodeContents(root);
-        range.collapse(false);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
+        const fallbackRange = document.createRange();
+        fallbackRange.selectNodeContents(root);
+        fallbackRange.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(fallbackRange);
     }
+};
+
+const restoreCursorSnapshot = (
+    snapshot: CursorSnapshot,
+    pagesHtml: { html: string }[]
+): number | null => {
+    if (snapshot.tableAnchor) {
+        const { logicalTableIndex, logicalRowIndex, cellIndex, textOffsetInCell } = snapshot.tableAnchor;
+        let currentLogicalTable = -1;
+        let currentRowOffset = 0;
+
+        for (let pIdx = 0; pIdx < pagesHtml.length; pIdx++) {
+            const pageNum = pIdx + 1;
+            const pageEl = document.getElementById(`prodoc-editor-${pageNum}`);
+            const tables = getPageTablesFromSource(pageNum, pagesHtml);
+            for (const tbl of tables) {
+                const isContinuation = tbl.getAttribute('data-continuation') === 'true';
+                if (!isContinuation || currentLogicalTable === -1) {
+                    currentLogicalTable++;
+                    currentRowOffset = 0;
+                }
+                const validRows = Array.from(tbl.rows).filter(
+                    (r) => r.getAttribute('data-repeated-header-row') !== 'true'
+                );
+                if (
+                    currentLogicalTable === logicalTableIndex &&
+                    logicalRowIndex >= currentRowOffset &&
+                    logicalRowIndex < currentRowOffset + validRows.length
+                ) {
+                    if (pageEl) {
+                        const targetRow = validRows[logicalRowIndex - currentRowOffset];
+                        const targetCell = targetRow?.cells[Math.min(cellIndex, Math.max(0, (targetRow?.cells.length || 1) - 1))];
+                        if (targetCell) {
+                            setCursorInNode(targetCell, textOffsetInCell, pageEl);
+                            return pageNum;
+                        }
+                    }
+                    return pageNum;
+                }
+                currentRowOffset += validRows.length;
+            }
+        }
+    }
+
+    let currentTotal = 0;
+    let remainingOffset = snapshot.globalOffset;
+    const totalPages = pagesHtml.length;
+
+    for (let i = 1; i <= totalPages; i++) {
+        const el = document.getElementById(`prodoc-editor-${i}`);
+        if (!el) continue;
+        
+        const pageLen = getNodeTextLength(el);
+        const contentLen = isBlock(el) ? pageLen - 1 : pageLen;
+        
+        if (remainingOffset < currentTotal + contentLen) {
+            const localOffset = Math.max(0, remainingOffset - currentTotal);
+            setCursorInNode(el, localOffset);
+            return i;
+        }
+        
+        if (remainingOffset === currentTotal + contentLen) {
+             if (i === totalPages) {
+                 setCursorInNode(el, contentLen);
+                 return i;
+             }
+             remainingOffset += 1;
+        }
+        
+        currentTotal += pageLen;
+    }
+    
+    if (totalPages > 0) {
+        const lastPage = document.getElementById(`prodoc-editor-${totalPages}`);
+        if (lastPage) {
+             const lastLen = getNodeTextLength(lastPage);
+             const contentLen = isBlock(lastPage) ? lastLen - 1 : lastLen;
+             setCursorInNode(lastPage, contentLen);
+             return totalPages;
+        }
+    }
+    return null;
 };
 
 // O(log N) binary search for the first visible page index
@@ -389,12 +553,13 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const contentWrapperRef = useRef<HTMLDivElement | null>(null);
   
-  const cursorRestorationRef = useRef<number | null>(null);
+  const cursorRestorationRef = useRef<CursorSnapshot | null>(null);
   const isUserScrollingRef = useRef(false);
   const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReportedPageRef = useRef(currentPage);
   const lastProcessedJumpSeqRef = useRef<number>(0);
   const lastSelfSyncedContentRef = useRef<string | null>(null);
+  const pendingImmediatePaginationRef = useRef(false);
   const lastProcessedHistorySeqRef = useRef<number>(historyApplySeq);
 
   // High-performance focal-centered pinch to zoom & double-tap to toggle fit
@@ -468,6 +633,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
     const isHistoryRestore = historyApplySeq !== lastProcessedHistorySeqRef.current;
     const isExternalContentChange = lastSelfSyncedContentRef.current !== content;
+    const isImmediateEdit = pendingImmediatePaginationRef.current;
+    pendingImmediatePaginationRef.current = false;
 
     if (isHistoryRestore) {
       lastProcessedHistorySeqRef.current = historyApplySeq;
@@ -475,7 +642,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
     const runPagination = () => {
       if (!isMounted) return;
-      const currentCursor = getGlobalCursorPosition();
+      const currentCursor = getCursorSnapshot(pagesDataRef.current);
 
       requestAnimationFrame(() => {
         if (!isMounted) return;
@@ -484,13 +651,20 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         setPagesData(result.pages);
         setTotalPages(result.pages.length);
 
-        if (currentCursor !== null) {
+        if (currentCursor) {
           cursorRestorationRef.current = currentCursor;
+          if (currentCursor.tableAnchor) {
+            const targetPageNum = findTargetPageForTableAnchor(result.pages, currentCursor.tableAnchor);
+            if (targetPageNum && targetPageNum !== lastReportedPageRef.current) {
+              lastReportedPageRef.current = targetPageNum;
+              setCurrentPage(targetPageNum);
+            }
+          }
         }
       });
     };
 
-    if (isHistoryRestore || isExternalContentChange) {
+    if (isHistoryRestore || isExternalContentChange || isImmediateEdit) {
       lastSelfSyncedContentRef.current = content;
       runPagination();
       return () => {
@@ -503,14 +677,18 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [content, pageConfig, setTotalPages, isTableResizing, historyApplySeq]);
+  }, [content, pageConfig, setTotalPages, setCurrentPage, isTableResizing, historyApplySeq]);
 
   useLayoutEffect(() => {
       if (cursorRestorationRef.current !== null) {
-          restoreGlobalCursor(cursorRestorationRef.current);
+          const restoredPage = restoreCursorSnapshot(cursorRestorationRef.current, pagesDataRef.current);
           cursorRestorationRef.current = null;
+          if (restoredPage && restoredPage !== lastReportedPageRef.current) {
+              lastReportedPageRef.current = restoredPage;
+              setCurrentPage(restoredPage);
+          }
       }
-  }, [pagesData]);
+  }, [pagesData, setCurrentPage]);
 
   useEffect(() => {
       const activePageEl = document.getElementById(`prodoc-editor-${currentPage}`);
@@ -535,6 +713,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
     const fullContent = updatedPages.map(p => p.html).join('');
     lastSelfSyncedContentRef.current = fullContent;
+    if (historyMode === 'immediate') {
+      pendingImmediatePaginationRef.current = true;
+    }
     setContent(fullContent, false, { historyMode });
   }, [setContent]);
 
@@ -809,7 +990,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
        >
            <div 
                 ref={contentWrapperRef}
-                className="relative box-border transform-gpu will-change-transform"
+                className="relative box-border"
                 style={{ 
                   width: `${contentTotalWidth}px`,
                   minWidth: '100%',
@@ -843,9 +1024,9 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                       key={virtualRow.key}
                       data-index={virtualRow.index}
                       ref={rowVirtualizer.measureElement}
-                      className="absolute top-0 left-0 w-full flex justify-center items-start gap-8 px-8 box-border"
+                      className="absolute left-0 w-full flex justify-center items-start gap-8 px-8 box-border"
                       style={{
-                        transform: `translateY(${virtualRow.start + CANVAS_PAD}px)`,
+                        top: `${Math.round(virtualRow.start + CANVAS_PAD)}px`,
                       }}
                     >
                       {rowPageIndices.map((pIdx) => {

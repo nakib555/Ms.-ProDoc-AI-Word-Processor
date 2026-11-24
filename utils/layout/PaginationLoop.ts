@@ -219,16 +219,25 @@ export class PaginationLoop {
           session.currentHeight = 0;
           break;
 
-        case PaginationAction.Split:
-          if (decision.keep && (decision.keep.hasChildNodes() || decision.keep.tagName === 'IMG' || decision.keep.tagName === 'TABLE')) {
+        case PaginationAction.Split: {
+          const hasRenderableSplitContent = (el: HTMLElement | null | undefined): el is HTMLElement => {
+            if (!el) return false;
+            if (el.tagName === 'TABLE') return (el as HTMLTableElement).rows.length > 0;
+            return el.hasChildNodes() || el.tagName === 'IMG';
+          };
+
+          if (hasRenderableSplitContent(decision.keep)) {
             builder.append(decision.keep);
-            builder.finishPage();
-            session.currentPageIndex++;
-            session.currentHeight = 0;
-            if (decision.move && (decision.move.hasChildNodes() || decision.move.tagName === 'IMG' || decision.move.tagName === 'TABLE')) {
+            if (hasRenderableSplitContent(decision.move)) {
+              builder.finishPage();
+              session.currentPageIndex++;
+              session.currentHeight = 0;
               const cleanedMove = ContinuationManager.prepareContinuation(decision.move);
               nodes[i] = cleanedMove;
               i--; // retry on next page with remaining part
+            } else {
+              const keepH = session.measurementService.measure(decision.keep, effectiveWidth);
+              session.currentHeight += keepH;
             }
           } else {
             if (builder.getCurrentNodes().length > 0) {
@@ -242,6 +251,7 @@ export class PaginationLoop {
             }
           }
           break;
+        }
 
         case PaginationAction.Atomic:
           if (builder.getCurrentNodes().length > 0) {

@@ -229,11 +229,11 @@ const renderPageContent = (
             className="relative shrink-0 select-none shadow-[0_10px_30px_rgba(0,0,0,0.15)] rounded-sm overflow-hidden bg-white"
         >
             <div 
-                className="prodoc-page-sheet transition-transform duration-150 origin-top-left absolute top-0 left-0 overflow-hidden"
+                className="prodoc-page-sheet absolute top-0 left-0 overflow-hidden"
                 style={{
                     width: `${widthIn}in`,
                     height: `${heightIn}in`,
-                    transform: `scale(${scale})`,
+                    zoom: scale,
                     paddingTop: `${margins.top}in`,
                     paddingBottom: `${margins.bottom}in`,
                     paddingLeft: `${margins.left}in`,

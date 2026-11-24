@@ -1863,10 +1863,9 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       style={{ width: `${widthIn * scale}in`, height: `${heightIn * scale}in` }}
     >
       <div 
-        className={`prodoc-page-sheet absolute inset-0 overflow-clip ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
+        className={`prodoc-page-sheet absolute top-0 left-0 overflow-clip ${cursorStyle} ${selectionMode ? 'smart-selection-active' : ''}`}
         style={{
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
+          zoom: scale,
           width: `${widthIn}in`,
           height: `${heightIn}in`,
           boxShadow: isDarkMode 

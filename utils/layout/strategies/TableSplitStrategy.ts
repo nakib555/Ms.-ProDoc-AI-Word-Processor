@@ -19,6 +19,13 @@ function appendRowToClonedTable(
   }
 }
 
+function copyColGroup(srcTable: HTMLTableElement, destTable: HTMLTableElement) {
+  const colGroups = srcTable.querySelectorAll(':scope > colgroup');
+  colGroups.forEach((cg) => {
+    destTable.appendChild(cg.cloneNode(true));
+  });
+}
+
 export class TableSplitStrategy implements SplitStrategy {
   readonly priority = 5;
 
@@ -43,12 +50,17 @@ export class TableSplitStrategy implements SplitStrategy {
     moveTable.removeAttribute('data-layout-id');
     measureTable.removeAttribute('data-layout-id');
 
-    const isSmallOrAtomicTable = rows.length <= 4 || 
-      table.getAttribute('data-cant-split') === 'true' || 
-      table.getAttribute('data-keep-together') === 'true' || 
+    copyColGroup(table, keepTable);
+    copyColGroup(table, moveTable);
+    copyColGroup(table, measureTable);
+
+    const isSmallOrAtomicTable =
+      rows.length <= 1 ||
+      table.getAttribute('data-cant-split') === 'true' ||
+      table.getAttribute('data-keep-together') === 'true' ||
       table.classList.contains('exam-mcq-table');
 
-    // If small table or atomic table exceeds remaining space on non-empty page, do not split
+    // If atomic table or single-row table exceeds remaining space on non-empty page, defer to next page
     if (isSmallOrAtomicTable && context.remainingSpace < context.pageHeight * 0.92) {
       measureTable.removeAttribute('data-layout-id');
       const wholeHeight = context.measure(table);
@@ -115,7 +127,7 @@ export class TableSplitStrategy implements SplitStrategy {
     }
 
     // If splitIndex equals rows.length, it fits completely in standard flow
-    if (splitIndex === rows.length) {
+    if (splitIndex >= rows.length && !isFirstRowOversized) {
       return {
         status: SplitStatus.Success,
         keep: node.cloneNode(true) as HTMLElement,
@@ -123,33 +135,36 @@ export class TableSplitStrategy implements SplitStrategy {
       };
     }
 
-    // Prepare keep and move tables preserving hierarchy
+    // Prepare keep table preserving hierarchy
     for (let i = 0; i < splitIndex; i++) {
       const rowClone = rows[i].cloneNode(true) as HTMLTableRowElement;
       appendRowToClonedTable(keepTable, rows[i].parentElement, rowClone);
     }
 
-    const repeatHeader = node.getAttribute('data-repeat-header') === 'true';
-    if (repeatHeader && rows.length > 0 && splitIndex > 0 && splitIndex < rows.length) {
-      const headerRow = rows[0];
-      const headerRowClone = headerRow.cloneNode(true) as HTMLTableRowElement;
-      headerRowClone.setAttribute('data-repeated-header-row', 'true');
-      appendRowToClonedTable(moveTable, headerRow.parentElement, headerRowClone);
-    }
+    const hasRemainingRows = splitIndex < rows.length;
+    if (hasRemainingRows) {
+      const repeatHeader = node.getAttribute('data-repeat-header') === 'true';
+      if (repeatHeader && rows.length > 0 && splitIndex > 0) {
+        const headerRow = rows[0];
+        const headerRowClone = headerRow.cloneNode(true) as HTMLTableRowElement;
+        headerRowClone.setAttribute('data-repeated-header-row', 'true');
+        appendRowToClonedTable(moveTable, headerRow.parentElement, headerRowClone);
+      }
 
-    for (let i = splitIndex; i < rows.length; i++) {
-      const rowClone = rows[i].cloneNode(true) as HTMLTableRowElement;
-      appendRowToClonedTable(moveTable, rows[i].parentElement, rowClone);
-    }
+      for (let i = splitIndex; i < rows.length; i++) {
+        const rowClone = rows[i].cloneNode(true) as HTMLTableRowElement;
+        appendRowToClonedTable(moveTable, rows[i].parentElement, rowClone);
+      }
 
-    keepTable.setAttribute('data-split-bottom', 'true');
-    moveTable.setAttribute('data-continuation', 'true');
+      keepTable.setAttribute('data-split-bottom', 'true');
+      moveTable.setAttribute('data-continuation', 'true');
+    }
 
     if (isFirstRowOversized) {
       return {
         status: SplitStatus.Oversized,
         keep: keepTable,
-        move: moveTable,
+        move: hasRemainingRows ? moveTable : null,
         splitIndex,
         metrics: {
           originalHeight: context.measure(node),
@@ -162,7 +177,7 @@ export class TableSplitStrategy implements SplitStrategy {
     return {
       status: SplitStatus.Success,
       keep: keepTable,
-      move: moveTable,
+      move: hasRemainingRows ? moveTable : null,
       splitIndex
     };
   }

@@ -232,7 +232,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
           triggerGestureLock(400);
         }
       }}
-      style={{ overflow: 'auto', willChange: 'transform' }}
+      style={{ overflow: 'auto' }}
     >
       <div
         className="box-border"
@@ -272,11 +272,8 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
               width: `${basePageWidth}px`,
               ...backgroundStyle,
               ...(isPinching ? {} : {
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-                transition: 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
+                zoom: scale,
               }),
-              willChange: 'transform',
               fontFamily: 'Calibri, Inter, sans-serif',
               lineHeight: '1.6',
             }}

@@ -59,7 +59,12 @@ export class BlockNormalizer {
           nodes.push(p);
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
-        nodes.push(node as HTMLElement);
+        const el = node as HTMLElement;
+        el.removeAttribute('data-layout-id');
+        el.querySelectorAll('[data-layout-id]').forEach((child) => {
+          child.removeAttribute('data-layout-id');
+        });
+        nodes.push(el);
       }
     }
 
