@@ -15,7 +15,7 @@ export const SmallRibbonButton: React.FC<{
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
     disabled={disabled}
-    className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-transparent rounded-sm group transition-colors ${className || ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-slate-700/60 rounded-sm group transition-colors ${className || ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
     title={label}
   >
     <Icon size={14} className={`${iconClassName || 'text-slate-500 dark:text-slate-400'} group-hover:text-blue-600 mr-2 shrink-0 transition-colors`} />

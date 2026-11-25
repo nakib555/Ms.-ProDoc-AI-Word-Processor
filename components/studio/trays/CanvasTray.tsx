@@ -29,27 +29,27 @@ export const CanvasTray: React.FC = () => {
   };
 
   const sizeItems: StudioDropdownItem[] = [
-    { id: 'Letter', label: 'Letter (8.5" × 11")', onClick: () => handleSizeChange('Letter') },
-    { id: 'A4', label: 'A4 (210 × 297 mm)', onClick: () => handleSizeChange('A4') },
-    { id: 'Legal', label: 'Legal (8.5" × 14")', onClick: () => handleSizeChange('Legal') },
-    { id: 'Executive', label: 'Executive (7.25" × 10.5")', onClick: () => handleSizeChange('Executive') },
-    { id: 'A3', label: 'A3 (297 × 420 mm)', onClick: () => handleSizeChange('A3') },
-    { id: 'A5', label: 'A5 (148 × 210 mm)', onClick: () => handleSizeChange('A5') },
+    { id: 'Letter', label: 'Letter (8.5" × 11")', active: pageConfig.size === 'Letter', onClick: () => handleSizeChange('Letter') },
+    { id: 'A4', label: 'A4 (210 × 297 mm)', active: pageConfig.size === 'A4', onClick: () => handleSizeChange('A4') },
+    { id: 'Legal', label: 'Legal (8.5" × 14")', active: pageConfig.size === 'Legal', onClick: () => handleSizeChange('Legal') },
+    { id: 'Executive', label: 'Executive (7.25" × 10.5")', active: pageConfig.size === 'Executive', onClick: () => handleSizeChange('Executive') },
+    { id: 'A3', label: 'A3 (297 × 420 mm)', active: pageConfig.size === 'A3', onClick: () => handleSizeChange('A3') },
+    { id: 'A5', label: 'A5 (148 × 210 mm)', active: pageConfig.size === 'A5', onClick: () => handleSizeChange('A5') },
   ];
 
   const marginItems: StudioDropdownItem[] = [
-    { id: 'normal', label: 'Normal (1" all sides)', onClick: () => handleMarginChange('normal') },
-    { id: 'narrow', label: 'Narrow (0.5" all sides)', onClick: () => handleMarginChange('narrow') },
-    { id: 'moderate', label: 'Moderate (1" top/bot, 0.75" sides)', onClick: () => handleMarginChange('moderate') },
-    { id: 'wide', label: 'Wide (1" top/bot, 2" sides)', onClick: () => handleMarginChange('wide') },
+    { id: 'normal', label: 'Normal (1" all sides)', active: pageConfig.marginPreset === 'normal', onClick: () => handleMarginChange('normal') },
+    { id: 'narrow', label: 'Narrow (0.5" all sides)', active: pageConfig.marginPreset === 'narrow', onClick: () => handleMarginChange('narrow') },
+    { id: 'moderate', label: 'Moderate (1" top/bot, 0.75" sides)', active: pageConfig.marginPreset === 'moderate', onClick: () => handleMarginChange('moderate') },
+    { id: 'wide', label: 'Wide (1" top/bot, 2" sides)', active: pageConfig.marginPreset === 'wide', onClick: () => handleMarginChange('wide') },
     { id: 'div', label: '', divider: true },
-    { id: 'custom', label: 'Custom Margins & Setup...', icon: Sliders, onClick: () => setShowPageSetup(true) },
+    { id: 'custom', label: 'Custom Margins & Setup...', active: pageConfig.marginPreset === 'custom', icon: Sliders, onClick: () => setShowPageSetup(true) },
   ];
 
   const backgroundItems: StudioDropdownItem[] = [
-    { id: 'none', label: 'Clean Paper (None)', onClick: () => handleBackgroundChange('none') },
-    { id: 'ruled', label: 'Ruled Lines (Notebook)', onClick: () => handleBackgroundChange('ruled') },
-    { id: 'grid', label: 'Grid / Graph Paper', onClick: () => handleBackgroundChange('grid') },
+    { id: 'none', label: 'Clean Paper (None)', active: pageConfig.background === 'none', onClick: () => handleBackgroundChange('none') },
+    { id: 'ruled', label: 'Ruled Lines (Notebook)', active: pageConfig.background === 'ruled', onClick: () => handleBackgroundChange('ruled') },
+    { id: 'grid', label: 'Grid / Graph Paper', active: pageConfig.background === 'grid', onClick: () => handleBackgroundChange('grid') },
   ];
 
   return (

@@ -79,15 +79,18 @@ interface TabButtonProps {
 const TabButton = memo(({ icon: Icon, label, isActive, onClick, iconColorClass, isContextual }: TabButtonProps) => {
   return (
     <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
       onClick={onClick}
       onMouseDown={(e) => e.preventDefault()}
       className={`
-        px-3.5 py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-150 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 select-none
+        px-3.5 py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-150 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40
         ${isActive 
-          ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-600 scale-[1.02]' 
+          ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-600' 
           : isContextual
             ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60 hover:bg-white dark:hover:bg-amber-900/40 shadow-xs'
-            : 'bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/80 hover:bg-white dark:hover:bg-slate-750 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-xs'
+            : 'bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700/80 hover:bg-white dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 shadow-xs'
         }
       `}
     >
@@ -239,13 +242,15 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
     <div className="relative flex items-center bg-[#f1f5f9] dark:bg-[#0b1324] px-2 py-1.5 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200/90 dark:border-slate-800 transition-colors">
       
       {/* Collapse / Expand Button on the Left */}
-      <div className="flex-shrink-0 mr-1.5">
+      <div className="flex-shrink-0 mr-2">
         <button
+          type="button"
           onClick={toggleRibbonCollapse}
           onMouseDown={(e) => e.preventDefault()}
+          aria-expanded={!!activeTab}
           title={activeTab ? "Collapse ribbon toolbar" : "Expand ribbon toolbar"}
           aria-label={activeTab ? "Collapse ribbon toolbar" : "Expand ribbon toolbar"}
-          className="w-7 h-7 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center justify-center transition-all active:scale-95"
+          className="w-7 h-7 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center justify-center transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
         >
           {activeTab ? (
             <ChevronUp size={15} strokeWidth={2.5} />
@@ -259,6 +264,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       {showLeftArrow && (
         <div className="absolute left-10 top-0 bottom-0 z-30 flex items-center pl-1 pr-6 bg-gradient-to-r from-[#f1f5f9] dark:from-[#0b1324] via-[#f1f5f9]/90 dark:via-[#0b1324]/90 to-transparent">
           <button 
+            type="button"
             onClick={() => scroll('left')}
             onMouseDown={(e) => e.preventDefault()}
             className="p-1 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shadow-xs active:scale-95 transition-all"
@@ -272,6 +278,8 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       {/* Main Tab Pills Track */}
       <div 
         ref={scrollContainerRef}
+        role="tablist"
+        aria-label="Ribbon tabs"
         className="flex overflow-x-auto overflow-y-hidden no-scrollbar w-full items-center gap-1.5 scroll-smooth touch-pan-x py-0.5"
       >
         {PRIMARY_TABS.map((item) => (

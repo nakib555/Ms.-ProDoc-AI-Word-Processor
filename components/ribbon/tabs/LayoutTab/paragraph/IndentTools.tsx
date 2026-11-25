@@ -10,28 +10,46 @@ export const IndentTools: React.FC = () => {
   const [rightIndent, setRightIndent] = useState('0 cm');
 
   useEffect(() => {
-    if (!editor) return;
-    
     const updateValues = () => {
-        const attrs = editor.getAttributes('paragraph');
-        setLeftIndent(attrs.indent ? `${Math.round(attrs.indent / 37.8 * 10) / 10} cm` : '0 cm');
-        setRightIndent(attrs.marginRight ? `${Math.round(attrs.marginRight / 37.8 * 10) / 10} cm` : '0 cm');
+        const sel = window.getSelection();
+        let node: Node | null = sel && sel.rangeCount > 0 ? sel.anchorNode : null;
+        if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        const block = node instanceof HTMLElement ? node.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote') as HTMLElement | null : null;
+        if (block) {
+            const leftPx = parseFloat(block.style.marginLeft || '0') || 0;
+            const rightPx = parseFloat(block.style.marginRight || '0') || 0;
+            setLeftIndent(`${Math.round((leftPx / 37.8) * 10) / 10} cm`);
+            setRightIndent(`${Math.round((rightPx / 37.8) * 10) / 10} cm`);
+            return;
+        }
+        if (editor) {
+            const attrs = editor.getAttributes('paragraph');
+            setLeftIndent(attrs.indent ? `${Math.round(attrs.indent / 37.8 * 10) / 10} cm` : '0 cm');
+            setRightIndent(attrs.marginRight ? `${Math.round(attrs.marginRight / 37.8 * 10) / 10} cm` : '0 cm');
+        }
     };
 
-    editor.on('selectionUpdate', updateValues);
-    editor.on('update', updateValues);
+    document.addEventListener('selectionchange', updateValues);
+    if (editor) {
+        editor.on('selectionUpdate', updateValues);
+        editor.on('update', updateValues);
+    }
     
     return () => {
-        editor.off('selectionUpdate', updateValues);
-        editor.off('update', updateValues);
+        document.removeEventListener('selectionchange', updateValues);
+        if (editor) {
+            editor.off('selectionUpdate', updateValues);
+            editor.off('update', updateValues);
+        }
     };
   }, [editor]);
 
   const handleLeftChange = (val: string) => {
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = Math.round(num * 37.8 * 10) / 10; // cm to px
-          setLeftIndent(`${num} cm`);
+          const clamped = Math.max(0, Math.round(num * 10) / 10);
+          const px = Math.round(clamped * 37.8 * 10) / 10; // cm to px
+          setLeftIndent(`${clamped} cm`);
           applyBlockStyle({ marginLeft: `${px}px` });
       }
   };
@@ -39,8 +57,9 @@ export const IndentTools: React.FC = () => {
   const handleRightChange = (val: string) => {
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = Math.round(num * 37.8 * 10) / 10; // cm to px
-          setRightIndent(`${num} cm`);
+          const clamped = Math.max(0, Math.round(num * 10) / 10);
+          const px = Math.round(clamped * 37.8 * 10) / 10; // cm to px
+          setRightIndent(`${clamped} cm`);
           applyBlockStyle({ marginRight: `${px}px` });
       }
   };
@@ -48,8 +67,8 @@ export const IndentTools: React.FC = () => {
   return (
     <div className="flex flex-col h-full justify-center gap-1.5 py-0.5">
         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 text-center hidden">Indent</div>
-        <ParagraphInput label="Left" value={leftIndent} icon={Indent} onChange={handleLeftChange} />
-        <ParagraphInput label="Right" value={rightIndent} icon={Outdent} onChange={handleRightChange} />
+        <ParagraphInput label="Left" value={leftIndent} icon={Indent} step={0.2} unit="cm" onChange={handleLeftChange} />
+        <ParagraphInput label="Right" value={rightIndent} icon={Outdent} step={0.2} unit="cm" onChange={handleRightChange} />
     </div>
   );
 };

@@ -9,7 +9,7 @@ import { extractContentFromImage } from '../../../../../utils/imageContentExtrac
 
 export const PicturesTool: React.FC = () => {
   const { executeCommand } = useEditor();
-  const { activeMenu, menuPos, closeMenu } = useInsertTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useInsertTab();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'document' | 'table' | 'text'>('document');
@@ -63,7 +63,7 @@ export const PicturesTool: React.FC = () => {
         iconClassName="text-indigo-600 dark:text-indigo-400"
       />
 
-      <MenuPortal id="pictures_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu}>
+      <MenuPortal id="pictures_menu" activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu}>
         <div className="p-1 min-w-[240px]">
           <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
             Transcribe to Editable Content

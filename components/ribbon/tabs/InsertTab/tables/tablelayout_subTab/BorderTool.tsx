@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RibbonButton } from '../../../../common/RibbonButton';
 import { MenuPortal } from '../../../../common/MenuPortal';
 import { Palette } from 'lucide-react';
+import { SmartSelect } from '../../../../../ui/SmartSelect';
 
 const IconBorderAll = ({ size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 12h18"/><path d="M12 3v18"/></svg>
@@ -130,18 +131,23 @@ export const BorderTool: React.FC = () => {
             <div className="h-px bg-slate-200 dark:bg-slate-700 my-1 mx-2"></div>
             <div className="font-semibold text-slate-700 dark:text-slate-300 px-2 py-1 text-[10px] uppercase tracking-wider">Border Style</div>
             
-            <div className="px-2 py-1 flex items-center justify-between">
+            <div className="px-2 py-1 flex items-center justify-between gap-2">
                 <label className="text-xs text-slate-600 dark:text-slate-400">Width:</label>
-                <select 
-                    value={borderWidth} 
-                    onChange={(e) => setBorderWidth(e.target.value)}
-                    className="border border-slate-200 dark:border-slate-600 rounded px-1 py-0.5 text-xs bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-20 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                    <option value="1px">1px</option>
-                    <option value="2px">2px</option>
-                    <option value="3px">3px</option>
-                    <option value="4px">4px</option>
-                </select>
+                <div className="w-24">
+                  <SmartSelect
+                    ariaLabel="Border width"
+                    value={borderWidth}
+                    onChange={setBorderWidth}
+                    size="xs"
+                    menuWidth={110}
+                    options={[
+                      { value: '1px', label: '1px' },
+                      { value: '2px', label: '2px' },
+                      { value: '3px', label: '3px' },
+                      { value: '4px', label: '4px' },
+                    ]}
+                  />
+                </div>
             </div>
 
             <div className="px-2 py-1 flex items-center justify-between">

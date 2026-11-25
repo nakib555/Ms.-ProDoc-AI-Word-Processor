@@ -13,7 +13,7 @@ export const ViewsGroup: React.FC = () => {
          <ReadModeTool />
          <PrintLayoutTool />
          <WebLayoutTool />
-         <div className="flex flex-col justify-center gap-0.5 px-1 h-full">
+         <div className="flex flex-col justify-center gap-1.5 px-1 h-full">
             <OutlineTool />
             <DraftTool />
          </div>

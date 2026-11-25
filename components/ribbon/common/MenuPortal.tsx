@@ -83,17 +83,115 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Keyboard accessibility: dismiss on Escape key
+  // Keyboard accessibility & smart menu navigation: dismiss on Escape, ArrowUp/Down/Home/End & type-ahead
   useEffect(() => {
     if (!isOpen) return;
+
+    const getFocusableItems = (): HTMLElement[] => {
+      if (!menuRef.current) return [];
+      const nodes = menuRef.current.querySelectorAll<HTMLElement>(
+        'button:not(:disabled):not([aria-hidden="true"]), [role="menuitem"]:not([aria-disabled="true"]), [role="option"]:not([aria-disabled="true"]), a[href]'
+      );
+      return Array.from(nodes).filter((el) => el.offsetParent !== null || el.getClientRects().length > 0);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         closeMenu();
+        return;
+      }
+
+      const activeEl = document.activeElement as HTMLElement | null;
+      const isTypingInField =
+        activeEl &&
+        menuRef.current?.contains(activeEl) &&
+        (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+
+      if (isTypingInField && !['ArrowDown', 'ArrowUp'].includes(e.key)) {
+        return;
+      }
+
+      const items = getFocusableItems();
+      if (items.length === 0) return;
+
+      const currentIdx = activeEl ? items.indexOf(activeEl) : -1;
+
+      if (e.key === 'ArrowDown') {
+        if (!menuRef.current?.contains(activeEl) && activeEl?.tagName === 'INPUT') {
+          // Combobox inputs (e.g. FontFamilyTool) may handle their own ArrowDown or hand off into menu
+          return;
+        }
+        e.preventDefault();
+        const nextIdx = currentIdx < items.length - 1 ? currentIdx + 1 : 0;
+        items[nextIdx]?.focus();
+      } else if (e.key === 'ArrowUp') {
+        if (!menuRef.current?.contains(activeEl) && activeEl?.tagName === 'INPUT') {
+          return;
+        }
+        e.preventDefault();
+        const prevIdx = currentIdx > 0 ? currentIdx - 1 : items.length - 1;
+        items[prevIdx]?.focus();
+      } else if (e.key === 'Home' && menuRef.current?.contains(activeEl)) {
+        e.preventDefault();
+        items[0]?.focus();
+      } else if (e.key === 'End' && menuRef.current?.contains(activeEl)) {
+        e.preventDefault();
+        items[items.length - 1]?.focus();
+      } else if (
+        !isTypingInField &&
+        menuRef.current?.contains(activeEl) &&
+        e.key.length === 1 &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey
+      ) {
+        const ch = e.key.toLowerCase();
+        const nextMatch = items.find(
+          (item, idx) => idx > currentIdx && item.textContent?.trim().toLowerCase().startsWith(ch)
+        );
+        const wrapMatch =
+          nextMatch || items.find((item) => item.textContent?.trim().toLowerCase().startsWith(ch));
+        if (wrapMatch) {
+          e.preventDefault();
+          wrapMatch.focus();
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, closeMenu]);
+
+  // Sync ARIA expanded state onto triggerElement automatically (only the active menu updates it)
+  useEffect(() => {
+    if (!isOpen || !triggerElement) return;
+    const targetButton =
+      triggerElement.tagName === 'BUTTON'
+        ? triggerElement
+        : triggerElement.querySelector<HTMLElement>('button') || triggerElement;
+    targetButton.setAttribute('aria-expanded', 'true');
+    if (!targetButton.hasAttribute('aria-haspopup')) {
+      targetButton.setAttribute('aria-haspopup', 'menu');
+    }
+    return () => {
+      targetButton.setAttribute('aria-expanded', 'false');
+    };
+  }, [triggerElement, isOpen]);
+
+  // Auto-scroll selected/active item into view when menu opens
+  useEffect(() => {
+    if (!isOpen || !menuRef.current) return;
+    const raf = requestAnimationFrame(() => {
+      const selected = menuRef.current?.querySelector<HTMLElement>(
+        '[aria-checked="true"], [aria-selected="true"], [data-selected="true"], .bg-blue-50, .bg-indigo-50\\/90'
+      );
+      if (selected && typeof selected.scrollIntoView === 'function') {
+        selected.scrollIntoView({ block: 'nearest' });
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [isOpen]);
 
   // Desktop floating position calculation
   const calculatePosition = useCallback(() => {
@@ -149,24 +247,26 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         if (left < 10) left = 10;
 
         // Vertical Constraint
+        const anchorTop = triggerElement ? triggerElement.getBoundingClientRect().top : top - triggerHeight - 4;
         const spaceBelow = viewportHeight - top - 10;
-        const spaceAbove = top - triggerHeight - 20;
+        const spaceAbove = anchorTop - 14;
 
         if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
             // Place above
-            top = top - triggerHeight - menuHeight - 8;
-            if (top < 10) {
+            const idealTop = anchorTop - menuHeight - 4;
+            if (idealTop < 10) {
                 top = 10;
-                maxHeightStr = `${spaceAbove}px`;
+                maxHeightStr = `${Math.max(120, anchorTop - 14)}px`;
             } else {
-                maxHeightStr = `min(80vh, ${spaceAbove}px)`;
+                top = idealTop;
+                maxHeightStr = `min(80vh, ${Math.max(120, spaceAbove)}px)`;
             }
         } else {
             // Place below
-            if (spaceBelow < 150) {
-                maxHeightStr = `${Math.max(150, spaceBelow)}px`;
+            if (top + menuHeight > viewportHeight - 10) {
+                maxHeightStr = `${Math.max(140, spaceBelow)}px`;
             } else {
-                maxHeightStr = `min(80vh, ${spaceBelow}px)`;
+                maxHeightStr = `min(80vh, ${Math.max(140, spaceBelow)}px)`;
             }
         }
     }
@@ -184,7 +284,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
     }
   }, [isOpen, isMobile, calculatePosition, width, children]);
 
-  // Handle Resize and Scroll on desktop
+  // Handle Resize, Scroll, Dynamic Content Resize, and One-Click Outside PointerDown on desktop
   useEffect(() => {
      if (!isOpen || isMobile) return;
      
@@ -195,14 +295,33 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
          requestAnimationFrame(calculatePosition);
      };
 
+     const handleOutsidePointerDown = (e: PointerEvent) => {
+         const target = e.target as Node | null;
+         if (!target) return;
+         if (menuRef.current?.contains(target)) return;
+         if (triggerElement && triggerElement.contains(target)) return;
+         // Allow nested SmartSelect/portaled child menus to remain interactive
+         if ((target as HTMLElement).closest?.('[role="listbox"]')) return;
+         closeMenu();
+     };
+
+     let resizeObserver: ResizeObserver | null = null;
+     if (menuRef.current && typeof ResizeObserver !== 'undefined') {
+         resizeObserver = new ResizeObserver(() => requestAnimationFrame(calculatePosition));
+         resizeObserver.observe(menuRef.current);
+     }
+
      window.addEventListener('resize', handleEvent);
      window.addEventListener('scroll', handleEvent, true);
+     document.addEventListener('pointerdown', handleOutsidePointerDown);
 
      return () => {
          window.removeEventListener('resize', handleEvent);
          window.removeEventListener('scroll', handleEvent, true);
+         document.removeEventListener('pointerdown', handleOutsidePointerDown);
+         resizeObserver?.disconnect();
      };
-  }, [isOpen, isMobile, calculatePosition]);
+  }, [isOpen, isMobile, calculatePosition, triggerElement, closeMenu]);
 
   if (!isRendered) return null;
 
@@ -357,20 +476,16 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
   };
 
   return ReactDOM.createPortal(
-    <>
-      <div 
-          className="fixed inset-0 z-[9998]" 
-          onClick={(e) => { e.stopPropagation(); closeMenu(); }}
-      />
-      <div 
-          ref={menuRef}
-          className="bg-white dark:bg-[#1e293b] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col py-1.5 animate-in fade-in zoom-in-95 duration-100 dark:text-slate-200 overscroll-contain"
-          style={desktopStyle}
-          onClick={(e) => e.stopPropagation()}
-      >
-          {children}
-      </div>
-    </>,
+    <div 
+        ref={menuRef}
+        role="menu"
+        aria-label={displayTitle}
+        className="bg-white dark:bg-[#1e293b] rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 flex flex-col py-1.5 animate-in fade-in zoom-in-95 duration-100 dark:text-slate-200 overscroll-contain"
+        style={desktopStyle}
+        onClick={(e) => e.stopPropagation()}
+    >
+        {children}
+    </div>,
     document.body
   );
 };

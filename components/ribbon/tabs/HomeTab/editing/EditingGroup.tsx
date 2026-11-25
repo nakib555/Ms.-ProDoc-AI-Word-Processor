@@ -15,7 +15,7 @@ export const EditingGroup: React.FC = () => {
   return (
     <>
         <RibbonSection title="Editing">
-             <div className="flex flex-col h-full justify-between py-1">
+             <div className="flex flex-col h-full justify-center gap-1 py-1 px-1">
                 <FindTool onClick={() => {
                         setFindReplaceMode('find');
                         setShowFindReplace(true);

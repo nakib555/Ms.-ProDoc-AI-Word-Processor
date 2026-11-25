@@ -5,11 +5,11 @@ import { CheckboxItem } from '../../ViewTab/common/ViewTools';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const OptionsGroup: React.FC = () => {
-  const { pageConfig, setPageConfig } = useEditor();
+  const { pageConfig, setPageConfig, showDocumentText, setShowDocumentText } = useEditor();
 
   return (
     <RibbonSection title="Options">
-        <div className="flex flex-col justify-center h-full gap-1 px-1 min-w-[140px]">
+        <div className="flex flex-col justify-center h-full gap-1.5 px-1.5 py-0.5 min-w-[160px]">
             <CheckboxItem 
                 label="Different First Page" 
                 checked={pageConfig.differentFirstPage || false} 
@@ -22,8 +22,8 @@ export const OptionsGroup: React.FC = () => {
             />
             <CheckboxItem 
                 label="Show Document Text" 
-                checked={true} 
-                onChange={() => {}} 
+                checked={showDocumentText} 
+                onChange={() => setShowDocumentText(prev => !prev)} 
             />
         </div>
     </RibbonSection>

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FileText, FolderOpen, Save, Printer, Sliders, 
   RotateCcw, RotateCw, Sun, Moon, Download, 
@@ -34,6 +35,7 @@ export const StudioHeader: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState(documentTitle);
+  const [showNewConfirm, setShowNewConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleTitleSubmit = () => {
@@ -98,12 +100,7 @@ export const StudioHeader: React.FC = () => {
       label: 'New Blank Document',
       icon: FileText,
       shortcut: 'Ctrl+N',
-      onClick: () => {
-        if (window.confirm('Create a new blank document? Any unsaved edits will be lost.')) {
-          setContent('<p></p>', true, { historyMode: 'immediate' });
-          setDocumentTitle('Untitled Document');
-        }
-      }
+      onClick: () => setShowNewConfirm(true)
     },
     {
       id: 'open',
@@ -332,6 +329,42 @@ export const StudioHeader: React.FC = () => {
           title="Quick Export Document (HTML)"
         />
       </div>
+      {showNewConfirm && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+          data-modal-backdrop="true"
+          onClick={() => setShowNewConfirm(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-5 w-80"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">New Blank Document</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-4">
+              Create a new blank document? Any unsaved edits will be lost.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setShowNewConfirm(false)} className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setContent('<p></p>', true, { historyMode: 'immediate' });
+                  setDocumentTitle('Untitled Document');
+                  setShowNewConfirm(false);
+                }}
+                className="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium"
+              >
+                Create New
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </header>
   );
 };

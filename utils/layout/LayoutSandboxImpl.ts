@@ -21,6 +21,7 @@ export class LayoutSandboxImpl implements LayoutSandbox {
     this.el.style.wordWrap = 'break-word';
     this.el.style.overflowWrap = 'break-word';
     this.el.style.whiteSpace = 'normal';
+    this.el.style.display = 'flow-root';
     this.el.style.contain = 'layout style';
     if (typeof document !== 'undefined' && document.body) {
       document.body.appendChild(this.el);
@@ -67,14 +68,64 @@ export class LayoutSandboxImpl implements LayoutSandbox {
     this.el.appendChild(node);
     let height = Math.ceil(this.el.getBoundingClientRect().height);
     // Headless/jsdom layout fallback: if getBoundingClientRect returns 0,
-    // compute accurate fallback heights for tables and text blocks
+    // compute accurate fallback heights for tables, rows, and text blocks
     if (height === 0 && node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
+      const measureRowFallback = (row: HTMLTableRowElement): number => {
+        const explicitRowH = parseFloat(row.style.height || row.style.minHeight || '0') || 0;
+        const cells = Array.from(row.cells);
+        const colCount = Math.max(1, cells.length);
+        const colWidth = Math.max(60, Math.floor(effectiveWidth / colCount) - 12);
+        let maxCellH = 28;
+        for (const cell of cells) {
+          const explicitCellH = parseFloat(cell.style.height || cell.style.minHeight || '0') || 0;
+          const childBlocks = Array.from(cell.children).filter(
+            (c) => !['BR'].includes(c.tagName)
+          );
+          let cellH = 0;
+          if (childBlocks.length > 0) {
+            for (const block of childBlocks) {
+              const txt = block.textContent || '';
+              if (txt.trim().length > 0) {
+                const m = TypographyEngine.measureParagraphText(txt, colWidth, {
+                  fontFamily: this.el.style.fontFamily,
+                  fontSizePt: 11,
+                  lineHeight: 1.35,
+                });
+                cellH += Math.max(20, Math.ceil(m.totalHeight));
+              } else {
+                cellH += 20;
+              }
+            }
+            cellH += 10;
+          } else {
+            const brCount = cell.querySelectorAll('br').length;
+            const txt = cell.textContent || '';
+            if (txt.trim().length > 0) {
+              const m = TypographyEngine.measureParagraphText(txt, colWidth, {
+                fontFamily: this.el.style.fontFamily,
+                fontSizePt: 11,
+                lineHeight: 1.35,
+              });
+              cellH = Math.max(28, Math.ceil(m.totalHeight) + 10 + Math.max(0, brCount - 1) * 18);
+            } else {
+              cellH = Math.max(28, 12 + brCount * 18);
+            }
+          }
+          maxCellH = Math.max(maxCellH, explicitCellH, cellH);
+        }
+        return Math.max(28, explicitRowH, maxCellH);
+      };
+
       if (el.tagName === 'TABLE') {
-        const rows = (el as HTMLTableElement).rows.length;
-        height = Math.max(30, rows * 28);
+        const rows = Array.from((el as HTMLTableElement).rows);
+        let totalTableH = 16; // top/bottom table margin (8px * 2)
+        for (const row of rows) {
+          totalTableH += measureRowFallback(row);
+        }
+        height = Math.max(30, totalTableH);
       } else if (el.tagName === 'TR') {
-        height = 28;
+        height = measureRowFallback(el as HTMLTableRowElement);
       } else {
         const textContent = el.textContent || '';
         if (textContent.length > 0) {

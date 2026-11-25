@@ -7,15 +7,13 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 export const WebLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
   return (
-    <div>
-        <RibbonButton 
-            icon={Globe} 
-            label="Web Layout" 
-            onClick={() => setViewMode('web')} 
-            className={viewMode === 'web' ? 'bg-slate-100 text-blue-700' : ''}
-            iconClassName="text-indigo-600"
-        />
-    </div>
+    <RibbonButton 
+        icon={Globe} 
+        label="Web Layout" 
+        onClick={() => setViewMode('web')} 
+        active={viewMode === 'web'}
+        iconClassName="text-indigo-600 dark:text-indigo-400"
+    />
   );
 };
 

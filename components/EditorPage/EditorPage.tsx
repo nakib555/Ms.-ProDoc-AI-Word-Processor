@@ -44,7 +44,12 @@ interface EditorPageProps {
   zoom: number;
   calibrationScale?: number;
   readOnly?: boolean;
-  onContentChange?: (html: string, pageIndex: number, historyMode?: HistoryCommitMode) => void;
+  onContentChange?: (
+    html: string,
+    pageIndex: number,
+    historyMode?: HistoryCommitMode,
+    options?: { immediateRepaginate?: boolean }
+  ) => void;
   onFocus?: (e: React.FocusEvent<HTMLDivElement>) => void;
   showFormattingMarks: boolean;
   historyApplySeq?: number;
@@ -1245,8 +1250,18 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     if (isImmediate) {
       delete e.currentTarget.dataset.commitImmediate;
     }
+    const wrapper = e.currentTarget.parentElement;
+    const isOverflowing =
+      columnCount === 1 &&
+      Boolean(wrapper) &&
+      e.currentTarget.scrollHeight > (wrapper?.clientHeight || 0) - 4;
     if (onContentChange) {
-      onContentChange(e.currentTarget.innerHTML, pageNumber - 1, isImmediate ? 'immediate' : 'debounced');
+      onContentChange(
+        e.currentTarget.innerHTML,
+        pageNumber - 1,
+        isImmediate ? 'immediate' : 'debounced',
+        { immediateRepaginate: isImmediate || isOverflowing }
+      );
     }
   };
 
@@ -1392,11 +1407,36 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       const currentTable = currentCell?.closest('table') as HTMLTableElement | null;
       const currentRow = currentCell?.closest('tr') as HTMLTableRowElement | null;
 
-      if (currentTable && currentRow && !currentTable.nextElementSibling && editorRef.current.contains(currentTable)) {
+      if (currentTable && currentRow && editorRef.current.contains(currentTable)) {
         const validRows = Array.from(currentTable.rows).filter(
-          (r) => r.getAttribute('data-repeated-header-row') !== 'true'
+          (r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0
         );
-        if (validRows[validRows.length - 1] === currentRow && pageNumber === totalPages) {
+        const isLastValidRow = validRows[validRows.length - 1] === currentRow;
+        if (
+          isLastValidRow &&
+          currentTable.getAttribute('data-split-bottom') === 'true' &&
+          pageNumber < totalPages
+        ) {
+          const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
+          const contTable = nextPage?.querySelector('table[data-continuation="true"]') as HTMLTableElement | null;
+          const contRows = contTable
+            ? Array.from(contTable.rows).filter(
+                (r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0
+              )
+            : [];
+          if (contRows.length > 0 && nextPage) {
+            e.preventDefault();
+            const colIdx = currentCell ? Array.from(currentRow.cells).indexOf(currentCell) : 0;
+            const targetCell = contRows[0].cells[Math.min(Math.max(0, colIdx), contRows[0].cells.length - 1)];
+            if (targetCell) {
+              nextPage.focus();
+              focusTableCellLikeWord(targetCell, false);
+              targetCell.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+              return;
+            }
+          }
+        }
+        if (isLastValidRow && !currentTable.nextElementSibling && pageNumber === totalPages) {
           e.preventDefault();
           const p = document.createElement('p');
           p.innerHTML = '<br>';
@@ -1422,17 +1462,71 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           const nextPage = document.getElementById(`prodoc-editor-${pageNumber + 1}`);
           if (nextPage) {
             nextPage.focus();
+            const firstBodyTable = nextPage.firstElementChild as HTMLElement | null;
+            if (firstBodyTable?.tagName === 'TABLE') {
+              const firstValidRow = Array.from((firstBodyTable as HTMLTableElement).rows).find(
+                (r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0
+              );
+              if (firstValidRow?.cells[0]) {
+                focusTableCellLikeWord(firstValidRow.cells[0], false);
+                return;
+              }
+            }
             const r = document.createRange();
             r.selectNodeContents(nextPage);
             r.collapse(true);
             selection.removeAllRanges();
             selection.addRange(r);
-            nextPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            nextPage.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
           }
         }
       }
     }
     if (e.key === 'ArrowUp') {
+      const anchorEl =
+        range.anchorContainer instanceof Element
+          ? range.anchorContainer
+          : range.anchorContainer?.parentElement;
+      const currentCell = anchorEl?.closest('td, th') as HTMLTableCellElement | null;
+      const currentTable = currentCell?.closest('table') as HTMLTableElement | null;
+      const currentRow = currentCell?.closest('tr') as HTMLTableRowElement | null;
+
+      if (
+        currentTable &&
+        currentRow &&
+        currentTable.getAttribute('data-continuation') === 'true' &&
+        pageNumber > 1 &&
+        editorRef.current.contains(currentTable)
+      ) {
+        const validRows = Array.from(currentTable.rows).filter(
+          (r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0
+        );
+        if (validRows[0] === currentRow) {
+          const prevPage = document.getElementById(`prodoc-editor-${pageNumber - 1}`);
+          const prevTables = prevPage
+            ? (Array.from(prevPage.querySelectorAll('table[data-split-bottom="true"]')) as HTMLTableElement[])
+            : [];
+          const splitTop = prevTables[prevTables.length - 1];
+          const prevRows = splitTop
+            ? Array.from(splitTop.rows).filter(
+                (r) => r.getAttribute('data-repeated-header-row') !== 'true' && r.cells.length > 0
+              )
+            : [];
+          const lastPrevRow = prevRows[prevRows.length - 1];
+          if (lastPrevRow && prevPage) {
+            e.preventDefault();
+            const colIdx = currentCell ? Array.from(currentRow.cells).indexOf(currentCell) : 0;
+            const targetCell = lastPrevRow.cells[Math.min(Math.max(0, colIdx), lastPrevRow.cells.length - 1)];
+            if (targetCell) {
+              prevPage.focus();
+              focusTableCellLikeWord(targetCell, false);
+              targetCell.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+              return;
+            }
+          }
+        }
+      }
+
       const editorRect = editorRef.current.getBoundingClientRect();
       const rangeRect = range.getBoundingClientRect();
       const cursorTop = rangeRect.top !== 0 ? rangeRect.top : editorRect.top;
@@ -1447,6 +1541,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             r.collapse(false);
             selection.removeAllRanges();
             selection.addRange(r);
+            prevPage.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
           }
         }
       }

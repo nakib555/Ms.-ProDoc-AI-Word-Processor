@@ -8,7 +8,7 @@ import { ShapesMenu, getShapeHtml, ShapeDef } from '@/components/ribbon/tabs/Ins
 
 export const DrawShapesTool: React.FC = () => {
   const { executeCommand } = useEditor();
-  const { activeMenu, menuPos, closeMenu } = useDrawTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useDrawTab();
   const menuId = 'draw_shapes_menu';
 
   const insertShape = useCallback((shape: ShapeDef) => {
@@ -24,7 +24,7 @@ export const DrawShapesTool: React.FC = () => {
             icon={Shapes} 
             label="Shapes" 
         />
-        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={340}>
+        <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={340}>
             <ShapesMenu onInsert={insertShape} />
         </MenuPortal>
     </>

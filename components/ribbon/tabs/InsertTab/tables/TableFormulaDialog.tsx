@@ -8,6 +8,7 @@ import {
 
 import { useDocumentModel } from '../../../../../contexts/DocumentModelContext';
 import { globalFormulaEngine } from '../../../../../utils/formulaEngine';
+import { SmartSelect } from '../../../../ui/SmartSelect';
 
 interface TableFormulaDialogProps {
     isOpen: boolean;
@@ -609,35 +610,41 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
                                         placeholder="=A1*B2+100"
                                     />
                                 ) : (
-                                    <select
+                                    <SmartSelect
+                                        ariaLabel="Formula Function"
                                         value={funcName}
-                                        onChange={(e) => setFuncName(e.target.value)}
-                                        className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                                    >
-                                        <option value="SUM">SUM (Add numbers)</option>
-                                        <option value="AVERAGE">AVERAGE (Mean value)</option>
-                                        <option value="COUNT">COUNT (Count non-empty)</option>
-                                        <option value="MAX">MAX (Maximum value)</option>
-                                        <option value="MIN">MIN (Minimum value)</option>
-                                        <option value="PRODUCT">PRODUCT (Multiply numbers)</option>
-                                    </select>
+                                        onChange={setFuncName}
+                                        size="md"
+                                        triggerClassName="bg-slate-50 dark:bg-slate-800"
+                                        options={[
+                                            { value: 'SUM', label: 'SUM', description: 'Add selected numeric values' },
+                                            { value: 'AVERAGE', label: 'AVERAGE', description: 'Calculate arithmetic mean' },
+                                            { value: 'COUNT', label: 'COUNT', description: 'Count non-empty cells' },
+                                            { value: 'MAX', label: 'MAX', description: 'Find highest numeric value' },
+                                            { value: 'MIN', label: 'MIN', description: 'Find lowest numeric value' },
+                                            { value: 'PRODUCT', label: 'PRODUCT', description: 'Multiply selected values' },
+                                        ]}
+                                    />
                                 )}
                             </div>
 
                             {/* Format results option */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">3. Formatting</label>
-                                <select
+                                <SmartSelect
+                                    ariaLabel="Number Formatting"
                                     value={numberFormat}
-                                    onChange={(e) => setNumberFormat(e.target.value)}
-                                    className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 dark:text-slate-100 focus:outline-none"
-                                >
-                                    <option value="">No Formatting (Standard decimal)</option>
-                                    <option value="0">Integer (Whole number)</option>
-                                    <option value="0.00">Two Decimal Places (0.00)</option>
-                                    <option value="$">Currency Symbol ($)</option>
-                                    <option value="%">Percentage Format (%)</option>
-                                </select>
+                                    onChange={setNumberFormat}
+                                    size="md"
+                                    triggerClassName="bg-slate-50 dark:bg-slate-800"
+                                    options={[
+                                        { value: '', label: 'No Formatting', description: 'Standard decimal output' },
+                                        { value: '0', label: 'Integer', description: 'Round to whole number' },
+                                        { value: '0.00', label: 'Two Decimal Places (0.00)', description: 'Fixed two-decimal precision' },
+                                        { value: '$', label: 'Currency Symbol ($)', description: 'Format as US dollar amount' },
+                                        { value: '%', label: 'Percentage Format (%)', description: 'Display as percentage' },
+                                    ]}
+                                />
                             </div>
                         </div>
 

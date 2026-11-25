@@ -151,7 +151,7 @@ export const ShapesMenu = React.memo<{ onInsert: (shape: ShapeDef) => void }>(({
 
 export const ShapesTool: React.FC = () => {
   const { executeCommand } = useEditor();
-  const { activeMenu, menuPos, closeMenu } = useInsertTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useInsertTab();
   const menuId = 'shapes_menu';
 
   const insertShape = useCallback((shape: ShapeDef) => {
@@ -169,7 +169,7 @@ export const ShapesTool: React.FC = () => {
             variant="small"
             iconClassName="text-blue-500"
         />
-        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={340}>
+        <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={340}>
             <ShapesMenu onInsert={insertShape} />
         </MenuPortal>
     </>

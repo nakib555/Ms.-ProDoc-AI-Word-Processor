@@ -721,15 +721,75 @@ export function mergeContinuationTables(root: ParentNode): void {
 
     const prev = splitTable.previousElementSibling as HTMLTableElement | null;
     if (prev && prev.tagName === 'TABLE') {
-      const targetBody = prev.tBodies[0] || prev;
+      let targetBody = prev.tBodies[0] || null;
+      if (!targetBody) {
+        const doc = prev.ownerDocument || document;
+        targetBody = doc.createElement('tbody');
+        prev.appendChild(targetBody);
+      }
+
       const rows = Array.from(splitTable.rows);
       for (const row of rows) {
+        if (row.getAttribute('data-split-row-continuation') === 'true') {
+          const prevRows = Array.from(prev.rows);
+          const targetRow = prevRows[prevRows.length - 1];
+          if (targetRow && targetRow.getAttribute('data-split-row-bottom') === 'true') {
+            targetRow.removeAttribute('data-split-row-bottom');
+            const contCells = Array.from(row.cells);
+            const baseCells = Array.from(targetRow.cells);
+            contCells.forEach((contCell, idx) => {
+              const baseCell = baseCells[idx];
+              if (!baseCell) return;
+              // Remove placeholder trailing <br> if base cell was padded
+              const onlyEmptyBr =
+                baseCell.childNodes.length === 1 &&
+                baseCell.firstChild?.nodeName === 'BR';
+              if (onlyEmptyBr && contCell.childNodes.length > 0) {
+                baseCell.innerHTML = '';
+              }
+              while (contCell.firstChild) {
+                const child = contCell.firstChild;
+                // Merge split paragraph fragment if tagged
+                if (
+                  child.nodeType === Node.ELEMENT_NODE &&
+                  (child as HTMLElement).getAttribute('data-split-fragment-cont') === 'true' &&
+                  baseCell.lastElementChild &&
+                  baseCell.lastElementChild.tagName === (child as HTMLElement).tagName
+                ) {
+                  const targetBlock = baseCell.lastElementChild as HTMLElement;
+                  const textToAppend = child.textContent || '';
+                  if (textToAppend) {
+                    const needsSpace =
+                      targetBlock.textContent &&
+                      !/\s$/.test(targetBlock.textContent) &&
+                      !/^\s/.test(textToAppend);
+                    targetBlock.appendChild(
+                      (prev.ownerDocument || document).createTextNode(
+                        (needsSpace ? ' ' : '') + textToAppend
+                      )
+                    );
+                  }
+                  contCell.removeChild(child);
+                } else {
+                  baseCell.appendChild(child);
+                }
+              }
+            });
+            row.remove();
+            continue;
+          }
+        }
+        row.removeAttribute('data-split-row-continuation');
+        row.removeAttribute('data-split-row-bottom');
         targetBody.appendChild(row);
       }
       prev.removeAttribute('data-split-bottom');
       splitTable.remove();
     } else {
       splitTable.removeAttribute('data-continuation');
+      splitTable.querySelectorAll('tr[data-split-row-continuation]').forEach((r) => {
+        r.removeAttribute('data-split-row-continuation');
+      });
     }
   }
 }
@@ -801,6 +861,30 @@ export const TABLE_DESIGN_THEMES: Record<string, TablePresetTheme> = {
   },
 };
 
+export function readTableDesignState(table: HTMLTableElement): {
+  options: TableDesignOptionsState;
+  themeKey: string;
+} {
+  const themeKey = table.getAttribute('data-table-theme') || 'slate';
+  const readFlag = (attr: string, fallback: boolean): boolean => {
+    const val = table.getAttribute(attr);
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    return fallback;
+  };
+  return {
+    themeKey,
+    options: {
+      headerRow: readFlag('data-header-row', true),
+      firstColumn: readFlag('data-first-column', false),
+      totalRow: readFlag('data-total-row', false),
+      lastColumn: readFlag('data-last-column', false),
+      bandedRows: readFlag('data-banded-rows', true),
+      bandedCols: readFlag('data-banded-cols', false),
+    },
+  };
+}
+
 export function applyTableDesignOptions(
   table: HTMLTableElement,
   options: TableDesignOptionsState,
@@ -808,6 +892,12 @@ export function applyTableDesignOptions(
 ): void {
   const theme = TABLE_DESIGN_THEMES[themeKey] || TABLE_DESIGN_THEMES.slate;
   table.setAttribute('data-table-theme', themeKey);
+  table.setAttribute('data-header-row', String(options.headerRow));
+  table.setAttribute('data-first-column', String(options.firstColumn));
+  table.setAttribute('data-total-row', String(options.totalRow));
+  table.setAttribute('data-last-column', String(options.lastColumn));
+  table.setAttribute('data-banded-rows', String(options.bandedRows));
+  table.setAttribute('data-banded-cols', String(options.bandedCols));
   table.style.borderCollapse = 'collapse';
 
   const grid = buildTableGrid(table);

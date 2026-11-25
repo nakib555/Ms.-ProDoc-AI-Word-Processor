@@ -8,7 +8,7 @@ import { MenuPortal } from '../../../common/MenuPortal';
 
 export const BreaksTool: React.FC = () => {
   const { executeCommand, pageConfig } = useEditor();
-  const { activeMenu, menuPos, closeMenu } = useLayoutTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useLayoutTab();
   const menuId = 'breaks';
 
   const insertSectionBreak = (type: 'nextPage' | 'continuous', newConfig?: any) => {
@@ -34,29 +34,29 @@ export const BreaksTool: React.FC = () => {
              label="Breaks" 
              iconClassName="text-blue-600 dark:text-blue-400"
          />
-         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={220}>
+         <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={220}>
              <div className="p-2">
-                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Page Breaks</div>
-                 <button onClick={() => { executeCommand('pageBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group">
+                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Page Breaks</div>
+                 <button onClick={() => { executeCommand('pageBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-200 flex items-center gap-2 mb-1 group">
                      <PanelTop size={14} className="text-slate-400 group-hover:text-blue-600"/> Page
                  </button>
-                 <button onClick={() => { executeCommand('columnBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group">
+                 <button onClick={() => { executeCommand('columnBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-200 flex items-center gap-2 mb-1 group">
                      <Columns size={14} className="text-slate-400 group-hover:text-blue-600"/> Column
                  </button>
-                 <button onClick={() => { executeCommand('textWrappingBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 group">
+                 <button onClick={() => { executeCommand('textWrappingBreak'); closeMenu(); }} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-200 flex items-center gap-2 group">
                      <WrapText size={14} className="text-slate-400 group-hover:text-blue-600"/> Text Wrapping
                  </button>
                  
-                 <div className="border-t border-slate-100 my-2"></div>
+                 <div className="border-t border-slate-100 dark:border-slate-700 my-2"></div>
                  
-                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Section Breaks</div>
-                 <button onClick={() => insertSectionBreak('nextPage')} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 mb-1 group">
+                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Section Breaks</div>
+                 <button onClick={() => insertSectionBreak('nextPage')} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-200 flex items-center gap-2 mb-1 group">
                      <ArrowRight size={14} className="text-slate-400 group-hover:text-orange-600"/> Next Page
                  </button>
-                 <button onClick={() => insertSectionBreak('continuous')} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 group mb-1">
+                 <button onClick={() => insertSectionBreak('continuous')} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-200 flex items-center gap-2 group mb-1">
                      <MoreHorizontal size={14} className="text-slate-400 group-hover:text-orange-600"/> Continuous
                  </button>
-                 <button onClick={() => insertSectionBreak('nextPage', { orientation: pageConfig.orientation === 'portrait' ? 'landscape' : 'portrait' })} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 rounded text-xs text-slate-700 flex items-center gap-2 group">
+                 <button onClick={() => insertSectionBreak('nextPage', { orientation: pageConfig.orientation === 'portrait' ? 'landscape' : 'portrait' })} className="w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-200 flex items-center gap-2 group">
                      <FilePlus size={14} className="text-slate-400 group-hover:text-orange-600"/> Next Page (Flip Orientation)
                  </button>
              </div>

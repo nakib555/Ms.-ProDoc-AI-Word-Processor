@@ -5,14 +5,15 @@ import { RibbonButton } from '../../../../common/RibbonButton';
 import { useEditor } from '../../../../../../contexts/EditorContext';
 
 export const ReadModeTool: React.FC = () => {
-  const { setViewMode } = useEditor();
+  const { viewMode, setViewMode } = useEditor();
   return (
     <RibbonButton 
         icon={BookOpen} 
         label="Read Mode" 
         onClick={() => setViewMode('read')}
+        active={viewMode === 'read'}
         title="Switch to distraction-free Read Mode"
-        iconClassName="text-indigo-600"
+        iconClassName="text-indigo-600 dark:text-indigo-400"
     />
   );
 };

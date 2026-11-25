@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Square } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { PageBorderConfig } from '../../../../../types';
+import { SmartSelect } from '../../../../ui/SmartSelect';
 
 interface PageBordersDialogProps {
   isOpen: boolean;
@@ -227,26 +228,22 @@ export const PageBordersDialog: React.FC<PageBordersDialogProps> = ({ isOpen, on
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
-                  Width (pt)
-                </label>
-                <select
-                  value={draft.widthPt}
-                  onChange={(e) =>
+                <SmartSelect
+                  label="Width (pt)"
+                  value={String(draft.widthPt)}
+                  onChange={(val) =>
                     setDraft((prev) => ({
                       ...prev,
                       style: prev.style === 'none' ? 'box' : prev.style,
-                      widthPt: Number(e.target.value),
+                      widthPt: Number(val),
                     }))
                   }
-                  className="w-full px-2.5 py-2 text-xs font-mono tabular-nums rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
-                >
-                  {BORDER_WIDTH_OPTIONS.map((w) => (
-                    <option key={w} value={w}>
-                      {w} pt
-                    </option>
-                  ))}
-                </select>
+                  size="sm"
+                  options={BORDER_WIDTH_OPTIONS.map((w) => ({
+                    value: String(w),
+                    label: `${w} pt`,
+                  }))}
+                />
               </div>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">

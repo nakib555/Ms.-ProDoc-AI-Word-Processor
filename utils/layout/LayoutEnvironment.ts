@@ -25,7 +25,7 @@ export interface LayoutEnvironment {
 
 export class LayoutEnvironmentImpl implements LayoutEnvironment {
   dpi = DPI;
-  safetyBuffer = 15;
+  safetyBuffer = 24;
   minLineHeight = 20;
   pageWidth: number;
   pageHeight: number;
@@ -42,9 +42,11 @@ export class LayoutEnvironmentImpl implements LayoutEnvironment {
   debug: boolean;
   pageConfig: PageConfig;
 
-  constructor(config: PageConfig, debug = false) {
+  constructor(config: PageConfig, debug = false, safetyBuffer = 24, minLineHeight = 20) {
     this.pageConfig = config;
     this.debug = debug;
+    this.safetyBuffer = safetyBuffer;
+    this.minLineHeight = minLineHeight;
 
     const base = PAGE_SIZES[config.size as string] || PAGE_SIZES['Letter'];
     let baseW = base.width;

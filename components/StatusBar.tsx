@@ -37,7 +37,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
   const { theme, toggleTheme } = useTheme();
   const { setHudZoom, triggerGestureLock } = useGestureContext();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
+  const mobileToolsBtnRef = useRef<HTMLButtonElement>(null);
   const [showMobileTools, setShowMobileTools] = useState(false);
+  const [mobileToolsPos, setMobileToolsPos] = useState<{ top: number; right: number; placeBelow: boolean }>({ top: 0, right: 8, placeBelow: false });
   const [showJumpDialog, setShowJumpDialog] = useState(false);
   const [jumpPageInput, setJumpPageInput] = useState('');
 
@@ -97,6 +99,22 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     };
   }, [viewMode, setZoom, zoomMode, setZoomMode, zoom, triggerGestureLock, setHudZoom]);
 
+  useEffect(() => {
+    if (!showMobileTools) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowMobileTools(false);
+    };
+    const handleViewportChange = () => setShowMobileTools(false);
+    document.addEventListener('keydown', handleKey);
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('scroll', handleViewportChange, true);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [showMobileTools]);
+
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable) {
@@ -146,6 +164,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             
             {/* Smart Selection Toggle (Mobile Helper) - Only visible on mobile */}
             <button 
+                type="button"
+                aria-pressed={selectionMode}
+                aria-label={selectionMode ? "Disable Smart Select Mode" : "Enable Smart Select Mode"}
                 onClick={() => {
                     const newState = !selectionMode;
                     setSelectionMode(newState);
@@ -160,34 +181,71 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
             {/* Keyboard Lock - Only visible on mobile */}
             <div className="relative md:hidden flex items-center">
-              {showMobileTools && (
-                <div className="absolute bottom-full right-0 mb-2 p-1.5 bg-slate-800 rounded-lg border border-slate-700 shadow-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 whitespace-nowrap">
-                  <button
-                    onClick={() => { setIsKeyboardLocked(!isKeyboardLocked); setShowMobileTools(false); }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isKeyboardLocked ? 'bg-red-500/20 text-red-400' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
-                  >
-                    {isKeyboardLocked ? <Lock size={12} /> : <Unlock size={12} />}
-                    kboard
-                  </button>
-                  <button
-                    onClick={() => { setIsTableResizerEnabled(!isTableResizerEnabled); setShowMobileTools(false); }}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isTableResizerEnabled ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'}`}
-                  >
-                    {isTableResizerEnabled ? <Lock size={12} /> : <Unlock size={12} />}
-                    table resizer
-                  </button>
-                </div>
-              )}
-              <button 
-                  onClick={() => setShowMobileTools(!showMobileTools)}
-                  className={`p-1.5 rounded transition-all flex items-center gap-1 ${showMobileTools || isKeyboardLocked || isTableResizerEnabled ? 'text-blue-400 bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+              <button
+                  ref={mobileToolsBtnRef}
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={showMobileTools}
+                  aria-label="Mobile Tools"
+                  onClick={() => {
+                    if (!showMobileTools && mobileToolsBtnRef.current) {
+                      const rect = mobileToolsBtnRef.current.getBoundingClientRect();
+                      const placeBelow = position === 'top' || rect.top < 80;
+                      setMobileToolsPos({
+                        top: placeBelow ? rect.bottom + 8 : rect.top - 8,
+                        right: Math.max(8, window.innerWidth - rect.right),
+                        placeBelow,
+                      });
+                    }
+                    setShowMobileTools(!showMobileTools);
+                  }}
+                  className={`p-1.5 rounded transition-all flex items-center gap-1 ${showMobileTools || isKeyboardLocked || isTableResizerEnabled ? 'text-blue-500 dark:text-blue-400 bg-blue-100/70 dark:bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
                   title="Mobile Tools"
               >
                   {(isKeyboardLocked || isTableResizerEnabled) ? <Lock size={14} /> : <Unlock size={14} />}
               </button>
+              {showMobileTools && createPortal(
+                <>
+                  <div className="fixed inset-0 z-[9998]" onClick={() => setShowMobileTools(false)} />
+                  <div
+                    role="menu"
+                    aria-label="Mobile Tools"
+                    className="fixed z-[9999] p-1.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xl flex items-center gap-2 whitespace-nowrap animate-in fade-in duration-150"
+                    style={{
+                      top: mobileToolsPos.placeBelow ? mobileToolsPos.top : undefined,
+                      bottom: mobileToolsPos.placeBelow ? undefined : window.innerHeight - mobileToolsPos.top,
+                      right: mobileToolsPos.right,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      role="menuitemcheckbox"
+                      aria-checked={isKeyboardLocked}
+                      onClick={() => { setIsKeyboardLocked(!isKeyboardLocked); setShowMobileTools(false); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isKeyboardLocked ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                    >
+                      {isKeyboardLocked ? <Lock size={12} /> : <Unlock size={12} />}
+                      Keyboard
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitemcheckbox"
+                      aria-checked={isTableResizerEnabled}
+                      onClick={() => { setIsTableResizerEnabled(!isTableResizerEnabled); setShowMobileTools(false); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isTableResizerEnabled ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                    >
+                      {isTableResizerEnabled ? <Lock size={12} /> : <Unlock size={12} />}
+                      Table Resizer
+                    </button>
+                  </div>
+                </>,
+                document.body
+              )}
             </div>
 
             <button 
+                type="button"
+                aria-label={theme === 'light' ? "Switch to Dark Mode" : theme === 'dark' ? "Switch to Ocean Mode" : "Switch to Light Mode"}
                 onClick={toggleTheme}
                 className={`transition-colors p-1 ${theme === 'ocean' ? 'text-blue-500 hover:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-yellow-400'}`}
                 title={theme === 'light' ? "Switch to Dark Mode" : theme === 'dark' ? "Switch to Ocean Mode" : "Switch to Light Mode"}
@@ -196,8 +254,11 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             </button>
 
             {/* View Modes - Desktop (Grouped) */}
-            <div className="hidden sm:flex items-center bg-slate-200/80 dark:bg-slate-800 rounded-md p-0.5 border border-slate-300/80 dark:border-slate-700">
+            <div className="hidden sm:flex items-center bg-slate-200/80 dark:bg-slate-800 rounded-md p-0.5 border border-slate-300/80 dark:border-slate-700" role="group" aria-label="View Mode">
                  <button 
+                    type="button"
+                    aria-pressed={viewMode === 'print'}
+                    aria-label="Print Layout"
                     onClick={() => setViewMode('print')} 
                     className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'print' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                     title="Print Layout"
@@ -205,6 +266,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                     <FileText size={14} />
                  </button>
                  <button 
+                    type="button"
+                    aria-pressed={viewMode === 'web'}
+                    aria-label="Web Layout"
                     onClick={() => setViewMode('web')} 
                     className={`p-1 rounded flex items-center justify-center transition-all ${viewMode === 'web' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                     title="Web Layout"
@@ -215,6 +279,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
             {/* View Mode Toggle - Mobile (Single Button) */}
             <button 
+                type="button"
+                aria-pressed={viewMode === 'web'}
+                aria-label={viewMode === 'print' ? "Switch to Web Layout" : "Switch to Print Layout"}
                 onClick={() => setViewMode(prev => prev === 'print' ? 'web' : 'print')}
                 className={`sm:hidden p-1.5 rounded transition-all flex items-center justify-center ${viewMode === 'web' ? 'text-blue-600 dark:text-blue-400 bg-blue-100/60 dark:bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800'}`}
                 title={viewMode === 'print' ? "Switch to Web Layout" : "Switch to Print Layout"}
@@ -230,6 +297,8 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             >
                 <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
                 <button 
+                    type="button"
+                    aria-label="Zoom Out"
                     onClick={() => {
                         triggerGestureLock(350);
                         if (zoomMode !== 'custom') setZoomMode('custom');
@@ -249,6 +318,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                         min="10" 
                         max="500" 
                         value={zoom} 
+                        aria-label="Zoom Level"
                         onChange={(e) => {
                             triggerGestureLock(350);
                             if (zoomMode !== 'custom') setZoomMode('custom');
@@ -265,6 +335,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                     type="button"
                     onDoubleClick={handleZoomAutoFit}
                     onTouchEnd={handleZoomTouchEnd}
+                    aria-label="Zoom percentage, double-click to auto-fit page width"
                     className="w-14 sm:w-24 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center justify-end gap-1 cursor-pointer"
                     title="Double-click zoom percentage to auto-fit screen"
                 >
@@ -275,6 +346,8 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 </button>
                 
                 <button 
+                    type="button"
+                    aria-label="Zoom In"
                     onClick={() => {
                         triggerGestureLock(350);
                         if (zoomMode !== 'custom') setZoomMode('custom');

@@ -7,7 +7,7 @@ import { DropdownButton } from '../common/LayoutTools';
 import { MenuPortal } from '../../../common/MenuPortal';
 
 export const ColumnsTool: React.FC = () => {
-  const { activeMenu, menuPos, closeMenu } = useLayoutTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useLayoutTab();
   const { pageConfig, setPageConfig } = useEditor();
   const menuId = 'columns';
 
@@ -26,7 +26,7 @@ export const ColumnsTool: React.FC = () => {
              label="Columns" 
              iconClassName="text-fuchsia-600 dark:text-fuchsia-400"
          />
-         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={180} title="Columns Layout">
+         <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={180} title="Columns Layout">
              <div className="p-1.5 space-y-1">
                  {[
                    { count: 1, label: 'One Column' },

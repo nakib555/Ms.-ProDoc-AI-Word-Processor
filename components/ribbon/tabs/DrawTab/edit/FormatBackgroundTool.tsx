@@ -6,7 +6,7 @@ import { useDrawTab } from '../DrawTabContext';
 import { useEditor } from '../../../../../contexts/EditorContext';
 
 export const FormatBackgroundTool: React.FC = () => {
-  const { activeMenu, menuPos, closeMenu } = useDrawTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useDrawTab();
   const { pageConfig, setPageConfig } = useEditor();
   const menuId = 'bg_format';
 
@@ -22,15 +22,15 @@ export const FormatBackgroundTool: React.FC = () => {
             icon={Grid} 
             label="Format Background" 
         />
-        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={180}>
+        <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={180}>
              <div className="p-1">
-                 <button onClick={() => setBackground('none')} className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2 ${pageConfig.background === 'none' ? 'bg-blue-50 text-blue-700' : ''}`}>
+                 <button onClick={() => setBackground('none')} className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 ${pageConfig.background === 'none' ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300' : ''}`}>
                      <FileText size={14}/> None
                  </button>
-                 <button onClick={() => setBackground('ruled')} className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2 ${pageConfig.background === 'ruled' ? 'bg-blue-50 text-blue-700' : ''}`}>
+                 <button onClick={() => setBackground('ruled')} className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 ${pageConfig.background === 'ruled' ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300' : ''}`}>
                      <Grid size={14} className="scale-y-50"/> Ruled Lines
                  </button>
-                 <button onClick={() => setBackground('grid')} className={`w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2 ${pageConfig.background === 'grid' ? 'bg-blue-50 text-blue-700' : ''}`}>
+                 <button onClick={() => setBackground('grid')} className={`w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 ${pageConfig.background === 'grid' ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300' : ''}`}>
                      <Grid size={14}/> Grid Lines
                  </button>
              </div>

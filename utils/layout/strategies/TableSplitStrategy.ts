@@ -80,7 +80,7 @@ export class TableSplitStrategy implements SplitStrategy {
       const row = rows[i];
       const rowClone = row.cloneNode(true) as HTMLTableRowElement;
       appendRowToClonedTable(measureTable, row.parentElement, rowClone);
-      
+
       // Ensure the measureTable does not use stale cached height after row insertion
       measureTable.removeAttribute('data-layout-id');
       const newTotalHeight = context.measure(measureTable);
@@ -126,6 +126,25 @@ export class TableSplitStrategy implements SplitStrategy {
       }
     }
 
+    // Prevent orphan header row at the bottom of a non-empty page when there are data rows after it
+    const firstRowIsHeader =
+      rows.length > 1 &&
+      (node.getAttribute('data-repeat-header') === 'true' ||
+        rows[0].parentElement?.tagName === 'THEAD' ||
+        (rows[0].cells.length > 0 && Array.from(rows[0].cells).every((c) => c.tagName === 'TH')));
+    if (
+      splitIndex === 1 &&
+      firstRowIsHeader &&
+      !isFirstRowOversized &&
+      context.remainingSpace < context.pageHeight * 0.85
+    ) {
+      return {
+        status: SplitStatus.Deferred,
+        keep: null,
+        move: node.cloneNode(true) as HTMLElement
+      };
+    }
+
     // If splitIndex equals rows.length, it fits completely in standard flow
     if (splitIndex >= rows.length && !isFirstRowOversized) {
       return {
@@ -133,6 +152,49 @@ export class TableSplitStrategy implements SplitStrategy {
         keep: node.cloneNode(true) as HTMLElement,
         move: null
       };
+    }
+
+    // Attempt to split an oversized first row across pages when allowed (not marked cant-split)
+    const canSplitRow = (row: HTMLTableRowElement) =>
+      node.getAttribute('data-cant-split') !== 'true' &&
+      node.getAttribute('data-keep-together') !== 'true' &&
+      row.getAttribute('data-cant-split') !== 'true' &&
+      !row.classList.contains('table-row-keep-together');
+
+    if (isFirstRowOversized && rows.length > 0 && canSplitRow(rows[0])) {
+      const oversizedRow = rows[0];
+      const rowSplit = this.splitOversizedRow(
+        table,
+        oversizedRow,
+        effectiveLimit,
+        context
+      );
+      if (rowSplit) {
+        appendRowToClonedTable(keepTable, oversizedRow.parentElement, rowSplit.keepRow);
+
+        const repeatHeader = node.getAttribute('data-repeat-header') === 'true';
+        if (repeatHeader && rows.length > 1) {
+          const headerRowClone = rows[0].cloneNode(true) as HTMLTableRowElement;
+          headerRowClone.setAttribute('data-repeated-header-row', 'true');
+          appendRowToClonedTable(moveTable, rows[0].parentElement, headerRowClone);
+        }
+
+        appendRowToClonedTable(moveTable, oversizedRow.parentElement, rowSplit.moveRow);
+        for (let i = 1; i < rows.length; i++) {
+          const rowClone = rows[i].cloneNode(true) as HTMLTableRowElement;
+          appendRowToClonedTable(moveTable, rows[i].parentElement, rowClone);
+        }
+
+        keepTable.setAttribute('data-split-bottom', 'true');
+        moveTable.setAttribute('data-continuation', 'true');
+
+        return {
+          status: SplitStatus.Success,
+          keep: keepTable,
+          move: moveTable,
+          splitIndex: 1
+        };
+      }
     }
 
     // Prepare keep table preserving hierarchy
@@ -180,5 +242,134 @@ export class TableSplitStrategy implements SplitStrategy {
       move: hasRemainingRows ? moveTable : null,
       splitIndex
     };
+  }
+
+  private splitOversizedRow(
+    sourceTable: HTMLTableElement,
+    row: HTMLTableRowElement,
+    effectiveLimit: number,
+    context: SplitContext
+  ): { keepRow: HTMLTableRowElement; moveRow: HTMLTableRowElement } | null {
+    const cells = Array.from(row.cells);
+    if (cells.length === 0) return null;
+
+    // Normalize cell children into block units or text chunks so we can partition tall cell content across pages
+    const extractCellBlocks = (cell: HTMLTableCellElement): HTMLElement[] => {
+      const doc = cell.ownerDocument || document;
+      const blocks: HTMLElement[] = [];
+      let inlineBuffer: Node[] = [];
+
+      const flushInline = () => {
+        if (inlineBuffer.length === 0) return;
+        const hasVisible = inlineBuffer.some(
+          (n) => (n.textContent && n.textContent.trim().length > 0) || n.nodeName === 'IMG'
+        );
+        if (hasVisible) {
+          const p = doc.createElement('p');
+          p.style.margin = '0';
+          inlineBuffer.forEach((n) => p.appendChild(n.cloneNode(true)));
+          blocks.push(p);
+        }
+        inlineBuffer = [];
+      };
+
+      Array.from(cell.childNodes).forEach((child) => {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const el = child as HTMLElement;
+          const tag = el.tagName.toUpperCase();
+          if (tag === 'BR') {
+            flushInline();
+            return;
+          }
+          if (['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'UL', 'OL'].includes(tag)) {
+            flushInline();
+            blocks.push(el.cloneNode(true) as HTMLElement);
+            return;
+          }
+        }
+        inlineBuffer.push(child);
+      });
+      flushInline();
+
+      // If there's only a single long text block, split it into sentence/word chunks (~40 words each) so long text overflows cleanly
+      if (blocks.length === 1) {
+        const single = blocks[0];
+        const fullText = single.textContent || '';
+        const words = fullText.trim().split(/\s+/);
+        if (words.length > 50 && !single.querySelector('img, table, math-field')) {
+          const chunked: HTMLElement[] = [];
+          const chunkSize = 35;
+          for (let i = 0; i < words.length; i += chunkSize) {
+            const frag = single.cloneNode(false) as HTMLElement;
+            if (i > 0) frag.setAttribute('data-split-fragment-cont', 'true');
+            frag.textContent = words.slice(i, i + chunkSize).join(' ');
+            chunked.push(frag);
+          }
+          return chunked;
+        }
+      }
+
+      return blocks;
+    };
+
+    const cellBlockLists = cells.map(extractCellBlocks);
+    const maxBlocks = Math.max(...cellBlockLists.map((b) => b.length), 0);
+    if (maxBlocks <= 1) return null;
+
+    const buildRowFromRanges = (endPerCell: number[], fromStart: boolean): HTMLTableRowElement => {
+      const clonedRow = row.cloneNode(false) as HTMLTableRowElement;
+      cells.forEach((cell, idx) => {
+        const clonedCell = cell.cloneNode(false) as HTMLTableCellElement;
+        clonedCell.style.height = '';
+        clonedCell.style.minHeight = '';
+        const list = cellBlockLists[idx];
+        const splitAt = Math.min(list.length, endPerCell[idx]);
+        const slice = fromStart ? list.slice(0, splitAt) : list.slice(splitAt);
+        if (slice.length === 0) {
+          const br = (row.ownerDocument || document).createElement('br');
+          clonedCell.appendChild(br);
+        } else {
+          slice.forEach((blk) => clonedCell.appendChild(blk.cloneNode(true)));
+        }
+        clonedRow.appendChild(clonedCell);
+      });
+      return clonedRow;
+    };
+
+    // Binary/step search across block counts to find how many blocks fit in effectiveLimit
+    let bestCount = 0;
+    for (let k = 1; k < maxBlocks; k++) {
+      const testKeepRow = buildRowFromRanges(
+        cellBlockLists.map((list) => Math.min(k, list.length)),
+        true
+      );
+      const testTable = sourceTable.cloneNode(false) as HTMLTableElement;
+      testTable.removeAttribute('data-layout-id');
+      copyColGroup(sourceTable, testTable);
+      appendRowToClonedTable(testTable, row.parentElement, testKeepRow);
+      const h = context.measure(testTable);
+      if (h > effectiveLimit) {
+        break;
+      }
+      bestCount = k;
+    }
+
+    if (bestCount === 0) {
+      // Ensure progress by keeping at least 1 block if remaining space is on an empty page
+      bestCount = 1;
+    }
+    if (bestCount >= maxBlocks) return null;
+
+    const perCellCut = cellBlockLists.map((list) => Math.min(bestCount, list.length));
+    const keepRow = buildRowFromRanges(perCellCut, true);
+    const moveRow = buildRowFromRanges(perCellCut, false);
+    keepRow.style.height = '';
+    keepRow.style.minHeight = '';
+    moveRow.style.height = '';
+    moveRow.style.minHeight = '';
+    keepRow.setAttribute('data-split-row-bottom', 'true');
+    moveRow.setAttribute('data-split-row-continuation', 'true');
+
+    return { keepRow, moveRow };
   }
 }

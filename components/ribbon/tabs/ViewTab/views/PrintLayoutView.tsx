@@ -58,18 +58,22 @@ interface CursorSnapshot {
 }
 
 let scratchTableContainer: HTMLDivElement | null = null;
-const getPageTablesFromSource = (pageNum: number, pagesHtml?: { html: string }[]): HTMLTableElement[] => {
+const getPageElementFromSource = (pageNum: number, pagesHtml?: { html: string }[]): HTMLElement | null => {
     const domEl = document.getElementById(`prodoc-editor-${pageNum}`);
-    if (domEl) {
-        return Array.from(domEl.querySelectorAll('table')) as HTMLTableElement[];
-    }
+    if (domEl) return domEl;
     const pageHtml = pagesHtml?.[pageNum - 1]?.html;
-    if (!pageHtml || typeof document === 'undefined') return [];
+    if (!pageHtml || typeof document === 'undefined') return null;
     if (!scratchTableContainer) {
         scratchTableContainer = document.createElement('div');
     }
     scratchTableContainer.innerHTML = pageHtml;
-    return Array.from(scratchTableContainer.querySelectorAll('table')) as HTMLTableElement[];
+    return scratchTableContainer;
+};
+
+const getPageTablesFromSource = (pageNum: number, pagesHtml?: { html: string }[]): HTMLTableElement[] => {
+    const el = getPageElementFromSource(pageNum, pagesHtml);
+    if (!el) return [];
+    return Array.from(el.querySelectorAll('table')) as HTMLTableElement[];
 };
 
 const getNodeTextLength = (node: Node): number => {
@@ -181,7 +185,7 @@ const getCursorSnapshot = (pagesHtml: { html: string }[]): CursorSnapshot | null
 
     let globalOffset = 0;
     for (let i = 1; i < pageIndex; i++) {
-        const pEl = document.getElementById(`prodoc-editor-${i}`);
+        const pEl = getPageElementFromSource(i, pagesHtml);
         if (pEl) {
             globalOffset += getNodeTextLength(pEl);
         }
@@ -270,7 +274,69 @@ const findTargetPageForTableAnchor = (
     return null;
 };
 
-const setCursorInNode = (root: HTMLElement, offset: number, focusContainer?: HTMLElement) => {
+const findTargetPageForSnapshot = (
+    pages: { html: string }[],
+    snapshot: CursorSnapshot
+): number | null => {
+    if (snapshot.tableAnchor) {
+        const tablePage = findTargetPageForTableAnchor(pages, snapshot.tableAnchor);
+        if (tablePage !== null) return tablePage;
+    }
+    let currentTotal = 0;
+    let remainingOffset = snapshot.globalOffset;
+    for (let i = 1; i <= pages.length; i++) {
+        const el = getPageElementFromSource(i, pages);
+        if (!el) continue;
+        const pageLen = getNodeTextLength(el);
+        const contentLen = isBlock(el) ? Math.max(0, pageLen - 1) : pageLen;
+        if (remainingOffset < currentTotal + contentLen || (remainingOffset === currentTotal + contentLen && i === pages.length)) {
+            return i;
+        }
+        if (remainingOffset === currentTotal + contentLen) {
+            remainingOffset += 1;
+        }
+        currentTotal += pageLen;
+    }
+    return pages.length > 0 ? pages.length : null;
+};
+
+const scrollRangeIntoContainerView = (range: Range, scrollContainer: HTMLElement | null) => {
+    if (!scrollContainer) return;
+    const containerRect = scrollContainer.getBoundingClientRect();
+    if (containerRect.height <= 0) return;
+
+    let rect = range.getBoundingClientRect();
+    if (rect.top === 0 && rect.height === 0) {
+        const el = range.startContainer.nodeType === Node.TEXT_NODE
+            ? range.startContainer.parentElement
+            : (range.startContainer as HTMLElement);
+        if (el) {
+            rect = el.getBoundingClientRect();
+        }
+    }
+    if (rect.top === 0 && rect.height === 0) return;
+
+    const topPad = 24;
+    const bottomPad = 48;
+    if (rect.top < containerRect.top + topPad) {
+        scrollContainer.scrollBy({
+            top: rect.top - (containerRect.top + topPad),
+            behavior: 'smooth',
+        });
+    } else if (rect.bottom > containerRect.bottom - bottomPad) {
+        scrollContainer.scrollBy({
+            top: rect.bottom - (containerRect.bottom - bottomPad),
+            behavior: 'smooth',
+        });
+    }
+};
+
+const setCursorInNode = (
+    root: HTMLElement,
+    offset: number,
+    focusContainer?: HTMLElement,
+    scrollContainer?: HTMLElement | null
+) => {
     let currentCount = 0;
     let found = false;
     const range = document.createRange();
@@ -333,25 +399,28 @@ const setCursorInNode = (root: HTMLElement, offset: number, focusContainer?: HTM
         walk(root);
     }
 
-    (focusContainer || root).focus();
+    (focusContainer || root).focus({ preventScroll: true });
     const sel = window.getSelection();
     if (!sel) return;
 
     if (found) {
         sel.removeAllRanges();
         sel.addRange(range);
-        
-        const rect = range.getBoundingClientRect();
-        if (rect.top === 0 && rect.height === 0) {
-             const el = range.startContainer.nodeType === Node.TEXT_NODE 
-                ? range.startContainer.parentElement 
-                : range.startContainer as HTMLElement;
-             el?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
-        } else if (rect.top < 50 || rect.bottom > window.innerHeight - 50) {
-             const el = range.startContainer.nodeType === Node.TEXT_NODE 
-                ? range.startContainer.parentElement 
-                : range.startContainer as HTMLElement;
-             el?.scrollIntoView({ behavior: 'auto', block: 'center' });
+        if (scrollContainer) {
+            scrollRangeIntoContainerView(range, scrollContainer);
+        } else {
+            const rect = range.getBoundingClientRect();
+            if (rect.top === 0 && rect.height === 0) {
+                const el = range.startContainer.nodeType === Node.TEXT_NODE
+                    ? range.startContainer.parentElement
+                    : range.startContainer as HTMLElement;
+                el?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+            } else if (rect.top < 50 || rect.bottom > window.innerHeight - 50) {
+                const el = range.startContainer.nodeType === Node.TEXT_NODE
+                    ? range.startContainer.parentElement
+                    : range.startContainer as HTMLElement;
+                el?.scrollIntoView({ behavior: 'auto', block: 'center' });
+            }
         }
     } else {
         const fallbackRange = document.createRange();
@@ -359,13 +428,17 @@ const setCursorInNode = (root: HTMLElement, offset: number, focusContainer?: HTM
         fallbackRange.collapse(false);
         sel.removeAllRanges();
         sel.addRange(fallbackRange);
+        if (scrollContainer) {
+            scrollRangeIntoContainerView(fallbackRange, scrollContainer);
+        }
     }
 };
 
 const restoreCursorSnapshot = (
     snapshot: CursorSnapshot,
-    pagesHtml: { html: string }[]
-): number | null => {
+    pagesHtml: { html: string }[],
+    scrollContainer?: HTMLElement | null
+): { pageNum: number; restored: boolean } | null => {
     if (snapshot.tableAnchor) {
         const { logicalTableIndex, logicalRowIndex, cellIndex, textOffsetInCell } = snapshot.tableAnchor;
         let currentLogicalTable = -1;
@@ -393,11 +466,11 @@ const restoreCursorSnapshot = (
                         const targetRow = validRows[logicalRowIndex - currentRowOffset];
                         const targetCell = targetRow?.cells[Math.min(cellIndex, Math.max(0, (targetRow?.cells.length || 1) - 1))];
                         if (targetCell) {
-                            setCursorInNode(targetCell, textOffsetInCell, pageEl);
-                            return pageNum;
+                            setCursorInNode(targetCell, textOffsetInCell, pageEl, scrollContainer);
+                            return { pageNum, restored: true };
                         }
                     }
-                    return pageNum;
+                    return { pageNum, restored: false };
                 }
                 currentRowOffset += validRows.length;
             }
@@ -409,37 +482,45 @@ const restoreCursorSnapshot = (
     const totalPages = pagesHtml.length;
 
     for (let i = 1; i <= totalPages; i++) {
-        const el = document.getElementById(`prodoc-editor-${i}`);
+        const domEl = document.getElementById(`prodoc-editor-${i}`);
+        const el = domEl || getPageElementFromSource(i, pagesHtml);
         if (!el) continue;
-        
+
         const pageLen = getNodeTextLength(el);
-        const contentLen = isBlock(el) ? pageLen - 1 : pageLen;
-        
+        const contentLen = isBlock(el) ? Math.max(0, pageLen - 1) : pageLen;
+
         if (remainingOffset < currentTotal + contentLen) {
+            if (!domEl) {
+                return { pageNum: i, restored: false };
+            }
             const localOffset = Math.max(0, remainingOffset - currentTotal);
-            setCursorInNode(el, localOffset);
-            return i;
+            setCursorInNode(domEl, localOffset, domEl, scrollContainer);
+            return { pageNum: i, restored: true };
         }
-        
+
         if (remainingOffset === currentTotal + contentLen) {
-             if (i === totalPages) {
-                 setCursorInNode(el, contentLen);
-                 return i;
-             }
-             remainingOffset += 1;
+            if (i === totalPages) {
+                if (!domEl) {
+                    return { pageNum: i, restored: false };
+                }
+                setCursorInNode(domEl, contentLen, domEl, scrollContainer);
+                return { pageNum: i, restored: true };
+            }
+            remainingOffset += 1;
         }
-        
+
         currentTotal += pageLen;
     }
-    
+
     if (totalPages > 0) {
         const lastPage = document.getElementById(`prodoc-editor-${totalPages}`);
         if (lastPage) {
-             const lastLen = getNodeTextLength(lastPage);
-             const contentLen = isBlock(lastPage) ? lastLen - 1 : lastLen;
-             setCursorInNode(lastPage, contentLen);
-             return totalPages;
+            const lastLen = getNodeTextLength(lastPage);
+            const contentLen = isBlock(lastPage) ? Math.max(0, lastLen - 1) : lastLen;
+            setCursorInNode(lastPage, contentLen, lastPage, scrollContainer);
+            return { pageNum: totalPages, restored: true };
         }
+        return { pageNum: totalPages, restored: false };
     }
     return null;
 };
@@ -554,6 +635,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const contentWrapperRef = useRef<HTMLDivElement | null>(null);
   
   const cursorRestorationRef = useRef<CursorSnapshot | null>(null);
+  const cursorRetryCountRef = useRef(0);
   const isUserScrollingRef = useRef(false);
   const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastReportedPageRef = useRef(currentPage);
@@ -653,12 +735,10 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
         if (currentCursor) {
           cursorRestorationRef.current = currentCursor;
-          if (currentCursor.tableAnchor) {
-            const targetPageNum = findTargetPageForTableAnchor(result.pages, currentCursor.tableAnchor);
-            if (targetPageNum && targetPageNum !== lastReportedPageRef.current) {
-              lastReportedPageRef.current = targetPageNum;
-              setCurrentPage(targetPageNum);
-            }
+          cursorRetryCountRef.current = 0;
+          const targetPageNum = findTargetPageForSnapshot(result.pages, currentCursor);
+          if (targetPageNum && targetPageNum !== lastReportedPageRef.current) {
+            setCurrentPage(targetPageNum);
           }
         }
       });
@@ -680,14 +760,30 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   }, [content, pageConfig, setTotalPages, setCurrentPage, isTableResizing, historyApplySeq]);
 
   useLayoutEffect(() => {
-      if (cursorRestorationRef.current !== null) {
-          const restoredPage = restoreCursorSnapshot(cursorRestorationRef.current, pagesDataRef.current);
-          cursorRestorationRef.current = null;
-          if (restoredPage && restoredPage !== lastReportedPageRef.current) {
-              lastReportedPageRef.current = restoredPage;
-              setCurrentPage(restoredPage);
+      if (cursorRestorationRef.current === null) return;
+      const attemptRestore = () => {
+          const snapshot = cursorRestorationRef.current;
+          if (!snapshot) return;
+          const result = restoreCursorSnapshot(snapshot, pagesDataRef.current, scrollContainerRef.current);
+          if (result?.restored) {
+              cursorRestorationRef.current = null;
+              cursorRetryCountRef.current = 0;
+              if (result.pageNum !== lastReportedPageRef.current) {
+                  lastReportedPageRef.current = result.pageNum;
+                  setCurrentPage(result.pageNum);
+              }
+          } else if (result && !result.restored && cursorRetryCountRef.current < 6) {
+              cursorRetryCountRef.current += 1;
+              if (result.pageNum !== lastReportedPageRef.current) {
+                  setCurrentPage(result.pageNum);
+              }
+              requestAnimationFrame(attemptRestore);
+          } else {
+              cursorRestorationRef.current = null;
+              cursorRetryCountRef.current = 0;
           }
-      }
+      };
+      attemptRestore();
   }, [pagesData, setCurrentPage]);
 
   useEffect(() => {
@@ -701,7 +797,12 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   const [scrollTop, setScrollTop] = useState(0);
   const scrollAnimFrameRef = useRef<number | null>(null);
 
-  const handlePageUpdate = useCallback((newHtml: string, pageIndex: number, historyMode: HistoryCommitMode = 'debounced') => {
+  const handlePageUpdate = useCallback((
+    newHtml: string,
+    pageIndex: number,
+    historyMode: HistoryCommitMode = 'debounced',
+    options?: { immediateRepaginate?: boolean }
+  ) => {
     const currentPages = pagesDataRef.current;
     const targetPage = currentPages[pageIndex];
     if (!targetPage || targetPage.html === newHtml) return;
@@ -713,7 +814,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
 
     const fullContent = updatedPages.map(p => p.html).join('');
     lastSelfSyncedContentRef.current = fullContent;
-    if (historyMode === 'immediate') {
+    if (historyMode === 'immediate' || options?.immediateRepaginate) {
       pendingImmediatePaginationRef.current = true;
     }
     setContent(fullContent, false, { historyMode });

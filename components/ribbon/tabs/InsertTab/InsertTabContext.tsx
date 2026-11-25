@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useRef, useEffect } from 'r
 interface InsertTabContextType {
   activeMenu: string | null;
   menuPos: { top: number; left: number };
+  triggerElement: HTMLElement | null;
   toggleMenu: (id: string) => void;
   closeMenu: () => void;
   registerTrigger: (id: string, el: any) => void;
@@ -15,6 +16,7 @@ const InsertTabContext = createContext<InsertTabContextType | undefined>(undefin
 export const InsertTabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [triggerElement, setTriggerElement] = useState<HTMLElement | null>(null);
   const triggerRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const registerTrigger = (id: string, el: HTMLElement | null) => {
@@ -26,26 +28,34 @@ export const InsertTabProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const toggleMenu = (menuId: string) => {
     if (activeMenu === menuId) {
         setActiveMenu(null);
+        setTriggerElement(null);
     } else {
         const trigger = triggerRefs.current[menuId];
         if (trigger) {
             const rect = trigger.getBoundingClientRect();
             setMenuPos({ top: rect.bottom, left: rect.left });
+            setTriggerElement(trigger);
             setActiveMenu(menuId);
         }
     }
   };
 
-  const closeMenu = () => setActiveMenu(null);
+  const closeMenu = () => {
+    setActiveMenu(null);
+    setTriggerElement(null);
+  };
 
   useEffect(() => {
-    const handleResize = () => setActiveMenu(null);
+    const handleResize = () => {
+      setActiveMenu(null);
+      setTriggerElement(null);
+    };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return (
-    <InsertTabContext.Provider value={{ activeMenu, menuPos, toggleMenu, closeMenu, registerTrigger, getTriggerElement }}>
+    <InsertTabContext.Provider value={{ activeMenu, menuPos, triggerElement, toggleMenu, closeMenu, registerTrigger, getTriggerElement }}>
       {children}
     </InsertTabContext.Provider>
   );

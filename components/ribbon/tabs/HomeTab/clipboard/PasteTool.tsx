@@ -7,7 +7,7 @@ import { MenuPortal } from '../../../common/MenuPortal';
 
 export const PasteTool: React.FC = () => {
   const { handlePasteSpecial } = useEditor();
-  const { activeMenu, toggleMenu, closeMenu, menuPos, registerTrigger } = useHomeTab();
+  const { activeMenu, toggleMenu, closeMenu, menuPos, triggerElement, registerTrigger } = useHomeTab();
   const menuId = 'paste';
 
   return (
@@ -15,31 +15,31 @@ export const PasteTool: React.FC = () => {
         <div className="flex flex-col items-center w-[52px] md:w-[68px] h-full">
             <button 
                 onClick={() => handlePasteSpecial('keep-source')}
-                className="flex flex-col items-center justify-center flex-1 w-full rounded-t-lg hover:bg-slate-100 active:bg-blue-50 transition-colors"
+                className="flex flex-col items-center justify-center flex-1 w-full rounded-t-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 active:bg-blue-50 dark:active:bg-slate-700 transition-colors"
                 title="Paste (Ctrl+V)"
             >
-                <Clipboard className="w-6 h-6 text-blue-600 dark:text-blue-500" strokeWidth={1.5} />
+                <Clipboard className="w-6 h-6 text-blue-600 dark:text-blue-400" strokeWidth={1.5} />
             </button>
             <button 
                 onClick={() => toggleMenu(menuId)}
                 onMouseDown={(e) => e.preventDefault()}
-                className={`flex items-center justify-center w-full h-6 rounded-b-lg hover:bg-slate-200 transition-colors ${activeMenu === menuId ? 'bg-slate-200' : ''}`}
+                className={`flex items-center justify-center w-full h-6 rounded-b-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ${activeMenu === menuId ? 'bg-slate-200 dark:bg-slate-700' : ''}`}
             >
-                <span className="text-xs font-medium text-slate-600 mr-0.5">Paste</span>
-                <ChevronDown size={12} className="text-slate-500" />
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300 mr-0.5">Paste</span>
+                <ChevronDown size={12} className="text-slate-500 dark:text-slate-400" />
             </button>
         </div>
 
-        <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={200}>
+        <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={200}>
             <div className="p-1">
-                <button onClick={() => { handlePasteSpecial('keep-source'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2 group">
+                <button onClick={() => { handlePasteSpecial('keep-source'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 group">
                     <Clipboard size={14} className="text-blue-500 group-hover:text-blue-600"/> Keep Source Formatting
                 </button>
-                <button onClick={() => { handlePasteSpecial('merge'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2 group">
+                <button onClick={() => { handlePasteSpecial('merge'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 group">
                     <ArrowDownAZ size={14} className="text-orange-500 group-hover:text-orange-600"/> Merge Formatting
                 </button>
-                <button onClick={() => { handlePasteSpecial('text-only'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 rounded-md text-xs font-medium text-slate-700 flex items-center gap-2 group">
-                    <FileText size={14} className="text-slate-500 group-hover:text-slate-600"/> Keep Text Only
+                <button onClick={() => { handlePasteSpecial('text-only'); closeMenu(); }} className="w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md text-xs font-medium text-slate-700 dark:text-slate-200 flex items-center gap-2 group">
+                    <FileText size={14} className="text-slate-500 group-hover:text-slate-600 dark:text-slate-400"/> Keep Text Only
                 </button>
             </div>
         </MenuPortal>

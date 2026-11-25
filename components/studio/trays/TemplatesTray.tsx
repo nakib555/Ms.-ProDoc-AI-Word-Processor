@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FileStack, Variable, UserCheck, Building2, 
   Calendar, FileText
@@ -12,9 +13,17 @@ import { StudioDropdown, StudioDropdownItem } from '../common/StudioDropdown';
 export const TemplatesTray: React.FC = () => {
   const { editor, executeCommand, setDocumentTitle } = useEditor();
 
+  const [pendingTemplateType, setPendingTemplateType] = useState<string | null>(null);
+
   const handleApplyTemplate = (type: string) => {
     if (!editor) return;
-    if (!window.confirm('Apply template? This will replace current document contents.')) return;
+    setPendingTemplateType(type);
+  };
+
+  const confirmApplyTemplate = () => {
+    const type = pendingTemplateType;
+    setPendingTemplateType(null);
+    if (!editor || !type) return;
 
     if (type === 'mcq_exam') {
       setDocumentTitle('IT Support Exam Questions & Answers (Sets 01 - 19)');
@@ -136,6 +145,34 @@ export const TemplatesTray: React.FC = () => {
         title="Insert {{current_date}}"
         size="sm"
       />
+      {pendingTemplateType && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+          data-modal-backdrop="true"
+          onClick={() => setPendingTemplateType(null)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-5 w-80"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Apply Template</h3>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-4">
+              Apply this template? This will replace the current document contents.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setPendingTemplateType(null)} className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md">
+                Cancel
+              </button>
+              <button type="button" onClick={confirmApplyTemplate} className="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium">
+                Apply Template
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

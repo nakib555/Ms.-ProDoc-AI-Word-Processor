@@ -1,6 +1,8 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { LayoutGrid } from 'lucide-react';
+import { SmartSelect } from '../ui/SmartSelect';
+import { SmartToggle } from '../ui/SmartToggle';
 
 interface TablePropertiesModalProps {
   isOpen: boolean;
@@ -221,18 +223,17 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
 
           {/* Text Wrapping */}
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-              Text Wrapping
-            </label>
-            <select
+            <SmartSelect
               id="table-properties-text-wrapping"
+              label="Text Wrapping"
               value={textWrapping}
-              onChange={(e) => setTextWrapping(e.target.value as 'none' | 'around')}
-              className="w-full text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-650 rounded-lg py-1.5 px-3 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 cursor-pointer outline-none transition-colors"
-            >
-              <option value="none">None (Block Layout)</option>
-              <option value="around">Around (Float Text wrapping)</option>
-            </select>
+              onChange={(val) => setTextWrapping(val as 'none' | 'around')}
+              size="sm"
+              options={[
+                { value: 'none', label: 'None (Block Layout)' },
+                { value: 'around', label: 'Around (Float Text wrapping)' },
+              ]}
+            />
           </div>
 
           {/* Cell Padding */}
@@ -329,15 +330,12 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
           <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700/50 pt-3">
             {/* Row Height */}
             <div className="space-y-1.5">
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={specifyRowHeight}
-                  onChange={(e) => setSpecifyRowHeight(e.target.checked)}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 cursor-pointer"
-                />
-                <span>Specify Row Height</span>
-              </label>
+              <SmartToggle
+                label="Specify Row Height"
+                checked={specifyRowHeight}
+                onChange={setSpecifyRowHeight}
+                className="w-full"
+              />
               
               {specifyRowHeight && (
                 <div className="space-y-1.5 bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-150 dark:border-slate-700/50">
@@ -351,32 +349,31 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
                     />
                     <span className="text-xs text-slate-400">px</span>
                   </div>
-                  <select
+                  <SmartSelect
+                    ariaLabel="Row height mode"
                     value={rowHeightMode}
-                    onChange={(e) => setRowHeightMode(e.target.value as 'atLeast' | 'exactly')}
-                    className="w-full text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 px-1 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500"
-                  >
-                    <option value="atLeast">At least</option>
-                    <option value="exactly">Exactly</option>
-                  </select>
+                    onChange={(val) => setRowHeightMode(val as 'atLeast' | 'exactly')}
+                    size="xs"
+                    options={[
+                      { value: 'atLeast', label: 'At least' },
+                      { value: 'exactly', label: 'Exactly' },
+                    ]}
+                  />
                 </div>
               )}
             </div>
 
             {/* Column Width */}
             <div className="space-y-1.5">
-              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={specifyColWidth}
-                  onChange={(e) => setSpecifyColWidth(e.target.checked)}
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5 cursor-pointer"
-                />
-                <span>Preferred Col Width</span>
-              </label>
+              <SmartToggle
+                label="Preferred Col Width"
+                checked={specifyColWidth}
+                onChange={setSpecifyColWidth}
+                className="w-full"
+              />
 
               {specifyColWidth && (
-                <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-150 dark:border-slate-700/50">
+                <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900/40 p-2 rounded-lg border border-slate-150 dark:border-slate-700/50">
                   <input
                     type="number"
                     value={colWidthVal}
@@ -384,14 +381,19 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
                     className="w-16 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-1 px-1.5 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500"
                     min="1"
                   />
-                  <select
-                    value={colWidthUnit}
-                    onChange={(e) => setColWidthUnit(e.target.value as 'px' | '%')}
-                    className="text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded py-0.5 px-1 text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500"
-                  >
-                    <option value="px">px</option>
-                    <option value="%">%</option>
-                  </select>
+                  <div className="w-16">
+                    <SmartSelect
+                      ariaLabel="Column width unit"
+                      value={colWidthUnit}
+                      onChange={(val) => setColWidthUnit(val as 'px' | '%')}
+                      size="xs"
+                      menuWidth={80}
+                      options={[
+                        { value: 'px', label: 'px' },
+                        { value: '%', label: '%' },
+                      ]}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -428,132 +430,65 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
 
           {/* Borders */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                Border Color
-              </label>
-              <select
-                value={borderColor}
-                onChange={(e) => setBorderColor(e.target.value)}
-                className="w-full text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-650 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="#000000">Black</option>
-                <option value="#cbd5e1">Slate Gray</option>
-                <option value="#3b82f6">Ocean Blue</option>
-                <option value="#ef4444">Coral Red</option>
-                <option value="#22c55e">Emerald Green</option>
-                <option value="none">No Borders</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                Border Width
-              </label>
-              <select
-                value={borderWidth}
-                disabled={borderColor === 'none'}
-                onChange={(e) => setBorderWidth(e.target.value)}
-                className="w-full text-sm bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-650 rounded-lg py-1.5 px-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                <option value="1px">Thin (1px)</option>
-                <option value="2px">Thick (2px)</option>
-              </select>
-            </div>
+            <SmartSelect
+              label="Border Color"
+              value={borderColor}
+              onChange={setBorderColor}
+              size="sm"
+              options={[
+                { value: '#000000', label: 'Black', colorSwatch: '#000000' },
+                { value: '#cbd5e1', label: 'Slate Gray', colorSwatch: '#cbd5e1' },
+                { value: '#3b82f6', label: 'Ocean Blue', colorSwatch: '#3b82f6' },
+                { value: '#ef4444', label: 'Coral Red', colorSwatch: '#ef4444' },
+                { value: '#22c55e', label: 'Emerald Green', colorSwatch: '#22c55e' },
+                { value: 'none', label: 'No Borders', colorSwatch: 'none' },
+              ]}
+            />
+            <SmartSelect
+              label="Border Width"
+              value={borderWidth}
+              disabled={borderColor === 'none'}
+              onChange={setBorderWidth}
+              size="sm"
+              options={[
+                { value: '1px', label: 'Thin (1px)' },
+                { value: '2px', label: 'Thick (2px)' },
+              ]}
+            />
           </div>
 
-          {/* Zebra Striping toggle */}
-          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
-            <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
-              Alternating Zebra Striping
-            </span>
-            <button
-              type="button"
-              onClick={() => setZebraStriping(!zebraStriping)}
-              className={`w-10 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                zebraStriping ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                  zebraStriping ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Prevent Split toggle */}
-          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
-            <div className="pr-4">
-              <span className="block text-sm font-semibold text-slate-600 dark:text-slate-300">
-                Prevent Row Splitting Across Pages
-              </span>
-              <span className="block text-xs text-slate-400">
-                Prevents row content from breaking mid-paragraph across margins
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setCantSplit(!cantSplit)}
-              className={`w-10 h-6 flex shrink-0 items-center rounded-full p-1 cursor-pointer transition-colors ${
-                cantSplit ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                  cantSplit ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Repeat Header toggle */}
-          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
-            <div className="pr-4">
-              <span className="block text-sm font-semibold text-slate-600 dark:text-slate-300">
-                Repeat Header Row on Every Page
-              </span>
-              <span className="block text-xs text-slate-400">
-                Repeats first row of table at top of subsequent pages
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setRepeatHeader(!repeatHeader)}
-              className={`w-10 h-6 flex shrink-0 items-center rounded-full p-1 cursor-pointer transition-colors ${
-                repeatHeader ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                  repeatHeader ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Keep Together toggle */}
-          <div className="flex items-center justify-between py-2 border-t border-slate-100 dark:border-slate-700/50 mt-2">
-            <div className="pr-4">
-              <span className="block text-sm font-semibold text-slate-600 dark:text-slate-300">
-                Keep Entire Table on Single Page
-              </span>
-              <span className="block text-xs text-slate-400">
-                Forces entire table to next page if it doesn't fit
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setKeepTogether(!keepTogether)}
-              className={`w-10 h-6 flex shrink-0 items-center rounded-full p-1 cursor-pointer transition-colors ${
-                keepTogether ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
-              }`}
-            >
-              <div
-                className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                  keepTogether ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
+          <div className="space-y-1 border-t border-slate-100 dark:border-slate-700/50 pt-2">
+            <SmartToggle
+              label="Alternating Zebra Striping"
+              checked={zebraStriping}
+              onChange={setZebraStriping}
+              size="md"
+              className="w-full py-1.5"
+            />
+            <SmartToggle
+              label="Prevent Row Splitting Across Pages"
+              description="Prevents row content from breaking mid-paragraph across margins"
+              checked={cantSplit}
+              onChange={setCantSplit}
+              size="md"
+              className="w-full py-1.5 border-t border-slate-100 dark:border-slate-700/50"
+            />
+            <SmartToggle
+              label="Repeat Header Row on Every Page"
+              description="Repeats first row of table at top of subsequent pages"
+              checked={repeatHeader}
+              onChange={setRepeatHeader}
+              size="md"
+              className="w-full py-1.5 border-t border-slate-100 dark:border-slate-700/50"
+            />
+            <SmartToggle
+              label="Keep Entire Table on Single Page"
+              description="Forces entire table to next page if it doesn't fit"
+              checked={keepTogether}
+              onChange={setKeepTogether}
+              size="md"
+              className="w-full py-1.5 border-t border-slate-100 dark:border-slate-700/50"
+            />
           </div>
         </div>
         

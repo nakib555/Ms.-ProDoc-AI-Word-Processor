@@ -6,7 +6,7 @@ import { CutCopyTools } from './CutCopyTools';
 export const ClipboardGroup: React.FC = () => {
   return (
     <RibbonSection title="Clipboard">
-        <div className="flex h-full items-start gap-1 relative">
+        <div className="flex h-full items-center gap-1.5 px-1 relative">
             <PasteTool />
             <CutCopyTools />
         </div>

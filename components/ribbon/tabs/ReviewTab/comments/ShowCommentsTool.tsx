@@ -11,7 +11,7 @@ export const ShowCommentsTool: React.FC = () => {
         <RibbonButton 
             icon={MessageSquare} 
             label="Show Comments" 
-            isActive={showComments}
+            active={showComments}
             onClick={() => setShowComments(!showComments)} 
         />
     );

@@ -35,7 +35,7 @@ export class IncrementalPaginator {
     const fullEngineConfig: LayoutEngineConfiguration = {
       pageSize: config.size || 'Letter',
       dpi: 96,
-      safetyBuffer: 15,
+      safetyBuffer: 24,
       minLineHeight: 20,
       debug: false,
       diagnosticsEnabled: false,

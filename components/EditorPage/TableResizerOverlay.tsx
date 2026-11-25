@@ -332,10 +332,10 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
                 }
               });
           }
-          setContent(body.innerHTML);
+          setContent(body.innerHTML, true, { historyMode: 'immediate' });
+      } else {
+          onUpdate();
       }
-
-      onUpdate();
     };
 
     window.addEventListener('pointermove', handlePointerMove);
@@ -403,10 +403,10 @@ export const TableResizerOverlay: React.FC<TableResizerOverlayProps> = ({
       const tbl = tables[logicalTableIndex];
       if (tbl && tbl.rows[logicalRowIndex]) {
           tbl.rows[logicalRowIndex].style.height = `${latestNewHeight}px`;
-          setContent(body.innerHTML);
+          setContent(body.innerHTML, true, { historyMode: 'immediate' });
+      } else {
+          onUpdate();
       }
-
-      onUpdate();
     };
 
     window.addEventListener('pointermove', handlePointerMove);

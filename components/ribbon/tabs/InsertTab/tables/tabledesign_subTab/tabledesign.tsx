@@ -1,12 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { RibbonSection } from '../../../../common/RibbonSection';
 import { RibbonButton } from '../../../../common/RibbonButton';
+import { MenuPortal } from '../../../../common/MenuPortal';
 import { CheckboxItem } from '../../../ViewTab/common/ViewTools';
-import { PaintBucket, PenTool, LayoutGrid, ChevronDown } from 'lucide-react';
+import { PaintBucket, PenTool, LayoutGrid, ChevronDown, Check } from 'lucide-react';
 import {
   applyTableDesignOptions,
   getSelectedTableCells,
+  readTableDesignState,
   TableDesignOptionsState,
   TABLE_DESIGN_THEMES,
 } from '../../../../../../utils/tableUtils';
@@ -42,10 +44,54 @@ export const TableDesignTab: React.FC = () => {
   });
   const [activeTheme, setActiveTheme] = useState<string>('slate');
   const [openMenu, setOpenMenu] = useState<'styles' | 'shading' | 'lineStyle' | 'lineWidth' | 'borders' | null>(null);
+  const [triggerEl, setTriggerEl] = useState<HTMLElement | null>(null);
+  const bordersTriggerRef = useRef<HTMLDivElement | null>(null);
   const [borderStyle, setBorderStyle] = useState<'solid' | 'dashed' | 'dotted' | 'double'>('solid');
   const [borderWidth, setBorderWidth] = useState<string>('1px');
   const [borderColor] = useState<string>('#334155');
   const [borderPainterActive, setBorderPainterActive] = useState<boolean>(false);
+  const [activeBorderMode, setActiveBorderMode] = useState<'all' | 'outside' | 'inside' | 'topBottom' | 'none' | null>(null);
+
+  useEffect(() => {
+    const syncFromActiveTable = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const anchor = sel.anchorNode;
+      const el = anchor?.nodeType === Node.ELEMENT_NODE ? (anchor as HTMLElement) : anchor?.parentElement;
+      const table = el?.closest('.prodoc-editor table') as HTMLTableElement | null;
+      if (!table) return;
+      const state = readTableDesignState(table);
+      setActiveTheme(state.themeKey);
+      setOptions(state.options);
+    };
+
+    syncFromActiveTable();
+    document.addEventListener('selectionchange', syncFromActiveTable);
+    document.addEventListener('mouseup', syncFromActiveTable);
+    document.addEventListener('keyup', syncFromActiveTable);
+    return () => {
+      document.removeEventListener('selectionchange', syncFromActiveTable);
+      document.removeEventListener('mouseup', syncFromActiveTable);
+      document.removeEventListener('keyup', syncFromActiveTable);
+    };
+  }, []);
+
+  const toggleTableMenu = (
+    id: 'styles' | 'shading' | 'lineStyle' | 'lineWidth' | 'borders',
+    el: HTMLElement | null
+  ) => {
+    if (openMenu === id) {
+      setOpenMenu(null);
+      setTriggerEl(null);
+    } else {
+      setTriggerEl(el);
+      setOpenMenu(id);
+    }
+  };
+  const closeTableMenu = () => {
+    setOpenMenu(null);
+    setTriggerEl(null);
+  };
 
   const getActiveCellAndTable = (): { cell: HTMLTableCellElement | null; table: HTMLTableElement | null } => {
     const selection = window.getSelection();
@@ -104,6 +150,7 @@ export const TableDesignTab: React.FC = () => {
   const applyBorderMode = (mode: 'all' | 'outside' | 'inside' | 'topBottom' | 'none') => {
     const { cell, table } = getActiveCellAndTable();
     if (!cell || !table) return;
+    setActiveBorderMode(mode);
     const rule = mode === 'none' ? 'none' : `${borderWidth} ${borderStyle} ${borderColor}`;
     const selected = getSelectedTableCells(table);
     const targets = selected.length > 1 ? selected : (Array.from(table.querySelectorAll('td, th')) as HTMLTableCellElement[]);
@@ -175,7 +222,7 @@ export const TableDesignTab: React.FC = () => {
   return (
     <>
       <RibbonSection title="Table Style Options">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 px-1 h-full items-center">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-1.5 py-0.5 h-full items-center">
             <CheckboxItem label="Header Row" checked={options.headerRow} onChange={() => toggleOption('headerRow')} />
             <CheckboxItem label="First Column" checked={options.firstColumn} onChange={() => toggleOption('firstColumn')} />
             <CheckboxItem label="Total Row" checked={options.totalRow} onChange={() => toggleOption('totalRow')} />
@@ -218,102 +265,136 @@ export const TableDesignTab: React.FC = () => {
                  <div className="bg-teal-50 row-span-1"></div>
              </button>
 
-             <button onMouseDown={(e) => e.preventDefault()} onClick={() => setOpenMenu(openMenu === 'styles' ? null : 'styles')} className="h-14 w-6 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 rounded" title="More Table Styles">
+             <button
+               type="button"
+               onMouseDown={(e) => e.preventDefault()}
+               onClick={(e) => toggleTableMenu('styles', e.currentTarget)}
+               aria-haspopup="menu"
+               aria-expanded={openMenu === 'styles'}
+               className="h-14 w-6 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+               title="More Table Styles"
+             >
                  <ChevronDown size={12} className="dark:text-slate-400" />
              </button>
 
-             {openMenu === 'styles' && (
-               <>
-                 <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
-                 <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-1.5 z-50">
-                   {Object.keys(TABLE_DESIGN_THEMES).map((key) => (
+             <MenuPortal
+               id="styles"
+               activeMenu={openMenu}
+               triggerElement={triggerEl}
+               closeMenu={closeTableMenu}
+               width={204}
+               title="Table Styles"
+             >
+               <div className="p-1.5 flex flex-col gap-0.5">
+                 {Object.keys(TABLE_DESIGN_THEMES).map((key) => {
+                   const isSelected = activeTheme === key;
+                   return (
                      <button
                        key={key}
+                       type="button"
+                       role="menuitemradio"
+                       aria-checked={isSelected}
                        onMouseDown={(e) => e.preventDefault()}
                        onClick={() => applyThemePreset(key)}
-                       className={`w-full text-left px-2.5 py-1.5 rounded text-xs capitalize flex items-center justify-between ${activeTheme === key ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                       className={`w-full text-left px-2.5 py-1.5 rounded text-xs capitalize flex items-center justify-between gap-2 ${isSelected ? 'bg-blue-50 text-blue-700 font-semibold dark:bg-blue-900/30 dark:text-blue-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                      >
-                       <span>{key} Table</span>
-                       <span className="w-3.5 h-3.5 rounded border border-slate-300" style={{ backgroundColor: TABLE_DESIGN_THEMES[key].headerBg === 'transparent' ? '#ffffff' : TABLE_DESIGN_THEMES[key].headerBg }} />
+                       <span className="flex items-center gap-2 min-w-0">
+                         <span className="w-3.5 h-3.5 rounded border border-slate-300 dark:border-slate-600 shrink-0" style={{ backgroundColor: TABLE_DESIGN_THEMES[key].headerBg === 'transparent' ? '#ffffff' : TABLE_DESIGN_THEMES[key].headerBg }} />
+                         <span className="truncate">{key} Table</span>
+                       </span>
+                       {isSelected && <Check size={12} className="shrink-0 text-blue-600 dark:text-blue-400" />}
                      </button>
-                   ))}
-                 </div>
-               </>
-             )}
+                   );
+                 })}
+               </div>
+             </MenuPortal>
          </div>
       </RibbonSection>
 
       <RibbonSection title="Borders">
           <div className="flex items-center gap-2 h-full px-1">
-              <div className="flex flex-col gap-1 relative">
+              <div className="flex flex-col gap-1.5 relative">
                   <button
                     onMouseDown={(e) => e.preventDefault()}
-                    className="flex items-center gap-2 px-1.5 py-0.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs dark:text-slate-300"
-                    onClick={() => setOpenMenu(openMenu === 'shading' ? null : 'shading')}
+                    className="flex items-center gap-2 px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded text-xs text-slate-700 dark:text-slate-200 transition-colors"
+                    onClick={(e) => toggleTableMenu('shading', e.currentTarget)}
                   >
                       <PaintBucket size={14} className="text-blue-600 dark:text-blue-400"/> 
-                      <span className="text-[10px] font-medium">Shading</span>
+                      <span className="text-[11px] font-medium">Shading</span>
                       <ChevronDown size={10} className="text-slate-400" />
                   </button>
 
-                  {openMenu === 'shading' && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
-                      <div className="absolute top-7 left-0 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-2 z-50">
-                        <div className="text-[10px] font-bold uppercase text-slate-400 mb-1.5">Cell Shading</div>
-                        <div className="grid grid-cols-5 gap-1.5">
-                          {COLORS.map((c) => (
-                            <button
-                              key={c}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => handleShading(c)}
-                              title={c === 'transparent' ? 'No Fill' : c}
-                              className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform flex items-center justify-center text-[9px]"
-                              style={{ backgroundColor: c === 'transparent' ? '#ffffff' : c }}
-                            >
-                              {c === 'transparent' ? '×' : ''}
-                            </button>
-                          ))}
-                        </div>
+                  <MenuPortal
+                    id="shading"
+                    activeMenu={openMenu}
+                    triggerElement={triggerEl}
+                    closeMenu={closeTableMenu}
+                    width={184}
+                    title="Cell Shading"
+                  >
+                    <div className="p-2.5">
+                      <div className="text-[10px] font-bold uppercase text-slate-400 mb-2">Cell Shading</div>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {COLORS.map((c) => (
+                          <button
+                            key={c}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => handleShading(c)}
+                            title={c === 'transparent' ? 'No Fill' : c}
+                            className="w-6 h-6 rounded border border-slate-300 dark:border-slate-600 hover:scale-110 transition-transform flex items-center justify-center text-[9px] text-slate-700"
+                            style={{ backgroundColor: c === 'transparent' ? '#ffffff' : c }}
+                          >
+                            {c === 'transparent' ? '×' : ''}
+                          </button>
+                        ))}
                       </div>
-                    </>
-                  )}
+                    </div>
+                  </MenuPortal>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <div className="relative">
                       <button
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => setOpenMenu(openMenu === 'lineStyle' ? null : 'lineStyle')}
-                        className="flex items-center gap-1 border px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        onClick={(e) => toggleTableMenu('lineStyle', e.currentTarget)}
+                        className="flex items-center gap-1 border px-1.5 py-1 rounded bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                         title="Pen Style"
                       >
                         <div className="w-7 h-0 border-t-2 border-slate-800 dark:border-slate-200" style={{ borderTopStyle: borderStyle }} />
                         <ChevronDown size={10} className="dark:text-slate-400" />
                       </button>
-                      {openMenu === 'lineStyle' && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
-                          <div className="absolute top-full left-0 mt-1 w-28 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-1 z-50">
-                            {BORDER_LINE_STYLES.map((item) => (
-                              <button
-                                key={item.value}
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { setBorderStyle(item.value); setOpenMenu(null); }}
-                                className={`w-full px-2 py-1 text-left text-xs rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${borderStyle === item.value ? 'font-bold text-blue-600' : 'text-slate-700 dark:text-slate-200'}`}
-                              >
-                                {item.label}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
+                      <MenuPortal
+                        id="lineStyle"
+                        activeMenu={openMenu}
+                        triggerElement={triggerEl}
+                        closeMenu={closeTableMenu}
+                        width={120}
+                        title="Pen Style"
+                      >
+                        <div className="p-1 flex flex-col gap-0.5">
+                          {BORDER_LINE_STYLES.map((item) => (
+                            <button
+                              key={item.value}
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={borderStyle === item.value}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => { setBorderStyle(item.value); closeTableMenu(); }}
+                              className={`w-full px-2 py-1.5 text-left text-xs rounded flex items-center justify-between gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 ${borderStyle === item.value ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-700 dark:text-slate-200'}`}
+                            >
+                              <span>{item.label}</span>
+                              {borderStyle === item.value && <Check size={12} className="shrink-0" />}
+                            </button>
+                          ))}
+                        </div>
+                      </MenuPortal>
                     </div>
 
                     <div className="relative">
                       <button
+                        type="button"
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => setOpenMenu(openMenu === 'lineWidth' ? null : 'lineWidth')}
-                        className="flex items-center gap-1 border px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        onClick={(e) => toggleTableMenu('lineWidth', e.currentTarget)}
+                        className="flex items-center gap-1 border px-1.5 py-1 rounded bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"
                         title="Line Weight"
                       >
                         <span className="text-[10px] dark:text-slate-300">
@@ -321,50 +402,100 @@ export const TableDesignTab: React.FC = () => {
                         </span>
                         <ChevronDown size={10} className="dark:text-slate-400" />
                       </button>
-                      {openMenu === 'lineWidth' && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
-                          <div className="absolute top-full left-0 mt-1 w-24 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-1 z-50">
-                            {BORDER_WIDTHS.map((w) => (
-                              <button
-                                key={w.value}
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => { setBorderWidth(w.value); setOpenMenu(null); }}
-                                className={`w-full px-2 py-1 text-left text-xs rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${borderWidth === w.value ? 'font-bold text-blue-600' : 'text-slate-700 dark:text-slate-200'}`}
-                              >
-                                {w.label}
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
+                      <MenuPortal
+                        id="lineWidth"
+                        activeMenu={openMenu}
+                        triggerElement={triggerEl}
+                        closeMenu={closeTableMenu}
+                        width={116}
+                        title="Line Weight"
+                      >
+                        <div className="p-1 flex flex-col gap-0.5">
+                          {BORDER_WIDTHS.map((w) => (
+                            <button
+                              key={w.value}
+                              type="button"
+                              role="menuitemradio"
+                              aria-checked={borderWidth === w.value}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => { setBorderWidth(w.value); closeTableMenu(); }}
+                              className={`w-full px-2 py-1.5 text-left text-xs rounded flex items-center justify-between gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 ${borderWidth === w.value ? 'font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-700 dark:text-slate-200'}`}
+                            >
+                              <span>{w.label}</span>
+                              {borderWidth === w.value && <Check size={12} className="shrink-0" />}
+                            </button>
+                          ))}
+                        </div>
+                      </MenuPortal>
                     </div>
                   </div>
               </div>
               
-              <div className="relative flex flex-col items-center justify-center px-2 border-l border-slate-100 dark:border-slate-700">
+              <div
+                ref={bordersTriggerRef}
+                className="relative flex flex-col items-center justify-center px-2 border-l border-slate-200/80 dark:border-slate-700"
+              >
                   <RibbonButton
                     icon={LayoutGrid}
                     label="Borders"
-                    onClick={() => setOpenMenu(openMenu === 'borders' ? null : 'borders')}
+                    onClick={() => toggleTableMenu('borders', bordersTriggerRef.current)}
                     hasArrow
                   />
-                  {openMenu === 'borders' && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
-                      <div className="absolute top-full right-0 mt-1 w-40 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 z-50">
-                        <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBorderMode('all')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">All Borders</button>
-                        <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBorderMode('outside')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Outside Borders</button>
-                        <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBorderMode('inside')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Inside Borders</button>
-                        <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBorderMode('topBottom')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Top &amp; Bottom</button>
-                        <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
-                        <button onMouseDown={(e) => e.preventDefault()} onClick={() => applyBorderMode('none')} className="w-full px-3 py-1.5 text-left text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30">No Border</button>
-                      </div>
-                    </>
-                  )}
               </div>
+              <MenuPortal
+                id="borders"
+                activeMenu={openMenu}
+                triggerElement={triggerEl}
+                closeMenu={closeTableMenu}
+                width={184}
+                title="Borders"
+              >
+                <div className="py-1 flex flex-col">
+                  {(
+                    [
+                      { mode: 'all', label: 'All Borders' },
+                      { mode: 'outside', label: 'Outside Borders' },
+                      { mode: 'inside', label: 'Inside Borders' },
+                      { mode: 'topBottom', label: 'Top & Bottom' },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      key={item.mode}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={activeBorderMode === item.mode}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => applyBorderMode(item.mode)}
+                      className={`w-full px-3 py-1.5 text-left text-xs flex items-center justify-between ${
+                        activeBorderMode === item.mode
+                          ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold'
+                          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {activeBorderMode === item.mode && <Check size={12} className="shrink-0" />}
+                    </button>
+                  ))}
+                  <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={activeBorderMode === 'none'}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => applyBorderMode('none')}
+                    className={`w-full px-3 py-1.5 text-left text-xs flex items-center justify-between ${
+                      activeBorderMode === 'none'
+                        ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-semibold'
+                        : 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30'
+                    }`}
+                  >
+                    <span>No Border</span>
+                    {activeBorderMode === 'none' && <Check size={12} className="shrink-0" />}
+                  </button>
+                </div>
+              </MenuPortal>
               
-              <div className="flex flex-col items-center justify-center px-2 border-l border-slate-100 dark:border-slate-700">
+              <div className="flex flex-col items-center justify-center px-2 border-l border-slate-200/80 dark:border-slate-700">
                   <RibbonButton
                     icon={PenTool}
                     label="Border Painter"

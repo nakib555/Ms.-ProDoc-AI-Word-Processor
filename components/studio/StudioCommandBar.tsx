@@ -89,7 +89,7 @@ export const StudioCommandBar: React.FC<StudioCommandBarProps> = ({
 
       {/* Level 3: Studio Command Tool Tray (compact, horizontal, anti-ribbon) */}
       {!isTrayCollapsed && (
-        <div className="h-10 md:h-11 flex items-center bg-slate-50/70 dark:bg-[#0c1322]/80 border-t border-slate-100 dark:border-slate-800/60 overflow-hidden">
+        <div className="min-h-[46px] md:min-h-[48px] py-1 flex items-center bg-slate-50/70 dark:bg-[#0c1322]/80 border-t border-slate-100 dark:border-slate-800/60 overflow-hidden">
           {trayContent}
         </div>
       )}

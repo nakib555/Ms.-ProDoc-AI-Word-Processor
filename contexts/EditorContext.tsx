@@ -477,6 +477,8 @@ export interface EditorContextType {
   // Header/Footer & Editing Area
   activeEditingArea: EditingArea;
   setActiveEditingArea: React.Dispatch<React.SetStateAction<EditingArea>>;
+  showDocumentText: boolean;
+  setShowDocumentText: React.Dispatch<React.SetStateAction<boolean>>;
   headerContent: string;
   setHeaderContent: React.Dispatch<React.SetStateAction<string>>;
   footerContent: string;
@@ -666,6 +668,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   } | null>(null);
   
   const [activeEditingArea, setActiveEditingArea] = useState<EditingArea>('body');
+  const [showDocumentText, setShowDocumentText] = useState(true);
   
   // Default Header/Footer content
   const [headerContent, setHeaderContentRaw] = useState('');
@@ -1855,6 +1858,8 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setShowJsonInspector,
     activeEditingArea,
     setActiveEditingArea,
+    showDocumentText,
+    setShowDocumentText,
     headerContent,
     setHeaderContent,
     footerContent,
@@ -1957,6 +1962,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     pageJumpTarget,
     showJsonInspector,
     activeEditingArea,
+    showDocumentText,
     headerContent,
     setHeaderContent,
     footerContent,

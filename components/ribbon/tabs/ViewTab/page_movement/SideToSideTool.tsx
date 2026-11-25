@@ -12,7 +12,7 @@ export const SideToSideTool: React.FC = () => {
         icon={MoveHorizontal} 
         label="Side to Side" 
         onClick={() => setPageMovement('side-to-side')} 
-        className={pageMovement === 'side-to-side' ? "bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400 border border-slate-200 dark:border-slate-600" : ""}
+        active={pageMovement === 'side-to-side'}
         title="View pages side by side"
     />
   );

@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Settings, X, ChevronDown, Check, Type, MoreHorizontal } from 'lucide-react';
+import { Settings, X, ChevronDown, Type } from 'lucide-react';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { FONTS, FONT_SIZES } from '../../../../../constants';
 import { ptToPx, pxToPt } from '../../../../../utils/textUtils';
+import { SmartSelect } from '../../../../ui/SmartSelect';
+import { SmartToggle } from '../../../../ui/SmartToggle';
 
 // --- Custom UI Components ---
 
@@ -25,38 +27,25 @@ const TabButton = ({ active, onClick, label }: { active: boolean; onClick: () =>
 );
 
 const ModernCheckbox = ({ label, checked, onChange, disabled }: { label: string; checked: boolean; onChange: (c: boolean) => void; disabled?: boolean }) => (
-  <label className={`flex items-center gap-3 cursor-pointer group p-1.5 -ml-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-    <div className={`w-5 h-5 rounded-[6px] border flex items-center justify-center transition-all shadow-sm ${checked ? 'bg-blue-600 border-blue-600 scale-100' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 group-hover:border-blue-400 scale-95'}`}>
-        <Check size={12} className={`text-white transition-transform ${checked ? 'scale-100' : 'scale-0'}`} strokeWidth={3} />
-    </div>
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={(e) => onChange(e.target.checked)}
-      className="hidden"
-    />
-    <span className="text-sm text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors select-none">{label}</span>
-  </label>
+  <SmartToggle
+    label={label}
+    checked={checked}
+    onChange={onChange}
+    disabled={disabled}
+    className="w-full py-1 px-1.5 rounded-lg hover:bg-white dark:hover:bg-slate-800/80"
+  />
 );
 
-const ModernSelect = ({ label, value, onChange, options, className = '' }: any) => (
-  <div className={`flex flex-col gap-1.5 ${className}`}>
-    {label && <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">{label}</label>}
-    <div className="relative group">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl px-3 py-2.5 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm"
-        >
-          {options.map((o: any) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors"/>
-    </div>
-  </div>
+const ModernSelect = ({ label, value, onChange, options, className = '', searchable = false }: any) => (
+  <SmartSelect
+    label={label}
+    value={String(value)}
+    onChange={onChange}
+    options={options.map((o: any) => ({ value: String(o.value), label: String(o.label) }))}
+    searchable={searchable}
+    className={className}
+    size="md"
+  />
 );
 
 // --- Main Dialog ---
@@ -245,6 +234,7 @@ export const FontDialogLauncher: React.FC = () => {
                                     label="Font" 
                                     value={font} 
                                     onChange={setFont} 
+                                    searchable
                                     options={FONTS.map(f => ({value: f, label: f}))} 
                                 />
                             </div>

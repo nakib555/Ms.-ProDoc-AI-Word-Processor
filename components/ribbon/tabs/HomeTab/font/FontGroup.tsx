@@ -13,7 +13,7 @@ import { GroupRow } from '../common/HomeTools';
 export const FontGroup: React.FC = () => {
   return (
     <RibbonSection title="Font">
-        <div className="flex flex-col h-full justify-between py-1 px-1 gap-1 relative">
+        <div className="flex flex-col h-full justify-between py-1.5 px-1.5 gap-1.5 relative">
           {/* Row 1: Font Controls */}
           <GroupRow>
             <FontFamilyTool />

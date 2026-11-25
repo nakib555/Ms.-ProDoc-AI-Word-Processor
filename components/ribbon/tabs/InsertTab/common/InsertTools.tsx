@@ -27,7 +27,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({
             <button
                 onClick={(e) => { e.stopPropagation(); if (!disabled) toggleMenu(id); }}
                 onMouseDown={(e) => e.preventDefault()}
-                className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-transparent rounded-sm group transition-colors ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
+                className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-slate-700/60 rounded-sm group transition-colors ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
             >
                 <Icon size={16} className={`mr-2 ${iconClassName || ''} ${activeMenu === id ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'}`} />
                 <span className={`text-[11px] font-medium truncate flex-1 leading-tight ${activeMenu === id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-slate-100'}`}>{label}</span>
@@ -45,7 +45,7 @@ export const DropdownButton: React.FC<DropdownButtonProps> = React.memo(({
           <button
               onClick={(e) => { e.stopPropagation(); if (!disabled) toggleMenu(id); }}
               onMouseDown={(e) => e.preventDefault()}
-              className={`flex flex-col items-center justify-center px-2 py-1 min-w-[60px] md:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-transparent ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white shadow-inner ring-1 ring-slate-300 dark:ring-slate-600' : ''}`}
+              className={`flex flex-col items-center justify-center px-2 py-1 min-w-[60px] md:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 ${activeMenu === id ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white shadow-inner ring-1 ring-slate-300 dark:ring-slate-600' : ''}`}
           >
               <div className="p-1.5 rounded-md transition-all mb-1">
                   <Icon className={`w-6 h-6 ${iconClassName || 'text-slate-500 dark:text-slate-400'} ${activeMenu === id ? 'text-slate-900 dark:text-white' : 'group-hover:text-slate-700 dark:group-hover:text-slate-200'}`} strokeWidth={1.5} />
@@ -63,7 +63,7 @@ export const SmallRibbonButton: React.FC<{ icon: any, label: string, onClick: ()
   <button 
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
-    className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-transparent rounded-sm group transition-colors ${className || ''}`}
+    className={`flex items-center w-full px-2 py-[1px] text-left hover:bg-slate-100 dark:hover:bg-slate-700/60 rounded-sm group transition-colors ${className || ''}`}
     title={label}
   >
     <Icon size={16} className={`${iconClassName || 'text-slate-500 dark:text-slate-400'} group-hover:text-slate-700 dark:group-hover:text-slate-200 mr-2 shrink-0`} />

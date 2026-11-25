@@ -66,22 +66,35 @@ export const Ribbon: React.FC<RibbonProps> = ({
   placement = 'top'
 }) => {
 
-  const [height, setHeight] = useState<number>(0);
+  const [height, setHeight] = useState<number>(108);
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-     if (activeTab && contentRef.current) {
-        const timer = setTimeout(() => {
-            if (contentRef.current) {
-                const contentHeight = contentRef.current.scrollHeight;
-                setHeight(Math.max(contentHeight, 100));
-            }
-        }, 50);
-        return () => clearTimeout(timer);
-     } else {
-        setTimeout(() => setHeight(0), 0);
-     }
+    if (!activeTab) {
+      setHeight(0);
+      return;
+    }
+
+    const measure = () => {
+      if (!contentRef.current) return;
+      const contentHeight = Math.ceil(contentRef.current.scrollHeight);
+      setHeight(Math.max(contentHeight, 112));
+    };
+
+    measure();
+    const rafId = requestAnimationFrame(measure);
+    const el = contentRef.current;
+    let observer: ResizeObserver | null = null;
+    if (el && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(measure);
+      observer.observe(el);
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer?.disconnect();
+    };
   }, [activeTab]);
 
   useEffect(() => {
@@ -146,9 +159,9 @@ export const Ribbon: React.FC<RibbonProps> = ({
       <RibbonTabBar activeTab={activeTab} onTabChange={onTabChange} />
 
       <div 
-        className={`bg-white dark:bg-[#1e293b] ${isBottom ? 'border-t' : 'border-b'} border-slate-200/90 dark:border-slate-700/80 relative z-10 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
+        className={`bg-white dark:bg-[#1e293b] ${isBottom ? 'border-t' : 'border-b'} border-slate-200/90 dark:border-slate-700/80 relative z-10 transition-[height,opacity] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
         style={{ 
-          height: activeTab ? `${Math.max(height, 100)}px` : '0px'
+          height: activeTab ? `${Math.max(height, 112)}px` : '0px'
         }}
       >
          <div 
@@ -157,7 +170,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
          >
             <div 
                 ref={contentRef}
-                className={`flex h-full min-w-max items-center px-1 md:px-3 py-1 animate-in ${isBottom ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'} duration-300 fill-mode-forwards`}
+                className={`flex min-h-[108px] min-w-max items-stretch gap-1 px-3 md:px-4 py-1.5 animate-in ${isBottom ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'} duration-300 fill-mode-forwards`}
             >
                 {activeTab && tabContent}
             </div>

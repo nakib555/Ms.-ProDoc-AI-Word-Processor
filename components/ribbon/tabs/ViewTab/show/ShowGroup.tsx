@@ -10,7 +10,7 @@ import { BenchmarkTool } from './BenchmarkTool';
 export const ShowGroup: React.FC = () => {
   return (
     <RibbonSection title="Show">
-        <div className="flex flex-col justify-center h-full px-1 min-w-[150px]">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 px-1.5 py-0.5 items-center">
            <RulerCheckTool />
            <GridlinesCheckTool />
            <NavPaneCheckTool />

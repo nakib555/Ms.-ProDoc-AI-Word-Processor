@@ -15,7 +15,7 @@ import { PageBuilder } from './PageBuilder';
 import { PaginationLoop } from './PaginationLoop';
 
 const DPI = 96;
-const SAFETY_BUFFER = 15;
+const SAFETY_BUFFER = 24;
 const MIN_LINE_HEIGHT = 20;
 
 export interface PaginatorResult {
@@ -74,8 +74,16 @@ export class Paginator {
     // Normalize input HTML into standard block elements
     const normalizedNodes = BlockNormalizer.normalize(html);
 
+    const effectiveSafetyBuffer = engine.configuration.safetyBuffer ?? SAFETY_BUFFER;
+    const effectiveMinLineHeight = engine.configuration.minLineHeight ?? MIN_LINE_HEIGHT;
+
     // Initialize session elements
-    const environment = new LayoutEnvironmentImpl(initialConfig, false);
+    const environment = new LayoutEnvironmentImpl(
+      initialConfig,
+      Boolean(engine.configuration.debug),
+      effectiveSafetyBuffer,
+      effectiveMinLineHeight
+    );
     const state = new LayoutState();
     const diagnostics = new LayoutDiagnostics(false);
     const measuredCache = customCache || Paginator.sharedCache;
@@ -103,8 +111,8 @@ export class Paginator {
       session,
       builder,
       DPI,
-      SAFETY_BUFFER,
-      MIN_LINE_HEIGHT
+      effectiveSafetyBuffer,
+      effectiveMinLineHeight
     );
 
     return {

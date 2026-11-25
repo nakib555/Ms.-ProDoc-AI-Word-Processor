@@ -10,7 +10,7 @@ import { PAPER_FORMATS } from '../../../../../../constants';
 
 export const SizeTool: React.FC = () => {
   const { pageConfig, setPageConfig, openPageSetup } = useEditor();
-  const { activeMenu, menuPos, closeMenu } = useLayoutTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useLayoutTab();
   const menuId = 'size';
 
   const handleSizeChange = (size: PageSize) => {
@@ -41,7 +41,7 @@ export const SizeTool: React.FC = () => {
              label="Size" 
              iconClassName="text-cyan-600 dark:text-cyan-500"
          />
-         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={280} title="Paper Size">
+         <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={280} title="Paper Size">
              <div 
                 className="p-1 space-y-1 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 overscroll-contain"
              >

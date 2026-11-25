@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useRef, useEffect, useCallb
 interface ReferencesTabContextType {
   activeMenu: string | null;
   menuPos: { top: number; left: number };
+  triggerElement: HTMLElement | null;
   toggleMenu: (id: string) => void;
   closeMenu: () => void;
   registerTrigger: (id: string, el: HTMLElement | null) => void;
@@ -14,6 +15,7 @@ const ReferencesTabContext = createContext<ReferencesTabContextType | undefined>
 export const ReferencesTabProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [triggerElement, setTriggerElement] = useState<HTMLElement | null>(null);
   const triggerRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
   const registerTrigger = useCallback((id: string, el: HTMLElement | null) => {
@@ -22,21 +24,31 @@ export const ReferencesTabProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const toggleMenu = useCallback((menuId: string) => {
     setActiveMenu(prev => {
-        if (prev === menuId) return null;
+        if (prev === menuId) {
+            setTriggerElement(null);
+            return null;
+        }
         
         const trigger = triggerRefs.current[menuId];
         if (trigger) {
             const rect = trigger.getBoundingClientRect();
             setMenuPos({ top: rect.bottom, left: rect.left });
+            setTriggerElement(trigger);
         }
         return menuId;
     });
   }, []);
 
-  const closeMenu = useCallback(() => setActiveMenu(null), []);
+  const closeMenu = useCallback(() => {
+    setActiveMenu(null);
+    setTriggerElement(null);
+  }, []);
 
   useEffect(() => {
-    const handleResize = () => setActiveMenu(null);
+    const handleResize = () => {
+      setActiveMenu(null);
+      setTriggerElement(null);
+    };
     window.addEventListener('resize', handleResize);
     // Removed scroll listener to allow scrolling inside dropdowns without closing them
     return () => {
@@ -46,7 +58,7 @@ export const ReferencesTabProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <ReferencesTabContext.Provider value={{ 
-        activeMenu, menuPos, toggleMenu, closeMenu, registerTrigger
+        activeMenu, menuPos, triggerElement, toggleMenu, closeMenu, registerTrigger
     }}>
       {children}
     </ReferencesTabContext.Provider>

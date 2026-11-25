@@ -11,7 +11,7 @@ import { GroupRow } from '../common/HomeTools';
 export const ParagraphGroup: React.FC = () => {
   return (
     <RibbonSection title="Paragraph">
-        <div className="flex flex-col h-full justify-between py-1 px-1 gap-1">
+        <div className="flex flex-col h-full justify-between py-1.5 px-1.5 gap-1.5">
           <GroupRow>
              <ListTools />
              <IndentTools />

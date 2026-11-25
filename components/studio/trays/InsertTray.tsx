@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Table as TableIcon, Image as ImageIcon, Link as LinkIcon, 
   SplitSquareVertical, Minus, Sigma, Sparkles, Quote, Code
@@ -30,11 +31,33 @@ export const InsertTray: React.FC = () => {
     }
   };
 
-  const handleInsertLink = () => {
-    const url = window.prompt('Enter hyperlink URL (e.g. https://example.com):', 'https://');
-    if (url && url !== 'https://') {
-      executeCommand('createLink', url);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('https://');
+  const savedRangeRef = useRef<Range | null>(null);
+
+  const handleOpenLinkModal = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    } else {
+      savedRangeRef.current = null;
     }
+    setLinkUrl('https://');
+    setShowLinkModal(true);
+  };
+
+  const handleSubmitLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = linkUrl.trim();
+    if (trimmed && trimmed !== 'https://') {
+      const sel = window.getSelection();
+      if (savedRangeRef.current && sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedRangeRef.current);
+      }
+      executeCommand('createLink', trimmed);
+    }
+    setShowLinkModal(false);
   };
 
   const handleInsertSymbol = (symbol: string) => {
@@ -122,7 +145,7 @@ export const InsertTray: React.FC = () => {
       <StudioButton
         icon={LinkIcon}
         label="Link"
-        onClick={handleInsertLink}
+        onClick={handleOpenLinkModal}
         title="Insert Link"
         shortcut="Ctrl+K"
         size="sm"
@@ -202,6 +225,43 @@ export const InsertTray: React.FC = () => {
         title="Insert Code Block"
         size="sm"
       />
+      {showLinkModal && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
+          role="dialog"
+          aria-modal="true"
+          data-modal-backdrop="true"
+          onClick={() => setShowLinkModal(false)}
+        >
+          <form
+            onSubmit={handleSubmitLink}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-5 w-80 space-y-3"
+          >
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Insert Hyperlink</h3>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">URL</label>
+              <input
+                type="url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://example.com"
+                autoFocus
+                className="w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setShowLinkModal(false)} className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md">
+                Cancel
+              </button>
+              <button type="submit" className="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium">
+                Insert Link
+              </button>
+            </div>
+          </form>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

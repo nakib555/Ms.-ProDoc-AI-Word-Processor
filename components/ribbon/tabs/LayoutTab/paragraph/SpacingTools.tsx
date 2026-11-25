@@ -10,28 +10,46 @@ export const SpacingTools: React.FC = () => {
   const [after, setAfter] = useState('0 pt');
 
   useEffect(() => {
-    if (!editor) return;
-    
     const updateValues = () => {
-        const attrs = editor.getAttributes('paragraph');
-        setBefore(attrs.spacingBefore ? `${Math.round(attrs.spacingBefore / 1.33)} pt` : '0 pt');
-        setAfter(attrs.spacingAfter ? `${Math.round(attrs.spacingAfter / 1.33)} pt` : '0 pt');
+        const sel = window.getSelection();
+        let node: Node | null = sel && sel.rangeCount > 0 ? sel.anchorNode : null;
+        if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        const block = node instanceof HTMLElement ? node.closest('p, h1, h2, h3, h4, h5, h6, li, blockquote') as HTMLElement | null : null;
+        if (block) {
+            const topPx = parseFloat(block.style.marginTop || '0') || 0;
+            const bottomPx = parseFloat(block.style.marginBottom || '0') || 0;
+            setBefore(`${Math.round(topPx / 1.33)} pt`);
+            setAfter(`${Math.round(bottomPx / 1.33)} pt`);
+            return;
+        }
+        if (editor) {
+            const attrs = editor.getAttributes('paragraph');
+            setBefore(attrs.spacingBefore ? `${Math.round(attrs.spacingBefore / 1.33)} pt` : '0 pt');
+            setAfter(attrs.spacingAfter ? `${Math.round(attrs.spacingAfter / 1.33)} pt` : '0 pt');
+        }
     };
 
-    editor.on('selectionUpdate', updateValues);
-    editor.on('update', updateValues);
+    document.addEventListener('selectionchange', updateValues);
+    if (editor) {
+        editor.on('selectionUpdate', updateValues);
+        editor.on('update', updateValues);
+    }
     
     return () => {
-        editor.off('selectionUpdate', updateValues);
-        editor.off('update', updateValues);
+        document.removeEventListener('selectionchange', updateValues);
+        if (editor) {
+            editor.off('selectionUpdate', updateValues);
+            editor.off('update', updateValues);
+        }
     };
   }, [editor]);
 
   const handleBeforeChange = (val: string) => {
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = Math.round(num * 1.33 * 10) / 10; // pt to px
-          setBefore(`${num} pt`);
+          const clamped = Math.max(0, Math.round(num));
+          const px = Math.round(clamped * 1.33 * 10) / 10; // pt to px
+          setBefore(`${clamped} pt`);
           applyBlockStyle({ marginTop: `${px}px` });
       }
   };
@@ -39,8 +57,9 @@ export const SpacingTools: React.FC = () => {
   const handleAfterChange = (val: string) => {
       const num = parseFloat(val);
       if (!isNaN(num)) {
-          const px = Math.round(num * 1.33 * 10) / 10; // pt to px
-          setAfter(`${num} pt`);
+          const clamped = Math.max(0, Math.round(num));
+          const px = Math.round(clamped * 1.33 * 10) / 10; // pt to px
+          setAfter(`${clamped} pt`);
           applyBlockStyle({ marginBottom: `${px}px` });
       }
   };
@@ -48,8 +67,8 @@ export const SpacingTools: React.FC = () => {
   return (
     <div className="flex flex-col h-full justify-center gap-1.5 py-0.5">
         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 text-center hidden">Spacing</div>
-        <ParagraphInput label="Before" value={before} icon={ArrowUpToLine} onChange={handleBeforeChange} />
-        <ParagraphInput label="After" value={after} icon={ArrowDownToLine} onChange={handleAfterChange} />
+        <ParagraphInput label="Before" value={before} icon={ArrowUpToLine} step={6} unit="pt" onChange={handleBeforeChange} />
+        <ParagraphInput label="After" value={after} icon={ArrowDownToLine} step={6} unit="pt" onChange={handleAfterChange} />
     </div>
   );
 };

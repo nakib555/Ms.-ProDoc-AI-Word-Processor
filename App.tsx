@@ -41,6 +41,8 @@ const AppContent: React.FC = () => {
     importFile,
     undo,
     redo,
+    activeEditingArea,
+    showDocumentText,
   } = useEditor();
   const { setActiveModal } = useFileTab();
 
@@ -129,7 +131,7 @@ const AppContent: React.FC = () => {
           </ErrorBoundary>
         )}
         
-        <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden relative z-0 w-full">
+        <div className={`flex-1 min-h-0 min-w-0 flex overflow-hidden relative z-0 w-full ${(activeEditingArea === 'header' || activeEditingArea === 'footer') && !showDocumentText ? 'hide-document-text-in-hf' : ''}`}>
           <div 
             className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden relative bg-[#eef2f6] dark:bg-[#0b1120] transition-[colors,transform] duration-200 ease-out will-change-transform"
             style={{ willChange: 'transform' }}

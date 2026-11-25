@@ -657,4 +657,30 @@ body.is-table-resizing .ProseMirror col,
   }
 }
 
+/* Single consistent divider between adjacent ribbon sections that omit RibbonSeparator */
+.prodoc-ribbon-section + .prodoc-ribbon-section {
+  padding-left: 1rem;
+  margin-left: 0.25rem;
+}
+
+.prodoc-ribbon-section + .prodoc-ribbon-section::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 4rem;
+  background-color: rgba(226, 232, 240, 0.9);
+}
+
+.dark .prodoc-ribbon-section + .prodoc-ribbon-section::before {
+  background-color: rgba(51, 65, 85, 0.8);
+}
+
+/* Header/Footer "Show Document Text" toggle support */
+.hide-document-text-in-hf .prodoc-editor {
+  opacity: 0.08;
+  transition: opacity 0.2s ease;
+}
 

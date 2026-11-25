@@ -8,7 +8,7 @@ import { MenuPortal } from '../../../common/MenuPortal';
 
 export const OrientationTool: React.FC = () => {
   const { pageConfig, setPageConfig } = useEditor();
-  const { activeMenu, menuPos, closeMenu } = useLayoutTab();
+  const { activeMenu, menuPos, triggerElement, closeMenu } = useLayoutTab();
   const menuId = 'orientation';
 
   const handleOrientationChange = (orientation: any) => {
@@ -27,7 +27,7 @@ export const OrientationTool: React.FC = () => {
              label="Orientation" 
              iconClassName="text-cyan-600 dark:text-cyan-500"
          />
-         <MenuPortal id={menuId} activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={180} title="Page Orientation">
+         <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={180} title="Page Orientation">
              <div className="p-1.5 space-y-1">
                  <button 
                    onClick={() => handleOrientationChange('portrait')} 

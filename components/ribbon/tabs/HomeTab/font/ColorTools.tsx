@@ -36,7 +36,7 @@ const rgbToHex = (color: string): string => {
 
 export const ColorTools: React.FC = () => {
   const { executeCommand, editorRef } = useEditor();
-  const { activeMenu, toggleMenu, closeMenu, menuPos, registerTrigger } = useHomeTab();
+  const { activeMenu, toggleMenu, closeMenu, menuPos, triggerElement, registerTrigger } = useHomeTab();
   
   const [fontColor, setFontColor] = useState('#000000'); 
   const [highlightColor, setHighlightColor] = useState('#ffff00'); // Default yellow for button
@@ -133,7 +133,7 @@ export const ColorTools: React.FC = () => {
           </div>
        </div>
 
-       <MenuPortal id="highlight_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={210}>
+       <MenuPortal id="highlight_menu" activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={210}>
             <div className="p-2">
                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Highlight Colors</div>
                 <div className="grid grid-cols-5 gap-1 mb-2">
@@ -181,7 +181,7 @@ export const ColorTools: React.FC = () => {
           </div>
        </div>
 
-       <MenuPortal id="font_color_menu" activeMenu={activeMenu} menuPos={menuPos} closeMenu={closeMenu} width={240}>
+       <MenuPortal id="font_color_menu" activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={240}>
             <div className="p-2">
                 <button 
                     className={`w-full text-left px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-sm text-xs text-slate-900 dark:text-slate-100 mb-2 flex items-center gap-2 ${fontColor === '#000000' ? 'bg-slate-100 dark:bg-slate-800 font-medium' : ''}`}

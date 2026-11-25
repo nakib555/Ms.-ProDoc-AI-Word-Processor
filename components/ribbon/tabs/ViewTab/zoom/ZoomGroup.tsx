@@ -12,7 +12,7 @@ export const ZoomGroup: React.FC = () => {
     <RibbonSection title="Zoom">
         <ZoomTool />
         <Zoom100Tool />
-        <div className="flex flex-col justify-center gap-0.5 px-1 h-full">
+        <div className="flex flex-col justify-center gap-1 px-1 h-full">
            <OnePageTool />
            <MultiplePagesTool />
            <PageWidthTool />

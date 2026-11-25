@@ -34,7 +34,8 @@ export const HeaderFooterTab: React.FC = () => {
       <RibbonSection title="Close">
         <RibbonButton 
             icon={X} 
-            label="Close Header and Footer" 
+            label="Close H&F"
+            title="Close Header and Footer"
             onClick={() => setActiveEditingArea('body')}
             className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-900/30"
         />

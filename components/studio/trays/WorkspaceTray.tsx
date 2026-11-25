@@ -17,19 +17,21 @@ export const WorkspaceTray: React.FC = () => {
     setShowFormattingMarks, 
     zoom, 
     setZoom,
+    zoomMode,
     setZoomMode
   } = useEditor();
 
+  const roundedZoom = Math.round(zoom);
   const zoomPresets: StudioDropdownItem[] = [
-    { id: '50', label: '50%', onClick: () => { setZoom(50); setZoomMode('custom'); } },
-    { id: '75', label: '75%', onClick: () => { setZoom(75); setZoomMode('custom'); } },
-    { id: '100', label: '100% (Normal)', onClick: () => { setZoom(100); setZoomMode('custom'); } },
-    { id: '125', label: '125%', onClick: () => { setZoom(125); setZoomMode('custom'); } },
-    { id: '150', label: '150%', onClick: () => { setZoom(150); setZoomMode('custom'); } },
-    { id: '200', label: '200%', onClick: () => { setZoom(200); setZoomMode('custom'); } },
+    { id: '50', label: '50%', active: zoomMode === 'custom' && roundedZoom === 50, onClick: () => { setZoom(50); setZoomMode('custom'); } },
+    { id: '75', label: '75%', active: zoomMode === 'custom' && roundedZoom === 75, onClick: () => { setZoom(75); setZoomMode('custom'); } },
+    { id: '100', label: '100% (Normal)', active: zoomMode === 'custom' && roundedZoom === 100, onClick: () => { setZoom(100); setZoomMode('custom'); } },
+    { id: '125', label: '125%', active: zoomMode === 'custom' && roundedZoom === 125, onClick: () => { setZoom(125); setZoomMode('custom'); } },
+    { id: '150', label: '150%', active: zoomMode === 'custom' && roundedZoom === 150, onClick: () => { setZoom(150); setZoomMode('custom'); } },
+    { id: '200', label: '200%', active: zoomMode === 'custom' && roundedZoom === 200, onClick: () => { setZoom(200); setZoomMode('custom'); } },
     { id: 'div', label: '', divider: true },
-    { id: 'fit-width', label: 'Fit to Window Width', onClick: () => setZoomMode('fit-width') },
-    { id: 'fit-page', label: 'Fit Entire Page', onClick: () => setZoomMode('fit-page') },
+    { id: 'fit-width', label: 'Fit to Window Width', active: zoomMode === 'fit-width', onClick: () => setZoomMode('fit-width') },
+    { id: 'fit-page', label: 'Fit Entire Page', active: zoomMode === 'fit-page', onClick: () => setZoomMode('fit-page') },
   ];
 
   return (
@@ -79,7 +81,7 @@ export const WorkspaceTray: React.FC = () => {
       {/* Zoom Presets Dropdown */}
       <StudioDropdown
         icon={ZoomIn}
-        label={`Zoom: ${Math.round(zoom * 100)}%`}
+        label={`Zoom: ${roundedZoom}%`}
         items={zoomPresets}
         size="sm"
         title="Zoom Level"
@@ -91,6 +93,7 @@ export const WorkspaceTray: React.FC = () => {
         icon={RotateCcw}
         label="Reset (100%)"
         onClick={() => { setZoom(100); setZoomMode('custom'); }}
+        active={zoomMode === 'custom' && roundedZoom === 100}
         title="Reset zoom to 100%"
         size="sm"
       />

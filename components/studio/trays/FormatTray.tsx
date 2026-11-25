@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Bold, Italic, Underline, Strikethrough, Subscript, Superscript,
   AlignLeft, AlignCenter, AlignRight, AlignJustify,
@@ -21,10 +21,19 @@ const HIGHLIGHT_COLORS = [
   'transparent', '#fef08a', '#bbf7d0', '#bae6fd', '#fbcfe8', '#fed7aa', '#e2e8f0'
 ];
 
+const LINE_SPACING_OPTIONS = [
+  { id: '1.0', label: 'Single (1.0)', value: '1' },
+  { id: '1.15', label: '1.15 Spacing', value: '1.15' },
+  { id: '1.5', label: '1.5 Spacing', value: '1.5' },
+  { id: '2.0', label: 'Double (2.0)', value: '2' },
+];
+
 export const FormatTray: React.FC = () => {
-  const { executeCommand, editor } = useEditor();
+  const { executeCommand, applyBlockStyle, editor } = useEditor();
   const [currentFont, setCurrentFont] = useState('Inter');
   const [currentFontSize, setCurrentFontSize] = useState('11');
+  const [activeBlockTag, setActiveBlockTag] = useState('p');
+  const [activeLineSpacing, setActiveLineSpacing] = useState('1.15');
   const [activeFormats, setActiveFormats] = useState({
     bold: false,
     italic: false,
@@ -36,52 +45,105 @@ export const FormatTray: React.FC = () => {
     alignCenter: false,
     alignRight: false,
     alignJustify: false,
+    bulletList: false,
+    orderedList: false,
   });
 
-  const checkFormats = () => {
+  const checkFormats = useCallback(() => {
     try {
+      const safeState = (cmd: string) => {
+        try {
+          return document.queryCommandState(cmd);
+        } catch {
+          return false;
+        }
+      };
+
+      const isAlignCenter = editor ? editor.isActive({ textAlign: 'center' }) : safeState('justifyCenter');
+      const isAlignRight = editor ? editor.isActive({ textAlign: 'right' }) : safeState('justifyRight');
+      const isAlignJustify = editor ? editor.isActive({ textAlign: 'justify' }) : safeState('justifyFull');
+      const isAlignLeft = editor
+        ? editor.isActive({ textAlign: 'left' }) || (!isAlignCenter && !isAlignRight && !isAlignJustify)
+        : safeState('justifyLeft') || (!isAlignCenter && !isAlignRight && !isAlignJustify);
+
       setActiveFormats({
-        bold: document.queryCommandState('bold'),
-        italic: document.queryCommandState('italic'),
-        underline: document.queryCommandState('underline'),
-        strikethrough: document.queryCommandState('strikeThrough'),
-        subscript: document.queryCommandState('subscript'),
-        superscript: document.queryCommandState('superscript'),
-        alignLeft: document.queryCommandState('justifyLeft'),
-        alignCenter: document.queryCommandState('justifyCenter'),
-        alignRight: document.queryCommandState('justifyRight'),
-        alignJustify: document.queryCommandState('justifyFull'),
+        bold: editor ? editor.isActive('bold') : safeState('bold'),
+        italic: editor ? editor.isActive('italic') : safeState('italic'),
+        underline: editor ? editor.isActive('underline') : safeState('underline'),
+        strikethrough: editor ? editor.isActive('strike') : safeState('strikeThrough'),
+        subscript: editor ? editor.isActive('subscript') : safeState('subscript'),
+        superscript: editor ? editor.isActive('superscript') : safeState('superscript'),
+        alignLeft: isAlignLeft,
+        alignCenter: isAlignCenter,
+        alignRight: isAlignRight,
+        alignJustify: isAlignJustify,
+        bulletList: editor ? editor.isActive('bulletList') : safeState('insertUnorderedList'),
+        orderedList: editor ? editor.isActive('orderedList') : safeState('insertOrderedList'),
       });
 
-      const font = document.queryCommandValue('fontName')?.replace(/['"]/g, '');
-      if (font && FONTS.includes(font)) setCurrentFont(font);
+      if (editor) {
+        if (editor.isActive('heading', { level: 1 })) setActiveBlockTag('h1');
+        else if (editor.isActive('heading', { level: 2 })) setActiveBlockTag('h2');
+        else if (editor.isActive('heading', { level: 3 })) setActiveBlockTag('h3');
+        else if (editor.isActive('codeBlock')) setActiveBlockTag('pre');
+        else if (editor.isActive('blockquote')) setActiveBlockTag('blockquote');
+        else setActiveBlockTag('p');
+
+        const attrs = editor.getAttributes('textStyle');
+        if (attrs?.fontFamily) {
+          const clean = String(attrs.fontFamily).replace(/['"]/g, '').split(',')[0].trim();
+          if (FONTS.includes(clean)) setCurrentFont(clean);
+        }
+        if (attrs?.fontSize) {
+          const parsed = String(attrs.fontSize).replace(/pt|px/gi, '').trim();
+          if (parsed) setCurrentFontSize(parsed);
+        }
+      } else {
+        const font = document.queryCommandValue('fontName')?.replace(/['"]/g, '');
+        if (font && FONTS.includes(font)) setCurrentFont(font);
+      }
+
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const anchorNode = sel.anchorNode;
+        const el = anchorNode?.nodeType === Node.ELEMENT_NODE
+          ? (anchorNode as HTMLElement)
+          : anchorNode?.parentElement;
+        const block = el?.closest('p, h1, h2, h3, li, blockquote, pre') as HTMLElement | null;
+        if (block?.style.lineHeight) {
+          setActiveLineSpacing(block.style.lineHeight);
+        }
+      }
     } catch {
       // ignore
     }
-  };
+  }, [editor]);
 
   useEffect(() => {
     document.addEventListener('selectionchange', checkFormats);
     document.addEventListener('mouseup', checkFormats);
     document.addEventListener('keyup', checkFormats);
+    editor?.on('selectionUpdate', checkFormats);
+    editor?.on('transaction', checkFormats);
+    checkFormats();
     return () => {
       document.removeEventListener('selectionchange', checkFormats);
       document.removeEventListener('mouseup', checkFormats);
       document.removeEventListener('keyup', checkFormats);
+      editor?.off('selectionUpdate', checkFormats);
+      editor?.off('transaction', checkFormats);
     };
-  }, []);
+  }, [checkFormats, editor]);
 
   const handleFontChange = (font: string) => {
     setCurrentFont(font);
-    document.execCommand('fontName', false, font);
+    executeCommand('fontName', font);
   };
 
   const handleFontSizeChange = (size: string) => {
     setCurrentFontSize(size);
-    // TipTap / Rich Text size
     if (editor) {
       editor.chain().focus().run();
-      // Apply size via inline styling
       const sel = window.getSelection();
       if (sel && sel.rangeCount > 0) {
         document.execCommand('fontSize', false, '7');
@@ -91,6 +153,8 @@ export const FormatTray: React.FC = () => {
           (el as HTMLElement).style.fontSize = `${size}pt`;
         });
       }
+    } else {
+      executeCommand('fontSize', size);
     }
   };
 
@@ -118,48 +182,67 @@ export const FormatTray: React.FC = () => {
   const fontItems: StudioDropdownItem[] = FONTS.map(font => ({
     id: font,
     label: font,
+    active: currentFont === font,
     onClick: () => handleFontChange(font),
+  }));
+
+  const fontSizeItems: StudioDropdownItem[] = FONT_SIZES.map(sz => ({
+    id: String(sz),
+    label: `${sz} pt`,
+    active: String(sz) === String(currentFontSize),
+    onClick: () => handleFontSizeChange(String(sz)),
   }));
 
   const headingItems: StudioDropdownItem[] = [
     {
       id: 'p',
       label: 'Normal Text',
-      onClick: () => executeCommand('formatBlock', '<p>')
+      active: activeBlockTag === 'p',
+      onClick: () => { setActiveBlockTag('p'); executeCommand('formatBlock', '<p>'); }
     },
     {
       id: 'h1',
       label: 'Heading 1',
-      onClick: () => executeCommand('formatBlock', '<h1>')
+      active: activeBlockTag === 'h1',
+      onClick: () => { setActiveBlockTag('h1'); executeCommand('formatBlock', '<h1>'); }
     },
     {
       id: 'h2',
       label: 'Heading 2',
-      onClick: () => executeCommand('formatBlock', '<h2>')
+      active: activeBlockTag === 'h2',
+      onClick: () => { setActiveBlockTag('h2'); executeCommand('formatBlock', '<h2>'); }
     },
     {
       id: 'h3',
       label: 'Heading 3',
-      onClick: () => executeCommand('formatBlock', '<h3>')
+      active: activeBlockTag === 'h3',
+      onClick: () => { setActiveBlockTag('h3'); executeCommand('formatBlock', '<h3>'); }
     },
     {
       id: 'pre',
       label: 'Code Block',
-      onClick: () => executeCommand('formatBlock', '<pre>')
+      active: activeBlockTag === 'pre',
+      onClick: () => { setActiveBlockTag('pre'); executeCommand('formatBlock', '<pre>'); }
     },
     {
       id: 'blockquote',
       label: 'Quote Block',
-      onClick: () => executeCommand('formatBlock', '<blockquote>')
+      active: activeBlockTag === 'blockquote',
+      onClick: () => { setActiveBlockTag('blockquote'); executeCommand('formatBlock', '<blockquote>'); }
     }
   ];
 
-  const lineSpacingItems: StudioDropdownItem[] = [
-    { id: '1.0', label: 'Single (1.0)', onClick: () => editor?.commands.setContent(editor.getHTML()) },
-    { id: '1.15', label: '1.15 Spacing', onClick: () => {} },
-    { id: '1.5', label: '1.5 Spacing', onClick: () => {} },
-    { id: '2.0', label: 'Double (2.0)', onClick: () => {} },
-  ];
+  const activeHeadingLabel = headingItems.find(h => h.id === activeBlockTag)?.label || 'Normal Text';
+
+  const lineSpacingItems: StudioDropdownItem[] = LINE_SPACING_OPTIONS.map(opt => ({
+    id: opt.id,
+    label: opt.label,
+    active: activeLineSpacing === opt.value || activeLineSpacing === opt.id,
+    onClick: () => {
+      setActiveLineSpacing(opt.value);
+      applyBlockStyle({ lineHeight: opt.value });
+    },
+  }));
 
   return (
     <div className="flex items-center gap-1.5 px-3 py-1 overflow-x-auto no-scrollbar w-full">
@@ -167,9 +250,11 @@ export const FormatTray: React.FC = () => {
       <StudioDropdown
         label={currentFont}
         items={fontItems}
+        searchable
+        searchPlaceholder="Search fonts..."
         size="sm"
         title="Font Family"
-        className="min-w-[120px]"
+        className="min-w-[126px]"
         triggerClassName="w-full justify-between font-normal bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
       />
 
@@ -177,26 +262,29 @@ export const FormatTray: React.FC = () => {
       <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-md bg-white dark:bg-slate-900 overflow-hidden flex-shrink-0">
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => adjustFontSize(-1)}
-          className="w-5 h-7 flex items-center justify-center text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="w-6 h-7 flex items-center justify-center text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title="Decrease Font Size"
+          aria-label="Decrease Font Size"
         >
           -
         </button>
-        <select
-          value={currentFontSize}
-          onChange={(e) => handleFontSizeChange(e.target.value)}
-          className="h-7 text-xs font-medium px-1 bg-transparent text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer text-center"
-        >
-          {FONT_SIZES.map(sz => (
-            <option key={sz} value={sz}>{sz}</option>
-          ))}
-        </select>
+        <StudioDropdown
+          label={currentFontSize}
+          items={fontSizeItems}
+          size="sm"
+          title="Font Size"
+          menuClassName="min-w-[110px]"
+          triggerClassName="border-x border-slate-200 dark:border-slate-800 rounded-none px-1.5 min-w-[46px] justify-center font-medium"
+        />
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => adjustFontSize(1)}
-          className="w-5 h-7 flex items-center justify-center text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="w-6 h-7 flex items-center justify-center text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title="Increase Font Size"
+          aria-label="Increase Font Size"
         >
           +
         </button>
@@ -204,11 +292,11 @@ export const FormatTray: React.FC = () => {
 
       {/* Paragraph Style Dropdown */}
       <StudioDropdown
-        label="Style"
+        label={activeHeadingLabel}
         items={headingItems}
         size="sm"
         title="Heading / Paragraph Style"
-        triggerClassName="font-normal border border-slate-200 dark:border-slate-800"
+        triggerClassName="font-normal border border-slate-200 dark:border-slate-800 min-w-[104px] justify-between"
       />
 
       <StudioDivider />
@@ -282,6 +370,8 @@ export const FormatTray: React.FC = () => {
               {PALETTE_COLORS.map(color => (
                 <button
                   key={color}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     executeCommand('foreColor', color);
                     close();
@@ -289,6 +379,7 @@ export const FormatTray: React.FC = () => {
                   className="w-6 h-6 rounded-md border border-slate-200/60 dark:border-slate-700 hover:scale-110 transition-transform cursor-pointer shadow-xs"
                   style={{ backgroundColor: color }}
                   title={color}
+                  aria-label={`Set font color ${color}`}
                 />
               ))}
             </div>
@@ -308,6 +399,8 @@ export const FormatTray: React.FC = () => {
               {HIGHLIGHT_COLORS.map(color => (
                 <button
                   key={color}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     executeCommand('hiliteColor', color);
                     close();
@@ -315,6 +408,7 @@ export const FormatTray: React.FC = () => {
                   className={`w-6 h-6 rounded-md border border-slate-300 dark:border-slate-700 hover:scale-110 transition-transform cursor-pointer shadow-xs ${color === 'transparent' ? 'relative bg-white text-[9px] text-slate-400 flex items-center justify-center font-bold' : ''}`}
                   style={{ backgroundColor: color }}
                   title={color === 'transparent' ? 'None' : color}
+                  aria-label={color === 'transparent' ? 'Clear highlight' : `Set highlight ${color}`}
                 >
                   {color === 'transparent' && '∅'}
                 </button>
@@ -389,7 +483,7 @@ export const FormatTray: React.FC = () => {
 
       {/* Line Spacing Dropdown */}
       <StudioDropdown
-        label="Spacing"
+        label={`Spacing (${activeLineSpacing})`}
         items={lineSpacingItems}
         size="sm"
         title="Line Spacing"
@@ -402,28 +496,30 @@ export const FormatTray: React.FC = () => {
       <StudioButtonGroup ariaLabel="Lists and indent">
         <StudioButton
           icon={List}
-          onClick={() => executeCommand('insertUnorderedList')}
+          onClick={() => { executeCommand('insertUnorderedList'); checkFormats(); }}
+          active={activeFormats.bulletList}
           title="Bullet List"
           size="sm"
           variant="segmented"
         />
         <StudioButton
           icon={ListOrdered}
-          onClick={() => executeCommand('insertOrderedList')}
+          onClick={() => { executeCommand('insertOrderedList'); checkFormats(); }}
+          active={activeFormats.orderedList}
           title="Numbered List"
           size="sm"
           variant="segmented"
         />
         <StudioButton
           icon={Outdent}
-          onClick={() => executeCommand('outdent')}
+          onClick={() => { executeCommand('outdent'); checkFormats(); }}
           title="Decrease Indent"
           size="sm"
           variant="segmented"
         />
         <StudioButton
           icon={Indent}
-          onClick={() => executeCommand('indent')}
+          onClick={() => { executeCommand('indent'); checkFormats(); }}
           title="Increase Indent"
           size="sm"
           variant="segmented"

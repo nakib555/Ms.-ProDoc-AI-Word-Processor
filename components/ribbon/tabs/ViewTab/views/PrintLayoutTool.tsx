@@ -11,8 +11,8 @@ export const PrintLayoutTool: React.FC = () => {
         icon={FileText} 
         label="Print Layout" 
         onClick={() => setViewMode('print')} 
-        className={viewMode === 'print' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-200' : ''}
-        iconClassName="text-indigo-600"
+        active={viewMode === 'print'}
+        iconClassName="text-indigo-600 dark:text-indigo-400"
     />
   );
 };

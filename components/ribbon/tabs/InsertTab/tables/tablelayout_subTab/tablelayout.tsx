@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { RibbonSection } from '../../../../common/RibbonSection';
 import { RibbonButton } from '../../../../common/RibbonButton';
+import { MenuPortal } from '../../../../common/MenuPortal';
 import { 
   MousePointer2, Grid, Settings, Eraser, PenLine, Trash2, 
   ArrowUpToLine, ArrowDownToLine, ArrowLeftToLine, ArrowRightToLine,
@@ -36,6 +37,8 @@ export const TableLayoutTab: React.FC = () => {
   const [isFormulaOpen, setIsFormulaOpen] = useState(false);
   const [isAutoFitOpen, setIsAutoFitOpen] = useState(false);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [selectTriggerEl, setSelectTriggerEl] = useState<HTMLDivElement | null>(null);
+  const [autoFitTriggerEl, setAutoFitTriggerEl] = useState<HTMLDivElement | null>(null);
   const [gridlinesOn, setGridlinesOn] = useState<boolean>(() => {
     if (typeof document === 'undefined') return false;
     return !!document.querySelector('.prodoc-editor.show-table-gridlines');
@@ -479,29 +482,36 @@ export const TableLayoutTab: React.FC = () => {
   });
 
   return (
-    <div className="flex h-full items-center gap-2 px-1 py-0.5">
+    <div className="flex h-full items-center">
       {/* 1. Table Management Section */}
       <RibbonSection title="Table">
-        <div className="flex items-center h-full gap-1 p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
-          <div className="relative flex items-center h-full">
+        <div className="flex items-center h-full gap-1">
+          <div ref={setSelectTriggerEl} className="relative flex items-center h-full">
             <RibbonButton 
               icon={MousePointer2} 
               label="Select" 
               hasArrow
               title="Select Cell, Column, Row, or Table" 
-              onClick={() => setIsSelectOpen(!isSelectOpen)} 
+              onClick={() => {
+                setIsAutoFitOpen(false);
+                setIsSelectOpen((prev) => !prev);
+              }} 
             />
-            {isSelectOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setIsSelectOpen(false)} />
-                <div className="absolute top-full left-0 mt-1 w-44 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1 z-50">
-                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('cell')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Cell</button>
-                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('col')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Column</button>
-                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('row')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Row</button>
-                  <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('table')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Table</button>
-                </div>
-              </>
-            )}
+            <MenuPortal
+              id="table_select_menu"
+              activeMenu={isSelectOpen ? 'table_select_menu' : null}
+              triggerElement={selectTriggerEl}
+              closeMenu={() => setIsSelectOpen(false)}
+              width={176}
+              title="Select Table"
+            >
+              <div className="py-1 flex flex-col">
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('cell')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Cell</button>
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('col')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Column</button>
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('row')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Row</button>
+                <button onMouseDown={(e) => e.preventDefault()} onClick={() => handleSelectScope('table')} className="w-full px-3 py-1.5 text-left text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700">Select Table</button>
+              </div>
+            </MenuPortal>
           </div>
           <RibbonButton 
             icon={Grid} 
@@ -521,7 +531,7 @@ export const TableLayoutTab: React.FC = () => {
 
       {/* 2. Rows & Columns Section */}
       <RibbonSection title="Rows & Columns">
-        <div className="flex items-center h-full gap-1.5 p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+        <div className="flex items-center h-full gap-1.5">
           {/* Insert Controls */}
           <div className="flex flex-col gap-1 pr-1.5 border-r border-slate-200 dark:border-slate-700">
             <button
@@ -591,10 +601,10 @@ export const TableLayoutTab: React.FC = () => {
 
       {/* 3. Merge & Split Section */}
       <RibbonSection title="Merge & Split">
-        <div className="flex flex-col justify-center h-full gap-1 p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs min-w-[90px]">
+        <div className="flex flex-col justify-center h-full gap-1 min-w-[92px]">
           <button
             onMouseDown={(e) => e.preventDefault()}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
             onClick={mergeCells}
             title="Merge Selected Cells"
           >
@@ -603,7 +613,7 @@ export const TableLayoutTab: React.FC = () => {
           </button>
           <button
             onMouseDown={(e) => e.preventDefault()}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
             onClick={splitCells}
             title="Split Current Cell"
           >
@@ -612,7 +622,7 @@ export const TableLayoutTab: React.FC = () => {
           </button>
           <button
             onMouseDown={(e) => e.preventDefault()}
-            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
             onClick={splitTable}
             title="Split Table into Two"
           >
@@ -624,7 +634,7 @@ export const TableLayoutTab: React.FC = () => {
 
       {/* 4. Cell Size Section (MS Word Parity: Row Height, Column Width & Scope) */}
       <RibbonSection title="Cell Size">
-        <div className="flex items-center h-full gap-2 p-1.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+        <div className="flex items-center h-full gap-2">
           
           {/* Row Height & Column Width Controls */}
           <div className="flex flex-col gap-1">
@@ -764,54 +774,61 @@ export const TableLayoutTab: React.FC = () => {
           <div className="w-px h-7 bg-slate-200 dark:bg-slate-700 mx-0.5" />
 
           {/* AutoFit Menu */}
-          <div className="relative flex items-center h-full">
+          <div ref={setAutoFitTriggerEl} className="relative flex items-center h-full">
             <RibbonButton 
               icon={TableProperties} 
               label="AutoFit" 
               hasArrow 
               title="AutoFit Column Widths"
-              onClick={() => setIsAutoFitOpen(!isAutoFitOpen)} 
+              onClick={() => {
+                setIsSelectOpen(false);
+                setIsAutoFitOpen((prev) => !prev);
+              }} 
             />
-            {isAutoFitOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setIsAutoFitOpen(false)}
-                />
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <button 
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
-                    onClick={() => {
-                      autoFit('contents');
-                      setIsAutoFitOpen(false);
-                    }}
-                  >
-                    <Minimize size={14} className="text-slate-500 dark:text-slate-400" />
-                    <span className="font-medium">AutoFit Contents</span>
-                  </button>
-                  <button 
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
-                    onClick={() => {
-                      autoFit('window');
-                      setIsAutoFitOpen(false);
-                    }}
-                  >
-                    <Maximize size={14} className="text-slate-500 dark:text-slate-400" />
-                    <span className="font-medium">AutoFit Window</span>
-                  </button>
-                  <button 
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
-                    onClick={() => {
-                      autoFit('fixed');
-                      setIsAutoFitOpen(false);
-                    }}
-                  >
-                    <Grid size={14} className="text-slate-500 dark:text-slate-400" />
-                    <span className="font-medium">Fixed Column Width</span>
-                  </button>
-                </div>
-              </>
-            )}
+            <MenuPortal
+              id="table_autofit_menu"
+              activeMenu={isAutoFitOpen ? 'table_autofit_menu' : null}
+              triggerElement={autoFitTriggerEl}
+              closeMenu={() => setIsAutoFitOpen(false)}
+              width={192}
+              title="AutoFit"
+            >
+              <div className="py-1 flex flex-col">
+                <button 
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
+                  onClick={() => {
+                    autoFit('contents');
+                    setIsAutoFitOpen(false);
+                  }}
+                >
+                  <Minimize size={14} className="text-slate-500 dark:text-slate-400" />
+                  <span className="font-medium">AutoFit Contents</span>
+                </button>
+                <button 
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
+                  onClick={() => {
+                    autoFit('window');
+                    setIsAutoFitOpen(false);
+                  }}
+                >
+                  <Maximize size={14} className="text-slate-500 dark:text-slate-400" />
+                  <span className="font-medium">AutoFit Window</span>
+                </button>
+                <button 
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 transition-colors"
+                  onClick={() => {
+                    autoFit('fixed');
+                    setIsAutoFitOpen(false);
+                  }}
+                >
+                  <Grid size={14} className="text-slate-500 dark:text-slate-400" />
+                  <span className="font-medium">Fixed Column Width</span>
+                </button>
+              </div>
+            </MenuPortal>
           </div>
           
           <div className="w-px h-7 bg-slate-200 dark:bg-slate-700 mx-0.5" />
@@ -820,7 +837,7 @@ export const TableLayoutTab: React.FC = () => {
           <div className="flex flex-col gap-1">
             <button 
               onMouseDown={(e) => e.preventDefault()} 
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors" 
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors" 
               onClick={distributeRows}
               title="Distribute Rows Evenly"
             >
@@ -829,7 +846,7 @@ export const TableLayoutTab: React.FC = () => {
             </button>
             <button 
               onMouseDown={(e) => e.preventDefault()} 
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors" 
+              className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors" 
               onClick={distributeCols}
               title="Distribute Columns Evenly"
             >
@@ -842,7 +859,7 @@ export const TableLayoutTab: React.FC = () => {
 
       {/* 5. Table Styles & Shading Section */}
       <RibbonSection title="Table Styles">
-        <div className="flex items-center h-full gap-2 p-1.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+        <div className="flex items-center h-full gap-2">
           <RibbonButton 
             icon={Sparkles} 
             label="Auto-Style" 
@@ -927,14 +944,14 @@ export const TableLayoutTab: React.FC = () => {
 
       {/* 6. Borders Section */}
       <RibbonSection title="Borders">
-        <div className="flex items-center h-full p-1 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+        <div className="flex items-center h-full">
           <BorderTool />
         </div>
       </RibbonSection>
 
       {/* 7. Alignment & Data Section */}
       <RibbonSection title="Alignment & Data">
-        <div className="flex items-center h-full gap-2 p-1.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+        <div className="flex items-center h-full gap-2">
           {/* 3x3 Micro Alignment Matrix */}
           <div className="grid grid-cols-3 gap-0.5 p-1 border rounded-lg bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-2xs">
             <button onMouseDown={(e) => e.preventDefault()} className="p-1 hover:bg-indigo-50 dark:hover:bg-slate-700 rounded text-slate-700 dark:text-slate-300" onClick={() => setAlign('top', 'left')} title="Top Left"><AlignLeft size={10} className="rotate-45"/></button>
