@@ -73,11 +73,17 @@ interface EditorPageProps {
 }
 
 
+const CARET_BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'TR', 'BLOCKQUOTE', 'PRE']);
+
 const getTextLength = (node: Node): number => {
   if (node.nodeType === Node.TEXT_NODE) return (node.nodeValue || "").length;
   if (node.nodeType === Node.ELEMENT_NODE) {
     const el = node as HTMLElement;
     if (el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break') || el.tagName === 'BR') return 1;
+    let len = 0;
+    node.childNodes.forEach((c) => (len += getTextLength(c)));
+    if (CARET_BLOCK_TAGS.has(el.tagName)) len += 1;
+    return len;
   }
   let len = 0;
   node.childNodes.forEach((c) => (len += getTextLength(c)));
@@ -113,6 +119,10 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   const [editorElement, setEditorElement] = useState<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
+  const isComposingRef = useRef(false);
+  const pendingExternalSyncRef = useRef(false);
+  const isHeaderComposingRef = useRef(false);
+  const isFooterComposingRef = useRef(false);
   const scale = (zoom / 100) * calibrationScale;
   const { 
     isKeyboardLocked, 
@@ -1092,10 +1102,43 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       try {
         const range = sel.getRangeAt(0);
         if (element.contains(range.startContainer)) {
-          const preCaretRange = range.cloneRange();
-          preCaretRange.selectNodeContents(element);
-          preCaretRange.setEnd(range.endContainer, range.endOffset);
-          caretOffset = preCaretRange.toString().length;
+          let found = false;
+          const countAtom = (el: HTMLElement) =>
+            el.tagName === 'BR' || el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break');
+
+          const walk = (node: Node) => {
+            if (found) return;
+            if (node === range.startContainer) {
+              if (node.nodeType === Node.TEXT_NODE) {
+                caretOffset += range.startOffset;
+              } else {
+                for (let i = 0; i < range.startOffset; i++) {
+                  const child = node.childNodes[i];
+                  if (child) caretOffset += getTextLength(child);
+                }
+              }
+              found = true;
+              return;
+            }
+            if (node.nodeType === Node.TEXT_NODE) {
+              caretOffset += (node.nodeValue || "").length;
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+              const el = node as HTMLElement;
+              if (countAtom(el)) {
+                caretOffset += 1;
+              } else {
+                for (let i = 0; i < node.childNodes.length; i++) {
+                  walk(node.childNodes[i]);
+                  if (found) return;
+                }
+                if (node !== element && CARET_BLOCK_TAGS.has(el.tagName)) {
+                  caretOffset += 1;
+                }
+              }
+            }
+          };
+
+          walk(element);
         }
       } catch (_e) {
         // ignore
@@ -1109,23 +1152,54 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     const range = document.createRange();
     range.setStart(element, 0);
     range.collapse(true);
-    const nodeStack: Node[] = [element];
-    let node: Node | undefined;
     let found = false;
 
-    while (!found && (node = nodeStack.pop())) {
-      if (node.nodeType === 3) {
-        const nextCharIndex = charIndex + (node.nodeValue || "").length;
-        if (offset >= charIndex && offset <= nextCharIndex) {
-          range.setStart(node, offset - charIndex);
+    const walk = (node: Node) => {
+      if (found) return;
+      if (node.nodeType === Node.TEXT_NODE) {
+        const len = (node.nodeValue || "").length;
+        if (charIndex + len >= offset) {
+          range.setStart(node, Math.max(0, Math.min(len, offset - charIndex)));
           range.collapse(true);
           found = true;
+          return;
         }
-        charIndex = nextCharIndex;
-      } else {
-        let i = node.childNodes.length;
-        while (i--) nodeStack.push(node.childNodes[i]);
+        charIndex += len;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        if (el.tagName === 'BR' || el.tagName === 'MATH-FIELD' || el.classList.contains('prodoc-page-break')) {
+          if (el.tagName === 'BR' && charIndex === offset && el.parentNode) {
+            const idx = Array.prototype.indexOf.call(el.parentNode.childNodes, el);
+            range.setStart(el.parentNode, Math.max(0, idx));
+            range.collapse(true);
+            found = true;
+            return;
+          }
+          if (charIndex + 1 >= offset) {
+            range.setStartAfter(el);
+            range.collapse(true);
+            found = true;
+            return;
+          }
+          charIndex += 1;
+        } else {
+          for (let i = 0; i < node.childNodes.length; i++) {
+            walk(node.childNodes[i]);
+            if (found) return;
+          }
+          if (node !== element && CARET_BLOCK_TAGS.has(el.tagName)) {
+            charIndex += 1;
+          }
+        }
       }
+    };
+
+    if (offset <= 0) {
+      range.setStart(element, 0);
+      range.collapse(true);
+      found = true;
+    } else {
+      walk(element);
     }
 
     if (found) {
@@ -1144,9 +1218,13 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     setSelectedTable(null);
   }, [historyApplySeq]);
 
-  // Sync content to editable div
+  // Sync content to editable div (never overwrite DOM mid-IME composition)
   useLayoutEffect(() => {
     if (editorRef.current) {
+      if (isComposingRef.current) {
+        pendingExternalSyncRef.current = true;
+        return;
+      }
       const activeEl = document.activeElement;
       const isMathFieldFocused = activeEl && activeEl.tagName.toLowerCase() === 'math-field' && editorRef.current.contains(activeEl);
       if (isMathFieldFocused) return;
@@ -1162,7 +1240,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         if (isFocused) {
           const newContentLength = getTextLength(editorRef.current);
           if (savedOffset <= newContentLength) {
-            editorRef.current.focus();
+            editorRef.current.focus({ preventScroll: true });
             try {
               setCaretPosition(editorRef.current, savedOffset);
             } catch (_e) {
@@ -1228,7 +1306,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   // Sync Header
   useEffect(() => {
-    if (headerRef.current) {
+    if (headerRef.current && !isHeaderComposingRef.current) {
       const isFocused = document.activeElement === headerRef.current;
       if (!isFocused && headerRef.current.innerHTML !== activeHeaderContent) {
         headerRef.current.innerHTML = activeHeaderContent;
@@ -1238,7 +1316,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   // Sync Footer
   useEffect(() => {
-    if (footerRef.current) {
+    if (footerRef.current && !isFooterComposingRef.current) {
       const displayHtml = activeFooterContent
         .replace(/\[Page \d+\]/g, `[Page ${pageNumber}]`)
         .replace(/<span class="page-number-placeholder">\d+<\/span>/g, `<span class="page-number-placeholder">${pageNumber}</span>`);
@@ -1711,7 +1789,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       return;
     }
     if (editorRef.current && !editorRef.current.contains(e.target as Node)) {
-      editorRef.current.focus();
+      e.preventDefault();
+      editorRef.current.focus({ preventScroll: true });
       const rect = editorRef.current.getBoundingClientRect();
       const range = document.createRange();
       range.selectNodeContents(editorRef.current);
@@ -2011,6 +2090,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               contentEditable={isHeaderFooterEditable}
               inputMode={isKeyboardLocked || isGestureLocked || selectionMode ? "none" : "text"}
               suppressContentEditableWarning
+              onCompositionStart={() => { isHeaderComposingRef.current = true; }}
+              onCompositionEnd={(e) => {
+                isHeaderComposingRef.current = false;
+                handleHeaderInput(e as unknown as React.FormEvent<HTMLDivElement>);
+              }}
               onInput={handleHeaderInput}
               onFocus={() => setActiveEditingArea && setActiveEditingArea('header')}
               onKeyDown={(e) => {
@@ -2112,6 +2196,16 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
             contentEditable={!isHeaderFooterMode && isBodyEditable}
 
             inputMode={isKeyboardLocked || isGestureLocked || selectionMode ? "none" : "text"}
+            onCompositionStart={(e) => {
+              isComposingRef.current = true;
+              e.currentTarget.dataset.composing = 'true';
+            }}
+            onCompositionEnd={(e) => {
+              isComposingRef.current = false;
+              delete e.currentTarget.dataset.composing;
+              pendingExternalSyncRef.current = false;
+              handleInput(e as unknown as React.FormEvent<HTMLDivElement>);
+            }}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
             onFocus={onFocus}
@@ -2241,6 +2335,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               contentEditable={isHeaderFooterEditable}
               inputMode={isKeyboardLocked || isGestureLocked || selectionMode ? "none" : "text"}
               suppressContentEditableWarning
+              onCompositionStart={() => { isFooterComposingRef.current = true; }}
+              onCompositionEnd={(e) => {
+                isFooterComposingRef.current = false;
+                handleFooterInput(e as unknown as React.FormEvent<HTMLDivElement>);
+              }}
               onInput={handleFooterInput}
               onFocus={() => setActiveEditingArea && setActiveEditingArea('footer')}
               onKeyDown={(e) => {

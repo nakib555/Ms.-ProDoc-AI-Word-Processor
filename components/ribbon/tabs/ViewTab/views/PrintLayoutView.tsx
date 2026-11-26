@@ -12,8 +12,7 @@ import { paginateContent } from '../../../../../utils/layoutEngine';
 import { getPhysicalDimensions } from '../../../../../utils/measurement';
 import { HistoryCommitMode } from '../../../../../utils/historyManager';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
-import { useGestureContext } from '../../../../../contexts/GestureContext';
-import { isAnyModalOpen } from '../../../../../utils/modalScroll';
+import { isEditableElementActive } from '../../../../../contexts/GestureContext';
 
 export const PrintLayoutTool: React.FC = () => {
   const { viewMode, setViewMode } = useEditor();
@@ -321,12 +320,12 @@ const scrollRangeIntoContainerView = (range: Range, scrollContainer: HTMLElement
     if (rect.top < containerRect.top + topPad) {
         scrollContainer.scrollBy({
             top: rect.top - (containerRect.top + topPad),
-            behavior: 'smooth',
+            behavior: 'auto',
         });
     } else if (rect.bottom > containerRect.bottom - bottomPad) {
         scrollContainer.scrollBy({
             top: rect.bottom - (containerRect.bottom - bottomPad),
-            behavior: 'smooth',
+            behavior: 'auto',
         });
     }
 };
@@ -624,7 +623,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     isTableResizing,
     historyApplySeq,
   } = useEditor();
-  const { triggerGestureLock } = useGestureContext();
   
   const [pagesData, setPagesData] = useState<{ html: string, config: PageConfig }[]>(() => paginateContent(content, pageConfig).pages);
   const pagesDataRef = useRef(pagesData);
@@ -666,12 +664,22 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
   });
 
   const lastAppliedFitZoomRef = useRef<number | null>(null);
+  const lastFitWidthRef = useRef<number>(width);
 
   // Dynamic Zoom Logic (accounts for calibrationScale and Multiple Pages 2-up layout)
   useEffect(() => {
       if (width <= 0 || height <= 0) return;
+      const widthChanged = Math.abs(width - lastFitWidthRef.current) >= 2;
+      lastFitWidthRef.current = width;
+
       if (zoomMode !== 'fit-page' && zoomMode !== 'fit-width') {
           lastAppliedFitZoomRef.current = null;
+          return;
+      }
+
+      // When mobile keyboard opens in fit-page mode, height shrinks without width changing;
+      // skip shrinking zoom mid-typing so viewport coordinates and focus stay stable.
+      if (zoomMode === 'fit-page' && !widthChanged && isEditableElementActive()) {
           return;
       }
 
@@ -722,13 +730,57 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       lastProcessedHistorySeqRef.current = historyApplySeq;
     }
 
+    const isAnyEditorComposing =
+      typeof document !== 'undefined' &&
+      Boolean(document.querySelector('.prodoc-editor[data-composing="true"]'));
+    if (isAnyEditorComposing && !isHistoryRestore && !isExternalContentChange) {
+      return;
+    }
+
     const runPagination = () => {
       if (!isMounted) return;
       const currentCursor = getCursorSnapshot(pagesDataRef.current);
 
+      const activeEl = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+      let focusedPageIndex = -1;
+      if (activeEl) {
+        const editorEl = activeEl.id?.startsWith('prodoc-editor-')
+          ? activeEl
+          : (activeEl.closest('[id^="prodoc-editor-"]') as HTMLElement | null);
+        if (editorEl) {
+          const parsed = parseInt(editorEl.id.replace('prodoc-editor-', ''), 10);
+          if (!Number.isNaN(parsed)) focusedPageIndex = parsed - 1;
+        }
+      }
+
       requestAnimationFrame(() => {
         if (!isMounted) return;
         const result = paginateContent(content, pageConfig);
+        const prevPages = pagesDataRef.current;
+
+        // Preserve live focused page DOM when no pagination boundary changed so typing / Enter / IME never flicker
+        if (
+          !isHistoryRestore &&
+          !isExternalContentChange &&
+          focusedPageIndex >= 0 &&
+          focusedPageIndex < prevPages.length &&
+          result.pages.length === prevPages.length &&
+          result.pages.every((p, idx) => idx === focusedPageIndex || p.html === prevPages[idx]?.html)
+        ) {
+          const mergedPages = result.pages.map((p, idx) =>
+            idx === focusedPageIndex ? { ...p, html: prevPages[idx].html } : p
+          );
+          const changed = mergedPages.some(
+            (p, idx) => p.html !== prevPages[idx]?.html || p.config !== prevPages[idx]?.config
+          );
+          if (changed) {
+            pagesDataRef.current = mergedPages;
+            setPagesData(mergedPages);
+          }
+          setTotalPages(mergedPages.length);
+          return;
+        }
+
         pagesDataRef.current = result.pages;
         setPagesData(result.pages);
         setTotalPages(result.pages.length);
@@ -738,6 +790,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           cursorRetryCountRef.current = 0;
           const targetPageNum = findTargetPageForSnapshot(result.pages, currentCursor);
           if (targetPageNum && targetPageNum !== lastReportedPageRef.current) {
+            lastReportedPageRef.current = targetPageNum;
             setCurrentPage(targetPageNum);
           }
         }
@@ -775,6 +828,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
           } else if (result && !result.restored && cursorRetryCountRef.current < 6) {
               cursorRetryCountRef.current += 1;
               if (result.pageNum !== lastReportedPageRef.current) {
+                  lastReportedPageRef.current = result.pageNum;
                   setCurrentPage(result.pageNum);
               }
               requestAnimationFrame(attemptRestore);
@@ -940,7 +994,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     const container = e.currentTarget;
     const newScrollTop = container.scrollTop;
 
-    // Mark active user scrolling with auto-reset timer
+    // Mark active user scrolling with auto-reset timer (never lock/blur editing on scroll)
     isUserScrollingRef.current = true;
     if (scrollEndTimerRef.current) {
       clearTimeout(scrollEndTimerRef.current);
@@ -948,11 +1002,6 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     scrollEndTimerRef.current = setTimeout(() => {
       isUserScrollingRef.current = false;
     }, 250);
-
-    // Auto-lock editing during scroll with 400ms auto-unlock to prevent mobile keyboard popups & layout misalignment
-    if (!isAnyModalOpen()) {
-      triggerGestureLock(400);
-    }
 
     if (rulerContainerRef.current) {
         rulerContainerRef.current.scrollLeft = container.scrollLeft;
@@ -974,7 +1023,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
         setCurrentPage(closestPage);
       }
     });
-  }, [currentPage, setCurrentPage, pageTops, pageGeometries, totalPagesCount, triggerGestureLock]);
+  }, [currentPage, setCurrentPage, pageTops, pageGeometries, totalPagesCount]);
 
   const setRefs = useCallback((node: HTMLDivElement | null) => {
       scrollContainerRef.current = node;
@@ -1039,6 +1088,36 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       }
     }
   }, [currentPage, columnCount, rowCount, totalPagesCount, pageTops, rowVirtualizer]);
+
+  // Keep active caret visible when mobile virtual keyboard shrinks visualViewport
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    let prevHeight = vv.height;
+
+    const handleViewportResize = () => {
+      const nextHeight = vv.height;
+      const shrank = nextHeight < prevHeight - 40;
+      prevHeight = nextHeight;
+      if (!shrank) return;
+
+      const container = scrollContainerRef.current;
+      if (!container) return;
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (!activeEl || !container.contains(activeEl) || !isEditableElementActive(activeEl)) return;
+
+      requestAnimationFrame(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        if (!container.contains(range.startContainer)) return;
+        scrollRangeIntoContainerView(range, container);
+      });
+    };
+
+    vv.addEventListener('resize', handleViewportResize);
+    return () => vv.removeEventListener('resize', handleViewportResize);
+  }, []);
 
   // Cleanup timers on unmount
   useEffect(() => {

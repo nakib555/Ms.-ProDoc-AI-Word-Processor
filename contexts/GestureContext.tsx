@@ -15,6 +15,29 @@ export interface GestureState {
   isDraggingSheet: boolean;
 }
 
+export interface GestureLockOptions {
+  blurActive?: boolean;
+  skipIfEditing?: boolean;
+}
+
+export const isEditableElementActive = (targetEl?: Element | null): boolean => {
+  if (typeof document === 'undefined') return false;
+  const activeEl = (targetEl ?? document.activeElement) as HTMLElement | null;
+  if (!activeEl) return false;
+  if (
+    activeEl.isContentEditable ||
+    activeEl.tagName === 'INPUT' ||
+    activeEl.tagName === 'TEXTAREA' ||
+    activeEl.tagName === 'SELECT' ||
+    activeEl.tagName?.toLowerCase() === 'math-field'
+  ) {
+    return true;
+  }
+  return Boolean(
+    activeEl.closest?.('.prodoc-editor, .prodoc-header, .prodoc-footer, [contenteditable="true"]')
+  );
+};
+
 export interface GestureContextType {
   gestureState: GestureState;
   isPinching: boolean;
@@ -30,7 +53,7 @@ export interface GestureContextType {
   setIsPinching: (val: boolean) => void;
   setIsPanning: (val: boolean) => void;
   setGestureLocked: (locked: boolean) => void;
-  triggerGestureLock: (timeoutMs?: number) => void;
+  triggerGestureLock: (timeoutMs?: number, options?: GestureLockOptions) => void;
   setShowHud: (val: boolean) => void;
   setSheetDragY: (val: number) => void;
   setIsDraggingSheet: (val: boolean) => void;
@@ -78,13 +101,17 @@ export const GestureProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setGestureState(prev => (prev.isGestureLocked === locked ? prev : { ...prev, isGestureLocked: locked }));
   }, []);
 
-  const triggerGestureLock = useCallback((timeoutMs: number = 400) => {
-    // Dismiss virtual keyboard and drop focus if an editable element currently has focus
-    if (typeof document !== 'undefined') {
+  const triggerGestureLock = useCallback((timeoutMs: number = 400, options?: GestureLockOptions) => {
+    const { blurActive = true, skipIfEditing = false } = options || {};
+    const isEditing = isEditableElementActive();
+    if (skipIfEditing && isEditing) {
+      return;
+    }
+
+    // Dismiss virtual keyboard and drop focus only when blurActive is enabled (e.g., pinch zoom)
+    if (blurActive && isEditing && typeof document !== 'undefined') {
       const activeEl = document.activeElement as HTMLElement | null;
-      if (activeEl && (activeEl.isContentEditable || activeEl.closest('.prodoc-editor') || activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
-        activeEl.blur();
-      }
+      activeEl?.blur?.();
     }
 
     setGestureState(prev => prev.isGestureLocked ? prev : { ...prev, isGestureLocked: true });

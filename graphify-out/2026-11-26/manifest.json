@@ -1040,16 +1040,16 @@
     "semantic_hash": "a78c3d8d507ed8ff02cef1872083fe56"
   },
   "components/ribbon/tabs/InsertTab/symbols/SymbolPickerDialog.tsx": {
-    "mtime": 1795705632.7207458,
-    "seen": 1795706494.3081937,
-    "ast_hash": "57045c3d920435082a45d89c26646812",
-    "semantic_hash": "57045c3d920435082a45d89c26646812"
+    "mtime": 1795707304.460982,
+    "seen": 1795707411.5261266,
+    "ast_hash": "2a0460fe85f5a2b52c4582d3177c29d1",
+    "semantic_hash": "2a0460fe85f5a2b52c4582d3177c29d1"
   },
   "components/ribbon/tabs/InsertTab/symbols/SymbolTool.tsx": {
-    "mtime": 1795705364.9764228,
-    "seen": 1795706494.3082354,
-    "ast_hash": "768d05a35ed068b783c9a681cd4cf714",
-    "semantic_hash": "768d05a35ed068b783c9a681cd4cf714"
+    "mtime": 1795707315.7598345,
+    "seen": 1795707411.5261302,
+    "ast_hash": "44a3bbcafa75bad4476c7fde9116de1c",
+    "semantic_hash": "44a3bbcafa75bad4476c7fde9116de1c"
   },
   "components/ribbon/tabs/InsertTab/symbols/SymbolsGroup.tsx": {
     "mtime": 1795704638.9094222,
@@ -2650,10 +2650,10 @@
     "semantic_hash": "018c4bb05da381e98d0aac0c48e73901"
   },
   "tests/unit/editorEnhancements.test.ts": {
-    "mtime": 1795704638.580524,
-    "seen": 1795706494.320297,
-    "ast_hash": "0926759aa8ffc73f1bc72e160cb44625",
-    "semantic_hash": "0926759aa8ffc73f1bc72e160cb44625"
+    "mtime": 1795707335.3399916,
+    "seen": 1795707411.5374224,
+    "ast_hash": "872b370b6a3edcf798065df3fb13cc2f",
+    "semantic_hash": "872b370b6a3edcf798065df3fb13cc2f"
   },
   "tests/unit/equationWordParity.test.tsx": {
     "mtime": 1795704638.8353884,
@@ -2818,10 +2818,10 @@
     "semantic_hash": "47ec5c21537e55b25e6acc7f9e3bb193"
   },
   "utils/equationPresets.ts": {
-    "mtime": 1795704638.6688583,
-    "seen": 1795706494.3211863,
-    "ast_hash": "8dff96dc5601eb2e3eb608dbd07d204d",
-    "semantic_hash": "8dff96dc5601eb2e3eb608dbd07d204d"
+    "mtime": 1795707264.486099,
+    "seen": 1795707411.5382085,
+    "ast_hash": "d5f9701e76b4d23066f5aa61bbe25867",
+    "semantic_hash": "d5f9701e76b4d23066f5aa61bbe25867"
   },
   "utils/eventBus.ts": {
     "mtime": 1795704638.8852756,
@@ -3170,5 +3170,11 @@
     "seen": 1795706494.3230183,
     "ast_hash": "2bf1917705cc1db7ad92646d7b812525",
     "semantic_hash": "2bf1917705cc1db7ad92646d7b812525"
+  },
+  "utils/symbolCatalog.ts": {
+    "mtime": 1795707250.6275175,
+    "seen": 1795707411.539651,
+    "ast_hash": "0552cbba26c81ab2aa3e3003a1cb9cc7",
+    "semantic_hash": "0552cbba26c81ab2aa3e3003a1cb9cc7"
   }
 }

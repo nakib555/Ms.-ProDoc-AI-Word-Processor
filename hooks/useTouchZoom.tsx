@@ -314,11 +314,12 @@ export const useTouchZoom = ({
         const displayZoom = Math.round(state.current.startZoom * effectiveScale);
         throttledUpdateHUD(displayZoom);
       } else if (e.touches.length === 1 && !state.current.isPinching) {
-        // When user drags / scrolls with 1 finger on mobile, lock edit mode to prevent keyboard popups
+        // Only lock edit mode on a deliberate drag when NOT already actively editing,
+        // so tapping, selecting, or typing never dismisses the mobile soft keyboard.
         const t = e.touches[0];
         const moveDist = Math.hypot(t.clientX - touchStartPosRef.current.x, t.clientY - touchStartPosRef.current.y);
-        if (moveDist > 6) {
-          gestureContextRef.current.triggerGestureLock(400);
+        if (moveDist > 14) {
+          gestureContextRef.current.triggerGestureLock(400, { blurActive: false, skipIfEditing: true });
         }
       }
     };

@@ -38,10 +38,10 @@
     "semantic_hash": "841c6ba9dc533dbd97ca847465bef666"
   },
   "components/EditorPage/EditorPage.tsx": {
-    "mtime": 1795705385.0497904,
-    "seen": 1795706494.3012316,
-    "ast_hash": "e55889dab7487bbb464b91db033b5a90",
-    "semantic_hash": "e55889dab7487bbb464b91db033b5a90"
+    "mtime": 1795712026.5301769,
+    "seen": 1795712264.5414777,
+    "ast_hash": "f11ef7151358d00e405c3e296daf158e",
+    "semantic_hash": "f11ef7151358d00e405c3e296daf158e"
   },
   "components/EditorPage/ResizerOverlay.tsx": {
     "mtime": 1795704638.7504973,
@@ -2198,10 +2198,10 @@
     "semantic_hash": "6d6d8fc364b030909b89d096beda5b3c"
   },
   "components/ribbon/tabs/ViewTab/views/PrintLayoutView.tsx": {
-    "mtime": 1795705946.776398,
-    "seen": 1795706494.3173075,
-    "ast_hash": "24c4b0b64675f2ce2daf29a0413b6b47",
-    "semantic_hash": "24c4b0b64675f2ce2daf29a0413b6b47"
+    "mtime": 1795712001.9702852,
+    "seen": 1795712264.5572002,
+    "ast_hash": "8ecdc79a4ff388a4deed96deaa686c9f",
+    "semantic_hash": "8ecdc79a4ff388a4deed96deaa686c9f"
   },
   "components/ribbon/tabs/ViewTab/views/ReadLayoutView.tsx": {
     "mtime": 1795704638.5614927,
@@ -2234,10 +2234,10 @@
     "semantic_hash": "3bfe497ab94be630f8a9267d3c49e95d"
   },
   "components/ribbon/tabs/ViewTab/views/WebLayoutView.tsx": {
-    "mtime": 1795705948.6412687,
-    "seen": 1795706494.3175747,
-    "ast_hash": "beccdcd8ee2acacd5a973f1c45f4cd69",
-    "semantic_hash": "beccdcd8ee2acacd5a973f1c45f4cd69"
+    "mtime": 1795711957.4224126,
+    "seen": 1795712264.557422,
+    "ast_hash": "3d2d10185a7e65549252b75dfaac8892",
+    "semantic_hash": "3d2d10185a7e65549252b75dfaac8892"
   },
   "components/ribbon/tabs/ViewTab/window/ArrangeAllTool.tsx": {
     "mtime": 1795704638.717349,
@@ -2486,10 +2486,10 @@
     "semantic_hash": "d11f4a5b5a173d7970f5fd48f183ae8e"
   },
   "contexts/GestureContext.tsx": {
-    "mtime": 1795704638.5946243,
-    "seen": 1795706494.319382,
-    "ast_hash": "d28dbac33e712b27a7b03fb967ad3ffa",
-    "semantic_hash": "d28dbac33e712b27a7b03fb967ad3ffa"
+    "mtime": 1795711932.3777802,
+    "seen": 1795712264.558894,
+    "ast_hash": "bab049e646e66c61382a3aee2cf6fdf9",
+    "semantic_hash": "bab049e646e66c61382a3aee2cf6fdf9"
   },
   "contexts/ThemeContext.tsx": {
     "mtime": 1795704638.5465295,
@@ -2541,10 +2541,10 @@
     "semantic_hash": "37333432439f5696a8fcbd7939db2648"
   },
   "hooks/useTouchZoom.tsx": {
-    "mtime": 1795704638.7171652,
-    "seen": 1795706494.3196,
-    "ast_hash": "ddf9b53e8c75f145f9a3dc763473134a",
-    "semantic_hash": "ddf9b53e8c75f145f9a3dc763473134a"
+    "mtime": 1795711956.5867062,
+    "seen": 1795712264.5591154,
+    "ast_hash": "7b7388ea9a9c8b483ff628e0c6f3862e",
+    "semantic_hash": "7b7388ea9a9c8b483ff628e0c6f3862e"
   },
   "index.tsx": {
     "mtime": 1795704638.7783105,
@@ -3176,5 +3176,11 @@
     "seen": 1795707411.539651,
     "ast_hash": "0552cbba26c81ab2aa3e3003a1cb9cc7",
     "semantic_hash": "0552cbba26c81ab2aa3e3003a1cb9cc7"
+  },
+  "tests/unit/mobileKeyboardStability.test.tsx": {
+    "mtime": 1795712175.0887632,
+    "seen": 1795712264.559832,
+    "ast_hash": "b23010fce291a1c9cd4329a8b42c10d4",
+    "semantic_hash": "b23010fce291a1c9cd4329a8b42c10d4"
   }
 }

@@ -4,7 +4,6 @@ import { useMathLive } from '../../../../../hooks/useMathLive';
 import { useEditor } from '../../../../../contexts/EditorContext';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
 import { useGestureContext } from '../../../../../contexts/GestureContext';
-import { isAnyModalOpen } from '../../../../../utils/modalScroll';
 import { insertEquationBox } from '../../InsertTab/symbols/equation_subTab/common/mathUtils';
 
 interface WebLayoutViewProps {
@@ -43,10 +42,12 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
     formatPainterStyles,
     applyFormatPainterToSelection,
   } = useEditor();
-  const { isGestureLocked, triggerGestureLock } = useGestureContext();
+  const { isGestureLocked } = useGestureContext();
 
   const [viewportWidth, setViewportWidth] = useState(0);
   const [unscaledHeight, setUnscaledHeight] = useState(800);
+  const isComposingRef = useRef(false);
+  const pendingExternalSyncRef = useRef(false);
 
   const { isPinching } = useTouchZoom({
     containerRef,
@@ -123,14 +124,63 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
     };
   }, [editorRef]);
   
-  // Sync content immediately on initial mount, external changes, and Undo/Redo
+  // Sync content immediately on initial mount, external changes, and Undo/Redo (never mid-IME composition)
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== content) {
+    if (!editorRef.current) return;
+    if (isComposingRef.current) {
+      pendingExternalSyncRef.current = true;
+      return;
+    }
+    if (editorRef.current.innerHTML !== content) {
       editorRef.current.innerHTML = content;
     }
   }, [content, editorRef, historyApplySeq]);
 
   useMathLive(content, editorRef);
+
+  // Keep active caret scrolled into view when soft keyboard resizes visualViewport
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    let prevHeight = vv.height;
+
+    const handleViewportResize = () => {
+      const nextHeight = vv.height;
+      const shrank = nextHeight < prevHeight - 40;
+      prevHeight = nextHeight;
+      if (!shrank) return;
+
+      const editorEl = editorRef.current;
+      const container = containerRef.current;
+      if (!editorEl || !container) return;
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (!activeEl || (activeEl !== editorEl && !editorEl.contains(activeEl))) return;
+
+      requestAnimationFrame(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0) return;
+        const range = sel.getRangeAt(0);
+        if (!editorEl.contains(range.startContainer)) return;
+        const containerRect = container.getBoundingClientRect();
+        let rect = range.getBoundingClientRect();
+        if (rect.top === 0 && rect.height === 0) {
+          const el = range.startContainer.nodeType === Node.TEXT_NODE
+            ? range.startContainer.parentElement
+            : (range.startContainer as HTMLElement);
+          if (el) rect = el.getBoundingClientRect();
+        }
+        if (rect.height > 0 && rect.bottom > containerRect.bottom - 32) {
+          container.scrollBy({
+            top: rect.bottom - (containerRect.bottom - 32),
+            behavior: 'auto',
+          });
+        }
+      });
+    };
+
+    vv.addEventListener('resize', handleViewportResize);
+    return () => vv.removeEventListener('resize', handleViewportResize);
+  }, [editorRef]);
 
   // Track selection to update active element type (e.g., for showing Table tabs)
   useEffect(() => {
@@ -234,11 +284,6 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
       ref={containerRef}
       className="flex-1 w-full h-full min-w-0 min-h-0 overflow-auto bg-slate-100 dark:bg-slate-900 relative touch-pan-x touch-pan-y"
       onClick={onPageClick}
-      onScroll={() => {
-        if (!isAnyModalOpen()) {
-          triggerGestureLock(400);
-        }
-      }}
       style={{ overflow: 'auto' }}
     >
       <div
@@ -263,6 +308,16 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
             contentEditable={!isGestureLocked}
             inputMode={isGestureLocked ? "none" : "text"}
             suppressContentEditableWarning
+            onCompositionStart={(e) => {
+              isComposingRef.current = true;
+              e.currentTarget.dataset.composing = 'true';
+            }}
+            onCompositionEnd={(e) => {
+              isComposingRef.current = false;
+              delete e.currentTarget.dataset.composing;
+              pendingExternalSyncRef.current = false;
+              onInput(e as unknown as React.FormEvent<HTMLDivElement>);
+            }}
             onInput={onInput}
             onKeyDown={handleKeyDown}
             onPaste={onPaste}
