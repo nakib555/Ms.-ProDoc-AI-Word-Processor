@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Plus, Merge, Split, Trash2, ArrowUpDown, FileText, Settings 
 } from 'lucide-react';
+import { clampPointBox } from '../../utils/viewportPosition';
 
 interface TableContextMenuProps {
   visible: boolean;
@@ -24,6 +25,39 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
   onAction,
   onKeyDown,
 }) => {
+  const [clampedPos, setClampedPos] = useState<{ left: number; top: number; maxWidth: number; maxHeight: number }>({
+    left: x,
+    top: y,
+    maxWidth: 320,
+    maxHeight: 430,
+  });
+
+  useLayoutEffect(() => {
+    if (!visible) return;
+    const update = () => {
+      const next = clampPointBox(x, y, contextMenuRef.current, {
+        fallbackWidth: 220,
+        fallbackHeight: 430,
+        margin: 8,
+        flipOnOverflow: true,
+      });
+      setClampedPos(next);
+    };
+    update();
+    let observer: ResizeObserver | null = null;
+    if (contextMenuRef.current && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => requestAnimationFrame(update));
+      observer.observe(contextMenuRef.current);
+    }
+    window.addEventListener('resize', update);
+    window.visualViewport?.addEventListener('resize', update);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', update);
+      window.visualViewport?.removeEventListener('resize', update);
+    };
+  }, [visible, x, y, contextMenuRef]);
+
   if (!visible) return null;
 
   return createPortal(
@@ -31,8 +65,13 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       ref={contextMenuRef}
       tabIndex={-1}
       id="table-context-menu"
-      className="fixed z-[99999] bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 min-w-[200px] text-sm max-h-[min(430px,calc(100vh-32px))] overflow-y-auto outline-none transition-all duration-200 ease-out origin-top-left"
-      style={{ left: x, top: y }}
+      className="fixed z-[99999] bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 min-w-[200px] text-xs sm:text-sm overflow-y-auto outline-none transition-all duration-200 ease-out origin-top-left"
+      style={{
+        left: clampedPos.left,
+        top: clampedPos.top,
+        maxWidth: `${clampedPos.maxWidth}px`,
+        maxHeight: `${Math.min(430, clampedPos.maxHeight)}px`,
+      }}
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={onKeyDown}

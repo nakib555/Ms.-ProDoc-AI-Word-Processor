@@ -140,7 +140,7 @@ export const FontSizeTool: React.FC = () => {
     <>
       <div
         ref={(el) => registerTrigger(menuId, el)}
-        className={`flex items-center border rounded-md h-[28px] w-16 bg-white dark:bg-slate-800 transition-all group relative ${
+        className={`flex items-center border rounded-md h-[26px] sm:h-[28px] lg:h-[30px] w-14 sm:w-16 bg-white dark:bg-slate-800 transition-all group relative ${
           isOpen
             ? 'border-blue-500 ring-2 ring-blue-500/20'
             : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500'
@@ -162,7 +162,7 @@ export const FontSizeTool: React.FC = () => {
               if (!isOpen) setInputValue(currentFontSize);
             }, 120);
           }}
-          className="w-full h-full px-1.5 text-xs tabular-nums outline-none text-slate-700 dark:text-slate-200 font-medium bg-transparent text-center leading-tight rounded-l-md"
+          className="w-full h-full px-1 sm:px-1.5 text-[11px] sm:text-xs tabular-nums outline-none text-slate-700 dark:text-slate-200 font-medium bg-transparent text-center leading-tight rounded-l-md"
         />
         <button
           type="button"
@@ -187,7 +187,7 @@ export const FontSizeTool: React.FC = () => {
       </div>
 
       <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={86} title="Font Size">
-        <div className="max-h-[300px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+        <div className="max-h-[min(300px,62dvh)] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
           {STD_SIZES.map((size, idx) => {
             const isSelected = parseInt(currentFontSize, 10) === size;
             const isHighlighted = idx === highlightedIdx;

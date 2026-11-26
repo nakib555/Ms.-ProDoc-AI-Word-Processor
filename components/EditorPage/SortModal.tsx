@@ -31,14 +31,14 @@ export const SortModal: React.FC<SortModalProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 overscroll-contain"
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in duration-200 overscroll-contain"
       role="dialog"
       aria-modal="true"
       data-modal-backdrop="true"
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto overscroll-contain p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain p-4 sm:p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3">
@@ -64,7 +64,7 @@ export const SortModal: React.FC<SortModalProps> = ({
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
               Sort Order
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
               {[
                 { label: 'Ascending (A-Z, 1-9)', value: 'asc' },
                 { label: 'Descending (Z-A, 9-1)', value: 'desc' }

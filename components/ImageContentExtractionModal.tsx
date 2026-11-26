@@ -101,45 +101,45 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200 overscroll-contain"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-2 sm:p-4 animate-in fade-in duration-200 overscroll-contain"
       role="dialog"
       aria-modal="true"
       data-modal-backdrop="true"
       onClick={onClose}
     >
       <div
-        className="bg-[#ffffff] dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
+        className="bg-[#ffffff] dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl max-h-[90dvh] flex flex-col overflow-hidden text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         
         {/* Header */}
-        <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-200/60 dark:border-indigo-800/60">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center border border-indigo-200/60 dark:border-indigo-800/60 shrink-0">
               <Sparkles size={18} />
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-2">
                 Transcribe Picture to Editable Content
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                   Zero Raw Image
                 </span>
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 Extracts text, headings, and tables into native editable document blocks without inserting image pixels.
               </p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-5 sm:space-y-6">
           {/* Source Selector Bar */}
           <div className="flex flex-wrap items-center justify-between gap-4 p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -229,7 +229,7 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
               </p>
             </div>
           ) : (
-            <form onSubmit={handleUrlSubmit} className="flex gap-2">
+            <form onSubmit={handleUrlSubmit} className="flex flex-col xs:flex-row gap-2">
               <input
                 type="url"
                 value={imageUrl}
@@ -304,11 +304,11 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-[#f8fafc] dark:bg-[#1e293b]/80 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-xl transition-all"
+            className="px-3.5 sm:px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-xl transition-all"
           >
             Cancel
           </button>
@@ -317,10 +317,10 @@ export const ImageContentExtractionModal: React.FC<ImageContentExtractionModalPr
             type="button"
             onClick={handleInsert}
             disabled={!editedHtml || isProcessing}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-98 disabled:opacity-50 disabled:pointer-events-none"
+            className="px-4 sm:px-5 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-98 disabled:opacity-50 disabled:pointer-events-none"
           >
             <Check size={15} />
-            Insert as Editable Content into Document
+            Insert Editable Content
           </button>
         </div>
       </div>

@@ -16,7 +16,7 @@ export const MiniToolbar: React.FC = () => {
   }
 
   const btnClass = (isActive: boolean) => `
-    p-1.5 rounded transition-all duration-150 select-none
+    p-1 sm:p-1.5 rounded transition-all duration-150 select-none shrink-0
     ${isActive 
       ? 'bg-indigo-600 text-white shadow-sm' 
       : 'text-slate-300 hover:text-white hover:bg-slate-800'
@@ -39,12 +39,19 @@ export const MiniToolbar: React.FC = () => {
         duration: 150,
         placement: 'top',
         animation: 'shift-away',
+        maxWidth: 'calc(100vw - 16px)',
+        popperOptions: {
+          modifiers: [
+            { name: 'preventOverflow', options: { boundary: 'viewport', padding: 8, altAxis: true } },
+            { name: 'flip', options: { padding: 8 } },
+          ],
+        },
         onHide: () => {
           setIsComposingComment(false);
           setCommentText('');
         }
       }}
-      className="flex items-center gap-1 p-1.5 bg-slate-950/95 text-slate-100 rounded-lg shadow-2xl border border-slate-800 backdrop-blur-md animate-in zoom-in-95 duration-150 z-50 select-none"
+      className="flex items-center gap-0.5 sm:gap-1 p-1 sm:p-1.5 max-w-[calc(100vw-16px)] overflow-x-auto no-scrollbar bg-slate-950/95 text-slate-100 rounded-lg shadow-2xl border border-slate-800 backdrop-blur-md animate-in zoom-in-95 duration-150 z-50 select-none"
     >
       {isComposingComment ? (
         <div className="flex items-center gap-1 px-1">
@@ -63,7 +70,7 @@ export const MiniToolbar: React.FC = () => {
             }}
             placeholder="Write a comment..."
             autoFocus
-            className="w-44 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white placeholder-slate-400 outline-none focus:border-indigo-500"
+            className="w-36 sm:w-44 max-w-[55vw] bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white placeholder-slate-400 outline-none focus:border-indigo-500"
           />
           <button
             type="button"

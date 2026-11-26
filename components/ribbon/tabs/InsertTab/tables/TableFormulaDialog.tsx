@@ -432,7 +432,7 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
         <>
             {/* Minimal Single-Line Floating Bar View for selection steps */}
             {step !== 'setup' && (
-                <div className="fixed bottom-[17px] left-1/2 -translate-x-1/2 z-[100] w-full max-w-[360px] h-[41px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl rounded-full px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 animate-in slide-in-from-bottom-5 duration-300">
+                <div className="fixed bottom-3 sm:bottom-[17px] left-1/2 -translate-x-1/2 z-[100] w-[calc(100vw-16px)] max-w-[380px] h-[41px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl rounded-full px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 sm:gap-3 animate-in slide-in-from-bottom-5 duration-300">
                     
                     {/* Function Badge (Fixed) */}
                     <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -536,24 +536,24 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
             {/* Step 1: Beautiful Initial Setup Dialog Box */}
             {step === 'setup' && (
                 <div
-                  className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[99] flex items-center justify-center p-4 overscroll-contain"
+                  className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-[99] flex items-center justify-center p-2 sm:p-4 overscroll-contain"
                   role="dialog"
                   aria-modal="true"
                   data-modal-backdrop="true"
                   onClick={onClose}
                 >
                     <div
-                      className="w-[92vw] max-w-[420px] max-h-[90vh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+                      className="w-full max-w-[420px] max-h-[90dvh] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
                       onClick={(e) => e.stopPropagation()}
                     >
                         {/* Title Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center justify-between p-3.5 sm:p-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
                             <div className="flex items-center gap-2.5">
                                 <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-md">
                                     <Calculator size={18} />
                                 </div>
                                 <div>
-                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-base block">Formula Engine</span>
+                                    <span className="font-bold text-slate-800 dark:text-slate-100 text-sm sm:text-base block">Formula Engine</span>
                                     <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Excel-like operations on your table</span>
                                 </div>
                             </div>
@@ -563,11 +563,11 @@ export const TableFormulaDialog: React.FC<TableFormulaDialogProps> = ({ isOpen, 
                         </div>
 
                         {/* Content Body */}
-                        <div className="p-5 space-y-5">
+                        <div className="p-4 sm:p-5 space-y-4 sm:space-y-5 flex-1 min-h-0 overflow-y-auto overscroll-contain">
                             {/* Choose Selection Type */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">1. Selection Type</label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                                     <button
                                         type="button"
                                         onClick={() => setSelType('range')}

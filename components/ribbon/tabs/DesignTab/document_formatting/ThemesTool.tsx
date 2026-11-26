@@ -25,7 +25,7 @@ export const ThemesTool: React.FC = () => {
             label="Themes" 
         />
         <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={210}>
-            <div className="p-2 grid grid-cols-1 gap-1 max-h-[60vh] overflow-y-auto">
+            <div className="p-2 grid grid-cols-1 gap-1 max-h-[62dvh] overflow-y-auto">
                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">Standard</div>
                 <button className="flex items-center gap-3 w-full p-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 rounded text-left" onClick={() => applyTheme('Inter', 'Inter')}>
                     <div className="w-8 h-8 bg-blue-600 rounded shadow-sm shrink-0"></div>

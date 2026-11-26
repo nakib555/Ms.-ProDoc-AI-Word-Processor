@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Sigma, Plus, PenTool, Trash2 } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
@@ -10,12 +10,19 @@ import {
   EquationPreset,
 } from '../../../../../utils/equationPresets';
 import { insertEquationBox } from './equation_subTab/common/mathUtils';
+import { computeAnchoredPopover } from '../../../../../utils/viewportPosition';
 
 export const EquationTool: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; maxHeight: string; maxWidth: string }>({
+    top: 0,
+    left: 8,
+    maxHeight: '75dvh',
+    maxWidth: 'calc(100vw - 16px)',
+  });
   const [savedEquations, setSavedEquations] = useState<EquationPreset[]>(() => getSavedEquations());
   const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const sync = () => setSavedEquations(getSavedEquations());
@@ -23,16 +30,46 @@ export const EquationTool: React.FC = () => {
     return () => window.removeEventListener('prodoc:saved-equations-updated', sync);
   }, []);
 
+  const updatePos = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const pos = computeAnchoredPopover(rect, menuRef.current, {
+      preferredWidth: 320,
+      fallbackHeight: 380,
+      idealMaxHeight: Math.round(window.innerHeight * 0.78),
+      margin: 8,
+      gap: 4,
+    });
+    setMenuStyle({
+      top: pos.top,
+      left: pos.left,
+      maxHeight: pos.maxHeight,
+      maxWidth: pos.maxWidth,
+    });
+  }, []);
+
   const toggleMenu = () => {
-    if (!isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setMenuPos({
-        top: rect.bottom + 4,
-        left: Math.min(rect.left, Math.max(8, window.innerWidth - 332)),
-      });
-    }
     setIsOpen((prev) => !prev);
   };
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePos();
+    let observer: ResizeObserver | null = null;
+    if (menuRef.current && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => requestAnimationFrame(updatePos));
+      observer.observe(menuRef.current);
+    }
+    window.addEventListener('resize', updatePos);
+    window.visualViewport?.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updatePos);
+      window.visualViewport?.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+    };
+  }, [isOpen, updatePos]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,8 +97,9 @@ export const EquationTool: React.FC = () => {
           <>
             <div className="fixed inset-0 z-[9990]" onClick={() => setIsOpen(false)} />
             <div
-              className="fixed z-[9991] w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[75vh]"
-              style={{ top: menuPos.top, left: menuPos.left }}
+              ref={menuRef}
+              className="fixed z-[9991] w-80 max-w-[calc(100vw-16px)] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden flex flex-col"
+              style={menuStyle}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="overflow-y-auto overscroll-contain flex-1">

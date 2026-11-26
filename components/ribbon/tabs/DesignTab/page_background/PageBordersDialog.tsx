@@ -93,7 +93,7 @@ export const PageBordersDialog: React.FC<PageBordersDialogProps> = ({ isOpen, on
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm overscroll-contain"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-900/45 backdrop-blur-sm overscroll-contain"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -101,10 +101,10 @@ export const PageBordersDialog: React.FC<PageBordersDialogProps> = ({ isOpen, on
       aria-labelledby="page-borders-dialog-title"
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-2xl max-h-[90dvh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
               <Square size={18} />
@@ -127,7 +127,7 @@ export const PageBordersDialog: React.FC<PageBordersDialogProps> = ({ isOpen, on
           </button>
         </div>
 
-        <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-5 flex-1 min-h-0 max-h-[75vh] overflow-y-auto overscroll-contain">
+        <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-5 flex-1 min-h-0 overflow-y-auto overscroll-contain">
           {/* Setting */}
           <div className="md:col-span-3 space-y-2">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -323,7 +323,7 @@ export const PageBordersDialog: React.FC<PageBordersDialogProps> = ({ isOpen, on
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 shrink-0">
+        <div className="flex items-center justify-end gap-2.5 px-4 sm:px-6 py-3 sm:py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 shrink-0">
           <button
             type="button"
             onClick={onClose}

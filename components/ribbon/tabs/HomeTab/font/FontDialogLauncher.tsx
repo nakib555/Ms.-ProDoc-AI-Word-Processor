@@ -194,18 +194,18 @@ export const FontDialogLauncher: React.FC = () => {
 
       {isOpen && createPortal(
         <div 
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain"
             role="dialog"
             aria-modal="true"
             data-modal-backdrop="true"
             onClick={() => setIsOpen(false)}
         >
           <div 
-            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 font-sans select-none ring-1 ring-black/5"
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700 w-full max-w-lg max-h-[90dvh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 font-sans select-none ring-1 ring-black/5"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shrink-0">
+            <div className="flex justify-between items-center px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm shrink-0">
                 <div className="flex items-center gap-2 text-slate-800 dark:text-white">
                     <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
                         <Type size={16} />
@@ -218,18 +218,18 @@ export const FontDialogLauncher: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="px-6 border-b border-slate-100 dark:border-slate-800 flex gap-2 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+            <div className="px-4 sm:px-6 border-b border-slate-100 dark:border-slate-800 flex gap-2 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
                 <TabButton active={activeTab === 'font'} onClick={() => setActiveTab('font')} label="Font" />
                 <TabButton active={activeTab === 'advanced'} onClick={() => setActiveTab('advanced')} label="Advanced" />
             </div>
 
             {/* Content Area */}
-            <div className="p-6 flex-1 min-h-0 max-h-[400px] overflow-y-auto overscroll-contain custom-scrollbar bg-white dark:bg-slate-900">
+            <div className="p-4 sm:p-6 flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar bg-white dark:bg-slate-900">
                 {activeTab === 'font' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5 sm:space-y-6">
                         {/* Font Selection Grid */}
-                        <div className="grid grid-cols-12 gap-4">
-                            <div className="col-span-6">
+                        <div className="grid grid-cols-12 gap-3 sm:gap-4">
+                            <div className="col-span-12 xs:col-span-6">
                                 <ModernSelect 
                                     label="Font" 
                                     value={font} 
@@ -238,7 +238,7 @@ export const FontDialogLauncher: React.FC = () => {
                                     options={FONTS.map(f => ({value: f, label: f}))} 
                                 />
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-6 xs:col-span-3">
                                 <ModernSelect 
                                     label="Style" 
                                     value={fontStyle} 
@@ -251,7 +251,7 @@ export const FontDialogLauncher: React.FC = () => {
                                     ]} 
                                 />
                             </div>
-                            <div className="col-span-3">
+                            <div className="col-span-6 xs:col-span-3">
                                 <ModernSelect 
                                     label="Size" 
                                     value={size} 
@@ -262,7 +262,7 @@ export const FontDialogLauncher: React.FC = () => {
                         </div>
 
                         {/* Color & Decoration */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Color</label>
                                 <div className="flex items-center gap-2 group">
@@ -295,7 +295,7 @@ export const FontDialogLauncher: React.FC = () => {
                         {/* Effects */}
                         <div>
                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-2 block">Effects</label>
-                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-x-6 gap-y-2">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 sm:p-4 border border-slate-100 dark:border-slate-800 grid grid-cols-1 xs:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-2">
                                 <ModernCheckbox label="Strikethrough" checked={strikethrough} onChange={(v) => { setStrikethrough(v); if(v) setDoubleStrikethrough(false); }} />
                                 <ModernCheckbox label="Double strikethrough" checked={doubleStrikethrough} onChange={(v) => { setDoubleStrikethrough(v); if(v) setStrikethrough(false); }} />
                                 <ModernCheckbox label="Superscript" checked={superscript} onChange={(v) => { setSuperscript(v); if(v) setSubscript(false); }} />
@@ -309,9 +309,9 @@ export const FontDialogLauncher: React.FC = () => {
                 )}
 
                 {activeTab === 'advanced' && (
-                    <div className="space-y-6">
+                    <div className="space-y-5 sm:space-y-6">
                          <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Scale</label>
                                     <div className="flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500 transition-all">
@@ -344,7 +344,7 @@ export const FontDialogLauncher: React.FC = () => {
                                 </div>
                             )}
 
-                             <div className="grid grid-cols-2 gap-4">
+                             <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
                                 <ModernSelect 
                                     label="Position" 
                                     value={position} 
@@ -367,12 +367,12 @@ export const FontDialogLauncher: React.FC = () => {
                                 />
                             </div>
 
-                            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                <div className="flex items-center gap-3">
+                            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex flex-wrap items-center gap-3">
                                     <ModernCheckbox label="Kerning for fonts" checked={kerning} onChange={setKerning} />
                                     <div className={`flex items-center gap-2 transition-opacity ${kerning ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-                                        <input type="number" value={kerningMin} onChange={(e) => setKerningMin(Number(e.target.value))} className="w-16 border border-slate-200 rounded-lg px-2 py-1 text-sm text-center" />
-                                        <span className="text-sm text-slate-500">points and above</span>
+                                        <input type="number" value={kerningMin} onChange={(e) => setKerningMin(Number(e.target.value))} className="w-16 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg px-2 py-1 text-sm text-center" />
+                                        <span className="text-xs sm:text-sm text-slate-500">points and above</span>
                                     </div>
                                 </div>
                             </div>
@@ -381,9 +381,9 @@ export const FontDialogLauncher: React.FC = () => {
                 )}
 
                 {/* Preview Box */}
-                <div className="mt-6">
+                <div className="mt-5 sm:mt-6">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1 mb-2">Preview</div>
-                    <div className="h-24 flex items-center justify-center bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-700 relative overflow-hidden group">
+                    <div className="h-20 sm:h-24 flex items-center justify-center bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-700 relative overflow-hidden group">
                          <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '10px 10px'}}></div>
                          <span style={previewStyle} className="transition-all duration-300">
                              AaBbCcDdEeFfGg
@@ -393,16 +393,16 @@ export const FontDialogLauncher: React.FC = () => {
             </div>
 
             {/* Footer Buttons */}
-            <div className="flex justify-end gap-3 px-6 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
+            <div className="flex justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
                 <button 
                     onClick={() => setIsOpen(false)}
-                    className="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-sm font-bold text-slate-600 dark:text-slate-300 shadow-sm transition-all"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300 shadow-sm transition-all"
                 >
                     Cancel
                 </button>
                 <button 
                     onClick={handleApply}
-                    className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200/50 dark:shadow-none transition-all active:scale-95"
+                    className="px-6 sm:px-8 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-blue-200/50 dark:shadow-none transition-all active:scale-95"
                 >
                     OK
                 </button>

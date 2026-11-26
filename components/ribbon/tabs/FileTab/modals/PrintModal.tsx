@@ -18,6 +18,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { generatePdfPrint, calculatePrintMargins } from '../../../../../utils/printUtils';
 import TurndownService from 'turndown';
 import { htmlToJSONDocument } from '../../../../../utils/documentModel';
+import { computeAnchoredPopover } from '../../../../../utils/viewportPosition';
 
 // --- UI Components ---
 
@@ -31,58 +32,46 @@ const PrintSelect = ({ label, value, onChange, options, icon: Icon, disabled, cl
     const updateLayout = React.useCallback(() => {
         if (triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const viewportWidth = window.innerWidth;
-            const margin = 8;
-
-            const availableSpaceBelow = viewportHeight - rect.bottom - margin;
-            const availableSpaceAbove = rect.top - margin;
-            
-            const contentHeight = options.length * 40 + 16;
-            const idealMaxHeight = 300;
-            const actualRequiredHeight = Math.min(contentHeight, idealMaxHeight);
-
-            let top: number | string = rect.bottom + 4;
-            let bottom: number | string = 'auto';
-            let maxHeight = actualRequiredHeight;
-            let animation = 'zoom-in-95 origin-top';
-
-            // Smart dropdown logic: flip up if there's not enough space below AND there is more space above
-            if (availableSpaceBelow < actualRequiredHeight && availableSpaceAbove > availableSpaceBelow) {
-                top = 'auto';
-                bottom = viewportHeight - rect.top + 4;
-                maxHeight = Math.min(contentHeight, availableSpaceAbove, idealMaxHeight);
-                animation = 'zoom-in-95 origin-bottom';
-            } else {
-                maxHeight = Math.min(maxHeight, Math.max(150, availableSpaceBelow));
-            }
-
-            let left = rect.left;
-            if (left + rect.width > viewportWidth - margin) {
-                left = viewportWidth - rect.width - margin;
-            }
-            if (left < margin) left = margin;
+            const computed = computeAnchoredPopover(rect, dropdownRef.current, {
+                preferredWidth: Math.max(120, rect.width),
+                fallbackHeight: Math.min(300, options.length * 40 + 16),
+                idealMaxHeight: 300,
+                margin: 8,
+                gap: 4,
+            });
 
             setDropdownStyle({
-                top,
-                bottom,
-                left,
-                width: rect.width,
-                maxHeight,
+                top: computed.top,
+                left: computed.left,
+                width: computed.width ?? rect.width,
+                maxWidth: computed.maxWidth,
+                maxHeight: computed.maxHeight,
                 opacity: 1
             });
-            setAnimateClass(animation);
+            setAnimateClass(
+                computed.placement === 'top'
+                    ? 'zoom-in-95 origin-bottom'
+                    : 'zoom-in-95 origin-top'
+            );
         }
     }, [options.length]);
 
     useLayoutEffect(() => {
         if (isOpen) {
             updateLayout();
+            let observer: ResizeObserver | null = null;
+            if (dropdownRef.current && typeof ResizeObserver !== 'undefined') {
+                observer = new ResizeObserver(() => requestAnimationFrame(updateLayout));
+                observer.observe(dropdownRef.current);
+            }
             window.addEventListener('scroll', updateLayout, true); 
             window.addEventListener('resize', updateLayout);
+            window.visualViewport?.addEventListener('resize', updateLayout);
             return () => {
+                observer?.disconnect();
                 window.removeEventListener('scroll', updateLayout, true);
                 window.removeEventListener('resize', updateLayout);
+                window.visualViewport?.removeEventListener('resize', updateLayout);
             };
         }
     }, [isOpen, updateLayout]);

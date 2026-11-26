@@ -70,7 +70,7 @@ export const MarginsTool: React.FC = () => {
              iconClassName="text-cyan-600 dark:text-cyan-500"
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={280} title="Margin Presets">
-             <div className="p-1 space-y-1 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
+             <div className="p-1 space-y-1 max-h-[62dvh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200">
                  {marginOptions.map((option) => {
                      const isSelected = pageConfig.marginPreset === option.id;
                      return (

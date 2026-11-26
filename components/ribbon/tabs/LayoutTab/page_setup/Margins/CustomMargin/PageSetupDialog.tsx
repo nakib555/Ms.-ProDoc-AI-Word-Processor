@@ -199,7 +199,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4 animate-in fade-in duration-150 overscroll-contain"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-2 sm:p-4 animate-in fade-in duration-150 overscroll-contain"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -207,7 +207,7 @@ export const PageSetupDialog: React.FC<PageSetupDialogProps> = ({
       aria-labelledby="page-setup-dialog-title"
     >
       <div
-        className="bg-white dark:bg-slate-900 w-[95vw] md:w-[50vw] lg:w-[36vw] max-w-[490px] h-auto max-h-[88vh] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden ring-1 ring-black/5"
+        className="bg-white dark:bg-slate-900 w-full max-w-[490px] h-auto max-h-[90dvh] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden ring-1 ring-black/5"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

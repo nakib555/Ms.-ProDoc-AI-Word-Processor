@@ -64,11 +64,11 @@ export const SymbolPickerDialog: React.FC<SymbolPickerDialogProps> = ({ isOpen, 
       aria-modal="true"
       aria-label="Symbol Picker"
       data-modal-backdrop="true"
-      className="fixed inset-0 z-[10050] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-3 sm:p-4"
+      className="fixed inset-0 z-[10050] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-2 sm:p-4 overscroll-contain"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[88vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
+        className="w-full max-w-2xl max-h-[88dvh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

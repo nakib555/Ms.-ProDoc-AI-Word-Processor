@@ -685,7 +685,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       const pageWidth = phys.widthPx * calibrationScale;
       const pageHeight = phys.heightPx * calibrationScale;
 
-      const padding = 64; // 32px padding on each side
+      const padding = width < 640 ? 24 : width < 768 ? 40 : 64; // responsive padding on each side
       const availableWidth = Math.max(100, width - padding);
       const availableHeight = Math.max(100, height - padding);
 
@@ -848,8 +848,8 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     });
   }, [pagesData, actualZoom, calibrationScale]);
 
-  const GAP = 32;
-  const CANVAS_PAD = 32;
+  const GAP = width > 0 && width < 640 ? 16 : width > 0 && width < 768 ? 24 : 32;
+  const CANVAS_PAD = width > 0 && width < 640 ? 12 : width > 0 && width < 768 ? 20 : 32;
 
   // Prefix sums for vertical top positions (used for measurement and ruler compatibility)
   const { pageTops, totalVirtualHeight } = useMemo(() => {
@@ -861,7 +861,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
     }
     const total = currentY + CANVAS_PAD;
     return { pageTops: tops, totalVirtualHeight: total };
-  }, [pageGeometries]);
+  }, [pageGeometries, CANVAS_PAD, GAP]);
 
   const maxSinglePageWidth = useMemo(() => {
       let max = 0;
@@ -902,7 +902,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
       if (rowW > maxW) maxW = rowW;
     }
     return maxW;
-  }, [pageGeometries, columnCount, rowCount, maxSinglePageWidth]);
+  }, [pageGeometries, columnCount, rowCount, maxSinglePageWidth, GAP]);
 
   const contentTotalWidth = Math.max(width, maxRowWidth + CANVAS_PAD * 2);
 
@@ -1125,7 +1125,7 @@ export const PrintLayoutView: React.FC<PrintLayoutViewProps> = React.memo(({
                       key={virtualRow.key}
                       data-index={virtualRow.index}
                       ref={rowVirtualizer.measureElement}
-                      className="absolute left-0 w-full flex justify-center items-start gap-8 px-8 box-border"
+                      className="absolute left-0 w-full flex justify-center items-start gap-3 px-3 sm:gap-5 sm:px-5 md:gap-8 md:px-8 box-border"
                       style={{
                         top: `${Math.round(virtualRow.start + CANVAS_PAD)}px`,
                       }}

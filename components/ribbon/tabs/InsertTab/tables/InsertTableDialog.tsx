@@ -20,18 +20,18 @@ export const InsertTableDialog: React.FC<InsertTableDialogProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm overscroll-contain"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 overscroll-contain"
       role="dialog"
       aria-modal="true"
       data-modal-backdrop="true"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-slate-800 rounded-lg shadow-2xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-700"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm max-h-[90dvh] overflow-y-auto p-4 sm:p-6 border border-slate-200 dark:border-slate-700"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold dark:text-white">Insert Table</h2>
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold dark:text-white">Insert Table</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
             ✕
           </button>

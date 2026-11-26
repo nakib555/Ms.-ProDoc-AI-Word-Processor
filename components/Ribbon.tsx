@@ -70,6 +70,13 @@ export const Ribbon: React.FC<RibbonProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  const getResponsiveMinFloor = () => {
+    if (typeof window === 'undefined') return 112;
+    if (window.innerWidth < 768) return 86;
+    if (window.innerWidth < 1024) return 98;
+    return 112;
+  };
+
   useEffect(() => {
     if (!activeTab) {
       setHeight(0);
@@ -79,7 +86,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
     const measure = () => {
       if (!contentRef.current) return;
       const contentHeight = Math.ceil(contentRef.current.scrollHeight);
-      setHeight(Math.max(contentHeight, 112));
+      setHeight(Math.max(contentHeight, getResponsiveMinFloor()));
     };
 
     measure();
@@ -90,10 +97,12 @@ export const Ribbon: React.FC<RibbonProps> = ({
       observer = new ResizeObserver(measure);
       observer.observe(el);
     }
+    window.addEventListener('resize', measure);
 
     return () => {
       cancelAnimationFrame(rafId);
       observer?.disconnect();
+      window.removeEventListener('resize', measure);
     };
   }, [activeTab]);
 
@@ -161,7 +170,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
       <div 
         className={`bg-white dark:bg-[#1e293b] ${isBottom ? 'border-t' : 'border-b'} border-slate-200/90 dark:border-slate-700/80 relative z-10 transition-[height,opacity] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${activeTab ? 'opacity-100' : 'opacity-0'}`}
         style={{ 
-          height: activeTab ? `${Math.max(height, 112)}px` : '0px'
+          height: activeTab ? `${Math.max(height, getResponsiveMinFloor())}px` : '0px'
         }}
       >
          <div 
@@ -170,7 +179,8 @@ export const Ribbon: React.FC<RibbonProps> = ({
          >
             <div 
                 ref={contentRef}
-                className={`flex min-h-[108px] min-w-max items-stretch gap-1 px-3 md:px-4 py-1.5 animate-in ${isBottom ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'} duration-300 fill-mode-forwards`}
+                style={{ minHeight: `${getResponsiveMinFloor() - 4}px` }}
+                className={`flex min-h-[108px] min-w-max items-stretch gap-1 px-2 sm:px-3 lg:px-4 py-1 sm:py-1.5 animate-in ${isBottom ? 'slide-in-from-bottom-2' : 'slide-in-from-top-2'} duration-300 fill-mode-forwards`}
             >
                 {activeTab && tabContent}
             </div>

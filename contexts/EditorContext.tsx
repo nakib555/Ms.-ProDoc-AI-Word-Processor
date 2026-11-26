@@ -591,7 +591,9 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [zoom, setZoom] = useState(100);
-  const [zoomMode, setZoomMode] = useState<'custom' | 'fit-width' | 'fit-page'>('custom');
+  const [zoomMode, setZoomMode] = useState<'custom' | 'fit-width' | 'fit-page'>(() =>
+    typeof window !== 'undefined' && window.innerWidth > 0 && window.innerWidth < 1024 ? 'fit-width' : 'custom'
+  );
   const [zoomLayout, setZoomLayout] = useState<ZoomLayoutMode>('single');
   const [measurementUnit, setMeasurementUnitState] = useState<MeasurementUnit>(() => loadMeasurementUnit());
   const [screenCalibration, setScreenCalibrationState] = useState<ScreenCalibration>(() => getScreenCalibration());

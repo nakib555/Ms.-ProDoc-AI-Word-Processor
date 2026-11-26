@@ -124,9 +124,9 @@ export const useMathLive = (content: string, containerRef: React.RefObject<HTMLE
                 mathField.focus();
                 setLastActiveMathField(mathField);
                 if (isRight) {
-                    mathField.executeCommand?.('moveToMathFieldStart');
+                    mathField.executeCommand?.('moveToMathfieldStart');
                 } else {
-                    mathField.executeCommand?.('moveToMathFieldEnd');
+                    mathField.executeCommand?.('moveToMathfieldEnd');
                 }
             }
         }

@@ -89,14 +89,14 @@ export const BenchmarkModal: React.FC<BenchmarkModalProps> = ({ isOpen, onClose 
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200 overscroll-contain"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200 overscroll-contain"
       role="dialog"
       aria-modal="true"
       data-modal-backdrop="true"
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-xl w-full max-h-[90vh] overflow-y-auto overscroll-contain p-6 text-slate-900 dark:text-slate-100"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-xl w-full max-h-[90dvh] overflow-y-auto overscroll-contain p-4 sm:p-6 text-slate-900 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-5">
@@ -120,7 +120,7 @@ export const BenchmarkModal: React.FC<BenchmarkModalProps> = ({ isOpen, onClose 
         </div>
 
         {/* Live Telemetry Card */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2.5 sm:gap-3 mb-5 sm:mb-6">
           <div className="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/60 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 mb-1">
               <Layers size={14} className="text-blue-500" />
@@ -157,7 +157,7 @@ export const BenchmarkModal: React.FC<BenchmarkModalProps> = ({ isOpen, onClose 
           <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
             Load Test Document
           </label>
-          <div className="grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5">
             {[20, 100, 500, 1000].map((count) => (
               <button
                 key={count}

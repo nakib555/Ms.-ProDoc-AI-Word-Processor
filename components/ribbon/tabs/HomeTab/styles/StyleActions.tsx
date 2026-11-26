@@ -90,7 +90,7 @@ export const StyleActions: React.FC = () => {
         </div>
 
         <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={220}>
-          <div className="p-1.5 max-h-[60vh] overflow-y-auto">
+          <div className="p-1.5 max-h-[62dvh] overflow-y-auto">
             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 py-1">Quick Styles</div>
             <div className="grid grid-cols-2 gap-1 mb-1.5">
               {BUILTIN_STYLES.map((name) => (
@@ -145,14 +145,14 @@ export const StyleActions: React.FC = () => {
         {/* Create Style Dialog */}
         {showStyleDialog && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in overscroll-contain"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in overscroll-contain"
           role="dialog"
           aria-modal="true"
           data-modal-backdrop="true"
           onClick={() => setShowStyleDialog(false)}
         >
              <div
-               className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-2xl w-80 animate-in zoom-in-95 border border-slate-200 dark:border-slate-700"
+               className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl shadow-2xl w-full max-w-xs max-h-[90dvh] overflow-y-auto animate-in zoom-in-95 border border-slate-200 dark:border-slate-700"
                onClick={(e) => e.stopPropagation()}
              >
                 <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4">Create New Style</h3>

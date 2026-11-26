@@ -80,7 +80,7 @@ const Editor: React.FC = () => {
 
   if (!editor) {
     return (
-        <div className="flex flex-col items-center justify-center h-full w-full bg-[#eef2f6] dark:bg-[#0b1120] p-8">
+        <div className="flex flex-col items-center justify-center h-full w-full bg-[#eef2f6] dark:bg-[#0b1120] p-4 sm:p-8">
             <GhostDocument />
         </div>
     );
@@ -144,8 +144,8 @@ const Editor: React.FC = () => {
         )}
 
         {pasteProgress?.active && (
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[9999] flex items-center justify-center animate-in fade-in duration-200 no-print">
-                <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 w-[340px] flex flex-col items-center gap-4 text-center animate-in scale-in duration-200">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] z-[9999] flex items-center justify-center p-3 animate-in fade-in duration-200 no-print">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 w-[min(340px,92vw)] flex flex-col items-center gap-3 sm:gap-4 text-center animate-in scale-in duration-200">
                     <div className="relative w-16 h-16 flex items-center justify-center">
                         <svg className="w-16 h-16 transform -rotate-90">
                             <circle

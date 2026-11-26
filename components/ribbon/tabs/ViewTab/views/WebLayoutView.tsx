@@ -209,7 +209,8 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
   };
 
   const scale = (zoom / 100) * calibrationScale;
-  const basePageWidth = viewportWidth > 64 ? Math.min(1024, Math.max(320, viewportWidth - 64)) : 896;
+  const pad = viewportWidth > 0 && viewportWidth < 640 ? 12 : viewportWidth > 0 && viewportWidth < 768 ? 20 : 32;
+  const basePageWidth = viewportWidth > 64 ? Math.min(1024, Math.max(280, viewportWidth - pad * 2)) : 896;
   const scaledWidth = Math.round(basePageWidth * scale);
   const scaledHeight = Math.round(Math.max(400, unscaledHeight) * scale);
 
@@ -220,13 +221,13 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
       lastAppliedFitZoomRef.current = null;
       return;
     }
-    const availableWidth = Math.max(100, viewportWidth - 64);
+    const availableWidth = Math.max(100, viewportWidth - pad * 2);
     const targetZoom = Math.max(20, Math.round((availableWidth / (basePageWidth * calibrationScale)) * 100));
     if (Math.abs(zoom - targetZoom) >= 1 && lastAppliedFitZoomRef.current !== targetZoom) {
       lastAppliedFitZoomRef.current = targetZoom;
       setZoom(targetZoom);
     }
-  }, [viewportWidth, basePageWidth, calibrationScale, zoomMode, zoom, setZoom]);
+  }, [viewportWidth, pad, basePageWidth, calibrationScale, zoomMode, zoom, setZoom]);
 
   return (
     <div 
@@ -243,7 +244,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
       <div
         className="box-border"
         style={{
-          padding: '32px',
+          padding: `${pad}px`,
           minWidth: '100%',
           width: 'max-content',
           minHeight: '100%',
@@ -270,7 +271,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
                 applyFormatPainterToSelection();
               }
             }}
-            className={`bg-white dark:bg-slate-800 shadow-xl outline-none p-12 min-h-screen prose dark:prose-invert ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isGestureLocked ? 'pointer-events-none select-none' : ''} ${formatPainterStyles ? 'cursor-crosshair' : ''}`}
+            className={`bg-white dark:bg-slate-800 shadow-xl outline-none p-4 xs:p-6 sm:p-8 lg:p-12 min-h-screen prose dark:prose-invert ${showFormattingMarks ? 'show-formatting-marks' : ''} ${isGestureLocked ? 'pointer-events-none select-none' : ''} ${formatPainterStyles ? 'cursor-crosshair' : ''}`}
             style={{
               position: 'absolute',
               top: 0,

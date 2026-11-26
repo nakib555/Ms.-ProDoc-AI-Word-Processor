@@ -234,30 +234,30 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div ref={dialogRef} className="fixed top-28 right-4 sm:right-10 z-50 w-80 sm:w-96 bg-white rounded-lg shadow-2xl border border-slate-200 animate-in slide-in-from-top-2 overflow-hidden font-sans text-slate-700">
+    <div ref={dialogRef} className="fixed top-14 sm:top-24 md:top-28 left-2 right-2 sm:left-auto sm:right-6 md:right-10 z-50 w-auto sm:w-96 max-w-[calc(100vw-1rem)] max-h-[calc(100dvh-4.5rem)] flex flex-col bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2 overflow-hidden font-sans text-slate-700 dark:text-slate-200">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-100 select-none">
-        <div className="flex gap-4 text-sm font-semibold">
+      <div className="flex items-center justify-between px-3.5 sm:px-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 select-none shrink-0">
+        <div className="flex gap-4 text-xs sm:text-sm font-semibold">
             <button 
-                className={`pb-1 border-b-2 transition-colors ${mode === 'find' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                className={`pb-1 border-b-2 transition-colors ${mode === 'find' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                 onClick={() => setMode('find')}
             >
                 Find
             </button>
             <button 
-                className={`pb-1 border-b-2 transition-colors ${mode === 'replace' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                className={`pb-1 border-b-2 transition-colors ${mode === 'replace' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
                 onClick={() => setMode('replace')}
             >
                 Replace
             </button>
         </div>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <button onClick={onClose} aria-label="Close Find and Replace" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded">
             <X size={16} />
         </button>
       </div>
 
       {/* Body */}
-      <div className="p-4 space-y-4">
+      <div className="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {/* Find Input */}
         <div className="space-y-1">
             <div className="relative">
@@ -266,11 +266,11 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
                     value={findText}
                     onChange={(e) => setFindText(e.target.value)}
                     placeholder="Find what..."
-                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                    className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500 outline-none"
                     autoFocus
                     onKeyDown={(e) => { if(e.key === 'Enter') findNext(); }}
                 />
-                <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+                <Search className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
             </div>
         </div>
 
@@ -283,10 +283,10 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
                         value={replaceText}
                         onChange={(e) => setReplaceText(e.target.value)}
                         placeholder="Replace with..."
-                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                        className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-md focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-500 outline-none"
                         onKeyDown={(e) => { if(e.key === 'Enter') replaceCurrent(); }}
                     />
-                    <Replace className="absolute left-2.5 top-2 text-slate-400" size={14} />
+                    <Replace className="absolute left-2.5 top-2.5 text-slate-400" size={14} />
                 </div>
             </div>
         )}
@@ -294,35 +294,35 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
         {/* Options */}
         <div className="space-y-2 pt-1">
             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Options</div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
                 <label className="flex items-center gap-2 cursor-pointer group select-none">
                     <div 
-                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${matchCase ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-slate-300 text-transparent'}`}
+                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${matchCase ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-transparent'}`}
                         onClick={() => setMatchCase(!matchCase)}
                     >
                         <ArrowRight size={10} className="rotate-45" /> 
                     </div>
-                    <span className="text-xs text-slate-600 group-hover:text-slate-900" onClick={() => setMatchCase(!matchCase)}>Match case</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white" onClick={() => setMatchCase(!matchCase)}>Match case</span>
                 </label>
 
                 <label className="flex items-center gap-2 cursor-pointer group select-none">
                     <div 
-                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${wholeWord ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-slate-300 text-transparent'}`}
+                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${wholeWord ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-transparent'}`}
                         onClick={() => setWholeWord(!wholeWord)}
                     >
                          <ArrowRight size={10} className="rotate-45" />
                     </div>
-                    <span className="text-xs text-slate-600 group-hover:text-slate-900" onClick={() => setWholeWord(!wholeWord)}>Whole word</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white" onClick={() => setWholeWord(!wholeWord)}>Whole word</span>
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer group select-none col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer group select-none xs:col-span-2">
                     <div 
-                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${useRegex ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-slate-300 text-transparent'}`}
+                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${useRegex ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-transparent'}`}
                         onClick={() => setUseRegex(!useRegex)}
                     >
                          <ArrowRight size={10} className="rotate-45" />
                     </div>
-                    <span className="text-xs text-slate-600 group-hover:text-slate-900" onClick={() => setUseRegex(!useRegex)}>Use regular expressions</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white" onClick={() => setUseRegex(!useRegex)}>Use regular expressions</span>
                 </label>
             </div>
         </div>
@@ -340,11 +340,11 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             {mode === 'replace' && (
                  <button 
                     onClick={replaceAll}
-                    className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                  >
                     Replace All
                  </button>
@@ -353,7 +353,7 @@ export const FindReplaceDialog: React.FC<FindReplaceDialogProps> = ({
             {mode === 'replace' && (
                  <button 
                     onClick={replaceCurrent}
-                    className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
                  >
                     Replace
                  </button>

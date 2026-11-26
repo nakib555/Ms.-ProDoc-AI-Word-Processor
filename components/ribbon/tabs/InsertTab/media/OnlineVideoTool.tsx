@@ -54,7 +54,7 @@ export const OnlineVideoTool: React.FC = () => {
      />
      {showModal && createPortal(
        <div
-         className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
+         className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in overscroll-contain"
          role="dialog"
          aria-modal="true"
          data-modal-backdrop="true"
@@ -63,7 +63,7 @@ export const OnlineVideoTool: React.FC = () => {
          <form
            onSubmit={handleInsert}
            onClick={(e) => e.stopPropagation()}
-           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-5 w-96 space-y-3"
+           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 sm:p-5 w-full max-w-sm max-h-[90dvh] overflow-y-auto space-y-3"
          >
            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Insert Online Video</h3>
            <div>

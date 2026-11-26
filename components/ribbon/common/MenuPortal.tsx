@@ -200,6 +200,9 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
     let top = 0;
     let left = 0;
     let triggerHeight = 0;
+    let triggerBottom = 0;
+    let triggerTop = 0;
+    let triggerRight = 0;
     
     // 1. Determine anchor point
     if (triggerElement) {
@@ -207,18 +210,27 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         top = triggerRect.bottom + 4;
         left = triggerRect.left;
         triggerHeight = triggerRect.height;
+        triggerBottom = triggerRect.bottom;
+        triggerTop = triggerRect.top;
+        triggerRight = triggerRect.right;
     } else if (menuPos) {
         top = menuPos.top;
         left = menuPos.left;
         triggerHeight = 60; // Approximate height of ribbon buttons
+        triggerBottom = menuPos.top - 4;
+        triggerTop = menuPos.top - triggerHeight - 4;
+        triggerRight = menuPos.left;
     } else {
         return; // No anchor
     }
 
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    let maxHeightStr = '80vh';
-    const maxWidthStr = `${viewportWidth - 20}px`;
+    const vv = window.visualViewport;
+    const viewportWidth = Math.round(vv?.width || window.innerWidth);
+    const viewportHeight = Math.round(vv?.height || window.innerHeight);
+    const margin = viewportWidth < 640 ? 8 : 10;
+    const maxViewportHeight = Math.max(80, Math.floor(viewportHeight * 0.85));
+    let maxHeightStr = `${Math.min(maxViewportHeight, viewportHeight - margin * 2)}px`;
+    const maxWidthStr = `${Math.max(120, viewportWidth - margin * 2)}px`;
 
     // 2. Adjust for viewport boundaries
     if (menuRef.current) {
@@ -226,67 +238,73 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         let menuWidth = menuRect.width;
         const menuHeight = menuRect.height;
         
-        if (menuWidth > viewportWidth - 20) {
-            menuWidth = viewportWidth - 20;
+        if (menuWidth > viewportWidth - margin * 2) {
+            menuWidth = viewportWidth - margin * 2;
         }
 
         // Horizontal Constraint (Right Edge)
-        if (left + menuWidth > viewportWidth - 10) {
+        if (left + menuWidth > viewportWidth - margin) {
             if (triggerElement) {
-                const triggerRect = triggerElement.getBoundingClientRect();
-                left = triggerRect.right - menuWidth;
+                left = triggerRight - menuWidth;
             }
             
             // If it STILL overflows (or if no triggerElement), force it to viewport edge
-            if (left + menuWidth > viewportWidth - 10) {
-                left = viewportWidth - menuWidth - 10;
+            if (left + menuWidth > viewportWidth - margin) {
+                left = viewportWidth - menuWidth - margin;
             }
         }
         
         // Horizontal Constraint (Left Edge)
-        if (left < 10) left = 10;
+        if (left < margin) left = margin;
 
         // Vertical Constraint
-        const anchorTop = triggerElement ? triggerElement.getBoundingClientRect().top : top - triggerHeight - 4;
-        const spaceBelow = viewportHeight - top - 10;
-        const spaceAbove = anchorTop - 14;
+        const anchorTop = triggerElement ? triggerTop : top - triggerHeight - 4;
+        const spaceBelow = Math.max(0, viewportHeight - (triggerElement ? triggerBottom + 4 : top) - margin);
+        const spaceAbove = Math.max(0, anchorTop - 4 - margin);
 
         if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
             // Place above
-            const idealTop = anchorTop - menuHeight - 4;
-            if (idealTop < 10) {
-                top = 10;
-                maxHeightStr = `${Math.max(120, anchorTop - 14)}px`;
-            } else {
-                top = idealTop;
-                maxHeightStr = `min(80vh, ${Math.max(120, spaceAbove)}px)`;
-            }
+            const allowedAbove = Math.max(80, Math.min(maxViewportHeight, spaceAbove));
+            const renderedHeight = Math.min(menuHeight, allowedAbove);
+            top = Math.max(margin, anchorTop - renderedHeight - 4);
+            maxHeightStr = `${allowedAbove}px`;
         } else {
             // Place below
-            if (top + menuHeight > viewportHeight - 10) {
-                maxHeightStr = `${Math.max(140, spaceBelow)}px`;
-            } else {
-                maxHeightStr = `min(80vh, ${Math.max(140, spaceBelow)}px)`;
-            }
+            const maxAllowedBelow = Math.max(80, Math.min(maxViewportHeight, spaceBelow));
+            top = Math.max(margin, Math.min(top, viewportHeight - margin - Math.min(menuHeight, maxAllowedBelow)));
+            const remainingBelow = Math.max(80, Math.min(maxViewportHeight, viewportHeight - top - margin));
+            maxHeightStr = `${remainingBelow}px`;
         }
+    } else {
+        const estimatedWidth = typeof width === 'number' ? width : 260;
+        const maxW = viewportWidth - margin * 2;
+        const clampedW = Math.min(maxW, estimatedWidth);
+        if (left + clampedW > viewportWidth - margin) {
+            left = Math.max(margin, viewportWidth - clampedW - margin);
+        }
+        if (left < margin) left = margin;
+        top = Math.max(margin, Math.min(top, viewportHeight - margin - 120));
     }
     
+    const roundedTop = Math.round(top);
+    const roundedLeft = Math.round(left);
+
     setPosition(prev => {
-        if (prev && prev.top === top && prev.left === left && prev.maxHeight === maxHeightStr && prev.maxWidth === maxWidthStr) return prev;
-        return { top, left, maxHeight: maxHeightStr, maxWidth: maxWidthStr };
+        if (prev && prev.top === roundedTop && prev.left === roundedLeft && prev.maxHeight === maxHeightStr && prev.maxWidth === maxWidthStr) return prev;
+        return { top: roundedTop, left: roundedLeft, maxHeight: maxHeightStr, maxWidth: maxWidthStr };
     });
-  }, [isOpen, isMobile, triggerElement, menuPos]);
+  }, [isOpen, isMobile, triggerElement, menuPos, width]);
 
   // Use layout effect to measure and position before paint on desktop
   useLayoutEffect(() => {
-    if (isOpen && !isMobile) {
+    if (isOpen && isRendered && !isMobile) {
        calculatePosition();
     }
-  }, [isOpen, isMobile, calculatePosition, width, children]);
+  }, [isOpen, isRendered, isMobile, calculatePosition, width, children]);
 
   // Handle Resize, Scroll, Dynamic Content Resize, and One-Click Outside PointerDown on desktop
   useEffect(() => {
-     if (!isOpen || isMobile) return;
+     if (!isOpen || !isRendered || isMobile) return;
      
      const handleEvent = (e: Event) => {
          if (e.type === 'scroll' && menuRef.current && menuRef.current.contains(e.target as Node)) {
@@ -312,16 +330,18 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
      }
 
      window.addEventListener('resize', handleEvent);
+     window.visualViewport?.addEventListener('resize', handleEvent);
      window.addEventListener('scroll', handleEvent, true);
      document.addEventListener('pointerdown', handleOutsidePointerDown);
 
      return () => {
          window.removeEventListener('resize', handleEvent);
+         window.visualViewport?.removeEventListener('resize', handleEvent);
          window.removeEventListener('scroll', handleEvent, true);
          document.removeEventListener('pointerdown', handleOutsidePointerDown);
          resizeObserver?.disconnect();
      };
-  }, [isOpen, isMobile, calculatePosition, triggerElement, closeMenu]);
+  }, [isOpen, isRendered, isMobile, calculatePosition, triggerElement, closeMenu]);
 
   if (!isRendered) return null;
 
@@ -406,7 +426,7 @@ export const MenuPortal: React.FC<MenuPortalProps> = ({
         {/* Bottom Sheet Drawer with Smooth Spring/Deceleration Slide-Up & Exit */}
         <div 
           ref={menuRef}
-          className="relative z-10 w-full max-h-[85vh] flex flex-col bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-md rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.25)] border-t border-slate-200/80 dark:border-slate-800/80 pointer-events-auto overflow-hidden"
+          className="relative z-10 w-full max-h-[85dvh] flex flex-col bg-white/95 dark:bg-[#0f172a]/95 backdrop-blur-md rounded-t-[24px] sm:rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.25)] border-t border-slate-200/80 dark:border-slate-800/80 pointer-events-auto overflow-hidden"
           style={{
             transform: dragOffset !== 0 
               ? `translate3d(0, ${dragOffset}px, 0)` 

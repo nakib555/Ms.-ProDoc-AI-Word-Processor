@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
+import { computeAnchoredPopover } from '../../../utils/viewportPosition';
 
 export interface StudioDropdownItem {
   id: string;
@@ -83,31 +84,32 @@ export const StudioDropdown: React.FC<StudioDropdownProps> = ({
   const updateCoords = useCallback(() => {
     if (!containerRef.current) return;
     const triggerRect = containerRef.current.getBoundingClientRect();
-    const menuWidth = menuRef.current?.offsetWidth || 210;
-    const menuHeight = menuRef.current?.offsetHeight || 240;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const computed = computeAnchoredPopover(triggerRect, menuRef.current, {
+      align,
+      fallbackHeight: 240,
+      idealMaxHeight: 360,
+      margin: 8,
+      gap: 4,
+    });
 
-    let left = align === 'right' ? triggerRect.right - menuWidth : triggerRect.left;
-    if (left + menuWidth > vw - 8) left = Math.max(8, vw - menuWidth - 8);
-    if (left < 8) left = 8;
-
-    const spaceBelow = vh - triggerRect.bottom - 10;
-    const spaceAbove = triggerRect.top - 10;
-    let top = triggerRect.bottom + 4;
-    let maxHeight = `${Math.max(140, spaceBelow)}px`;
-
-    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
-      top = Math.max(8, triggerRect.top - menuHeight - 4);
-      maxHeight = `${Math.max(140, spaceAbove)}px`;
-    }
-
-    setCoords({ top, left, maxHeight });
+    setCoords({ top: computed.top, left: computed.left, maxHeight: computed.maxHeight });
   }, [align]);
 
   useLayoutEffect(() => {
     if (isOpen) {
       updateCoords();
+      let observer: ResizeObserver | null = null;
+      if (menuRef.current && typeof ResizeObserver !== 'undefined') {
+        observer = new ResizeObserver(() => requestAnimationFrame(updateCoords));
+        observer.observe(menuRef.current);
+      }
+      window.addEventListener('resize', updateCoords);
+      window.visualViewport?.addEventListener('resize', updateCoords);
+      return () => {
+        observer?.disconnect();
+        window.removeEventListener('resize', updateCoords);
+        window.visualViewport?.removeEventListener('resize', updateCoords);
+      };
     } else {
       setCoords(null);
       setQuery('');
@@ -256,12 +258,13 @@ export const StudioDropdown: React.FC<StudioDropdownProps> = ({
             position: 'fixed',
             top: coords?.top ?? 0,
             left: coords?.left ?? 0,
-            maxHeight: coords?.maxHeight ?? '75vh',
+            maxHeight: coords?.maxHeight ?? '75dvh',
+            maxWidth: 'calc(100vw - 16px)',
             opacity: coords ? 1 : 0,
             zIndex: 9999,
           }}
           className={`
-            min-w-[205px] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 
+            min-w-[min(205px,calc(100vw-16px))] overflow-y-auto rounded-lg bg-white dark:bg-slate-900 
             border border-slate-200 dark:border-slate-800 shadow-xl py-1 focus:outline-none animate-in fade-in zoom-in-95
             ${menuClassName}
           `}

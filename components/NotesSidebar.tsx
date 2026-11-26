@@ -45,18 +45,19 @@ export const NotesSidebar: React.FC = () => {
   if (!showNotes) return null;
 
   return (
-    <div className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col h-full absolute right-0 top-0 bottom-0 z-50 shadow-xl transition-all duration-300">
+    <div className="w-full max-w-[100vw] sm:w-80 md:w-96 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col h-full absolute right-0 top-0 bottom-0 z-50 shadow-xl transition-all duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-        <h2 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <h2 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-xs sm:text-sm uppercase tracking-wider">
           <FileText className="w-4 h-4 text-indigo-500" />
           Document Notes ({footnotes.length + endnotes.length})
         </h2>
         <button 
           onClick={() => setShowNotes(false)} 
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer rounded-md"
+          aria-label="Close document notes"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
 
@@ -78,8 +79,8 @@ export const NotesSidebar: React.FC = () => {
       </div>
 
       {/* Search bar */}
-      <div className="p-3 border-b border-slate-100 dark:border-slate-800 shrink-0 relative flex items-center">
-        <Search className="w-4 h-4 text-slate-400 absolute left-6" />
+      <div className="p-2.5 sm:p-3 border-b border-slate-100 dark:border-slate-800 shrink-0 relative flex items-center">
+        <Search className="w-4 h-4 text-slate-400 absolute left-5 sm:left-6" />
         <input
           type="text"
           value={searchQuery}
@@ -90,7 +91,7 @@ export const NotesSidebar: React.FC = () => {
       </div>
 
       {/* Notes List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50/50 dark:bg-slate-950/20">
+      <div className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-2.5 sm:space-y-3 bg-slate-50/50 dark:bg-slate-950/20">
         {activeTab !== 'endnotes' && filteredFootnotes.length > 0 && (
           <div>
             <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">Footnotes</div>

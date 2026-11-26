@@ -54,7 +54,7 @@ export const FileModal: React.FC = () => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 no-print overscroll-contain"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 no-print overscroll-contain"
       role="dialog"
       aria-modal="true"
       data-modal-backdrop="true"
@@ -62,25 +62,25 @@ export const FileModal: React.FC = () => {
     >
       <div 
          className={`
-             bg-white dark:bg-slate-900 w-full rounded-2xl sm:rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-white/20 overflow-hidden
-             ${isPrint ? 'w-[95vw] h-[75vh] md:h-[85vh] max-w-[1600px]' : 'h-[75vh] sm:h-auto sm:max-h-[85vh] sm:max-w-5xl'}
+             bg-white dark:bg-slate-900 w-full rounded-2xl sm:rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200 border border-white/20 dark:border-slate-700 overflow-hidden
+             ${isPrint ? 'h-[85dvh] max-h-[92dvh] max-w-[1600px]' : 'h-[82dvh] sm:h-auto max-h-[90dvh] sm:max-w-5xl'}
          `}
          onClick={e => e.stopPropagation()}
       >
         {/* Modal Header - Hide for Print as it has its own internal header if needed, or we allow full custom layout */}
         {!isPrint && (
-            <div className="flex justify-between items-center px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 bg-white shrink-0">
-            <h2 className="text-lg md:text-xl font-bold text-slate-800 capitalize flex items-center gap-2">
+            <div className="flex justify-between items-center px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-800 dark:text-slate-100 capitalize flex items-center gap-2">
                 {getTitle()}
             </h2>
-            <button onClick={closeModal} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600">
+            <button onClick={closeModal} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                 <X size={20} />
             </button>
             </div>
         )}
         
         {/* Modal Content */}
-        <div className={`min-h-0 bg-[#f8fafc] dark:bg-slate-950 scrollbar-thin scrollbar-thumb-slate-200 flex-1 ${isPrint ? 'p-0 overflow-hidden flex flex-col' : 'overflow-y-auto overscroll-contain p-4 md:p-6 lg:p-8'}`}>
+        <div className={`min-h-0 bg-[#f8fafc] dark:bg-slate-950 scrollbar-thin scrollbar-thumb-slate-200 flex-1 ${isPrint ? 'p-0 overflow-hidden flex flex-col' : 'overflow-y-auto overscroll-contain p-3 sm:p-4 md:p-6 lg:p-8'}`}>
            {renderModalContent()}
         </div>
       </div>

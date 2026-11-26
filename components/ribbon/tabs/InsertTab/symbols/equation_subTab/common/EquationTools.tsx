@@ -35,16 +35,16 @@ export const StructureButton: React.FC<{
 }> = ({ icon: Icon, label, onClick, className, hasArrow }) => (
   <button
     type="button"
-    className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex-shrink-0 ${className || ''}`}
+    className={`flex flex-col items-center justify-center px-1.5 sm:px-2 py-1 min-w-[52px] sm:min-w-[60px] lg:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex-shrink-0 ${className || ''}`}
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
     title={label}
   >
-    <div className="p-1.5 rounded-md transition-all mb-1 bg-transparent">
-        <Icon className="w-6 h-6 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" strokeWidth={1.5} />
+    <div className="p-1 sm:p-1.5 rounded-md transition-all mb-0.5 sm:mb-1 bg-transparent">
+        <Icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" strokeWidth={1.5} />
     </div>
     <div className="flex items-center justify-center w-full px-0.5">
-        <span className="text-xs font-medium leading-tight text-center text-slate-500 dark:text-slate-400 group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate w-full">{label}</span>
+        <span className="text-[10px] sm:text-[11px] lg:text-xs font-medium leading-tight text-center text-slate-500 dark:text-slate-400 group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate w-full">{label}</span>
         {hasArrow && <ChevronDown size={12} className="ml-0.5 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 shrink-0" />}
     </div>
   </button>
@@ -167,7 +167,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                     </div>
                     
                     {isOperators ? (
-                        <div className="flex flex-col h-full max-h-[400px]">
+                        <div className="flex flex-col h-full max-h-[min(400px,64dvh)]">
                             <HorizontalScrollContainer className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto no-scrollbar mb-2 gap-1">
                                 {['Binary', 'Relational', 'N-ary', 'Adv. Binary', 'Adv. Relational'].map(tab => (
                                     <TabButton 
@@ -179,7 +179,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                                     />
                                 ))}
                             </HorizontalScrollContainer>
-                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
+                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[min(250px,48dvh)] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                     {opTab === 'Binary' && symbols.slice(0, 18).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
                                     {opTab === 'Relational' && symbols.slice(18, 61).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
@@ -190,12 +190,12 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </div>
                         </div>
                     ) : isGreek ? (
-                        <div className="flex flex-col h-full max-h-[400px]">
+                        <div className="flex flex-col h-full max-h-[min(400px,64dvh)]">
                             <HorizontalScrollContainer className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto no-scrollbar mb-2 gap-1">
                                 <TabButton label="Lowercase" active={greekTab === 'Lowercase'} onClick={() => setGreekTab('Lowercase')} className="flex-1 min-w-[80px]" />
                                 <TabButton label="Uppercase" active={greekTab === 'Uppercase'} onClick={() => setGreekTab('Uppercase')} className="flex-1 min-w-[80px]" />
                             </HorizontalScrollContainer>
-                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
+                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[min(250px,48dvh)] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                     {(greekTab === 'Lowercase' ? symbols.slice(0, 30) : symbols.slice(30)).map((s, i) => (
                                         <SymbolBtn 
@@ -208,13 +208,13 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </div>
                         </div>
                     ) : isScripts ? (
-                        <div className="flex flex-col h-full max-h-[400px]">
+                        <div className="flex flex-col h-full max-h-[min(400px,64dvh)]">
                             <HorizontalScrollContainer className="flex bg-slate-100 dark:bg-slate-700/50 p-1 rounded-lg overflow-x-auto no-scrollbar mb-2 gap-1">
                                 <TabButton label="Scripts" active={scriptTab === 'Scripts'} onClick={() => setScriptTab('Scripts')} className="flex-1 min-w-[70px]" />
                                 <TabButton label="Frakturs" active={scriptTab === 'Frakturs'} onClick={() => setScriptTab('Frakturs')} className="flex-1 min-w-[70px]" />
                                 <TabButton label="Double-Struck" active={scriptTab === 'Double-Struck'} onClick={() => setScriptTab('Double-Struck')} className="flex-1 min-w-[90px]" />
                             </HorizontalScrollContainer>
-                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
+                            <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[min(250px,48dvh)] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                     {scriptTab === 'Scripts' && symbols.slice(0, 52).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
                                     {scriptTab === 'Frakturs' && symbols.slice(52, 104).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
@@ -223,7 +223,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </div>
                         </div>
                     ) : (
-                        <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
+                        <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[min(250px,48dvh)] p-1">
                             <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                 {symbols.map((s, i) => (
                                     <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />
@@ -269,19 +269,19 @@ export const StructureDropdown: React.FC<{
                 onClick={(e) => { e.stopPropagation(); toggleMenu(id); }}
                 onMouseDown={(e) => e.preventDefault()}
                 aria-expanded={isOpen}
-                className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex-shrink-0 ${isOpen ? 'bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : ''}`}
+                className={`flex flex-col items-center justify-center px-1.5 sm:px-2 py-1 min-w-[52px] sm:min-w-[60px] lg:min-w-[68px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex-shrink-0 ${isOpen ? 'bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : ''}`}
                 title={label}
             >
-                <div className="p-1.5 rounded-md transition-all mb-1 bg-transparent">
-                    <Icon className={`w-6 h-6 transition-colors ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`} strokeWidth={1.5} />
+                <div className="p-1 sm:p-1.5 rounded-md transition-all mb-0.5 sm:mb-1 bg-transparent">
+                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 transition-colors ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`} strokeWidth={1.5} />
                 </div>
                 <div className="flex items-center justify-center w-full px-0.5">
-                    <span className="text-xs font-medium leading-tight text-center text-slate-500 dark:text-slate-400 group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate w-full">{label}</span>
+                    <span className="text-[10px] sm:text-[11px] lg:text-xs font-medium leading-tight text-center text-slate-500 dark:text-slate-400 group-hover:text-blue-700 dark:group-hover:text-blue-400 truncate w-full">{label}</span>
                     <ChevronDown size={12} className={`ml-0.5 transition-transform ${isOpen ? 'rotate-180 text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400'} shrink-0`} />
                 </div>
             </button>
 
-            <MenuPortal
+            <MenuPortal 
                 id={id}
                 activeMenu={activeMenu}
                 triggerElement={triggerElement}
@@ -289,7 +289,7 @@ export const StructureDropdown: React.FC<{
                 closeMenu={closeMenu}
                 width={width}
             >
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg shadow-sm overflow-hidden flex flex-col h-full max-h-[520px]">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg shadow-sm overflow-hidden flex flex-col h-full max-h-[min(520px,70dvh)]">
                     {sections.length > 1 && (
                         <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-2 shrink-0">
                             <HorizontalScrollContainer className="flex overflow-x-auto no-scrollbar gap-1.5">

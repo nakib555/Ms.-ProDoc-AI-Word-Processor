@@ -131,31 +131,31 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 overscroll-contain"
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200 overscroll-contain"
       role="dialog"
       aria-modal="true"
       data-modal-backdrop="true"
       onClick={onClose}
     >
       <div 
-        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300"
+        className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[90dvh] flex flex-col p-4 sm:p-6 border border-slate-200 dark:border-slate-700 transform scale-100 transition-all duration-300 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-5 border-b border-slate-100 dark:border-slate-700 pb-3 shrink-0">
+        <div className="flex justify-between items-center mb-4 sm:mb-5 border-b border-slate-100 dark:border-slate-700 pb-3 shrink-0">
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-5 h-5 text-indigo-600" />
-            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Table Properties</h2>
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">Table Properties</h2>
           </div>
           <button 
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1"
           >
             ✕
           </button>
         </div>
         
-        <div className="space-y-4 flex-1 min-h-0 max-h-[450px] overflow-y-auto overscroll-contain pr-1">
+        <div className="space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-1">
           {/* Table Information */}
           {propertiesTable && (
             <div className="text-xs font-mono bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-150 dark:border-slate-700/50 text-slate-600 dark:text-slate-300 flex justify-around">
@@ -164,7 +164,7 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Table Width */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
@@ -327,7 +327,7 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
           </div>
 
           {/* Size restrictions (Row height & Column width) */}
-          <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700/50 pt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700/50 pt-3">
             {/* Row Height */}
             <div className="space-y-1.5">
               <SmartToggle
@@ -429,7 +429,7 @@ export const TablePropertiesModal: React.FC<TablePropertiesModalProps> = ({
           </div>
 
           {/* Borders */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <SmartSelect
               label="Border Color"
               value={borderColor}

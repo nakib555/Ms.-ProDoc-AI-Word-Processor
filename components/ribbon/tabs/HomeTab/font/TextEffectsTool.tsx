@@ -71,7 +71,7 @@ export const TextEffectsTool: React.FC = () => {
           className="text-blue-500 shadow-sm border border-transparent hover:border-slate-300 dark:hover:border-slate-600"
        />
        <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={236}>
-          <div className="p-2 max-h-[70vh] overflow-y-auto">
+          <div className="p-2 max-h-[65dvh] overflow-y-auto">
               <div className="grid grid-cols-3 gap-1.5 mb-2">
                   {PRESETS.map((effect, i) => (
                       <button 

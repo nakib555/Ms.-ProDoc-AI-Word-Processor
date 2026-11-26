@@ -1,11 +1,12 @@
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Minus, Plus, FileText, Globe, Type, Layout, Sun, Moon, Lock, Unlock, ScanText, Droplets } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useGestureContext } from '../contexts/GestureContext';
 import { isAnyModalOpen, isEventInsideModal } from '../utils/modalScroll';
+import { computeAnchoredPopover } from '../utils/viewportPosition';
 
 interface StatusBarProps {
   position?: 'top' | 'bottom';
@@ -38,8 +39,9 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
   const { setHudZoom, triggerGestureLock } = useGestureContext();
   const zoomControlsRef = useRef<HTMLDivElement>(null);
   const mobileToolsBtnRef = useRef<HTMLButtonElement>(null);
+  const mobileToolsMenuRef = useRef<HTMLDivElement>(null);
   const [showMobileTools, setShowMobileTools] = useState(false);
-  const [mobileToolsPos, setMobileToolsPos] = useState<{ top: number; right: number; placeBelow: boolean }>({ top: 0, right: 8, placeBelow: false });
+  const [mobileToolsCoords, setMobileToolsCoords] = useState<{ top: number; left: number; maxHeight: number } | null>(null);
   const [showJumpDialog, setShowJumpDialog] = useState(false);
   const [jumpPageInput, setJumpPageInput] = useState('');
 
@@ -99,6 +101,33 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     };
   }, [viewMode, setZoom, zoomMode, setZoomMode, zoom, triggerGestureLock, setHudZoom]);
 
+  const updateMobileToolsCoords = useCallback(() => {
+    if (!mobileToolsBtnRef.current) return;
+    const rect = mobileToolsBtnRef.current.getBoundingClientRect();
+    setMobileToolsCoords(
+      computeAnchoredPopover(rect, mobileToolsMenuRef.current, {
+        preferredSide: position === 'top' || rect.top < 80 ? 'bottom' : 'top',
+        align: 'end',
+        margin: 8,
+        offset: 8,
+        maxWidthPadding: 16,
+      })
+    );
+  }, [position]);
+
+  useLayoutEffect(() => {
+    if (!showMobileTools) {
+      setMobileToolsCoords(null);
+      return;
+    }
+    updateMobileToolsCoords();
+    const menuEl = mobileToolsMenuRef.current;
+    if (!menuEl || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => updateMobileToolsCoords());
+    observer.observe(menuEl);
+    return () => observer.disconnect();
+  }, [showMobileTools, updateMobileToolsCoords]);
+
   useEffect(() => {
     if (!showMobileTools) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -107,13 +136,15 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     const handleViewportChange = () => setShowMobileTools(false);
     document.addEventListener('keydown', handleKey);
     window.addEventListener('resize', handleViewportChange);
+    window.visualViewport?.addEventListener('resize', updateMobileToolsCoords);
     window.addEventListener('scroll', handleViewportChange, true);
     return () => {
       document.removeEventListener('keydown', handleKey);
       window.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('resize', updateMobileToolsCoords);
       window.removeEventListener('scroll', handleViewportChange, true);
     };
-  }, [showMobileTools]);
+  }, [showMobileTools, updateMobileToolsCoords]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -127,7 +158,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
     <>
         <div 
           onMouseDown={handleMouseDown}
-          className={`h-9 sm:h-auto min-h-[2.25rem] bg-[#f1f5f9] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 flex items-center justify-between px-2 sm:px-4 text-xs sm:text-sm select-none z-30 no-print flex-shrink-0 transition-colors duration-300 box-content ${
+          className={`min-h-[2rem] sm:min-h-[2.25rem] lg:min-h-[2.5rem] bg-[#f1f5f9] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 flex items-center justify-between px-2 sm:px-3.5 lg:px-4 text-[11px] sm:text-xs lg:text-[13px] select-none z-30 no-print flex-shrink-0 transition-colors duration-300 box-content ${
             position === 'top'
               ? 'border-b border-slate-300/80 dark:border-slate-800 shadow-[0_1px_3px_rgba(15,23,42,0.05)]'
               : 'border-t border-slate-300/80 dark:border-slate-800 shadow-[0_-1px_3px_rgba(15,23,42,0.05)]'
@@ -135,32 +166,32 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
           style={position === 'top' ? { paddingTop: 'env(safe-area-inset-top)' } : { paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
 
-          <div className="flex items-center gap-3 sm:gap-6 font-medium shrink-0 h-full">
+          <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 font-medium shrink-0 h-full">
             <div 
-                className="flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800 px-2 py-0.5 rounded cursor-pointer transition-colors whitespace-nowrap active:bg-slate-300 dark:active:bg-slate-700" 
+                className="flex items-center gap-1 sm:gap-1.5 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/80 dark:hover:bg-slate-800 px-1.5 sm:px-2 py-0.5 rounded cursor-pointer transition-colors whitespace-nowrap active:bg-slate-300 dark:active:bg-slate-700" 
                 title="Click to jump to page"
                 onClick={() => setShowJumpDialog(true)}
             >
-                <Layout size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
-                <span className="hidden sm:inline">{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>
-                <span className="sm:hidden text-[10px] font-semibold">{viewMode === 'print' ? `${currentPage} / ${totalPages}` : 'Web'}</span>
+                <Layout className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                <span className="hidden sm:inline tabular-nums">{viewMode === 'print' ? `Page ${currentPage} of ${totalPages}` : 'Web Layout'}</span>
+                <span className="sm:hidden text-[10px] font-semibold tabular-nums">{viewMode === 'print' ? `${currentPage} / ${totalPages}` : 'Web'}</span>
             </div>
 
             
             <div 
-                className="flex items-center gap-1.5 hover:bg-slate-200/80 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer transition-all px-2 py-0.5 rounded active:bg-slate-300 dark:active:bg-slate-700 whitespace-nowrap" 
+                className="flex items-center gap-1 sm:gap-1.5 hover:bg-slate-200/80 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white cursor-pointer transition-all px-1.5 sm:px-2 py-0.5 rounded active:bg-slate-300 dark:active:bg-slate-700 whitespace-nowrap" 
                 title="Click for detailed statistics"
                 onClick={() => setShowWordCountDialog?.(true)}
             >
-                <Type size={14} className="shrink-0" />
-                <span className="hidden sm:inline">{wordCount} words</span>
-                <span className="sm:hidden text-[10px] font-semibold">{wordCount} w</span>
+                <Type className="w-3.5 h-3.5 lg:w-4 lg:h-4 shrink-0" />
+                <span className="hidden sm:inline tabular-nums">{wordCount} words</span>
+                <span className="sm:hidden text-[10px] font-semibold tabular-nums">{wordCount} w</span>
             </div>
             
             <span className="hover:text-slate-900 dark:hover:text-slate-200 cursor-pointer transition-colors hidden md:inline whitespace-nowrap">English (US)</span>
           </div>
           
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0 ml-auto pl-2">
+          <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4 flex-shrink-0 ml-auto pl-2">
             
             {/* Smart Selection Toggle (Mobile Helper) - Only visible on mobile */}
             <button 
@@ -187,18 +218,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                   aria-haspopup="menu"
                   aria-expanded={showMobileTools}
                   aria-label="Mobile Tools"
-                  onClick={() => {
-                    if (!showMobileTools && mobileToolsBtnRef.current) {
-                      const rect = mobileToolsBtnRef.current.getBoundingClientRect();
-                      const placeBelow = position === 'top' || rect.top < 80;
-                      setMobileToolsPos({
-                        top: placeBelow ? rect.bottom + 8 : rect.top - 8,
-                        right: Math.max(8, window.innerWidth - rect.right),
-                        placeBelow,
-                      });
-                    }
-                    setShowMobileTools(!showMobileTools);
-                  }}
+                  onClick={() => setShowMobileTools(prev => !prev)}
                   className={`p-1.5 rounded transition-all flex items-center gap-1 ${showMobileTools || isKeyboardLocked || isTableResizerEnabled ? 'text-blue-500 dark:text-blue-400 bg-blue-100/70 dark:bg-blue-900/20 ring-1 ring-blue-500/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800'}`}
                   title="Mobile Tools"
               >
@@ -208,13 +228,15 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                 <>
                   <div className="fixed inset-0 z-[9998]" onClick={() => setShowMobileTools(false)} />
                   <div
+                    ref={mobileToolsMenuRef}
                     role="menu"
                     aria-label="Mobile Tools"
-                    className="fixed z-[9999] p-1.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xl flex items-center gap-2 whitespace-nowrap animate-in fade-in duration-150"
+                    className="fixed z-[9999] p-1.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-xl flex items-center gap-1.5 sm:gap-2 whitespace-nowrap max-w-[calc(100vw-16px)] overflow-x-auto animate-in fade-in duration-150"
                     style={{
-                      top: mobileToolsPos.placeBelow ? mobileToolsPos.top : undefined,
-                      bottom: mobileToolsPos.placeBelow ? undefined : window.innerHeight - mobileToolsPos.top,
-                      right: mobileToolsPos.right,
+                      top: mobileToolsCoords?.top ?? 0,
+                      left: mobileToolsCoords?.left ?? 8,
+                      maxHeight: mobileToolsCoords?.maxHeight ?? '60dvh',
+                      opacity: mobileToolsCoords ? 1 : 0,
                     }}
                   >
                     <button
@@ -222,7 +244,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                       role="menuitemcheckbox"
                       aria-checked={isKeyboardLocked}
                       onClick={() => { setIsKeyboardLocked(!isKeyboardLocked); setShowMobileTools(false); }}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isKeyboardLocked ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                      className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 shrink-0 ${isKeyboardLocked ? 'bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
                     >
                       {isKeyboardLocked ? <Lock size={12} /> : <Unlock size={12} />}
                       Keyboard
@@ -232,7 +254,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                       role="menuitemcheckbox"
                       aria-checked={isTableResizerEnabled}
                       onClick={() => { setIsTableResizerEnabled(!isTableResizerEnabled); setShowMobileTools(false); }}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 ${isTableResizerEnabled ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
+                      className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all active:scale-95 shrink-0 ${isTableResizerEnabled ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600'}`}
                     >
                       {isTableResizerEnabled ? <Lock size={12} /> : <Unlock size={12} />}
                       Table Resizer
@@ -292,7 +314,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
             {/* Zoom Controls - Optimized for Mobile */}
             <div 
                 ref={zoomControlsRef}
-                className="flex items-center gap-0.5 sm:gap-3 cursor-ew-resize hover:bg-slate-200/70 dark:hover:bg-slate-800/50 rounded-lg px-1 transition-colors select-none"
+                className="flex items-center gap-0.5 sm:gap-2 lg:gap-3 cursor-ew-resize hover:bg-slate-200/70 dark:hover:bg-slate-800/50 rounded-lg px-1 transition-colors select-none"
                 title="Scroll to Zoom · Double-click zoom percentage to auto-fit screen"
             >
                 <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
@@ -309,7 +331,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                     className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom Out"
                 >
-                    <Minus size={14} />
+                    <Minus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                 </button>
                 
                 <div className="items-center gap-2 group relative hidden md:flex">
@@ -326,7 +348,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                             setZoom(next);
                             setHudZoom(next);
                         }}
-                        className="w-16 sm:w-24 h-1 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-500"
+                        className="w-16 lg:w-24 h-1 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-500"
                         title="Zoom Level"
                     />
                 </div>
@@ -336,7 +358,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                     onDoubleClick={handleZoomAutoFit}
                     onTouchEnd={handleZoomTouchEnd}
                     aria-label="Zoom percentage, double-click to auto-fit page width"
-                    className="w-14 sm:w-24 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center justify-end gap-1 cursor-pointer"
+                    className="w-12 sm:w-20 lg:w-24 text-right font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-[10px] sm:text-xs lg:text-[13px] hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center justify-end gap-1 cursor-pointer"
                     title="Double-click zoom percentage to auto-fit screen"
                 >
                     <span className="text-slate-500 dark:text-slate-400 font-semibold text-[9px] uppercase tracking-tighter hidden sm:inline">
@@ -358,7 +380,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
                     className="hover:bg-slate-200 dark:hover:bg-slate-800 p-1 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" 
                     title="Zoom In"
                 >
-                    <Plus size={14} />
+                    <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
                 </button>
             </div>
           </div>
@@ -366,14 +388,14 @@ const StatusBar: React.FC<StatusBarProps> = ({ position = 'bottom' }) => {
 
         {showJumpDialog && createPortal(
           <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4 animate-in fade-in duration-150 overscroll-contain"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-3 sm:p-4 animate-in fade-in duration-150 overscroll-contain"
             role="dialog"
             aria-modal="true"
             data-modal-backdrop="true"
             onClick={() => { setShowJumpDialog(false); setJumpPageInput(''); }}
           >
             <div
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-2xl max-w-xs w-full text-slate-900 dark:text-slate-100"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl max-w-xs w-full max-h-[90dvh] overflow-y-auto text-slate-900 dark:text-slate-100"
               onClick={(e) => e.stopPropagation()}
             >
               <h4 className="text-sm font-bold mb-1">Go to Page</h4>

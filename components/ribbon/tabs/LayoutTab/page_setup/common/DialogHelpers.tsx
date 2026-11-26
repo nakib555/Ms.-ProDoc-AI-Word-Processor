@@ -1,9 +1,9 @@
-
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import { PageConfig, ApplyToType, MeasurementUnit } from '../../../../../../types';
 import { formatUnitNumber, unitToInches, getUnitSuffix } from '../../../../../../utils/measurement';
+import { computeAnchoredPopover } from '../../../../../../utils/viewportPosition';
 
 export const CompactInput = ({ label, value, onChange, suffix = '"' }: any) => (
     <div className="flex items-center justify-between bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 px-3 py-2 focus-within:border-blue-500 dark:focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all group shadow-sm">
@@ -95,50 +95,32 @@ export const CompactSelect = ({ label, value, onChange, options, disabled = fals
     const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
     const [animateClass, setAnimateClass] = useState('');
     const buttonRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
-    const updateLayout = () => {
+    const updateLayout = React.useCallback(() => {
         if (buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const viewportWidth = window.innerWidth;
-            const margin = 8;
-            
-            const availableSpaceBelow = viewportHeight - rect.bottom - margin;
-            const availableSpaceAbove = rect.top - margin;
-            
-            const contentHeight = options.length * 32 + 10;
-            const idealMaxHeight = 280; 
-
-            let top: number | string = rect.bottom + 4;
-            let bottom: number | string = 'auto';
-            let maxHeight = Math.min(contentHeight, idealMaxHeight);
-            let animation = 'slide-in-from-top-1 origin-top';
-
-            if (availableSpaceBelow < maxHeight && availableSpaceAbove > availableSpaceBelow) {
-                 top = 'auto';
-                 bottom = viewportHeight - rect.top + 4;
-                 maxHeight = Math.min(contentHeight, availableSpaceAbove, idealMaxHeight);
-                 animation = 'slide-in-from-bottom-1 origin-bottom';
-            } else {
-                 maxHeight = Math.min(maxHeight, availableSpaceBelow);
-            }
-
-            let left = rect.left;
-            if (left + rect.width > viewportWidth - margin) {
-                left = viewportWidth - rect.width - margin;
-            }
-            if (left < margin) left = margin;
-
-            setDropdownStyle({
-                top,
-                bottom,
-                left,
-                width: rect.width,
-                maxHeight: Math.max(100, maxHeight)
+            const computed = computeAnchoredPopover(rect, menuRef.current, {
+                preferredWidth: Math.max(120, rect.width),
+                fallbackHeight: Math.min(280, options.length * 32 + 10),
+                idealMaxHeight: 280,
+                margin: 8,
+                gap: 4,
             });
-            setAnimateClass(animation);
+            setDropdownStyle({
+                top: computed.top,
+                left: computed.left,
+                width: computed.width ?? rect.width,
+                maxWidth: computed.maxWidth,
+                maxHeight: computed.maxHeight,
+            });
+            setAnimateClass(
+                computed.placement === 'top'
+                    ? 'slide-in-from-bottom-1 origin-bottom'
+                    : 'slide-in-from-top-1 origin-top'
+            );
         }
-    };
+    }, [options.length]);
 
     const toggleOpen = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -147,16 +129,23 @@ export const CompactSelect = ({ label, value, onChange, options, disabled = fals
     };
 
     useLayoutEffect(() => {
-        if (isOpen) {
-            updateLayout();
-            window.addEventListener('resize', updateLayout);
-            window.addEventListener('scroll', updateLayout, true);
+        if (!isOpen) return;
+        updateLayout();
+        let observer: ResizeObserver | null = null;
+        if (menuRef.current && typeof ResizeObserver !== 'undefined') {
+            observer = new ResizeObserver(() => requestAnimationFrame(updateLayout));
+            observer.observe(menuRef.current);
         }
+        window.addEventListener('resize', updateLayout);
+        window.visualViewport?.addEventListener('resize', updateLayout);
+        window.addEventListener('scroll', updateLayout, true);
         return () => {
+            observer?.disconnect();
             window.removeEventListener('resize', updateLayout);
+            window.visualViewport?.removeEventListener('resize', updateLayout);
             window.removeEventListener('scroll', updateLayout, true);
         };
-    }, [isOpen, options.length]);
+    }, [isOpen, updateLayout]);
 
     return (
         <div className={`flex flex-col gap-1.5 ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -175,6 +164,7 @@ export const CompactSelect = ({ label, value, onChange, options, disabled = fals
                 <>
                     <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
                     <div 
+                        ref={menuRef}
                         className={`fixed z-[9999] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 animate-in fade-in duration-100 flex flex-col py-1 ${animateClass}`}
                         style={dropdownStyle}
                     >

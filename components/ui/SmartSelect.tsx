@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
+import { computeAnchoredPopover } from '../../utils/viewportPosition';
 
 export interface SmartSelectOption {
   value: string;
@@ -71,35 +72,39 @@ export const SmartSelect: React.FC<SmartSelectProps> = ({
   const updateCoords = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const resolvedWidth = Math.min(vw - 16, Math.max(rect.width, menuWidth || rect.width, 140));
-    const measuredHeight = menuRef.current?.offsetHeight || Math.min(300, options.length * 36 + 16);
+    const { vw } = { vw: typeof window !== 'undefined' ? window.innerWidth : 1024 };
+    const preferredW = Math.min(vw - 16, Math.max(rect.width, menuWidth || rect.width, 140));
+    const computed = computeAnchoredPopover(rect, menuRef.current, {
+      preferredWidth: preferredW,
+      fallbackHeight: Math.min(300, options.length * 36 + 16),
+      idealMaxHeight: 320,
+      margin: 8,
+      gap: 4,
+    });
 
-    let left = rect.left;
-    if (left + resolvedWidth > vw - 8) {
-      left = Math.max(8, vw - resolvedWidth - 8);
-    }
-    if (left < 8) left = 8;
-
-    const spaceBelow = vh - rect.bottom - 10;
-    const spaceAbove = rect.top - 10;
-
-    let top = rect.bottom + 4;
-    let maxHeight = `${Math.max(140, Math.min(320, spaceBelow))}px`;
-
-    if (spaceBelow < measuredHeight && spaceAbove > spaceBelow) {
-      const clampedHeight = Math.max(140, Math.min(320, spaceAbove));
-      top = Math.max(8, rect.top - Math.min(measuredHeight, clampedHeight) - 4);
-      maxHeight = `${clampedHeight}px`;
-    }
-
-    setCoords({ top, left, width: resolvedWidth, maxHeight });
+    setCoords({
+      top: computed.top,
+      left: computed.left,
+      width: computed.width ?? preferredW,
+      maxHeight: computed.maxHeight,
+    });
   }, [menuWidth, options.length]);
 
   useLayoutEffect(() => {
     if (isOpen) {
       updateCoords();
+      let observer: ResizeObserver | null = null;
+      if (menuRef.current && typeof ResizeObserver !== 'undefined') {
+        observer = new ResizeObserver(() => requestAnimationFrame(updateCoords));
+        observer.observe(menuRef.current);
+      }
+      window.addEventListener('resize', updateCoords);
+      window.visualViewport?.addEventListener('resize', updateCoords);
+      return () => {
+        observer?.disconnect();
+        window.removeEventListener('resize', updateCoords);
+        window.visualViewport?.removeEventListener('resize', updateCoords);
+      };
     } else {
       setCoords(null);
       setQuery('');

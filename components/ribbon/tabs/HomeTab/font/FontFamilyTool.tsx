@@ -178,7 +178,7 @@ export const FontFamilyTool: React.FC = () => {
     <>
       <div
         ref={(el) => registerTrigger(menuId, el)}
-        className={`flex items-center border rounded-md h-[28px] w-36 bg-white dark:bg-slate-800 transition-all group relative ${
+        className={`flex items-center border rounded-md h-[26px] sm:h-[28px] lg:h-[30px] w-28 sm:w-32 lg:w-40 bg-white dark:bg-slate-800 transition-all group relative ${
           isOpen
             ? 'border-blue-500 ring-2 ring-blue-500/20'
             : 'border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500'
@@ -211,7 +211,7 @@ export const FontFamilyTool: React.FC = () => {
               }
             }, 120);
           }}
-          className="w-full h-full px-2 text-xs outline-none text-slate-700 dark:text-slate-200 font-medium bg-transparent leading-tight rounded-l-md truncate"
+          className="w-full h-full px-1.5 sm:px-2 text-[11px] sm:text-xs outline-none text-slate-700 dark:text-slate-200 font-medium bg-transparent leading-tight rounded-l-md truncate"
         />
         <button
           type="button"
@@ -237,7 +237,7 @@ export const FontFamilyTool: React.FC = () => {
       </div>
 
       <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={220} title="Font Family">
-        <div className="max-h-[320px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
+        <div className="max-h-[min(320px,62dvh)] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700">
           {visibleRecentFonts.length > 0 && (
             <>
               <div className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50/70 dark:bg-slate-800/60 mb-1 rounded-sm">

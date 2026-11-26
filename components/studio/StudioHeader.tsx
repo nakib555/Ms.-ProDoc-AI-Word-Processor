@@ -331,14 +331,14 @@ export const StudioHeader: React.FC = () => {
       </div>
       {showNewConfirm && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in overscroll-contain"
           role="dialog"
           aria-modal="true"
           data-modal-backdrop="true"
           onClick={() => setShowNewConfirm(false)}
         >
           <div
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-5 w-80"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 sm:p-5 w-full max-w-xs max-h-[90dvh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">New Blank Document</h3>

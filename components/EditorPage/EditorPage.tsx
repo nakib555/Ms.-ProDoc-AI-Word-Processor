@@ -2339,8 +2339,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           {equationMenu && createPortal(
             <div
               ref={equationMenuRef}
-              className="fixed z-[9999] w-60 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1.5 text-xs text-slate-700 dark:text-slate-200 print:hidden"
-              style={{ left: equationMenu.x, top: equationMenu.y }}
+              className="fixed z-[9999] w-60 max-w-[calc(100vw-16px)] max-h-[calc(100dvh-16px)] overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1.5 text-xs text-slate-700 dark:text-slate-200 print:hidden overscroll-contain"
+              style={{
+                left: Math.max(8, Math.min(equationMenu.x, (typeof window !== 'undefined' ? window.innerWidth : 1024) - 248)),
+                top: Math.max(8, Math.min(equationMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 768) - 280)),
+              }}
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400">

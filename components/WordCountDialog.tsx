@@ -123,7 +123,7 @@ export const WordCountDialog: React.FC<WordCountDialogProps> = ({ isOpen, onClos
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm overscroll-contain"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-900/45 backdrop-blur-sm overscroll-contain"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -131,10 +131,10 @@ export const WordCountDialog: React.FC<WordCountDialogProps> = ({ isOpen, onClos
       aria-labelledby="word-count-dialog-title"
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm max-h-[90vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm max-h-[90dvh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 shrink-0">
           <div className="flex items-center gap-2">
             <FileText size={16} className="text-blue-600 dark:text-blue-400" />
             <h2 id="word-count-dialog-title" className="text-sm font-bold">
@@ -150,7 +150,7 @@ export const WordCountDialog: React.FC<WordCountDialogProps> = ({ isOpen, onClos
           </button>
         </div>
 
-        <div className="p-5 space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain">
+        <div className="p-4 sm:p-5 space-y-4 flex-1 min-h-0 overflow-y-auto overscroll-contain">
           <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Statistics
           </div>

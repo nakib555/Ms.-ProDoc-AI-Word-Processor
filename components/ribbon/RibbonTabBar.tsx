@@ -85,7 +85,7 @@ const TabButton = memo(({ icon: Icon, label, isActive, onClick, iconColorClass, 
       onClick={onClick}
       onMouseDown={(e) => e.preventDefault()}
       className={`
-        px-3.5 py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-150 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40
+        px-2.5 py-1 text-[11px] sm:px-3 sm:py-1.5 sm:text-xs lg:px-3.5 lg:text-sm font-medium rounded-full transition-all duration-150 whitespace-nowrap flex-shrink-0 flex items-center gap-1 sm:gap-1.5 select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40
         ${isActive 
           ? 'bg-white text-slate-900 dark:bg-slate-900 dark:text-white shadow-sm font-semibold ring-1 ring-slate-300 dark:ring-slate-600' 
           : isContextual
@@ -96,8 +96,7 @@ const TabButton = memo(({ icon: Icon, label, isActive, onClick, iconColorClass, 
     >
       {Icon && (
         <Icon 
-          size={15} 
-          className={`transition-colors duration-150 flex-shrink-0 ${
+          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors duration-150 flex-shrink-0 ${
             isActive 
               ? 'text-indigo-600 dark:text-indigo-400' 
               : iconColorClass || 'text-slate-500'
@@ -239,10 +238,10 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
   const isHeaderFooterMode = activeEditingArea === 'header' || activeEditingArea === 'footer';
 
   return (
-    <div className="relative flex items-center bg-[#f1f5f9] dark:bg-[#0b1324] px-2 py-1.5 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200/90 dark:border-slate-800 transition-colors">
+    <div className="relative flex items-center bg-[#f1f5f9] dark:bg-[#0b1324] px-1.5 sm:px-2 py-1 sm:py-1.5 flex-shrink-0 z-20 w-full group select-none border-b border-slate-200/90 dark:border-slate-800 transition-colors">
       
       {/* Collapse / Expand Button on the Left */}
-      <div className="flex-shrink-0 mr-2">
+      <div className="flex-shrink-0 mr-1.5 sm:mr-2">
         <button
           type="button"
           onClick={toggleRibbonCollapse}
@@ -250,19 +249,19 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
           aria-expanded={!!activeTab}
           title={activeTab ? "Collapse ribbon toolbar" : "Expand ribbon toolbar"}
           aria-label={activeTab ? "Collapse ribbon toolbar" : "Expand ribbon toolbar"}
-          className="w-7 h-7 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center justify-center transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
+          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center justify-center transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/40"
         >
           {activeTab ? (
-            <ChevronUp size={15} strokeWidth={2.5} />
+            <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
           ) : (
-            <ChevronDown size={15} strokeWidth={2.5} />
+            <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} />
           )}
         </button>
       </div>
 
       {/* Overflow Left Arrow */}
       {showLeftArrow && (
-        <div className="absolute left-10 top-0 bottom-0 z-30 flex items-center pl-1 pr-6 bg-gradient-to-r from-[#f1f5f9] dark:from-[#0b1324] via-[#f1f5f9]/90 dark:via-[#0b1324]/90 to-transparent">
+        <div className="absolute left-8 sm:left-10 top-0 bottom-0 z-30 flex items-center pl-1 pr-5 sm:pr-6 bg-gradient-to-r from-[#f1f5f9] dark:from-[#0b1324] via-[#f1f5f9]/90 dark:via-[#0b1324]/90 to-transparent">
           <button 
             type="button"
             onClick={() => scroll('left')}
@@ -280,7 +279,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
         ref={scrollContainerRef}
         role="tablist"
         aria-label="Ribbon tabs"
-        className="flex overflow-x-auto overflow-y-hidden no-scrollbar w-full items-center gap-1.5 scroll-smooth touch-pan-x py-0.5"
+        className="flex overflow-x-auto overflow-y-hidden no-scrollbar w-full items-center gap-1 sm:gap-1.5 scroll-smooth touch-pan-x py-0.5"
       >
         {PRIMARY_TABS.map((item) => (
           <TabButton 

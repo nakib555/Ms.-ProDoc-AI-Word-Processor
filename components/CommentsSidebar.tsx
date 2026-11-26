@@ -17,21 +17,22 @@ export const CommentsSidebar: React.FC = () => {
   };
 
   return (
-    <div className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col h-full absolute right-0 top-0 bottom-0 z-50 shadow-xl transition-all duration-300">
-      <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-        <h2 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
+    <div className="w-full max-w-[100vw] sm:w-80 md:w-96 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col h-full absolute right-0 top-0 bottom-0 z-50 shadow-xl transition-all duration-300">
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <h2 className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-xs sm:text-sm uppercase tracking-wider">
           <MessageSquarePlus className="w-4 h-4 text-indigo-500" />
           Comments ({comments.filter(c => !c.resolved).length})
         </h2>
         <button 
           onClick={() => setShowComments(false)} 
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer rounded-md"
+          aria-label="Close comments"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 sm:space-y-3 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col">
         {comments.length === 0 ? (
           <EmptyState
             icon={MessageSquarePlus}
@@ -83,7 +84,7 @@ export const CommentsSidebar: React.FC = () => {
         )}
       </div>
 
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shrink-0">
+      <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shrink-0">
         <textarea
           value={newCommentText}
           onChange={(e) => setNewCommentText(e.target.value)}

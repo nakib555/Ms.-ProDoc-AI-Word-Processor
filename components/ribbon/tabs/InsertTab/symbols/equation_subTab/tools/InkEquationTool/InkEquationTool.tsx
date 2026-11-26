@@ -103,11 +103,11 @@ export const InkEquationTool: React.FC = () => {
             aria-modal="true"
             aria-label="Equation Scratchpad"
             data-modal-backdrop="true"
-            className="fixed inset-0 z-[10050] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-3 sm:p-4"
+            className="fixed inset-0 z-[10050] flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-2 sm:p-4 overscroll-contain"
             onClick={() => setIsOpen(false)}
           >
             <div
-              className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
+              className="w-full max-w-2xl max-h-[90dvh] flex flex-col bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 shrink-0">
@@ -227,7 +227,7 @@ export const InkEquationTool: React.FC = () => {
                 </div>
               </div>
 
-              <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between shrink-0">
+              <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex flex-wrap items-center justify-between gap-2 shrink-0">
                 <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
                   <input
                     type="checkbox"

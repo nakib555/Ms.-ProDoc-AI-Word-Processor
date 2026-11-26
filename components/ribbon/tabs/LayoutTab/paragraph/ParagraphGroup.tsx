@@ -73,17 +73,17 @@ export const ParagraphGroup: React.FC = () => {
 
         {showDialog && createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in overscroll-contain"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-3 sm:p-4 animate-in fade-in overscroll-contain"
             role="dialog"
             aria-modal="true"
             data-modal-backdrop="true"
             onClick={() => setShowDialog(false)}
           >
             <div
-              className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-96 p-5 animate-in zoom-in-95"
+              className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-sm max-h-[90dvh] flex flex-col overflow-hidden animate-in zoom-in-95"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4 border-b border-slate-200 dark:border-slate-800 pb-2.5">
+              <div className="flex items-center justify-between px-4 sm:px-5 pt-4 sm:pt-5 pb-2.5 border-b border-slate-200 dark:border-slate-800 shrink-0">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">Paragraph Settings</h3>
                 <button
                   type="button"
@@ -94,7 +94,7 @@ export const ParagraphGroup: React.FC = () => {
                 </button>
               </div>
 
-              <div className="space-y-4 text-xs">
+              <div className="p-4 sm:p-5 space-y-4 text-xs flex-1 min-h-0 overflow-y-auto overscroll-contain">
                 <div>
                   <SmartSelect
                     label="Alignment"
@@ -110,7 +110,7 @@ export const ParagraphGroup: React.FC = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Left Indent (cm)</label>
                     <input
@@ -135,7 +135,7 @@ export const ParagraphGroup: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 xs:grid-cols-3 gap-3">
                   <div>
                     <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Before (pt)</label>
                     <input
@@ -176,7 +176,7 @@ export const ParagraphGroup: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 mt-5 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex justify-end gap-2 px-4 sm:px-5 py-3 border-t border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900">
                 <button
                   type="button"
                   onClick={() => setShowDialog(false)}

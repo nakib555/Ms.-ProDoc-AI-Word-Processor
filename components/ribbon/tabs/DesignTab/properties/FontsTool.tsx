@@ -33,7 +33,7 @@ export const FontsTool: React.FC = () => {
           label="Fonts" 
       />
       <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={220}>
-        <div className="p-2 space-y-1 max-h-[60vh] overflow-y-auto">
+        <div className="p-2 space-y-1 max-h-[62dvh] overflow-y-auto">
           <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 pb-1">Theme Font Sets</div>
           {FONT_THEMES.map((theme) => (
             <button

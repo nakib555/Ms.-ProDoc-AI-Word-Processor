@@ -53,33 +53,34 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
   return (
     <div 
       onMouseDown={handleMouseDown}
-      className="h-12 bg-[#0f172a] dark:bg-[#0f172a]/80 dark:backdrop-blur-xl text-white flex items-center justify-between px-4 select-none z-30 shadow-sm border-b border-white/10 dark:border-white/5 shrink-0 relative transition-colors duration-300"
+      className="h-10 sm:h-11 lg:h-12 bg-[#0f172a] dark:bg-[#0f172a]/80 dark:backdrop-blur-xl text-white flex items-center justify-between px-2.5 sm:px-4 select-none z-30 shadow-sm border-b border-white/10 dark:border-white/5 shrink-0 relative transition-colors duration-300"
     >
-       <div className="flex items-center gap-4">
+       <div className="flex items-center gap-2 sm:gap-4 min-w-0">
            <button 
               onClick={toggleSidebar} 
-              className="hover:bg-white/10 p-2 rounded-lg transition-all duration-200 text-slate-300 hover:text-white active:scale-95"
+              className="hover:bg-white/10 p-1.5 sm:p-2 rounded-lg transition-all duration-200 text-slate-300 hover:text-white active:scale-95 shrink-0"
+              aria-label="Toggle Menu"
            >
-             <Menu size={20} />
+             <Menu className="w-4 h-4 sm:w-5 sm:h-5" />
            </button>
            
-           <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2.5 group cursor-pointer">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center shadow-lg ring-1 ring-white/10 group-hover:ring-white/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-indigo-500/20">
-                  <span className="font-serif font-bold italic text-lg text-white">P</span>
+           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+             <div className="flex items-center gap-2 sm:gap-2.5 group cursor-pointer shrink-0">
+                <div className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-lg flex items-center justify-center shadow-lg ring-1 ring-white/10 group-hover:ring-white/20 transition-all duration-300 group-hover:scale-105 group-hover:shadow-indigo-500/20">
+                  <span className="font-serif font-bold italic text-sm sm:text-base lg:text-lg text-white">P</span>
                 </div>
-                <h1 className="font-semibold text-sm tracking-tight text-slate-100 group-hover:text-white transition-colors hidden md:block">ProDoc AI</h1>
+                <h1 className="font-semibold text-xs sm:text-sm tracking-tight text-slate-100 group-hover:text-white transition-colors hidden md:block">ProDoc AI</h1>
              </div>
              
-             <div className="h-5 w-[1px] bg-slate-700/50 hidden sm:block"></div>
+             <div className="h-4 sm:h-5 w-[1px] bg-slate-700/50 hidden sm:block shrink-0"></div>
              
-             <div className="flex flex-col justify-center group">
-                <div className="flex items-center gap-3">
+             <div className="flex flex-col justify-center group min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <input 
                     type="text" 
                     value={documentTitle}
                     onChange={(e) => setDocumentTitle(e.target.value)}
-                    className="bg-transparent border-none outline-none font-medium text-sm text-slate-200 hover:text-white focus:text-white transition-colors w-32 md:w-48 placeholder-slate-500 truncate focus:ring-0 p-0"
+                    className="bg-transparent border-none outline-none font-medium text-xs sm:text-sm text-slate-200 hover:text-white focus:text-white transition-colors w-24 xs:w-32 sm:w-44 md:w-56 placeholder-slate-500 truncate focus:ring-0 p-0"
                   />
                   {renderSaveStatus()}
                 </div>
@@ -87,11 +88,11 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
            </div>
        </div>
 
-       <div className="flex items-center gap-3">
+       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
            <div className="hidden md:flex items-center bg-slate-800/50 backdrop-blur-sm rounded-full px-1 border border-slate-700/50">
                <button 
                   onClick={handleNewPage}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium group"
+                  className="flex items-center gap-1.5 px-2.5 lg:px-3 py-1 lg:py-1.5 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs font-medium group"
                   title="Insert New Page (Ctrl+Enter)"
                >
                    <FilePlus size={14} className="text-indigo-400 group-hover:text-indigo-300" />
@@ -99,17 +100,17 @@ export const RibbonHeader: React.FC<RibbonHeaderProps> = ({ toggleSidebar }) => 
                </button>
            </div>
 
-           <div className="hidden md:flex items-center bg-slate-800/50 backdrop-blur-sm rounded-full px-3 py-1 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition-colors group">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)] group-hover:shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-shadow"></div>
+           <div className="hidden md:flex items-center bg-slate-800/50 backdrop-blur-sm rounded-full px-2.5 lg:px-3 py-1 border border-slate-700/50 cursor-pointer hover:bg-slate-800 transition-colors group">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 lg:mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)] group-hover:shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-shadow"></div>
               <span className="text-[10px] font-medium text-slate-300 group-hover:text-white">Online</span>
            </div>
            
-           <button className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors md:hidden">
-              <MoreHorizontal size={20} />
+           <button className="p-1.5 sm:p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors md:hidden" aria-label="More options">
+              <MoreHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
            </button>
            
-           <div className="flex items-center gap-1.5 pl-4 border-l border-slate-700/50 ml-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white shadow-inner cursor-pointer hover:ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#0f172a] transition-all transform hover:scale-105">
+           <div className="flex items-center gap-1.5 pl-2.5 sm:pl-4 border-l border-slate-700/50 ml-1 sm:ml-2">
+              <div className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-inner cursor-pointer hover:ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#0f172a] transition-all transform hover:scale-105">
                 JD
               </div>
            </div>

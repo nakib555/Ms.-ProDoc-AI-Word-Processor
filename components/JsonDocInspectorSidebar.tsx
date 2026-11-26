@@ -136,28 +136,29 @@ export const JsonDocInspectorSidebar: React.FC = () => {
   };
 
   return (
-    <div className="h-full w-[410px] bg-white dark:bg-[#0f172a] border-l border-slate-200 dark:border-slate-800/80 flex flex-col shadow-2xl z-20 transition-all duration-300 no-print">
+    <div className="h-full w-full max-w-[100vw] sm:w-96 lg:w-[410px] bg-white dark:bg-[#0f172a] border-l border-slate-200 dark:border-slate-800/80 flex flex-col shadow-2xl absolute right-0 top-0 bottom-0 z-50 md:relative md:z-20 transition-all duration-300 no-print">
       {/* Header */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2.5 text-slate-800 dark:text-slate-100 font-bold">
-          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
+      <div className="h-12 sm:h-14 flex items-center justify-between px-3 sm:px-4 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-2 sm:gap-2.5 text-slate-800 dark:text-slate-100 font-bold min-w-0">
+          <div className="p-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg shrink-0">
             <Braces size={18} />
           </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold">Document Model Engine</span>
-            <span className="text-[10px] text-slate-400 font-normal">Real-Time JSON Architecture</span>
+          <div className="flex flex-col leading-tight min-w-0">
+            <span className="text-xs sm:text-sm font-semibold truncate">Document Model Engine</span>
+            <span className="text-[10px] text-slate-400 font-normal truncate">Real-Time JSON Architecture</span>
           </div>
         </div>
         <button 
           onClick={() => setShowJsonInspector(false)} 
-          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors shrink-0"
+          aria-label="Close document model inspector"
         >
           <X size={18} />
         </button>
       </div>
 
       {/* Persistence and Save Banner */}
-      <div className="bg-slate-50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/60 p-2.5 px-4 flex items-center justify-between shrink-0 text-xs">
+      <div className="bg-slate-50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/60 p-2 px-3 sm:p-2.5 sm:px-4 flex items-center justify-between gap-2 shrink-0 text-[11px] sm:text-xs">
         <div className="flex items-center gap-2">
           <span className={`w-2.5 h-2.5 rounded-full ${isDirty ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} />
           <span className="font-medium text-slate-600 dark:text-slate-300">
@@ -185,10 +186,10 @@ export const JsonDocInspectorSidebar: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-900/10 p-1 shrink-0 gap-1 overflow-x-auto">
+      <div className="flex border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-900/10 p-1 shrink-0 gap-1 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('analysis')}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 ${
             activeTab === 'analysis'
               ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/30'
@@ -199,7 +200,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('tree')}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 ${
             activeTab === 'tree'
               ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/30'
@@ -210,7 +211,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('raw')}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 ${
             activeTab === 'raw'
               ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/30'
@@ -221,7 +222,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('comments')}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 relative ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 relative ${
             activeTab === 'comments'
               ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/30'
@@ -235,7 +236,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('diagnostics')}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 relative ${
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 transition-all shrink-0 relative ${
             activeTab === 'diagnostics'
               ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/30'
@@ -251,7 +252,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
       </div>
 
       {/* Main Panel View */}
-      <div className="flex-1 overflow-y-auto p-4 bg-slate-50/30 dark:bg-slate-950/30">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-slate-50/30 dark:bg-slate-950/30">
         
         {/* Toast Notification */}
         {showSavedToast && (
@@ -458,7 +459,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
         {activeTab === 'tree' && (
           <div className="space-y-3">
             <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">Root Document Structure</div>
-            <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-xl space-y-1 shadow-sm max-h-[calc(100vh-210px)] overflow-y-auto">
+            <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 rounded-xl space-y-1 shadow-sm max-h-[calc(100dvh-210px)] overflow-y-auto">
               {docModel ? (
                 renderTreeNode('document', docModel, 'doc', 0)
               ) : (
@@ -482,7 +483,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
               </button>
             </div>
             
-            <div className="flex-1 p-4 bg-slate-900 dark:bg-slate-950 text-slate-200 rounded-xl overflow-auto border border-slate-800 max-h-[calc(100vh-250px)]">
+            <div className="flex-1 p-3 sm:p-4 bg-slate-900 dark:bg-slate-950 text-slate-200 rounded-xl overflow-auto border border-slate-800 max-h-[calc(100dvh-250px)]">
               <pre className="text-[11px] font-mono leading-relaxed select-all">
                 {docModel ? JSON.stringify(docModel, null, 2) : '// No document model available'}
               </pre>
@@ -513,7 +514,7 @@ export const JsonDocInspectorSidebar: React.FC = () => {
             </form>
 
             {/* List of comments */}
-            <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[calc(100dvh-280px)] overflow-y-auto pr-1">
               {comments.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 text-xs">
                   No review comments. High-quality draft!

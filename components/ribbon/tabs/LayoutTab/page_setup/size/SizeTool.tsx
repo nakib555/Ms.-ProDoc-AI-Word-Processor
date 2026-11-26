@@ -43,7 +43,7 @@ export const SizeTool: React.FC = () => {
          />
          <MenuPortal id={menuId} activeMenu={activeMenu} triggerElement={triggerElement} menuPos={menuPos} closeMenu={closeMenu} width={280} title="Paper Size">
              <div 
-                className="p-1 space-y-1 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 overscroll-contain"
+                className="p-1 space-y-1 max-h-[62dvh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 overscroll-contain"
              >
                  {PAPER_FORMATS.map((item) => {
                      const Icon = getIcon(item.id);
