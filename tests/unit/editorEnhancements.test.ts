@@ -23,7 +23,11 @@ import {
 import {
   BUILTIN_EQUATION_PRESETS,
   SYMBOL_CATALOG,
+  SYMBOL_CATEGORIES,
+  MS_WORD_SPECIAL_CHARACTERS,
   filterSymbols,
+  groupSymbolsBySubgroup,
+  resolveUnicodeHexInput,
   getRecentSymbols,
   recordRecentSymbol,
   latexToLinearUnicode,
@@ -252,15 +256,35 @@ describe('equationPresets & symbol catalog utilities', () => {
     window.localStorage.clear();
   });
 
-  it('provides built-in equations and filters symbols by name or Unicode codepoint', () => {
+  it('provides built-in equations and filters MS Word symbol catalog by name, subgroup, keyword, or hex', () => {
     expect(BUILTIN_EQUATION_PRESETS.length).toBeGreaterThanOrEqual(6);
-    expect(SYMBOL_CATALOG.length).toBeGreaterThan(50);
+    expect(SYMBOL_CATALOG.length).toBeGreaterThan(250);
+    expect(SYMBOL_CATEGORIES).toContain('Greek');
+    expect(SYMBOL_CATEGORIES).toContain('Latin & Accented');
+    expect(SYMBOL_CATEGORIES).toContain('Shapes & Box Drawing');
+    expect(SYMBOL_CATEGORIES).toContain('Wingdings & Dingbats');
+    expect(MS_WORD_SPECIAL_CHARACTERS.some((s) => s.char === '—' && s.shortcut.includes('Alt'))).toBe(true);
+
+    // Deduplicated characters
+    const uniqueChars = new Set(SYMBOL_CATALOG.map((s) => s.char));
+    expect(uniqueChars.size).toBe(SYMBOL_CATALOG.length);
 
     const alphaMatches = filterSymbols('alpha', 'Greek');
     expect(alphaMatches.some((s) => s.char === 'α')).toBe(true);
 
     const rupeeByHex = filterSymbols('U+20B9', 'All');
     expect(rupeeByHex.some((s) => s.char === '₹')).toBe(true);
+
+    const boxMatches = filterSymbols('Box Drawing', 'Shapes & Box Drawing');
+    expect(boxMatches.some((s) => s.char === '┌')).toBe(true);
+
+    const grouped = groupSymbolsBySubgroup(filterSymbols('', 'Math & Logic'));
+    expect(grouped.length).toBeGreaterThanOrEqual(4);
+    expect(grouped.some((g) => g.group === 'Set Theory & Logic')).toBe(true);
+
+    const customHex = resolveUnicodeHexInput('20AC');
+    expect(customHex?.char).toBe('€');
+    expect(resolveUnicodeHexInput('D800')).toBeNull();
   });
 
   it('persists recently used symbols in MRU order', () => {

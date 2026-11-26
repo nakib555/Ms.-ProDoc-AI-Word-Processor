@@ -1,16 +1,16 @@
-
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Omega, Grid } from 'lucide-react';
+import { Omega, Grid, Sparkles } from 'lucide-react';
 import { RibbonButton } from '../../../common/RibbonButton';
 import { getRecentSymbols, SYMBOL_CATALOG } from '../../../../../utils/equationPresets';
 import { insertSymbolAtSelection } from './equation_subTab/common/mathUtils';
-import { SymbolPickerDialog } from './SymbolPickerDialog';
+import { SymbolPickerDialog, SymbolDialogTab } from './SymbolPickerDialog';
 import { computeAnchoredPopover } from '../../../../../utils/viewportPosition';
 
 export const SymbolTool: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [dialogInitialTab, setDialogInitialTab] = useState<SymbolDialogTab>('symbols');
   const [recentSymbols, setRecentSymbols] = useState<string[]>(() => getRecentSymbols());
   const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; maxHeight: string; maxWidth: string }>({
     top: 0,
@@ -25,8 +25,8 @@ export const SymbolTool: React.FC = () => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const pos = computeAnchoredPopover(rect, menuRef.current, {
-      preferredWidth: 256,
-      fallbackHeight: 260,
+      preferredWidth: 272,
+      fallbackHeight: 300,
       idealMaxHeight: Math.round(window.innerHeight * 0.78),
       margin: 8,
       gap: 4,
@@ -80,6 +80,12 @@ export const SymbolTool: React.FC = () => {
     setIsMenuOpen(false);
   };
 
+  const openDialogOnTab = (tab: SymbolDialogTab) => {
+    setIsMenuOpen(false);
+    setDialogInitialTab(tab);
+    setIsDialogOpen(true);
+  };
+
   const getTooltip = (char: string) => {
     const found = SYMBOL_CATALOG.find((s) => s.char === char);
     return found ? `${found.name} (${found.codepoint})` : `Insert ${char}`;
@@ -103,12 +109,17 @@ export const SymbolTool: React.FC = () => {
             <div className="fixed inset-0 z-[9990]" onClick={() => setIsMenuOpen(false)} />
             <div
               ref={menuRef}
-              className="fixed z-[9991] w-64 max-w-[calc(100vw-16px)] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-2.5 overscroll-contain"
+              className="fixed z-[9991] w-[272px] max-w-[calc(100vw-16px)] overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-2.5 overscroll-contain"
               style={menuStyle}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-2">
-                Frequently Used Symbols
+              <div className="flex items-center justify-between px-1 mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Frequently Used Symbols
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {SYMBOL_CATALOG.length} total
+                </span>
               </div>
               <div className="grid grid-cols-5 gap-1 mb-2.5">
                 {recentSymbols.slice(0, 20).map((sym) => (
@@ -124,24 +135,36 @@ export const SymbolTool: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setIsDialogOpen(true);
-                }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/70 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-xs font-semibold text-slate-700 dark:text-slate-100 transition-colors"
-              >
-                <Grid size={13} />
-                <span>More Symbols...</span>
-              </button>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => openDialogOnTab('symbols')}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/70 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-xs font-semibold text-slate-700 dark:text-slate-100 transition-colors"
+                >
+                  <Grid size={13} />
+                  <span>More Symbols...</span>
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => openDialogOnTab('special')}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-[11px] font-medium text-slate-600 dark:text-slate-300 transition-colors"
+                >
+                  <Sparkles size={12} />
+                  <span>Special Characters...</span>
+                </button>
+              </div>
             </div>
           </>,
           document.body
         )}
 
-      <SymbolPickerDialog isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} />
+      <SymbolPickerDialog
+        isOpen={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        initialTab={dialogInitialTab}
+      />
     </div>
   );
 };
