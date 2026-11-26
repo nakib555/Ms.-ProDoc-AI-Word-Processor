@@ -21,8 +21,8 @@ export const FractionTool: React.FC = () => {
       latex: "\\frac{\\placeholder{}}{\\placeholder{}}",
       insertValue: "\\frac{\\placeholder{}}{\\placeholder{}}"
     },
-    { label: "Skewed Fraction", latex: " {}^{\\displaystyle \\placeholder{}}/_{\\displaystyle \\placeholder{}}", 
-      insertValue: "{ {}^{\\displaystyle \\placeholder{}}/_{\\displaystyle \\placeholder{}}}" },
+    { label: "Skewed Fraction", latex: "{}^{\\placeholder{}}/_{\\placeholder{}}", 
+      insertValue: "{}^{\\placeholder{}}/_{\\placeholder{}}" },
     {
       label: "Linear Fraction",
       latex: "{\\placeholder{}}/{\\placeholder{}}",

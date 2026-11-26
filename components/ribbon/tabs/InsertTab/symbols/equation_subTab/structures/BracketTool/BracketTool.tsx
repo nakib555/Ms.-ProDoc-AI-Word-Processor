@@ -67,7 +67,7 @@ export const BracketTool: React.FC = () => {
         items: [
             { label: "Piecewise Function", latex: "f(x) = \\begin{cases} -x & x < 0 \\\\ x & x \\ge 0 \\end{cases}", insertValue: "f(x) = \\begin{cases} -x & x < 0 \\\\ x & x \\ge 0 \\end{cases}" },
             { label: "Binomial Coefficient", latex: "\\binom{n}{k}", insertValue: "\\binom{n}{k}" },
-            { label: "Eulerian Number", latex: "\\left\\langle {n \\atop k} \right\\rangle", insertValue: "\\left\\langle {n \\atop k} \right\\rangle" }
+            { label: "Eulerian Number", latex: "\\left\\langle {n \\atop k} \\right\\rangle", insertValue: "\\left\\langle {n \\atop k} \\right\\rangle" }
         ]
     }
   ];

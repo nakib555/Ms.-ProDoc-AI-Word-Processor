@@ -1,14 +1,30 @@
 
-import React, { useRef, useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { ChevronDown, X } from 'lucide-react';
 import { useEquationTab } from '../EquationTabContext';
 import { MenuPortal } from '../../../../../common/MenuPortal';
-import { useEditor } from '../../../../../../../contexts/EditorContext';
-import { insertMathStructure, insertSymbolAtSelection } from './mathUtils';
+import { insertMathStructure, insertSymbolAtSelection, renderEquationPreviewMarkup } from './mathUtils';
 import { isAnyModalOpen, isEventInsideModal } from '../../../../../../../utils/modalScroll';
 
-// Use 'as any' to bypass IntrinsicElements check for custom element
-const MathField = 'math-field' as any;
+const StaticMathPreview: React.FC<{ latex: string }> = ({ latex }) => {
+    const markup = useMemo(() => renderEquationPreviewMarkup(latex), [latex]);
+    const isDense = latex.includes('\\\\') || latex.includes('\\begin{') || latex.length > 46;
+    const isVeryDense = latex.includes('3') || (latex.match(/\\\\/g)?.length ?? 0) >= 2 || latex.length > 90;
+
+    return (
+        <span
+            className={`prodoc-struct-preview select-none ${
+                isVeryDense
+                    ? 'text-[11px] leading-tight'
+                    : isDense
+                    ? 'text-[12.5px] leading-tight'
+                    : 'text-[15px]'
+            }`}
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: markup }}
+        />
+    );
+};
 
 export const StructureButton: React.FC<{
   icon: any;
@@ -18,6 +34,7 @@ export const StructureButton: React.FC<{
   hasArrow?: boolean;
 }> = ({ icon: Icon, label, onClick, className, hasArrow }) => (
   <button
+    type="button"
     className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex-shrink-0 ${className || ''}`}
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
@@ -35,6 +52,7 @@ export const StructureButton: React.FC<{
 
 const SymbolBtn: React.FC<{ symbol: string, onClick: () => void }> = ({ symbol, onClick }) => (
     <button
+        type="button"
         onClick={onClick}
         onMouseDown={(e) => e.preventDefault()}
         className="h-9 w-9 flex items-center justify-center text-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-sm rounded border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all font-serif select-none"
@@ -46,6 +64,7 @@ const SymbolBtn: React.FC<{ symbol: string, onClick: () => void }> = ({ symbol, 
 
 const TabButton: React.FC<{ label: string, active: boolean, onClick: () => void, className?: string }> = ({ label, active, onClick, className = '' }) => (
     <button
+        type="button"
         onClick={(e) => { e.stopPropagation(); onClick(); }}
         onMouseDown={(e) => e.preventDefault()}
         className={`px-3 py-1.5 text-[11px] font-bold tracking-wide transition-all whitespace-nowrap rounded-lg flex-shrink-0 outline-none select-none border ${
@@ -85,7 +104,6 @@ const HorizontalScrollContainer: React.FC<{ children: React.ReactNode, className
 };
 
 export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, symbols: string[] }> = ({ category, icon: Icon, symbols }) => {
-    const { executeCommand } = useEditor();
     const { activeMenu, toggleMenu, registerTrigger, closeMenu, menuPos, triggerElement } = useEquationTab();
     
     const [greekTab, setGreekTab] = useState<'Lowercase' | 'Uppercase'>('Lowercase');
@@ -110,13 +128,15 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
     return (
         <>
             <button
+                type="button"
                 ref={(el) => registerTrigger(menuId, el)}
                 onClick={(e) => { e.stopPropagation(); toggleMenu(menuId); }}
-                className={`flex items-center gap-2 px-3 py-1.5 text-[11px] rounded-md hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-transparent transition-all w-full text-left group ${isOpen ? 'bg-slate-200 dark:bg-slate-700 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}
+                aria-expanded={isOpen}
+                className={`flex items-center gap-1.5 px-2 py-1 text-[11px] rounded-md hover:bg-slate-200 dark:hover:bg-slate-700/50 border border-transparent transition-all w-full text-left group ${isOpen ? 'bg-slate-200 dark:bg-slate-700 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'}`}
                 title={category}
                 onMouseDown={(e) => e.preventDefault()}
             >
-                <Icon size={14} className={`shrink-0 ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}/>
+                <Icon size={13} className={`shrink-0 ${isOpen ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400'}`}/>
                 <span className="whitespace-nowrap font-medium truncate flex-1">{category}</span>
                 <ChevronDown size={10} className={`shrink-0 transition-transform text-slate-400 ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
             </button>
@@ -130,12 +150,21 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                 width={getMenuWidth()}
             >
                 <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-                    {!isGreek && !isScripts && !isOperators && (
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1 flex justify-between items-center">
-                            {category}
-                            <span className="text-[9px] bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500">{symbols.length}</span>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1 flex justify-between items-center">
+                        <span>{category}</span>
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-300">{symbols.length}</span>
+                            <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={closeMenu}
+                                className="p-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                title="Close Symbol Gallery"
+                            >
+                                <X size={12} />
+                            </button>
                         </div>
-                    )}
+                    </div>
                     
                     {isOperators ? (
                         <div className="flex flex-col h-full max-h-[400px]">
@@ -152,11 +181,11 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </HorizontalScrollContainer>
                             <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
-                                    {opTab === 'Binary' && symbols.slice(0, 18).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
-                                    {opTab === 'Relational' && symbols.slice(18, 61).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
-                                    {opTab === 'N-ary' && symbols.slice(61, 82).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
-                                    {opTab === 'Adv. Binary' && symbols.slice(82, 114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
-                                    {opTab === 'Adv. Relational' && symbols.slice(114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {opTab === 'Binary' && symbols.slice(0, 18).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
+                                    {opTab === 'Relational' && symbols.slice(18, 61).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
+                                    {opTab === 'N-ary' && symbols.slice(61, 82).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
+                                    {opTab === 'Adv. Binary' && symbols.slice(82, 114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
+                                    {opTab === 'Adv. Relational' && symbols.slice(114).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
                                 </div>
                             </div>
                         </div>
@@ -172,7 +201,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                                         <SymbolBtn 
                                             key={i} 
                                             symbol={s} 
-                                            onClick={() => { insertSymbol(s); closeMenu(); }} 
+                                            onClick={() => insertSymbol(s)} 
                                         />
                                     ))}
                                 </div>
@@ -187,9 +216,9 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                             </HorizontalScrollContainer>
                             <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                                 <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
-                                    {scriptTab === 'Scripts' && symbols.slice(0, 52).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
-                                    {scriptTab === 'Frakturs' && symbols.slice(52, 104).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
-                                    {scriptTab === 'Double-Struck' && symbols.slice(104, 156).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />)}
+                                    {scriptTab === 'Scripts' && symbols.slice(0, 52).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
+                                    {scriptTab === 'Frakturs' && symbols.slice(52, 104).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
+                                    {scriptTab === 'Double-Struck' && symbols.slice(104, 156).map((s, i) => <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />)}
                                 </div>
                             </div>
                         </div>
@@ -197,7 +226,7 @@ export const SymbolCategoryDropdown: React.FC<{ category: string, icon: any, sym
                         <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 max-h-[250px] p-1">
                             <div className="grid grid-cols-[repeat(auto-fill,minmax(2.25rem,1fr))] gap-1">
                                 {symbols.map((s, i) => (
-                                    <SymbolBtn key={i} symbol={s} onClick={() => { insertSymbol(s); closeMenu(); }} />
+                                    <SymbolBtn key={i} symbol={s} onClick={() => insertSymbol(s)} />
                                 ))}
                             </div>
                         </div>
@@ -226,17 +255,20 @@ export const StructureDropdown: React.FC<{
     label: string;
     sections: StructureSection[];
     width?: string | number;
-}> = ({ id, icon: Icon, label, sections, width = 'min(480px, 96vw)' }) => {
+}> = ({ id, icon: Icon, label, sections, width = 'min(520px, 96vw)' }) => {
     const { activeMenu, toggleMenu, closeMenu, registerTrigger, menuPos, triggerElement } = useEquationTab();
     const isOpen = activeMenu === id;
     const [activeSectionIndex, setActiveSectionIndex] = useState(0);
+    const safeSectionIndex = activeSectionIndex < sections.length ? activeSectionIndex : 0;
 
     return (
         <>
             <button
+                type="button"
                 ref={(el) => registerTrigger(id, el)}
                 onClick={(e) => { e.stopPropagation(); toggleMenu(id); }}
                 onMouseDown={(e) => e.preventDefault()}
+                aria-expanded={isOpen}
                 className={`flex flex-col items-center justify-center px-2 py-1 min-w-[64px] h-full rounded-lg transition-all duration-200 group relative text-slate-600 dark:text-slate-300 hover:text-blue-700 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex-shrink-0 ${isOpen ? 'bg-slate-100 dark:bg-slate-700 text-blue-700 dark:text-blue-400' : ''}`}
                 title={label}
             >
@@ -257,15 +289,15 @@ export const StructureDropdown: React.FC<{
                 closeMenu={closeMenu}
                 width={width}
             >
-                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg shadow-sm overflow-hidden flex flex-col h-full max-h-[500px]">
+                <div className="bg-slate-50 dark:bg-slate-900 rounded-lg shadow-sm overflow-hidden flex flex-col h-full max-h-[520px]">
                     {sections.length > 1 && (
                         <div className="bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-2 shrink-0">
                             <HorizontalScrollContainer className="flex overflow-x-auto no-scrollbar gap-1.5">
                                 {sections.map((section, i) => (
                                     <TabButton 
-                                        key={i}
+                                        key={`${id}-sec-${i}`}
                                         label={section.title || `Set ${i + 1}`}
-                                        active={activeSectionIndex === i}
+                                        active={safeSectionIndex === i}
                                         onClick={() => setActiveSectionIndex(i)}
                                         className="flex-1"
                                     />
@@ -276,7 +308,8 @@ export const StructureDropdown: React.FC<{
 
                     <div className="overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-700 flex-1 bg-white dark:bg-slate-900">
                         {(() => {
-                            const section = sections[activeSectionIndex];
+                            const section = sections[safeSectionIndex];
+                            if (!section) return null;
                             return (
                                 <div>
                                     {sections.length === 1 && section.title && (
@@ -285,14 +318,15 @@ export const StructureDropdown: React.FC<{
                                         </div>
                                     )}
                                     <div 
-                                        className="grid gap-2 p-2" 
+                                        className="grid gap-2 p-1.5" 
                                         style={{ 
-                                            gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))' 
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))' 
                                         }}
                                     >
                                         {section.items.map((item, j) => (
                                             <button 
-                                                key={j}
+                                                type="button"
+                                                key={`${id}-${safeSectionIndex}-${j}-${item.latex}`}
                                                 onClick={(e) => { 
                                                     e.stopPropagation(); 
                                                     insertMathStructure(item.insertValue); 
@@ -301,36 +335,27 @@ export const StructureDropdown: React.FC<{
                                                 onMouseDown={(e) => e.preventDefault()}
                                                 className="
                                                     group relative flex flex-col items-center justify-center 
-                                                    aspect-[1.4/1] rounded-xl transition-all duration-200 ease-out
+                                                    min-h-[76px] pt-2 pb-5 px-2 rounded-xl transition-all duration-150 ease-out
                                                     bg-white dark:bg-slate-800 
                                                     border border-slate-200 dark:border-slate-700
                                                     hover:border-blue-500 hover:ring-1 hover:ring-blue-500
                                                     hover:shadow-md
-                                                    focus:outline-none focus:ring-2 focus:ring-blue-500
+                                                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                                                     overflow-hidden
-                                                    text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white
+                                                    text-slate-800 dark:text-slate-100 hover:text-slate-950 dark:hover:text-white
                                                 "
                                                 title={item.label}
+                                                aria-label={item.label || item.latex}
                                             >
-                                                <MathField 
-                                                    read-only={true}
-                                                    style={{
-                                                        border:'none', 
-                                                        background:'transparent', 
-                                                        pointerEvents:'none', 
-                                                        fontSize:'1em', 
-                                                        width: '100%', 
-                                                        textAlign: 'center',
-                                                        color: 'currentColor',
-                                                        padding: '8px'
-                                                    }}
-                                                >
-                                                    {item.latex}
-                                                </MathField>
+                                                <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
+                                                    <StaticMathPreview latex={item.latex} />
+                                                </div>
                                                 
                                                 {item.label && (
-                                                    <div className="absolute bottom-0 left-0 right-0 py-1 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-slate-800 dark:via-slate-800/90 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-                                                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[90%] px-1">{item.label}</span>
+                                                    <div className="absolute bottom-0 left-0 right-0 py-0.5 px-1 bg-slate-50/90 dark:bg-slate-800/90 border-t border-slate-100 dark:border-slate-700/70 flex justify-center pointer-events-none">
+                                                        <span className="text-[9.5px] font-medium text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 truncate max-w-full">
+                                                            {item.label}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </button>

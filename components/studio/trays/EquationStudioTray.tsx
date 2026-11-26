@@ -1,9 +1,13 @@
 import React from 'react';
-import { Sigma, Sparkles } from 'lucide-react';
-import { useEditor } from '../../../contexts/EditorContext';
+import { Sigma, Sparkles, AlignCenter } from 'lucide-react';
 import { StudioButton } from '../common/StudioButton';
 import { StudioDivider } from '../common/StudioDivider';
 import { StudioDropdown } from '../common/StudioDropdown';
+import {
+  insertMathStructure,
+  insertSymbolAtSelection,
+  toggleActiveEquationDisplayMode,
+} from '../../ribbon/tabs/InsertTab/symbols/equation_subTab/common/mathUtils';
 
 const GREEK_MATH_SYMBOLS = [
   { label: 'α', latex: '\\alpha' },
@@ -25,16 +29,8 @@ const GREEK_MATH_SYMBOLS = [
 ];
 
 export const EquationStudioTray: React.FC = () => {
-  const { executeCommand } = useEditor();
-
   const insertLatex = (latex: string) => {
-    // If active element is a math-field, write to it
-    const activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName.toLowerCase() === 'math-field' || 'insert' in activeEl)) {
-      (activeEl as HTMLElement & { insert?: (val: string) => void }).insert?.(latex);
-    } else {
-      executeCommand('insertText', latex);
-    }
+    insertMathStructure(latex);
   };
 
   return (
@@ -47,7 +43,7 @@ export const EquationStudioTray: React.FC = () => {
       {/* Fraction */}
       <StudioButton
         label="a/b Fraction"
-        onClick={() => insertLatex('\\frac{a}{b}')}
+        onClick={() => insertLatex('\\frac{\\placeholder{}}{\\placeholder{}}')}
         title="Insert Fraction"
         size="sm"
       />
@@ -55,7 +51,7 @@ export const EquationStudioTray: React.FC = () => {
       {/* Superscript */}
       <StudioButton
         label="x² Power"
-        onClick={() => insertLatex('x^{2}')}
+        onClick={() => insertLatex('\\placeholder{}^{\\placeholder{}}')}
         title="Insert Superscript / Exponent"
         size="sm"
       />
@@ -63,7 +59,7 @@ export const EquationStudioTray: React.FC = () => {
       {/* Subscript */}
       <StudioButton
         label="xᵢ Subscript"
-        onClick={() => insertLatex('x_{i}')}
+        onClick={() => insertLatex('\\placeholder{}_{\\placeholder{}}')}
         title="Insert Subscript"
         size="sm"
       />
@@ -71,7 +67,7 @@ export const EquationStudioTray: React.FC = () => {
       {/* Square root */}
       <StudioButton
         label="√x Radical"
-        onClick={() => insertLatex('\\sqrt{x}')}
+        onClick={() => insertLatex('\\sqrt{\\placeholder{}}')}
         title="Insert Square Root"
         size="sm"
       />
@@ -79,7 +75,7 @@ export const EquationStudioTray: React.FC = () => {
       {/* Integral */}
       <StudioButton
         label="∫ Integral"
-        onClick={() => insertLatex('\\int_{a}^{b} f(x) dx')}
+        onClick={() => insertLatex('\\int_{\\placeholder{}}^{\\placeholder{}} \\placeholder{}')}
         title="Insert Definite Integral"
         size="sm"
       />
@@ -87,12 +83,20 @@ export const EquationStudioTray: React.FC = () => {
       {/* Summation */}
       <StudioButton
         label="∑ Sum"
-        onClick={() => insertLatex('\\sum_{i=1}^{n} a_i')}
+        onClick={() => insertLatex('\\sum_{\\placeholder{}}^{\\placeholder{}} \\placeholder{}')}
         title="Insert Summation"
         size="sm"
       />
 
       <StudioDivider />
+
+      <StudioButton
+        icon={AlignCenter}
+        label="Display"
+        onClick={() => toggleActiveEquationDisplayMode()}
+        title="Toggle Inline / Display Equation"
+        size="sm"
+      />
 
       {/* Greek & Math Symbols Dropdown */}
       <StudioDropdown
@@ -109,7 +113,7 @@ export const EquationStudioTray: React.FC = () => {
                   key={item.label}
                   type="button"
                   onClick={() => {
-                    insertLatex(item.latex);
+                    insertSymbolAtSelection(item.label);
                     close();
                   }}
                   className="h-8 rounded bg-slate-50 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950 text-sm font-serif font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer"

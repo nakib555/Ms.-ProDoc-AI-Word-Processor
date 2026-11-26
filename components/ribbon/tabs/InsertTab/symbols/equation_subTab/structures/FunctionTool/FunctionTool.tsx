@@ -38,7 +38,7 @@ export const FunctionTool: React.FC = () => {
         { label: "sinh", latex: "\\sinh\\placeholder{}", insertValue: "\\sinh\\placeholder{}" },
         { label: "cosh", latex: "\\cosh\\placeholder{}", insertValue: "\\cosh\\placeholder{}" },
         { label: "tanh", latex: "\\tanh\\placeholder{}", insertValue: "\\tanh\\placeholder{}" },
-        { label: "csch", latex: "\\operatorname{csch}\\placeholder{}", insertValue: "\\csch\\placeholder{}" },
+        { label: "csch", latex: "\\operatorname{csch}\\placeholder{}", insertValue: "\\operatorname{csch}\\placeholder{}" },
         { label: "sech", latex: "\\operatorname{sech}\\placeholder{}", insertValue: "\\operatorname{sech}\\placeholder{}" },
         { label: "coth", latex: "\\coth\\placeholder{}", insertValue: "\\coth\\placeholder{}" }
       ]

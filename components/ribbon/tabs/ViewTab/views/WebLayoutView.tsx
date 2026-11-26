@@ -5,6 +5,7 @@ import { useEditor } from '../../../../../contexts/EditorContext';
 import { useTouchZoom } from '../../../../../hooks/useTouchZoom';
 import { useGestureContext } from '../../../../../contexts/GestureContext';
 import { isAnyModalOpen } from '../../../../../utils/modalScroll';
+import { insertEquationBox } from '../../InsertTab/symbols/equation_subTab/common/mathUtils';
 
 interface WebLayoutViewProps {
   editorRef: React.RefObject<HTMLDivElement | null>;
@@ -183,6 +184,11 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
   }, [setActiveElementType, editorRef]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === '=' || e.code === 'Equal')) {
+      e.preventDefault();
+      insertEquationBox();
+      return;
+    }
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const key = e.key.toLowerCase();
       if (key === 'z') {

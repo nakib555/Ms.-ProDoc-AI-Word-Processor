@@ -337,53 +337,95 @@ tr.table-row-keep-together,
   border-radius: 4px;
   padding: 2px 4px;
   margin: 0 2px;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
   position: relative;
+  vertical-align: middle;
 }
 
 .equation-wrapper:hover,
-.equation-wrapper:focus-within {
-  border-color: #cbd5e1;
-  background-color: rgba(241, 245, 249, 0.5);
+.equation-wrapper:focus-within,
+.equation-wrapper[data-selected="true"] {
+  border-color: #93c5fd;
+  background-color: rgba(239, 246, 255, 0.55);
+}
+
+.equation-wrapper[data-selected="true"] {
+  border-style: solid;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
 .dark .equation-wrapper:hover,
-.dark .equation-wrapper:focus-within {
-  border-color: #475569;
-  background-color: rgba(30, 41, 59, 0.5);
+.dark .equation-wrapper:focus-within,
+.dark .equation-wrapper[data-selected="true"] {
+  border-color: #3b82f6;
+  background-color: rgba(30, 58, 138, 0.25);
 }
 
 .equation-handle {
   display: none;
   cursor: grab;
   padding: 0 4px;
-  color: #94a3b8;
-  font-size: 12px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1;
   user-select: none;
+  border-radius: 3px;
+}
+
+.equation-handle:hover {
+  color: #2563eb;
+  background-color: rgba(59, 130, 246, 0.12);
 }
 
 .equation-dropdown {
   display: none;
   cursor: pointer;
-  padding: 0 4px;
-  color: #94a3b8;
+  padding: 1px 5px;
+  color: #64748b;
   font-size: 10px;
+  line-height: 1;
   user-select: none;
+  border-radius: 3px;
+}
+
+.equation-dropdown:hover {
+  color: #2563eb;
+  background-color: rgba(59, 130, 246, 0.12);
 }
 
 .equation-wrapper:hover .equation-handle,
 .equation-wrapper:focus-within .equation-handle,
+.equation-wrapper[data-selected="true"] .equation-handle,
 .equation-wrapper:hover .equation-dropdown,
-.equation-wrapper:focus-within .equation-dropdown {
+.equation-wrapper:focus-within .equation-dropdown,
+.equation-wrapper[data-selected="true"] .equation-dropdown {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .equation-wrapper[data-display="block"] {
   display: flex;
   justify-content: center;
   width: fit-content;
+  max-width: 100%;
   margin: 0.75rem auto;
   padding: 6px 12px;
+}
+
+.equation-wrapper[data-display="block"][data-justification="left"] {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.equation-wrapper[data-display="block"][data-justification="right"] {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.equation-wrapper[data-display="block"] math-field {
+  font-size: 1.08em;
 }
 
 math-field {
@@ -393,6 +435,47 @@ math-field {
   border: none;
   background: transparent;
   padding: 2px;
+  --_placeholder-color: #3b82f6;
+}
+
+math-field::part(virtual-keyboard-toggle),
+math-field::part(menu-toggle) {
+  display: none;
+}
+
+/* MS Word Structure Gallery Static Previews */
+.prodoc-struct-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+  color: inherit;
+  max-width: 100%;
+  pointer-events: none;
+}
+
+.prodoc-struct-preview .ML__latex {
+  width: auto !important;
+  max-width: 100%;
+}
+
+.prodoc-struct-slot {
+  display: inline-block !important;
+  width: 0.76em !important;
+  height: 0.76em !important;
+  min-width: 7px;
+  min-height: 7px;
+  border: 1px dashed currentColor;
+  border-radius: 1.5px;
+  background-color: rgba(59, 130, 246, 0.08);
+  opacity: 0.85;
+  vertical-align: -0.08em;
+  box-sizing: border-box;
+  margin: 0 1px;
+}
+
+.prodoc-struct-slot > * {
+  opacity: 0 !important;
 }
 
 /* Print styles */
@@ -411,6 +494,7 @@ math-field {
   .equation-wrapper {
     border-color: transparent !important;
     background-color: transparent !important;
+    box-shadow: none !important;
   }
   
   .prodoc-page-break {

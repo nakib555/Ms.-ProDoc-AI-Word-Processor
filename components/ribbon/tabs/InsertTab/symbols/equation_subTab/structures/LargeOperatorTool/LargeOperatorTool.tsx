@@ -75,7 +75,7 @@ export const LargeOperatorTool: React.FC = () => {
         items: [
             { label: "Sum Binomial", latex: "\\sum_{k} \\binom{n}{k}", insertValue: "\\sum_{k} \\binom{n}{k}" },
             { label: "Sum Range", latex: "\\sum_{i=0}^{n} \\placeholder{}", insertValue: "\\sum_{i=0}^{n} \\placeholder{}" },
-            { label: "Sum Complex Range", latex: "\\sum_{\\substack{0\\le i\\le m\\\\ 0< j< n}} P(i,j)", insertValue: "\\sum_{\\substack{0\\le i\\le m\\\\ 0< j< n}} P(i,j)" },
+            { label: "Sum Complex Range", latex: "\\sum_{\\begin{smallmatrix}0\\le i\\le m\\\\ 0< j< n\\end{smallmatrix}} P(i,j)", insertValue: "\\sum_{\\begin{smallmatrix}0\\le i\\le m\\\\ 0< j< n\\end{smallmatrix}} P(i,j)" },
             { label: "Product Range", latex: "\\prod_{k=1}^{n} A_k", insertValue: "\\prod_{k=1}^{n} A_k" },
             { label: "Union Range", latex: "\\bigcup_{n=1}^{m} (X_n \\cap Y_n)", insertValue: "\\bigcup_{n=1}^{m} (X_n \\cap Y_n)" }
         ]

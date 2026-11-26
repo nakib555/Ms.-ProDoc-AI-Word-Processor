@@ -24,6 +24,8 @@ export interface EquationElement {
   id: string;
   type: 'equation';
   latex: string;
+  displayMode?: 'inline' | 'block';
+  justification?: 'left' | 'center' | 'right';
 }
 
 export interface ImageElement {
@@ -789,15 +791,28 @@ function parseInlineElements(node: Node, parentStyle: TextStyle = {}): (TextRun 
       // Handle Math / Equations
       if (el.tagName === 'MATH-FIELD' || el.classList.contains('equation-wrapper')) {
         let latex = '';
+        let displayMode: 'inline' | 'block' = 'inline';
+        let justification: 'left' | 'center' | 'right' | undefined;
         if (el.tagName === 'MATH-FIELD') {
           latex = el.getAttribute('value') || el.textContent || '';
         } else {
           const mathField = el.querySelector('math-field');
           latex = mathField ? (mathField.getAttribute('value') || mathField.textContent || '') : '';
+          if (el.getAttribute('data-display') === 'block') {
+            displayMode = 'block';
+            const rawJust = el.getAttribute('data-justification');
+            if (rawJust === 'left' || rawJust === 'center' || rawJust === 'right') {
+              justification = rawJust;
+            } else {
+              justification = 'center';
+            }
+          }
         }
         elements.push({
           type: 'equation',
-          latex
+          latex,
+          displayMode,
+          ...(justification ? { justification } : {}),
         });
         return;
       }
@@ -1081,7 +1096,14 @@ function renderSectionElement(el: SectionElement): string {
       const content = el.children.map(child => {
         if (child.type === 'text') return renderTextRun(child);
         if (child.type === 'equation') {
-          return `<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type equation here." value="${child.latex}">${child.latex}</math-field><span class="equation-dropdown">▼</span></span>`;
+          const safeLatex = (child.latex || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+          const mode = child.displayMode === 'block' ? 'block' : 'inline';
+          const justAttr = mode === 'block' ? ` data-justification="${child.justification || 'center'}"` : '';
+          return `<span class="equation-wrapper" data-display="${mode}"${justAttr} contenteditable="false"><span class="equation-handle" title="Select equation">⋮⋮</span><math-field placeholder="Type equation here." smart-fence="on" math-virtual-keyboard-policy="manual" placeholder-symbol="⬚" value="${safeLatex}">${safeLatex}</math-field><span class="equation-dropdown" title="Equation Options">▼</span></span>`;
         }
         if (child.type === 'image') {
           const imgStyles = styleRecordToString(child.style);
@@ -1141,7 +1163,15 @@ function renderSectionElement(el: SectionElement): string {
 
     case 'equation': {
       const idAttr = el.id ? ` data-id="${el.id}"` : '';
-      return `<p style="text-align: center;"${idAttr}><span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type equation here." value="${el.latex}">${el.latex}</math-field><span class="equation-dropdown">▼</span></span></p>`;
+      const safeLatex = (el.latex || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      const mode = el.displayMode === 'inline' ? 'inline' : 'block';
+      const just = el.justification || 'center';
+      const justAttr = mode === 'block' ? ` data-justification="${just}"` : '';
+      return `<p style="text-align: ${just};"${idAttr}><span class="equation-wrapper" data-display="${mode}"${justAttr} contenteditable="false"><span class="equation-handle" title="Select equation">⋮⋮</span><math-field placeholder="Type equation here." smart-fence="on" math-virtual-keyboard-policy="manual" placeholder-symbol="⬚" value="${safeLatex}">${safeLatex}</math-field><span class="equation-dropdown" title="Equation Options">▼</span></span></p>`;
     }
 
     case 'pageBreak': {
@@ -1441,10 +1471,14 @@ function parseTiptapInlineNodes(nodes?: TiptapJSONNode[], context?: TiptapParser
         style: styleRecord
       });
     } else if (n.type === 'mathEquation') {
+      const mode = n.attrs?.display === 'block' ? 'block' : 'inline';
+      const just = n.attrs?.justification as 'left' | 'center' | 'right' | undefined;
       elements.push({
         id: `node-equation-${nextId()}`,
         type: 'equation',
-        latex: n.attrs?.latex || ''
+        latex: n.attrs?.latex || '',
+        displayMode: mode,
+        ...(mode === 'block' && just ? { justification: just } : {}),
       });
     }
   });
@@ -1548,10 +1582,14 @@ export function parseTiptapImageNode(node: TiptapJSONNode, context: TiptapParser
 }
 
 export function parseTiptapEquationNode(node: TiptapJSONNode, context: TiptapParserContext): EquationElement | null {
+  const mode = node.attrs?.display === 'block' ? 'block' : 'inline';
+  const just = node.attrs?.justification as 'left' | 'center' | 'right' | undefined;
   return {
     id: `node-equation-${context.idGenerator()}`,
     type: 'equation',
-    latex: node.attrs?.latex || ''
+    latex: node.attrs?.latex || '',
+    displayMode: mode,
+    ...(mode === 'block' && just ? { justification: just } : {}),
   };
 }
 
@@ -2746,9 +2784,13 @@ function parseProseMirrorInlineNodes(fragment: any): (TextRun | EquationElement 
         style: styleRecord
       });
     } else if (typeName === 'mathEquation') {
+      const mode = n.attrs?.display === 'block' ? 'block' : 'inline';
+      const just = n.attrs?.justification as 'left' | 'center' | 'right' | undefined;
       elements.push({
         type: 'equation',
-        latex: n.attrs?.latex || ''
+        latex: n.attrs?.latex || '',
+        displayMode: mode,
+        ...(mode === 'block' && just ? { justification: just } : {}),
       });
     }
   });
@@ -2901,11 +2943,17 @@ defaultParserRegistry.registerParser('image', (n) => {
   };
 });
 
-defaultParserRegistry.registerParser('mathEquation', (n) => ({
-  id: `node-equation-${Math.random().toString(36).substr(2, 7)}`,
-  type: 'equation',
-  latex: n.attrs?.latex || ''
-}));
+defaultParserRegistry.registerParser('mathEquation', (n) => {
+  const mode = n.attrs?.display === 'block' ? 'block' : 'inline';
+  const just = n.attrs?.justification as 'left' | 'center' | 'right' | undefined;
+  return {
+    id: `node-equation-${Math.random().toString(36).substr(2, 7)}`,
+    type: 'equation',
+    latex: n.attrs?.latex || '',
+    displayMode: mode,
+    ...(mode === 'block' && just ? { justification: just } : {}),
+  };
+});
 
 function traverseProseMirrorContent(fragment: any, target: SectionElement[], context?: ParserContext) {
   if (!fragment) return;

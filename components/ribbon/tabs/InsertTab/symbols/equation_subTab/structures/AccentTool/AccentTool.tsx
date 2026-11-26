@@ -17,7 +17,7 @@ export const AccentTool: React.FC = () => {
         // Row 1
         { label: "Dot", latex: "\\dot{\\placeholder{}}", insertValue: "\\dot{\\placeholder{}}" },
         { label: "Double Dot", latex: "\\ddot{\\placeholder{}}", insertValue: "\\ddot{\\placeholder{}}" },
-        { label: "Triple Dot", latex: "\\dddot{\\placeholder{}}", insertValue: "\\dddot{\\placeholder{}}" },
+        { label: "Triple Dot", latex: "\\overset{\\cdots}{\\placeholder{}}", insertValue: "\\overset{\\cdots}{\\placeholder{}}" },
         { label: "Hat", latex: "\\hat{\\placeholder{}}", insertValue: "\\hat{\\placeholder{}}" },
         // Row 2
         { label: "Check", latex: "\\check{\\placeholder{}}", insertValue: "\\check{\\placeholder{}}" },

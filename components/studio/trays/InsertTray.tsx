@@ -8,6 +8,7 @@ import { useEditor } from '../../../contexts/EditorContext';
 import { StudioButton } from '../common/StudioButton';
 import { StudioDivider } from '../common/StudioDivider';
 import { StudioDropdown } from '../common/StudioDropdown';
+import { insertEquationBox } from '../../ribbon/tabs/InsertTab/symbols/equation_subTab/common/mathUtils';
 
 const SYMBOLS = ['©', '®', '™', '§', '¶', '°', '±', '≠', '≈', '÷', '×', '€', '£', '¥', '¢', '•', '—', '–', '→', '←', '✓', '★'];
 
@@ -65,9 +66,7 @@ export const InsertTray: React.FC = () => {
   };
 
   const handleInsertEquation = () => {
-    // Inserts math-field node or latex span
-    const mathHtml = '<span class="equation-wrapper" contenteditable="false"><span class="equation-handle">⋮⋮</span><math-field placeholder="Type formula here.">x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}</math-field><span class="equation-dropdown">▼</span></span>&nbsp;';
-    executeCommand('insertHTML', mathHtml);
+    insertEquationBox(undefined, 'inline');
   };
 
   const handleInsertPageBreak = () => {

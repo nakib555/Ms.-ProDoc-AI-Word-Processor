@@ -16,23 +16,31 @@ export const MatrixTool: React.FC = () => {
     {
       title: "Empty Matrices",
       items: [
-        { label: "1x2 Matrix", latex: "\\begin{matrix} \\placeholder & \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder & \\placeholder \\end{matrix}" },
-        { label: "2x1 Matrix", latex: "\\begin{matrix} \\placeholder \\\\ \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder \\\\ \\placeholder \\end{matrix}" },
-        { label: "2x2 Matrix", latex: "\\begin{matrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{matrix}" },
-        { label: "3x3 Matrix", latex: "\\begin{matrix} \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder & \\placeholder \\end{matrix}" }
+        { label: "1x2 Matrix", latex: "\\begin{matrix} \\placeholder{} & \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} & \\placeholder{} \\end{matrix}" },
+        { label: "2x1 Matrix", latex: "\\begin{matrix} \\placeholder{} \\\\ \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} \\\\ \\placeholder{} \\end{matrix}" },
+        { label: "1x3 Matrix", latex: "\\begin{matrix} \\placeholder{} & \\placeholder{} & \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} & \\placeholder{} & \\placeholder{} \\end{matrix}" },
+        { label: "3x1 Matrix", latex: "\\begin{matrix} \\placeholder{} \\\\ \\placeholder{} \\\\ \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} \\\\ \\placeholder{} \\\\ \\placeholder{} \\end{matrix}" },
+        { label: "2x2 Matrix", latex: "\\begin{matrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{matrix}" },
+        { label: "2x3 Matrix", latex: "\\begin{matrix} \\placeholder{} & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & \\placeholder{} \\end{matrix}" },
+        { label: "3x2 Matrix", latex: "\\begin{matrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{matrix}" },
+        { label: "3x3 Matrix", latex: "\\begin{matrix} \\placeholder{} & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & \\placeholder{} \\end{matrix}", insertValue: "\\begin{matrix} \\placeholder{} & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & \\placeholder{} \\end{matrix}" }
       ]
     },
     {
       title: "Matrices with Brackets",
       items: [
-        { label: "Parentheses Matrix", latex: "\\begin{pmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{pmatrix}", insertValue: "\\begin{pmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{pmatrix}" },
-        { label: "Square Brackets Matrix", latex: "\\begin{bmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{bmatrix}", insertValue: "\\begin{bmatrix} \\placeholder & \\placeholder \\\\ \\placeholder & \\placeholder \\end{bmatrix}" }
+        { label: "Parentheses Matrix", latex: "\\begin{pmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{pmatrix}", insertValue: "\\begin{pmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{pmatrix}" },
+        { label: "Square Brackets Matrix", latex: "\\begin{bmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{bmatrix}", insertValue: "\\begin{bmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{bmatrix}" },
+        { label: "Curly Braces Matrix", latex: "\\begin{Bmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{Bmatrix}", insertValue: "\\begin{Bmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{Bmatrix}" },
+        { label: "Determinant (Bars)", latex: "\\begin{vmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{vmatrix}", insertValue: "\\begin{vmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{vmatrix}" },
+        { label: "Norm Matrix (Double Bars)", latex: "\\begin{Vmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{Vmatrix}", insertValue: "\\begin{Vmatrix} \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} \\end{Vmatrix}" }
       ]
     },
     {
         title: "Dots",
         items: [
-            { label: "Dots", latex: "\\dots", insertValue: "\\dots" },
+            { label: "Horizontal Dots", latex: "\\ldots", insertValue: "\\ldots" },
+            { label: "Center Dots", latex: "\\cdots", insertValue: "\\cdots" },
             { label: "Vertical Dots", latex: "\\vdots", insertValue: "\\vdots" },
             { label: "Diagonal Dots", latex: "\\ddots", insertValue: "\\ddots" }
         ]
@@ -47,7 +55,7 @@ export const MatrixTool: React.FC = () => {
     {
         title: "Sparse Matrices",
         items: [
-            { label: "Sparse", latex: "\\begin{pmatrix} 1 & & \\\\ & 1 & \\\\ & & 1 \\end{pmatrix}", insertValue: "\\begin{pmatrix} 1 & & \\\\ & 1 & \\\\ & & 1 \\end{pmatrix}" }
+            { label: "Sparse", latex: "\\begin{pmatrix} 1 & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & 1 & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & 1 \\end{pmatrix}", insertValue: "\\begin{pmatrix} 1 & \\placeholder{} & \\placeholder{} \\\\ \\placeholder{} & 1 & \\placeholder{} \\\\ \\placeholder{} & \\placeholder{} & 1 \\end{pmatrix}" }
         ]
     }
   ];

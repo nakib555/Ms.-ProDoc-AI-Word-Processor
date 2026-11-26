@@ -29,21 +29,21 @@ export const OperatorTool: React.FC = () => {
       title: "Operator Structures",
       items: [
         // Row 1: Single Arrows
-        { label: "Left Arrow Under", latex: "\\xleftarrow[\\placeholder{}]", insertValue: "\\xleftarrow[\\placeholder{}]{}" },
-        { label: "Right Arrow Under", latex: "\\xrightarrow[\\placeholder{}]", insertValue: "\\xrightarrow[\\placeholder{}]{}" },
+        { label: "Left Arrow Under", latex: "\\xleftarrow[\\placeholder{}]{}", insertValue: "\\xleftarrow[\\placeholder{}]{}" },
+        { label: "Right Arrow Under", latex: "\\xrightarrow[\\placeholder{}]{}", insertValue: "\\xrightarrow[\\placeholder{}]{}" },
         { label: "Left Arrow Over", latex: "\\xleftarrow{\\placeholder{}}", insertValue: "\\xleftarrow{\\placeholder{}}" },
         { label: "Right Arrow Over", latex: "\\xrightarrow{\\placeholder{}}", insertValue: "\\xrightarrow{\\placeholder{}}" },
         
         // Row 2: Double Arrows
-        { label: "Double Left Arrow Under", latex: "\\xLeftarrow[\\placeholder{}]", insertValue: "\\xLeftarrow[\\placeholder{}]{}" },
-        { label: "Double Right Arrow Under", latex: "\\xRightarrow[\\placeholder{}]", insertValue: "\\xRightarrow[\\placeholder{}]{}" },
+        { label: "Double Left Arrow Under", latex: "\\xLeftarrow[\\placeholder{}]{}", insertValue: "\\xLeftarrow[\\placeholder{}]{}" },
+        { label: "Double Right Arrow Under", latex: "\\xRightarrow[\\placeholder{}]{}", insertValue: "\\xRightarrow[\\placeholder{}]{}" },
         { label: "Double Left Arrow Over", latex: "\\xLeftarrow{\\placeholder{}}", insertValue: "\\xLeftarrow{\\placeholder{}}" },
         { label: "Double Right Arrow Over", latex: "\\xRightarrow{\\placeholder{}}", insertValue: "\\xRightarrow{\\placeholder{}}" },
         
         // Row 3: Bi-directional Arrows
-        { label: "Left-Right Arrow Under", latex: "\\xleftrightarrow[\\placeholder{}]", insertValue: "\\xleftrightarrow[\\placeholder{}]{}" },
+        { label: "Left-Right Arrow Under", latex: "\\xleftrightarrow[\\placeholder{}]{}", insertValue: "\\xleftrightarrow[\\placeholder{}]{}" },
         { label: "Left-Right Arrow Over", latex: "\\xleftrightarrow{\\placeholder{}}", insertValue: "\\xleftrightarrow{\\placeholder{}}" },
-        { label: "Double Left-Right Arrow Under", latex: "\\xLeftrightarrow[\\placeholder{}]", insertValue: "\\xLeftrightarrow[\\placeholder{}]{}" },
+        { label: "Double Left-Right Arrow Under", latex: "\\xLeftrightarrow[\\placeholder{}]{}", insertValue: "\\xLeftrightarrow[\\placeholder{}]{}" },
         { label: "Double Left-Right Arrow Over", latex: "\\xLeftrightarrow{\\placeholder{}}", insertValue: "\\xLeftrightarrow{\\placeholder{}}" }
       ]
     },

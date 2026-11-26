@@ -10,7 +10,8 @@ export const SmallRibbonButton: React.FC<{
   className?: string;
   hasArrow?: boolean;
   iconClassName?: string;
-}> = ({ icon: Icon, label, onClick, disabled, active, className, hasArrow, iconClassName }) => (
+  title?: string;
+}> = ({ icon: Icon, label, onClick, disabled, active, className, hasArrow, iconClassName, title }) => (
   <button
     type="button"
     onClick={onClick}
@@ -23,7 +24,7 @@ export const SmallRibbonButton: React.FC<{
         ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ring-1 ring-blue-200 dark:ring-blue-800'
         : 'hover:bg-slate-100 dark:hover:bg-slate-700/60'
     } ${className || ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-    title={label}
+    title={title || label}
   >
     <Icon
       size={14}

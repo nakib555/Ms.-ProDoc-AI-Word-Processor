@@ -30,8 +30,10 @@ import {
   selectTableCellsRect,
   splitTableCell,
 } from '../../utils/tableUtils';
-import { latexToLinearUnicode } from '../../utils/equationPresets';
+import { latexToLinearUnicode, saveCustomEquation } from '../../utils/equationPresets';
 import {
+  EquationJustification,
+  insertEquationBox,
   MathFieldEl,
   setLastActiveMathField,
 } from '../ribbon/tabs/InsertTab/symbols/equation_subTab/common/mathUtils';
@@ -172,6 +174,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     x: number;
     y: number;
   } | null>(null);
+  const [saveEqDraft, setSaveEqDraft] = useState<{ title: string } | null>(null);
   const equationMenuRef = useRef<HTMLDivElement>(null);
 
   // Custom Table Context Menu State
@@ -1003,8 +1006,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
       } | undefined;
       if (!detail?.wrapper || !detail?.mathField || !editorRef.current?.contains(detail.wrapper)) return;
 
-      const menuW = 216;
-      const menuH = 220;
+      const menuW = 240;
+      const menuH = 310;
       const pad = 12;
       const rect = detail.rect || detail.wrapper.getBoundingClientRect();
       const x = Math.max(pad, Math.min(rect.left, window.innerWidth - menuW - pad));
@@ -1014,6 +1017,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           : rect.bottom + 6;
 
       setActiveElementType('equation');
+      setSaveEqDraft(null);
       setEquationMenu({
         wrapper: detail.wrapper,
         mathField: detail.mathField,
@@ -1343,6 +1347,11 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (readOnly) return;
+    if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === '=' || e.code === 'Equal')) {
+      e.preventDefault();
+      insertEquationBox();
+      return;
+    }
     if (handleTableNavigation(e)) return;
     if (
       isKeyboardLocked &&
@@ -2330,100 +2339,191 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           {equationMenu && createPortal(
             <div
               ref={equationMenuRef}
-              className="fixed z-[9999] w-56 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1.5 text-xs text-slate-700 dark:text-slate-200 print:hidden"
+              className="fixed z-[9999] w-60 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl py-1.5 text-xs text-slate-700 dark:text-slate-200 print:hidden"
               style={{ left: equationMenu.x, top: equationMenu.y }}
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Equation Options
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const isBlock = equationMenu.wrapper.getAttribute('data-display') === 'block';
-                  equationMenu.wrapper.setAttribute('data-display', isBlock ? 'inline' : 'block');
-                  if (onContentChange && editorRef.current) {
-                    onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
-                  }
-                  setEquationMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-between transition-colors"
-              >
-                <span>
-                  {equationMenu.wrapper.getAttribute('data-display') === 'block'
-                    ? 'Change to Inline'
-                    : 'Change to Display'}
-                </span>
-                <span className="text-[10px] text-slate-400">
-                  {equationMenu.wrapper.getAttribute('data-display') === 'block' ? 'Inline' : 'Block'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
-                  navigator.clipboard?.writeText(raw).catch(() => {});
-                  setEquationMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
-              >
-                Copy LaTeX Source
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
-                  navigator.clipboard?.writeText(latexToLinearUnicode(raw)).catch(() => {});
-                  setEquationMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
-              >
-                Copy Linear Text
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
-                  const span = document.createElement('span');
-                  span.textContent = latexToLinearUnicode(raw);
-                  equationMenu.wrapper.replaceWith(span);
-                  setLastActiveMathField(null);
-                  if (onContentChange && editorRef.current) {
-                    onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
-                  }
-                  setEquationMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
-              >
-                Convert to Linear Text
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveElementType('equation');
-                  window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.EQUATION }));
-                  equationMenu.mathField.focus();
-                  setEquationMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
-              >
-                Equation Tools Tab
-              </button>
-              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-              <button
-                type="button"
-                onClick={() => {
-                  equationMenu.wrapper.remove();
-                  setLastActiveMathField(null);
-                  if (onContentChange && editorRef.current) {
-                    onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
-                  }
-                  setEquationMenu(null);
-                }}
-                className="w-full text-left px-3 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-              >
-                Delete Equation
-              </button>
+              {saveEqDraft ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                    saveCustomEquation(saveEqDraft.title, raw);
+                    setSaveEqDraft(null);
+                    setEquationMenu(null);
+                  }}
+                  className="p-2.5 space-y-2"
+                >
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                    Save as New Equation
+                  </label>
+                  <input
+                    type="text"
+                    value={saveEqDraft.title}
+                    onChange={(e) => setSaveEqDraft({ title: e.target.value })}
+                    placeholder="Equation name"
+                    autoFocus
+                    className="w-full px-2.5 py-1.5 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div className="flex justify-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSaveEqDraft(null)}
+                      className="px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 text-[11px] hover:bg-slate-100 dark:hover:bg-slate-800"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const isBlock = equationMenu.wrapper.getAttribute('data-display') === 'block';
+                      const next = isBlock ? 'inline' : 'block';
+                      equationMenu.wrapper.setAttribute('data-display', next);
+                      if (next === 'block' && !equationMenu.wrapper.getAttribute('data-justification')) {
+                        equationMenu.wrapper.setAttribute('data-justification', 'center');
+                      } else if (next === 'inline') {
+                        equationMenu.wrapper.removeAttribute('data-justification');
+                      }
+                      if (onContentChange && editorRef.current) {
+                        onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+                      }
+                      setEquationMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center justify-between transition-colors"
+                  >
+                    <span>
+                      {equationMenu.wrapper.getAttribute('data-display') === 'block'
+                        ? 'Change to Inline'
+                        : 'Change to Display'}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {equationMenu.wrapper.getAttribute('data-display') === 'block' ? 'Inline' : 'Block'}
+                    </span>
+                  </button>
+                  <div className="px-3 py-1.5 flex items-center justify-between gap-2 border-y border-slate-100 dark:border-slate-800">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">Justification</span>
+                    <div className="flex items-center gap-1">
+                      {(['left', 'center', 'right'] as EquationJustification[]).map((just) => {
+                        const isBlock = equationMenu.wrapper.getAttribute('data-display') === 'block';
+                        const currentJust = equationMenu.wrapper.getAttribute('data-justification') || 'center';
+                        const active = isBlock && currentJust === just;
+                        return (
+                          <button
+                            key={just}
+                            type="button"
+                            onClick={() => {
+                              equationMenu.wrapper.setAttribute('data-display', 'block');
+                              equationMenu.wrapper.setAttribute('data-justification', just);
+                              if (onContentChange && editorRef.current) {
+                                onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+                              }
+                              setEquationMenu(null);
+                            }}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-medium capitalize transition-colors ${
+                              active
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                            }`}
+                          >
+                            {just}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                      setSaveEqDraft({ title: latexToLinearUnicode(raw).slice(0, 32) || 'Custom Equation' });
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  >
+                    Save as New Equation...
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                      navigator.clipboard?.writeText(raw).catch(() => {});
+                      setEquationMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  >
+                    Copy LaTeX Source
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                      navigator.clipboard?.writeText(latexToLinearUnicode(raw)).catch(() => {});
+                      setEquationMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  >
+                    Copy Linear Text
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const raw = equationMenu.mathField.value ?? equationMenu.mathField.getAttribute('value') ?? '';
+                      const span = document.createElement('span');
+                      span.className = 'prodoc-linear-eq';
+                      span.dataset.rawLatex = raw;
+                      span.textContent = latexToLinearUnicode(raw);
+                      equationMenu.wrapper.replaceWith(span);
+                      setLastActiveMathField(null);
+                      if (onContentChange && editorRef.current) {
+                        onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+                      }
+                      setEquationMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  >
+                    Linear (Convert to Text)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveElementType('equation');
+                      window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.EQUATION }));
+                      equationMenu.mathField.focus();
+                      setEquationMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                  >
+                    Equation Tools Tab
+                  </button>
+                  <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      equationMenu.wrapper.remove();
+                      setLastActiveMathField(null);
+                      if (onContentChange && editorRef.current) {
+                        onContentChange(editorRef.current.innerHTML, pageNumber - 1, 'immediate');
+                      }
+                      setEquationMenu(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                  >
+                    Delete Equation
+                  </button>
+                </>
+              )}
             </div>,
             document.body
           )}

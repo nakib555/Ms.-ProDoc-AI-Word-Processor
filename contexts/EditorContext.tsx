@@ -193,7 +193,22 @@ const MathExtension = Node.create({
           const mathField = element.querySelector('math-field');
           return mathField ? (mathField.getAttribute('value') || mathField.textContent || '') : '';
         },
-      }
+      },
+      display: {
+        default: 'inline',
+        parseHTML: element => (element.getAttribute('data-display') === 'block' ? 'block' : 'inline'),
+        renderHTML: attributes => ({
+          'data-display': attributes.display === 'block' ? 'block' : 'inline',
+        }),
+      },
+      justification: {
+        default: null,
+        parseHTML: element => element.getAttribute('data-justification') || null,
+        renderHTML: attributes =>
+          attributes.display === 'block' && attributes.justification
+            ? { 'data-justification': attributes.justification }
+            : {},
+      },
     };
   },
 
@@ -204,9 +219,16 @@ const MathExtension = Node.create({
   },
   
   renderHTML({ HTMLAttributes }) {
-    return ['span', mergeAttributes(HTMLAttributes, { class: 'equation-wrapper', contenteditable: 'false' }), 
+    const { latex, ...wrapperAttrs } = HTMLAttributes;
+    return ['span', mergeAttributes(wrapperAttrs, { class: 'equation-wrapper', contenteditable: 'false' }), 
       ['span', { class: 'equation-handle' }, '⋮⋮'],
-      ['math-field', { placeholder: 'Type equation here.', value: HTMLAttributes.latex || '' }, HTMLAttributes.latex || ''],
+      ['math-field', {
+        placeholder: 'Type equation here.',
+        'smart-fence': 'on',
+        'math-virtual-keyboard-policy': 'manual',
+        'placeholder-symbol': '⬚',
+        value: latex || '',
+      }, latex || ''],
       ['span', { class: 'equation-dropdown' }, '▼']
     ];
   },
@@ -216,6 +238,10 @@ const MathExtension = Node.create({
       const dom = document.createElement('span');
       dom.classList.add('equation-wrapper');
       dom.contentEditable = 'false';
+      dom.setAttribute('data-display', node.attrs.display === 'block' ? 'block' : 'inline');
+      if (node.attrs.display === 'block' && node.attrs.justification) {
+        dom.setAttribute('data-justification', node.attrs.justification);
+      }
       
       const handle = document.createElement('span');
       handle.classList.add('equation-handle');
@@ -223,6 +249,9 @@ const MathExtension = Node.create({
       
       const mathField = document.createElement('math-field');
       mathField.setAttribute('placeholder', 'Type equation here.');
+      mathField.setAttribute('smart-fence', 'on');
+      mathField.setAttribute('math-virtual-keyboard-policy', 'manual');
+      mathField.setAttribute('placeholder-symbol', '⬚');
       const initialLatex = node.attrs.latex || '';
       (mathField as any).value = initialLatex;
       mathField.setAttribute('value', initialLatex);
@@ -243,16 +272,6 @@ const MathExtension = Node.create({
         }
       });
 
-      // Handle focus so clicking works properly
-      mathField.addEventListener('focusin', () => {
-         if (typeof getPos === 'function') {
-            const pos = getPos();
-            if (pos !== undefined) {
-                // optional: select the node when focused
-            }
-         }
-      });
-
       const dropdown = document.createElement('span');
       dropdown.classList.add('equation-dropdown');
       dropdown.textContent = '▼';
@@ -266,6 +285,13 @@ const MathExtension = Node.create({
         update: (updatedNode) => {
           if (updatedNode.type !== node.type) {
             return false;
+          }
+          const nextDisplay = updatedNode.attrs.display === 'block' ? 'block' : 'inline';
+          dom.setAttribute('data-display', nextDisplay);
+          if (nextDisplay === 'block' && updatedNode.attrs.justification) {
+            dom.setAttribute('data-justification', updatedNode.attrs.justification);
+          } else {
+            dom.removeAttribute('data-justification');
           }
           if ((mathField as any).value !== updatedNode.attrs.latex) {
             const newLatex = updatedNode.attrs.latex || '';

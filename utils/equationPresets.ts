@@ -280,6 +280,67 @@ export function filterSymbols(query: string, category: string = 'All'): SymbolEn
   });
 }
 
+const SAVED_EQUATIONS_KEY = 'prodoc_saved_equations';
+
+export function getSavedEquations(): EquationPreset[] {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return [];
+  }
+  try {
+    const raw = window.localStorage.getItem(SAVED_EQUATIONS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (item): item is EquationPreset =>
+          Boolean(item) &&
+          typeof item.id === 'string' &&
+          typeof item.title === 'string' &&
+          typeof item.latex === 'string'
+      );
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return [];
+}
+
+export function saveCustomEquation(title: string, latex: string): EquationPreset[] {
+  const cleanTitle = title.trim() || 'Saved Equation';
+  const cleanLatex = latex.trim();
+  if (!cleanLatex) return getSavedEquations();
+  const entry: EquationPreset = {
+    id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    title: cleanTitle,
+    latex: cleanLatex,
+    preview: latexToLinearUnicode(cleanLatex) || cleanLatex,
+    description: 'User-saved custom equation',
+  };
+  const next = [entry, ...getSavedEquations().filter((e) => e.latex !== cleanLatex)].slice(0, 30);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(SAVED_EQUATIONS_KEY, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('prodoc:saved-equations-updated'));
+    } catch {
+      // ignore storage errors
+    }
+  }
+  return next;
+}
+
+export function deleteSavedEquation(id: string): EquationPreset[] {
+  const next = getSavedEquations().filter((e) => e.id !== id);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.setItem(SAVED_EQUATIONS_KEY, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent('prodoc:saved-equations-updated'));
+    } catch {
+      // ignore storage errors
+    }
+  }
+  return next;
+}
+
 const SUPERSCRIPT_MAP: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
   '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
@@ -299,16 +360,29 @@ const LATEX_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\\times\b/g, '×'],
   [/\\div\b/g, '÷'],
   [/\\cdot\b/g, '·'],
-  [/\\neq\b/g, '≠'],
+  [/\\neq\b|\\ne\b/g, '≠'],
   [/\\approx\b/g, '≈'],
   [/\\equiv\b/g, '≡'],
+  [/\\triangleq\b/g, '≜'],
   [/\\leq\b|\\le\b/g, '≤'],
   [/\\geq\b|\\ge\b/g, '≥'],
+  [/\\ll\b/g, '≪'],
+  [/\\gg\b/g, '≫'],
+  [/\\propto\b/g, '∝'],
   [/\\infty\b/g, '∞'],
-  [/\\sum\b/g, '∑'],
-  [/\\prod\b/g, '∏'],
-  [/\\int\b/g, '∫'],
-  [/\\oint\b/g, '∮'],
+  [/\\sum\\limits\b|\\sum\b/g, '∑'],
+  [/\\prod\\limits\b|\\prod\b/g, '∏'],
+  [/\\coprod\\limits\b|\\coprod\b/g, '∐'],
+  [/\\bigcup\\limits\b|\\bigcup\b/g, '⋃'],
+  [/\\bigcap\\limits\b|\\bigcap\b/g, '⋂'],
+  [/\\bigvee\\limits\b|\\bigvee\b/g, '⋁'],
+  [/\\bigwedge\\limits\b|\\bigwedge\b/g, '⋀'],
+  [/\\iiint\\limits\b|\\iiint\b/g, '∭'],
+  [/\\iint\\limits\b|\\iint\b/g, '∬'],
+  [/\\int\\limits\b|\\int\b/g, '∫'],
+  [/\\oiiint\\limits\b|\\oiiint\b/g, '∰'],
+  [/\\oiint\\limits\b|\\oiint\b/g, '∯'],
+  [/\\oint\\limits\b|\\oint\b/g, '∮'],
   [/\\partial\b/g, '∂'],
   [/\\nabla\b/g, '∇'],
   [/\\forall\b/g, '∀'],
@@ -327,7 +401,9 @@ const LATEX_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\\Leftarrow\b/g, '⇐'],
   [/\\Leftrightarrow\b/g, '⇔'],
   [/\\cdots\b/g, '⋯'],
-  [/\\ldots\b/g, '…'],
+  [/\\ldots\b|\\dots\b/g, '…'],
+  [/\\vdots\b/g, '⋮'],
+  [/\\ddots\b/g, '⋱'],
   [/\\alpha\b/g, 'α'],
   [/\\beta\b/g, 'β'],
   [/\\gamma\b/g, 'γ'],
@@ -350,16 +426,43 @@ const LATEX_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\\Sigma\b/g, 'Σ'],
   [/\\Phi\b/g, 'Φ'],
   [/\\Omega\b/g, 'Ω'],
+  [/\\left\\langle/g, '⟨'],
+  [/\\right\\rangle/g, '⟩'],
+  [/\\left\\lfloor/g, '⌊'],
+  [/\\right\\rfloor/g, '⌋'],
+  [/\\left\\lceil/g, '⌈'],
+  [/\\right\\rceil/g, '⌉'],
+  [/\\left\\\{/g, '{'],
+  [/\\right\\\}/g, '}'],
+  [/\\left\|/g, '‖'],
+  [/\\right\|/g, '‖'],
   [/\\left\(/g, '('],
   [/\\right\)/g, ')'],
   [/\\left\[/g, '['],
   [/\\right\]/g, ']'],
+  [/\\left\|/g, '|'],
+  [/\\right\|/g, '|'],
+  [/\\left\./g, ''],
+  [/\\right\./g, ''],
   [/\\sin\b/g, 'sin'],
   [/\\cos\b/g, 'cos'],
   [/\\tan\b/g, 'tan'],
+  [/\\csc\b/g, 'csc'],
+  [/\\sec\b/g, 'sec'],
+  [/\\cot\b/g, 'cot'],
+  [/\\sinh\b/g, 'sinh'],
+  [/\\cosh\b/g, 'cosh'],
+  [/\\tanh\b/g, 'tanh'],
+  [/\\coth\b/g, 'coth'],
   [/\\log\b/g, 'log'],
   [/\\ln\b/g, 'ln'],
   [/\\lim\b/g, 'lim'],
+  [/\\min\b/g, 'min'],
+  [/\\max\b/g, 'max'],
+  [/\\operatorname\{([^}]+)\}/g, '$1'],
+  [/\\placeholder\{\}/g, '⬚'],
+  [/\\placeholder\b/g, '⬚'],
+  [/\\,/g, ' '],
 ];
 
 /**
@@ -372,12 +475,20 @@ export function latexToLinearUnicode(latex: string): string {
   // Unwrap \text{...}
   out = out.replace(/\\text\{([^}]*)\}/g, '$1');
 
-  // Iteratively expand simple nested \frac{a}{b} and \sqrt{x}
-  for (let i = 0; i < 4; i++) {
-    out = out.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, (_, num, den) => {
-      const n = num.includes(' ') || num.includes('+') || num.includes('-') ? `(${num})` : num;
-      const d = den.includes(' ') || den.includes('+') || den.includes('-') ? `(${den})` : den;
+  // Expand \binom{n}{k}
+  out = out.replace(/\\binom\{([^{}]+)\}\{([^{}]+)\}/g, 'C($1, $2)');
+
+  // Iteratively expand nested \frac, \tfrac, and \sqrt[n]{x} / \sqrt{x}
+  for (let i = 0; i < 6; i++) {
+    out = out.replace(/\\(?:frac|tfrac)\{([^{}]+)\}\{([^{}]+)\}/g, (_, num, den) => {
+      const n = /[+\-\s]/.test(num) ? `(${num})` : num;
+      const d = /[+\-\s]/.test(den) ? `(${den})` : den;
       return `${n}/${d}`;
+    });
+    out = out.replace(/\\sqrt\[([^{}\]]+)\]\{([^{}]+)\}/g, (_, deg, inner) => {
+      if (deg.trim() === '3') return `∛(${inner})`;
+      if (deg.trim() === '4') return `∜(${inner})`;
+      return `${deg}√(${inner})`;
     });
     out = out.replace(/\\sqrt\{([^{}]+)\}/g, (_, inner) => `√(${inner})`);
   }
@@ -434,21 +545,27 @@ export function linearUnicodeToLatex(text: string): string {
     ['±', '\\pm '], ['∓', '\\mp '], ['×', '\\times '], ['÷', '\\div '],
     ['≠', '\\neq '], ['≈', '\\approx '], ['≡', '\\equiv '], ['≤', '\\leq '],
     ['≥', '\\geq '], ['∞', '\\infty '], ['∑', '\\sum '], ['∏', '\\prod '],
-    ['∫', '\\int '], ['∂', '\\partial '], ['∇', '\\nabla '], ['∀', '\\forall '],
-    ['∃', '\\exists '], ['∈', '\\in '], ['∉', '\\notin '], ['∪', '\\cup '],
-    ['∩', '\\cap '], ['∅', '\\emptyset '], ['→', '\\rightarrow '], ['←', '\\leftarrow '],
+    ['∫', '\\int '], ['∬', '\\iint '], ['∭', '\\iiint '], ['∮', '\\oint '],
+    ['∂', '\\partial '], ['∇', '\\nabla '], ['∀', '\\forall '], ['∃', '\\exists '],
+    ['∈', '\\in '], ['∉', '\\notin '], ['∪', '\\cup '], ['∩', '\\cap '],
+    ['∅', '\\emptyset '], ['→', '\\rightarrow '], ['←', '\\leftarrow '],
     ['↔', '\\leftrightarrow '], ['⇒', '\\Rightarrow '], ['⇐', '\\Leftarrow '],
-    ['α', '\\alpha '], ['β', '\\beta '], ['γ', '\\gamma '], ['δ', '\\delta '],
-    ['ε', '\\epsilon '], ['θ', '\\theta '], ['λ', '\\lambda '], ['μ', '\\mu '],
-    ['π', '\\pi '], ['ρ', '\\rho '], ['σ', '\\sigma '], ['τ', '\\tau '],
-    ['φ', '\\phi '], ['ψ', '\\psi '], ['ω', '\\omega '],
-    ['Δ', '\\Delta '], ['Θ', '\\Theta '], ['Σ', '\\Sigma '], ['Ω', '\\Omega '],
+    ['⇔', '\\Leftrightarrow '], ['α', '\\alpha '], ['β', '\\beta '],
+    ['γ', '\\gamma '], ['δ', '\\delta '], ['ε', '\\epsilon '], ['θ', '\\theta '],
+    ['λ', '\\lambda '], ['μ', '\\mu '], ['π', '\\pi '], ['ρ', '\\rho '],
+    ['σ', '\\sigma '], ['τ', '\\tau '], ['φ', '\\phi '], ['ψ', '\\psi '],
+    ['ω', '\\omega '], ['Δ', '\\Delta '], ['Θ', '\\Theta '], ['Σ', '\\Sigma '],
+    ['Ω', '\\Omega '], ['⬚', '\\placeholder{}'],
   ];
 
   for (const [glyph, cmd] of glyphToLatex) {
     out = out.split(glyph).join(cmd);
   }
 
+  out = out.replace(/∛\(([^)]+)\)/g, '\\sqrt[3]{$1}');
+  out = out.replace(/∜\(([^)]+)\)/g, '\\sqrt[4]{$1}');
   out = out.replace(/√\(([^)]+)\)/g, '\\sqrt{$1}');
+  out = out.replace(/√([a-zA-Z0-9]+)/g, '\\sqrt{$1}');
+  out = out.replace(/([a-zA-Z0-9]+)\/([a-zA-Z0-9]+)/g, '\\frac{$1}{$2}');
   return out.replace(/\s+/g, ' ').trim();
 }
