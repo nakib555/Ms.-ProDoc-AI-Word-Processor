@@ -157,7 +157,7 @@ export const RibbonTabBar: React.FC<RibbonTabBarProps> = React.memo(({ activeTab
       const labelToFind = activeConfig ? activeConfig.label : activeTab;
       const activeButton = buttons.find(btn => btn.textContent?.includes(labelToFind));
       
-      if (activeButton) {
+      if (activeButton && typeof activeButton.scrollIntoView === 'function') {
         activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }

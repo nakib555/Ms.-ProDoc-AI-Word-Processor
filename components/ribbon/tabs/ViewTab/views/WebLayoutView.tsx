@@ -158,7 +158,7 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
           setActiveElementType('table');
       } else if (element.tagName === 'IMG' || element.closest('img')) {
           setActiveElementType('image');
-      } else if (element.closest('math-field') || element.closest('.math-inline') || element.closest('.math-display')) {
+      } else if (element.closest('.equation-wrapper') || element.closest('math-field') || element.closest('.math-inline') || element.closest('.math-display')) {
           setActiveElementType('equation');
       } else {
           setActiveElementType('text');
@@ -168,8 +168,8 @@ export const WebLayoutView: React.FC<WebLayoutViewProps> = ({
     document.addEventListener('selectionchange', handleSelectionChange);
     
     const handleFocusIn = (e: FocusEvent) => {
-        const target = e.target as HTMLElement;
-        if (target && target.tagName && target.tagName.toLowerCase() === 'math-field' && editorRef.current?.contains(target)) {
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName?.toLowerCase() === 'math-field' || target.closest('.equation-wrapper')) && editorRef.current?.contains(target)) {
             setActiveElementType('equation');
         }
     };

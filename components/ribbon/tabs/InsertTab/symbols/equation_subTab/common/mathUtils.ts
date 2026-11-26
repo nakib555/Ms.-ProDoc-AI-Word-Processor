@@ -1,5 +1,6 @@
 
 import { latexToLinearUnicode, linearUnicodeToLatex, recordRecentSymbol } from '../../../../../../../utils/equationPresets';
+import { RibbonTab } from '../../../../../../../types';
 
 export type MathFieldEl = HTMLElement & {
   value?: string;
@@ -113,7 +114,7 @@ export const insertEquationBox = (
   notifyEditorChange(editorEl);
 
   setTimeout(() => {
-    window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'equation' }));
+    window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.EQUATION }));
   }, 80);
 
   return mf;

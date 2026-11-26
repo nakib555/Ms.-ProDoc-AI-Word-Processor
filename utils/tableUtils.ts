@@ -150,9 +150,9 @@ export function getSelectedTableCells(table: HTMLTableElement): HTMLTableCellEle
   if (!sel || sel.rangeCount === 0) return [];
   const range = sel.getRangeAt(0);
   if (range.collapsed) {
-    const anchorEl = range.anchorContainer instanceof Element
-      ? range.anchorContainer
-      : range.anchorContainer?.parentElement;
+    const anchorEl = range.startContainer instanceof Element
+      ? range.startContainer
+      : range.startContainer?.parentElement;
     const cell = anchorEl?.closest('td, th') as HTMLTableCellElement | null;
     return cell && table.contains(cell) ? [cell] : [];
   }

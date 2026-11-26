@@ -1009,6 +1009,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setHasActiveSelection(!editor.state.selection.empty);
         if (editor.isActive('table')) setActiveElementType('table');
         else if (editor.isActive('image')) setActiveElementType('image');
+        else if (editor.isActive('mathEquation')) setActiveElementType('equation');
         else setActiveElementType('text');
 
         // Check for comment marks at selection
@@ -1300,7 +1301,7 @@ export const EditorProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           nativeCommandExecuted = true;
 
           setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'table-design' }));
+            window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.TABLE_DESIGN }));
           }, 100);
         }
         break;

@@ -1,8 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import 'mathlive';
+import 'mathlive/fonts.css';
+import { MathfieldElement } from 'mathlive';
 import App from './App';
 import './index.css';
+
+if (typeof window !== 'undefined' && typeof MathfieldElement !== 'undefined') {
+  MathfieldElement.fontsDirectory = '/mathlive-fonts';
+  MathfieldElement.soundsDirectory = '/mathlive-sounds';
+}
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

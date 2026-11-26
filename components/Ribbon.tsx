@@ -132,7 +132,7 @@ export const Ribbon: React.FC<RibbonProps> = ({
             case RibbonTab.TABLE_LAYOUT: return <TableLayoutTab />;
             case RibbonTab.EQUATION: return <EquationTab />;
             case RibbonTab.HEADER_FOOTER: return <HeaderFooterTab />;
-            default: return activeTab ? <div className="flex items-center justify-center w-full h-full text-slate-400 italic text-xs">Tools coming soon...</div> : null;
+            default: return activeTab ? <HomeTab /> : null;
           }
         })()}
       </Suspense>

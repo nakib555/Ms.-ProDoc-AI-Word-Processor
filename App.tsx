@@ -51,10 +51,45 @@ const AppContent: React.FC = () => {
   }, []);
 
   useEffect(() => {
+      const TAB_ALIASES: Record<string, RibbonTab> = {
+          'home': RibbonTab.HOME,
+          'compose': RibbonTab.HOME,
+          'insert': RibbonTab.INSERT,
+          'draw': RibbonTab.DRAW,
+          'layout': RibbonTab.LAYOUT,
+          'page setup': RibbonTab.LAYOUT,
+          'design': RibbonTab.DESIGN,
+          'styles & themes': RibbonTab.DESIGN,
+          'references': RibbonTab.REFERENCES,
+          'citations & structure': RibbonTab.REFERENCES,
+          'mailings': RibbonTab.MAILINGS,
+          'templates & merge': RibbonTab.MAILINGS,
+          'review': RibbonTab.REVIEW,
+          'review & audit': RibbonTab.REVIEW,
+          'view': RibbonTab.VIEW,
+          'display': RibbonTab.VIEW,
+          'file': RibbonTab.FILE,
+          'project': RibbonTab.FILE,
+          'equation': RibbonTab.EQUATION,
+          'equation studio': RibbonTab.EQUATION,
+          'table-design': RibbonTab.TABLE_DESIGN,
+          'table studio': RibbonTab.TABLE_DESIGN,
+          'table-layout': RibbonTab.TABLE_LAYOUT,
+          'table layout': RibbonTab.TABLE_LAYOUT,
+          'header-footer': RibbonTab.HEADER_FOOTER,
+          'header & footer': RibbonTab.HEADER_FOOTER,
+      };
+      const validValues = new Set<string>(Object.values(RibbonTab));
+
       const handleSwitchTab = (e: Event) => {
           const customEvent = e as CustomEvent;
-          if (customEvent.detail) {
-              setActiveTab(customEvent.detail as RibbonTab);
+          const raw = customEvent.detail;
+          if (typeof raw !== 'string' || !raw.trim()) return;
+          const resolved = validValues.has(raw)
+              ? (raw as RibbonTab)
+              : TAB_ALIASES[raw.trim().toLowerCase()];
+          if (resolved) {
+              setActiveTab(resolved);
           }
       };
       window.addEventListener('prodoc:switchTab', handleSwitchTab);

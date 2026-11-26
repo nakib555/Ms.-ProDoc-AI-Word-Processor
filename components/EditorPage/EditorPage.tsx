@@ -2,7 +2,7 @@
 import React, { useRef, useLayoutEffect, useEffect, useState, useMemo, useCallback } from 'react';
 
 import { createPortal } from 'react-dom';
-import { PageConfig, EditingArea } from '../../types';
+import { PageConfig, EditingArea, RibbonTab } from '../../types';
 import { HistoryCommitMode } from '../../utils/historyManager';
 import { PAGE_SIZES } from '../../constants';
 import { getPhysicalDimensions } from '../../utils/measurement';
@@ -947,7 +947,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
   };
 
   const handleOpenDocument = () => {
-    window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'File' }));
+    window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.FILE }));
   };
 
   // Determine active header/footer content based on page number and config
@@ -1013,6 +1013,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
           ? Math.max(pad, rect.top - menuH - 6)
           : rect.bottom + 6;
 
+      setActiveElementType('equation');
       setEquationMenu({
         wrapper: detail.wrapper,
         mathField: detail.mathField,
@@ -1196,7 +1197,7 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
         setActiveElementType('table');
       } else if (element.tagName === 'IMG' || element.closest('img')) {
         setActiveElementType('image');
-      } else if (element.closest('math-field') || element.closest('.math-inline') || element.closest('.math-display')) {
+      } else if (element.closest('.equation-wrapper') || element.closest('math-field') || element.closest('.math-inline') || element.closest('.math-display')) {
         setActiveElementType('equation');
       } else {
         setActiveElementType('text');
@@ -1207,8 +1208,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
     
     // Also listen for focusin/focusout to catch math-field focus which might not trigger selectionchange
     const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target && target.tagName && target.tagName.toLowerCase() === 'math-field' && editorRef.current?.contains(target)) {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName?.toLowerCase() === 'math-field' || target.closest('.equation-wrapper')) && editorRef.current?.contains(target)) {
         setActiveElementType('equation');
       }
     };
@@ -2399,7 +2400,8 @@ const EditorPageComponent: React.FC<EditorPageProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'equation' }));
+                  setActiveElementType('equation');
+                  window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.EQUATION }));
                   equationMenu.mathField.focus();
                   setEquationMenu(null);
                 }}

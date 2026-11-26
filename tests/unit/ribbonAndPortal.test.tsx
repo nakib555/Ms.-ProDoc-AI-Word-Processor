@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import App from '../../App';
 import { Ribbon } from '../../components/Ribbon';
 import { TableDesignTab } from '../../components/ribbon/tabs/InsertTab/tables/tabledesign_subTab/tabledesign';
 import { TableLayoutTab } from '../../components/ribbon/tabs/InsertTab/tables/tablelayout_subTab/tablelayout';
@@ -284,3 +285,59 @@ describe('Smart Dropdowns & Toggles', () => {
     expect(mockCtx.applyBlockStyle).toHaveBeenCalledWith({ lineHeight: '1.5' });
   });
 });
+
+describe('Equation Studio Toolbox & Tab Switching', () => {
+  it('renders EquationTab (Tools, Conversions, Symbols, Structures) when activeTab is RibbonTab.EQUATION and never shows coming soon text', () => {
+    render(
+      <Providers contextOverrides={{ activeElementType: 'equation' }}>
+        <Ribbon activeTab={RibbonTab.EQUATION} onTabChange={vi.fn()} />
+      </Providers>
+    );
+
+    expect(screen.getByTitle('Tools')).toBeTruthy();
+    expect(screen.getByTitle('Conversions')).toBeTruthy();
+    expect(screen.getByTitle('Symbols')).toBeTruthy();
+    expect(screen.getByTitle('Structures')).toBeTruthy();
+    expect(screen.queryByText(/Tools coming soon/i)).toBeNull();
+  });
+
+  it('auto-switches to RibbonTab.EQUATION when activeElementType becomes equation', () => {
+    const onTabChange = vi.fn();
+    const { rerender } = render(
+      <Providers contextOverrides={{ activeElementType: 'text' }}>
+        <Ribbon activeTab={RibbonTab.HOME} onTabChange={onTabChange} />
+      </Providers>
+    );
+
+    rerender(
+      <Providers contextOverrides={{ activeElementType: 'equation' }}>
+        <Ribbon activeTab={RibbonTab.HOME} onTabChange={onTabChange} />
+      </Providers>
+    );
+
+    expect(onTabChange).toHaveBeenCalledWith(RibbonTab.EQUATION);
+  });
+
+  it('resolves legacy "equation" and canonical RibbonTab.EQUATION on prodoc:switchTab inside App without showing coming soon text', async () => {
+    render(<App />);
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'equation' }));
+    });
+
+    expect(screen.getByTitle('Tools')).toBeTruthy();
+    expect(screen.getByTitle('Conversions')).toBeTruthy();
+    expect(screen.getByTitle('Symbols')).toBeTruthy();
+    expect(screen.getByTitle('Structures')).toBeTruthy();
+    expect(screen.queryByText(/Tools coming soon/i)).toBeNull();
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.HOME }));
+      window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.EQUATION }));
+    });
+
+    expect(screen.getByTitle('Structures')).toBeTruthy();
+    expect(screen.queryByText(/Tools coming soon/i)).toBeNull();
+  });
+});
+

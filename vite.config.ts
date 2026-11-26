@@ -62,6 +62,83 @@ function cloudflareSpaPlugin(): Plugin {
   };
 }
 
+function mathliveAssetsPlugin(): Plugin {
+  const fontsSrc = path.resolve(__dirname, 'node_modules/mathlive/dist/fonts');
+  const soundsSrc = path.resolve(__dirname, 'node_modules/mathlive/dist/sounds');
+
+  const serveStaticAsset = (
+    baseRoute: string,
+    rootDir: string,
+    mimeTypes: Record<string, string>,
+    reqUrl: string | undefined,
+    res: { statusCode: number; setHeader: (name: string, val: string) => void; end: (data?: Buffer) => void }
+  ): boolean => {
+    if (!reqUrl) return false;
+    const cleanUrl = reqUrl.split('?')[0];
+    if (!cleanUrl.startsWith(baseRoute)) return false;
+
+    const rel = cleanUrl.slice(baseRoute.length).replace(/^\/+/, '');
+    if (!rel || rel.includes('..')) return false;
+
+    const fullPath = path.resolve(rootDir, rel);
+    if (!fullPath.startsWith(rootDir + path.sep) || !fs.existsSync(fullPath)) {
+      return false;
+    }
+
+    const ext = path.extname(fullPath).toLowerCase();
+    res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.statusCode = 200;
+    res.end(fs.readFileSync(fullPath));
+    return true;
+  };
+
+  return {
+    name: 'mathlive-assets',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (
+          serveStaticAsset(
+            '/mathlive-fonts/',
+            fontsSrc,
+            { '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' },
+            req.url,
+            res
+          )
+        ) {
+          return;
+        }
+        if (
+          serveStaticAsset(
+            '/mathlive-sounds/',
+            soundsSrc,
+            { '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg' },
+            req.url,
+            res
+          )
+        ) {
+          return;
+        }
+        next();
+      });
+    },
+    closeBundle() {
+      try {
+        const distDir = path.resolve(__dirname, 'dist');
+        if (!fs.existsSync(distDir)) return;
+        if (fs.existsSync(fontsSrc)) {
+          fs.cpSync(fontsSrc, path.join(distDir, 'mathlive-fonts'), { recursive: true });
+        }
+        if (fs.existsSync(soundsSrc)) {
+          fs.cpSync(soundsSrc, path.join(distDir, 'mathlive-sounds'), { recursive: true });
+        }
+      } catch (err) {
+        console.warn('Failed to copy MathLive static assets:', err);
+      }
+    }
+  };
+}
+
 export default defineConfig(() => {
     return {
       server: {
@@ -69,7 +146,7 @@ export default defineConfig(() => {
         host: '0.0.0.0',
         allowedHosts: true,
       },
-      plugins: [react(), cloudflareSpaPlugin()],
+      plugins: [react(), cloudflareSpaPlugin(), mathliveAssetsPlugin()],
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),

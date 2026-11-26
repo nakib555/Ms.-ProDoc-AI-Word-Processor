@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, FileText, Trash2, ArrowUpRight, SearchX } from 'lucide-react';
 import { useEditor } from '../contexts/EditorContext';
 import { EmptyState } from './ui/EmptyState';
+import { RibbonTab } from '../types';
 
 export const NotesSidebar: React.FC = () => {
   const { 
@@ -199,7 +200,7 @@ export const NotesSidebar: React.FC = () => {
               description="Footnotes and endnotes appear here. Insert notes using the References tab."
               action={{
                 label: "Open References Tab",
-                onClick: () => window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: 'References' })),
+                onClick: () => window.dispatchEvent(new CustomEvent('prodoc:switchTab', { detail: RibbonTab.REFERENCES })),
                 variant: 'secondary'
               }}
               compact
